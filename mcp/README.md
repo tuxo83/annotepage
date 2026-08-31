@@ -62,7 +62,7 @@ annotepage open                     # the remarks still open
 annotepage open --page /pricing     # ...on one page
 annotepage note 12                  # one note and its thread
 annotepage reply 12 "Reproduced. The label wraps below 380px."
-annotepage resolve 12 --version 1.4.13
+annotepage resolve 12 1.4.13
 annotepage reopen 12 "Still there on Safari 17."
 annotepage text                     # the whole review, as text
 annotepage projects
