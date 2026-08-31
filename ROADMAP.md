@@ -79,3 +79,30 @@ encryption without contradicting its own model.
 - **Deletion.** Original choice: no note is ever erased, you do not erase
   somebody else's remark. To be kept — but an operator who leaves a message by
   mistake has no recourse. Observed, with no solution adopted.
+
+---
+
+## Settled while converting to English, recorded so they are decisions
+
+**The published client tarball no longer ships `src/` and `tools/`** -- only
+`dist/`, `labels/` and the readme, five files. The sources are on GitHub and
+the build is reproducible from there; shipping them again tripled the tarball
+for nothing. Blessed deliberately: the conversion changed it without being
+asked to, and the smaller list is the right one.
+
+**Two end-to-end harnesses exist.** `mcp/tools/check-end-to-end.mjs` is the one
+CI runs -- 15 checks. `test-end-to-end/` holds a second, richer one
+(`client-bridge.mjs` + `file-store.php`) that nothing imports; it was written
+by a workstream that stopped before wiring it, and it works -- the browser
+verification of 1 September used its file store. Either wire it or delete it;
+leaving an unrun test in a repository teaches people to distrust the tests
+that do run.
+
+**`?action=backfill` has no caller.** It fills `page_index` for rows written
+before the blind index existed, and INSTALL.md gives a curl recipe. That is
+enough for a one-off, but it means the code path is only ever exercised by
+hand.
+
+**The `id` column is a server-global counter.** Between two notes of one
+project, the gap says how much every other project wrote. Thin, real, kept:
+fixing it needs per-project numbering. Documented in FORMAT.md 2.4.
