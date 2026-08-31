@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>annotepage &mdash; annotate a web page, and let an assistant close the loop</title>
+<meta name="description" content="Annotate a web page. An assistant reads the notes, fixes, replies in the thread saying what it measured, and resolves them with the version the fix ships in. Open source, self-hostable, encrypted in the browser.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://annotepage.com/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+/* ---------------------------------------------------------------------------
+   annotepage.com -- one hand-written page.
+   No dependency, no remote font, no third-party script, no external image.
+   Every colour is defined on bare :root; the dark block only REDEFINES.
+   --------------------------------------------------------------------------- */
+
+:root {
+    --bg:        #ffffff;
+    --bg-soft:   #f5f6f8;
+    --bg-code:   #f1f2f5;
+    --bg-warn:   #fdf6e9;
+    --text:      #16181d;
+    --dim:       #52565f;
+    --line:      #d3d7de;
+    --line-soft: #e2e5ea;
+    /* The boundary of an INTERACTIVE control, which --line cannot serve.
+       Measured on the rendered pixels: --line reaches 1.34:1 against the
+       strip the Copy button sits on, where WCAG 1.4.11 asks for 3. This one
+       measures 3.35:1 against that strip and 3.62:1 against the button's own
+       fill. It is deliberately NOT applied to the frames around code, cards
+       and tables: those are decoration, and 1.4.11 does not cover them. */
+    --control-line: #7f8794;
+    --accent:    #0b53c0;
+    --on-accent: #ffffff;
+    --warn:      #7a4200;
+    --ok:        #0a6b3d;
+    --shadow:    0 1px 2px rgba(16, 18, 24, .06), 0 8px 28px rgba(16, 18, 24, .07);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+            "DejaVu Sans Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+            Arial, "Noto Sans", sans-serif;
+    --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg:        #0f1115;
+        --bg-soft:   #171a20;
+        --bg-code:   #13161b;
+        --bg-warn:   #1d1810;
+        --text:      #e6e8ec;
+        --dim:       #a3a9b4;
+        --line:      #38404c;
+        --line-soft: #262c35;
+        --control-line: #6a7484;   /* 3.69:1 on --bg-soft, 4.00:1 on --bg */
+        --accent:    #8ab4ff;
+        --on-accent: #0f1115;
+        --warn:      #f2c17a;
+        --ok:        #5fd39a;
+        --shadow:    0 1px 2px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .45);
+    }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+}
+
+/* The page itself never scrolls sideways -- not because it is clipped, but
+   because nothing in it is wider than its column. Everything that IS wide (code,
+   tables) scrolls inside its own frame. */
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin: 0; }
+h1 { font-size: clamp(2rem, 7vw, 3.1rem); font-weight: 700; }
+h2 { font-size: clamp(1.4rem, 4.4vw, 1.9rem); font-weight: 650; }
+h3 { font-size: 1.05rem; font-weight: 650; }
+p  { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
+.wrap { width: 100%; max-width: 61rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
+.narrow { max-width: 46rem; }
+
+.dim { color: var(--dim); }
+.small { font-size: .875rem; line-height: 1.55; }
+.vh {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* -- Top bar ------------------------------------------------------------- */
+
+.top {
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg);
+}
+.top .wrap {
+    display: flex; align-items: center; gap: 1rem;
+    flex-wrap: wrap; padding-top: .85rem; padding-bottom: .85rem;
+}
+.mark {
+    font-family: var(--mono); font-size: .95rem; font-weight: 600;
+    letter-spacing: -.02em; color: var(--text); text-decoration: none;
+}
+.mark::before {
+    content: ""; display: inline-block; vertical-align: -1px;
+    width: .62em; height: .62em; margin-right: .5em; border-radius: 2px;
+    background: var(--accent);
+}
+.top nav { margin-left: auto; display: flex; gap: 1.1rem; flex-wrap: wrap; }
+.top nav a { font-size: .875rem; color: var(--dim); text-decoration: none; }
+.top nav a:hover { color: var(--text); text-decoration: underline; }
+
+/* -- Sections ------------------------------------------------------------ */
+
+section { padding: clamp(3rem, 8vw, 5.5rem) 0; border-top: 1px solid var(--line-soft); }
+section:first-of-type { border-top: 0; }
+.hero { padding-top: clamp(2.5rem, 7vw, 4.5rem); }
+
+.eyebrow {
+    font-family: var(--mono); font-size: .75rem; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--dim); margin: 0 0 .9rem;
+}
+.lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; }
+h2 + .lead, h2 + p { margin-top: .9rem; }
+
+/* -- The three claims ---------------------------------------------------- */
+
+.claims { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.6rem 0 0; padding: 0; list-style: none; }
+.claims li {
+    font-size: .82rem; font-weight: 600; letter-spacing: .01em;
+    /* 1.2rem: see .pill. At one line (33px tall, measured) the browser clamps
+       it to a true pill; enlarged to three lines it stays a rounded box
+       instead of becoming an ellipse. */
+    border: 1px solid var(--line); border-radius: 1.2rem;
+    padding: .3rem .78rem; color: var(--text); background: var(--bg-soft);
+}
+.claims li span { color: var(--dim); font-weight: 400; }
+
+/* -- Code snippets ------------------------------------------------------- */
+
+.snip {
+    margin: 1.3rem 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg-code);
+    overflow: hidden;
+}
+.snip-head {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .4rem .5rem .4rem .8rem;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg-soft);
+    min-height: 2.55rem;
+}
+.snip-name {
+    font-family: var(--mono); font-size: .74rem; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--dim);
+    /* min-width: 0 is what actually lets it shrink: a flex item refuses to go
+       below its content width without it, and the Copy button is pushed off a
+       360px screen.
+
+       It WRAPS, it is not cut. An ellipsis here turned "setup -- remove once
+       the project exists" into "setup -- remove once the projec..." at 360px,
+       which keeps the word and eats the instruction. Measured: every name
+       fits on one line down to 412px, and takes two below that. */
+    flex: 0 1 auto; min-width: 0;
+    overflow-wrap: anywhere;
+}
+.copy {
+    margin-left: auto; flex: none;
+    font: inherit; font-size: .78rem; font-weight: 600; font-family: var(--sans);
+    color: var(--text); background: var(--bg);
+    border: 1px solid var(--control-line); border-radius: 7px;
+    padding: .3rem .7rem; cursor: pointer;
+    min-height: 1.9rem;
+}
+.copy:hover { border-color: var(--accent); color: var(--accent); }
+.copy[data-state="done"] { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.copy[data-state="failed"] { color: var(--warn); border-color: var(--warn); }
+
+.snip pre {
+    margin: 0;
+    padding: .95rem 1rem;
+    overflow-x: auto;              /* the frame scrolls, never the page */
+    -webkit-overflow-scrolling: touch;
+}
+.snip pre code {
+    font-family: var(--mono);
+    font-size: .8rem;
+    line-height: 1.65;
+    white-space: pre;
+    display: block;
+    min-width: 0;
+}
+.snip.out pre code { color: var(--dim); }
+.snip.out pre code b { color: var(--text); font-weight: 600; }
+
+code:not(pre code) {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--bg-code); border: 1px solid var(--line-soft);
+    border-radius: 5px; padding: .08em .32em;
+}
+
+/* -- Steps --------------------------------------------------------------- */
+
+.step { margin: 2.4rem 0 0; }
+.step:first-of-type { margin-top: 1.8rem; }
+.step-head { display: flex; align-items: baseline; gap: .7rem; }
+.step-num {
+    flex: none;
+    font-family: var(--mono); font-size: .78rem; font-weight: 700;
+    color: var(--accent);
+}
+.step-head h3 { font-size: 1.08rem; min-width: 0; }
+.step-body { margin-top: .55rem; }
+.step-body > p { color: var(--dim); }
+
+/* -- Callout ------------------------------------------------------------- */
+
+.callout {
+    margin: 1.4rem 0;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--warn);
+    border-radius: var(--radius);
+    background: var(--bg-warn);
+    padding: .9rem 1.1rem;
+}
+.callout strong { color: var(--warn); }
+.callout p { font-size: .93rem; }
+
+.note-aside {
+    margin: 1.2rem 0;
+    border-left: 2px solid var(--line);
+    padding: .1rem 0 .1rem 1rem;
+    color: var(--dim);
+    font-size: .9rem;
+}
+.note-aside p + p { margin-top: .7rem; }
+
+/* -- The mock: what the reviewer actually sees --------------------------- */
+
+.mock {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg-soft);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    max-width: 34rem;
+}
+.mock-bar {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg);
+}
+.mock-bar b { font-size: .85rem; font-weight: 650; }
+.mock-bar .x { margin-left: auto; color: var(--dim); font-size: .78rem; }
+.mock-body { padding: .9rem; display: grid; gap: .75rem; }
+
+.card {
+    background: var(--bg);
+    border: 1px solid var(--line-soft);
+    border-radius: 9px;
+    padding: .75rem .85rem;
+}
+.card.reply { margin-left: 1.1rem; border-left: 2px solid var(--line); }
+.card-meta {
+    font-size: .74rem; color: var(--dim);
+    display: flex; flex-wrap: wrap; gap: .1rem .55rem; margin-bottom: .35rem;
+}
+.card-meta b { color: var(--text); font-weight: 650; }
+.card-about {
+    font-size: .74rem; color: var(--dim); font-family: var(--mono);
+    margin-bottom: .45rem; overflow-wrap: anywhere;
+}
+.card p { font-size: .88rem; margin: 0; }
+.stamp {
+    display: flex; flex-wrap: wrap; gap: .15rem .5rem; align-items: baseline;
+    margin-top: .6rem; padding-top: .55rem; border-top: 1px dashed var(--line);
+    font-size: .76rem; color: var(--ok);
+}
+.stamp .v { font-family: var(--mono); color: var(--dim); }
+
+/* -- The three gestures -------------------------------------------------- */
+
+.gestures {
+    display: grid; gap: 1.1rem; margin-top: 2rem;
+    /* min(15rem, 100%) and not 15rem: a bare minmax() minimum is a FLOOR the
+       track cannot go under, so at a 200% text size 15rem became 480px and
+       pushed the page sideways on a 360px screen -- two-dimensional
+       scrolling, which is what WCAG 1.4.10 forbids. */
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+}
+.gesture {
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    background: var(--bg-soft); padding: 1rem;
+    display: flex; flex-direction: column; gap: .75rem;
+}
+.gesture h3 { font-size: .98rem; }
+.gesture p { font-size: .87rem; color: var(--dim); margin: 0; }
+.gesture .frame {
+    position: relative;
+    /* One height for the three, so the headings below them line up. Sized on
+       the tallest content (the form), measured, not guessed.
+
+       min-height and NOT height: a fixed height was measured at the default
+       text size only, and at a 200% text size the hint wraps to more lines --
+       353px of content in a 334px box, cut off with no scrollbar. The floor
+       still aligns the three whenever they sit side by side; below that they
+       are stacked in one column, where nothing has to line up with anything. */
+    min-height: 10.5rem;
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    background: var(--bg);
+    overflow: hidden;
+    padding: .6rem;
+}
+/* fake page furniture behind the demonstration */
+.bar-line { height: .42rem; border-radius: 3px; background: var(--line-soft); }
+.bar-line + .bar-line { margin-top: .38rem; }
+.bar-line.w70 { width: 70%; } .bar-line.w45 { width: 45%; } .bar-line.w85 { width: 85%; }
+
+.pill {
+    position: absolute; right: .55rem; bottom: .55rem;
+    /* flex-wrap, and it is load-bearing: the min-content width of a NOWRAP
+       flex row is the SUM of its items, and a min-content wider than
+       max-width wins over max-width. At a 200% text size the count badge
+       came out 41px past the frame, which clips -- "3 notes" read "3 no".
+       Wrapping makes the min-content the widest single item instead. */
+    display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+    background: var(--accent); color: var(--on-accent);
+    /* 1rem and not 999px: the browser clamps the radius to half the height,
+       so at one line (28px tall, measured) this is still a true pill, while a
+       999px radius turns a three-line box into an ellipse once the text is
+       enlarged. Same shape where it matters, no blob where it does not. */
+    border-radius: 1rem; padding: .3rem .7rem;
+    font-size: .72rem; font-weight: 650;
+    box-shadow: var(--shadow);
+    max-width: calc(100% - 1.1rem);
+}
+.pill .dot { width: .42rem; height: .42rem; border-radius: 50%; background: var(--on-accent); flex: none; }
+.pill .count {
+    background: var(--on-accent); color: var(--accent);
+    border-radius: 999px; padding: 0 .35rem; font-size: .68rem;
+}
+
+.hint {
+    font-size: .68rem; line-height: 1.45; color: var(--dim);
+}
+/* The rectangle is drawn AROUND the target, never on it -- which is also what
+   the tool does: it never puts an outline on an element of the host page. */
+/* max-width, so the marker hanging .85rem off the right corner always has
+   somewhere to hang: the frame only offers .6rem of padding, and at a 200%
+   text size the fake button grew to the full width and pushed the "1" 7px
+   outside the frame, which clips. */
+.target { position: relative; display: inline-block; margin: 1.9rem 0 0 .35rem;
+          max-width: calc(100% - .9rem); }
+.target::after {
+    content: ""; position: absolute; inset: -5px;
+    border: 2px solid var(--accent); border-radius: 8px;
+    pointer-events: none;
+}
+.fake-cta {
+    display: inline-block;
+    border: 1px solid var(--line); border-radius: 7px;
+    padding: .3rem .6rem; font-size: .74rem; line-height: 1.3; color: var(--text);
+    background: var(--bg-soft);
+}
+.marker {
+    position: absolute; right: -.85rem; top: -.9rem;
+    background: var(--accent); color: var(--on-accent);
+    font-size: .62rem; font-weight: 700; line-height: 1.5;
+    border-radius: 999px; padding: 0 .4rem;
+}
+
+.mini-form { display: grid; gap: .3rem; }
+.mini-form .lbl { font-size: .66rem; color: var(--dim); }
+.mini-form .fld {
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: .28rem .4rem; font-size: .7rem; color: var(--dim);
+    background: var(--bg-soft);
+}
+.mini-form .fld.tall { height: 2.2rem; }
+.mini-form .send {
+    justify-self: start; background: var(--accent); color: var(--on-accent);
+    border-radius: 6px; padding: .2rem .6rem; font-size: .7rem; font-weight: 650;
+}
+
+/* -- Plain tables -------------------------------------------------------- */
+
+.tbl-wrap { overflow-x: auto; margin: 1.3rem 0; border: 1px solid var(--line-soft); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; min-width: 27rem; font-size: .88rem; }
+th, td { text-align: left; padding: .55rem .85rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); font-weight: 650; }
+td code { white-space: nowrap; }
+
+/* -- Facts / lists ------------------------------------------------------- */
+
+/* min(16rem, 100%): see .gestures -- the same floor, the same overflow. */
+.facts { display: grid; gap: 1.4rem 2rem; margin-top: 2rem; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); }
+.facts h3 { margin-bottom: .4rem; }
+.facts p { font-size: .92rem; color: var(--dim); }
+
+ul.plain { margin: 1rem 0; padding: 0; list-style: none; display: grid; gap: .6rem; }
+ul.plain li { padding-left: 1.15rem; position: relative; font-size: .95rem; }
+ul.plain li::before {
+    content: ""; position: absolute; left: 0; top: .62em;
+    width: .4rem; height: .4rem; border-radius: 50%; background: var(--line);
+}
+ul.plain li b { font-weight: 650; }
+
+/* -- Footer -------------------------------------------------------------- */
+
+footer { border-top: 1px solid var(--line-soft); padding: 2.5rem 0 3.5rem; }
+.foot-links { display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; margin: 0 0 1.2rem; padding: 0; list-style: none; font-size: .9rem; }
+footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
+
+@media (max-width: 420px) {
+    body { font-size: 16px; }
+    .snip pre code { font-size: .72rem; }
+    .snip pre { padding: .8rem .75rem; }
+    .card.reply { margin-left: .5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+    <div class="wrap">
+        <a class="mark" href="/">annotepage</a>
+        <nav>
+            <a href="#install">Install</a>
+            <a href="#annotate">Annotate</a>
+            <a href="#assistant">Assistant</a>
+            <a href="#data">Data</a>
+            <a href="https://github.com/tuxo83/annotepage">Source</a>
+        </nav>
+    </div>
+</header>
+
+<main>
+
+<!-- 1. WHAT IT DOES ==================================================== -->
+<section class="hero">
+    <div class="wrap">
+        <p class="eyebrow">Review notes on a web page</p>
+        <h1>Annotate a page.<br>The assistant answers in the thread.</h1>
+        <p class="lead">
+            Someone reviewing a staging site clicks what they see &mdash; a heading, a
+            button, an image &mdash; and writes what is wrong. An assistant reads the
+            notes, fixes the code, <strong>replies saying what it measured</strong>, and
+            marks the remark resolved with the version the fix ships in.
+        </p>
+
+        <ul class="claims">
+            <li>Open source <span>&middot; MIT</span></li>
+            <li>Self-hostable <span>&middot; one PHP codebase</span></li>
+            <li>End-to-end encrypted <span>&middot; in the browser</span></li>
+        </ul>
+
+        <div class="mock" style="margin-top: 2.4rem;">
+            <div class="mock-bar">
+                <b>Review notes</b>
+                <span class="x">Close</span>
+            </div>
+            <div class="mock-body">
+                <div class="card">
+                    <div class="card-meta"><b>Camille</b><span>30 Aug 2026, 14:02</span></div>
+                    <div class="card-about">About: Start free trial</div>
+                    <p>The label wraps below 380px and the button grows a second line.</p>
+                    <div class="stamp">
+                        <span>Resolved on 30 Aug 2026, 16:20 by Assistant</span>
+                        <span class="v">Fix shipped in version 1.4.13</span>
+                    </div>
+                </div>
+                <div class="card reply">
+                    <div class="card-meta"><b>Assistant</b><span>30 Aug 2026, 16:18</span></div>
+                    <p>Measured at 360px: the label wrapped at 372px and the button
+                    grew to two lines. The call to action now uses a fluid font-size
+                    and the label is one word shorter; it holds down to 320px.</p>
+                </div>
+            </div>
+        </div>
+
+        <p class="small dim" style="margin-top: 1rem; max-width: 34rem;">
+            The reviewer sees what became of what they wrote, on the page where they
+            wrote it. Nothing is deleted: a resolved remark moves into the history and
+            can be reopened.
+        </p>
+    </div>
+</section>
+
+<!-- 2. HOW YOU INSTALL IT ============================================== -->
+<section id="install">
+    <div class="wrap">
+        <h2>Put it on a site</h2>
+        <p class="lead">
+            One script tag at the end of <code>&lt;body&gt;</code>. No framework, no
+            bundler, no separate stylesheet. One file, no dependencies.
+        </p>
+
+        <div class="step">
+            <div class="step-head">
+                <span class="step-num">01</span>
+                <h3>Generate the salt, once</h3>
+            </div>
+            <div class="step-body">
+                <p>
+                    Load the client on any page of the site with <code>data-setup</code>
+                    and <em>without</em> <code>data-project</code>. The setup screen
+                    generates a 256-bit salt and hands you four things to copy: the salt,
+                    the project id, the finished tag, and the lines to declare on the
+                    server. No network request is made at that point.
+                </p>
+
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">setup &mdash; remove once the project exists</span>
+                        <button class="copy" type="button" data-copy="snip-setup">Copy</button>
+                    </div>
+<pre id="snip-setup"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.0/dist/annotepage.js"
+        integrity="sha384-A5Wrzv2mtFVnn8Mt0xC7BglTbxbb75unG3CNt5YHUNQ6X5QcwfFPI0OWtANjN2V/"
+        crossorigin="anonymous"
+        data-server="https://your-server.example.com/annotepage/api.php"
+        data-setup
+        defer&gt;&lt;/script&gt;</code></pre>
+                </div>
+
+                <div class="callout">
+                    <p><strong>Salt lost = notes lost.</strong> The salt is the only
+                    secret of the project. It never leaves the browser, the server
+                    receives it in no form whatsoever, and nobody can give it back to
+                    you &mdash; no recovery, no security question, no escrow. Put it
+                    where your team keeps its passwords <em>before</em> continuing.
+                    There is no salt rotation either: a leaked salt means starting a
+                    fresh project and abandoning the notes already written.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-head">
+                <span class="step-num">02</span>
+                <h3>Paste the tag it gives you</h3>
+            </div>
+            <div class="step-body">
+                <p>
+                    At the end of <code>&lt;body&gt;</code>, on the pages to annotate.
+                    The project id is public; it is derived from the salt and is 22
+                    characters.
+                </p>
+
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">the finished tag</span>
+                        <button class="copy" type="button" data-copy="snip-tag">Copy</button>
+                    </div>
+<pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.0/dist/annotepage.js"
+        integrity="sha384-A5Wrzv2mtFVnn8Mt0xC7BglTbxbb75unG3CNt5YHUNQ6X5QcwfFPI0OWtANjN2V/"
+        crossorigin="anonymous"
+        data-server="https://your-server.example.com/annotepage/api.php"
+        data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"
+        data-version="1.4.12"
+        data-environment="staging"
+        defer&gt;&lt;/script&gt;</code></pre>
+                </div>
+
+                <div class="note-aside">
+                    <p><strong><code>integrity</code> is not decorative.</strong> Once the
+                    client comes from a CDN, the real risk of this architecture is the
+                    supply chain: a file swapped at the CDN's host runs in your page,
+                    with access to <code>localStorage</code> &mdash; hence to the salt.
+                    The digest makes that swap useless, and
+                    <code>crossorigin="anonymous"</code> goes with it: without it the
+                    browser does not check the digest of a cross-origin resource.</p>
+
+                    <p>The digest above is the one for <strong>2.0.0</strong>. Every
+                    version has its own, printed by the build and listed in
+                    <code>dist/HASHES.txt</code> inside the package. Never copy a digest
+                    from a page documenting another version: the browser will refuse the
+                    file, and that is exactly its job.</p>
+
+                    <p><strong>Do not add <code>type="module"</code>.</strong> A module
+                    script has no <code>document.currentScript</code>: the client could
+                    no longer read its own attributes, and would stand down in silence.</p>
+
+                    <p><code>data-version</code> earns its place. When a note is marked
+                    resolved, the tool compares the version of the fix with the one the
+                    site declares it is serving, to tell &ldquo;resolved and
+                    online&rdquo; &mdash; which folds into the history &mdash; from
+                    &ldquo;resolved, not deployed yet&rdquo;, which stays in front of the
+                    reviewer, because the defect is still on screen. Missing or
+                    unreadable version: the fix is taken as not deployed.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-head">
+                <span class="step-num">03</span>
+                <h3>Declare the project on the server, hand out the salt</h3>
+            </div>
+            <div class="step-body">
+                <p>
+                    The server is one PHP codebase. Drop it on the site itself, or on one
+                    machine that serves several sites. It receives the project id and the
+                    list of origins allowed to consume it &mdash; never the salt, which
+                    travels out of band: the tool provides no channel for it.
+                </p>
+
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">internal/config-local.php</span>
+                        <button class="copy" type="button" data-copy="snip-server">Copy</button>
+                    </div>
+<pre id="snip-server"><code>'deployment' =&gt; 'self-hosted',      // or 'relay'
+
+'projects' =&gt; array(
+    '7Qb1kZ3xNvA9dLpEqKf2Zt' =&gt; array(
+        'origins' =&gt; array('https://staging.example.com',
+                           'https://www.example.com'),
+        'mode'    =&gt; 'encrypted',
+    ),
+),</code></pre>
+                </div>
+
+                <p class="small">
+                    Those three facts &mdash; the id, the origins, the mode &mdash; are
+                    exactly what the setup screen dictates to you at step 01. The rest of
+                    that file is the database and the defaults; start from
+                    <code>config-local.example.php</code>. Without the file the server
+                    answers nothing at all, which is the safe default.
+                </p>
+
+                <p class="small">
+                    Each reviewer pastes the salt once. The tool checks that it really
+                    derives the project id the page declares, then remembers it in that
+                    browser, for that origin. See
+                    <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">server/INSTALL.md</a>.
+                </p>
+            </div>
+        </div>
+
+        <div class="note-aside">
+            <p><strong>What it requires, and nothing else:</strong> a recent browser in a
+            <em>secure context</em> &mdash; <code>https</code>, or
+            <code>localhost</code>. Without one the browser does not provide WebCrypto,
+            and the tool can neither encrypt nor even compute the page index; it says so
+            on screen rather than pretending. And a reachable annotepage server.</p>
+        </div>
+    </div>
+</section>
+
+<!-- 3. HOW YOU ANNOTATE ================================================ -->
+<section id="annotate">
+    <div class="wrap">
+        <h2>Three gestures</h2>
+        <p class="lead">
+            At rest the tool is one button, bottom right. It adds a single element at the
+            end of <code>&lt;body&gt;</code> and works inside a shadow root: no class, no
+            attribute and no style lands on an element of your page.
+        </p>
+
+        <div class="gestures">
+
+            <div class="gesture">
+                <div class="frame" aria-hidden="true">
+                    <div class="bar-line w70"></div>
+                    <div class="bar-line w85"></div>
+                    <div class="bar-line w45"></div>
+                    <span class="pill"><span class="dot"></span>Annotate this page<span class="count">3 notes</span></span>
+                </div>
+                <h3>Open</h3>
+                <p>One button, and a count of the notes already on this page. It is the
+                tool's only trace when it is at rest.</p>
+            </div>
+
+            <div class="gesture">
+                <div class="frame" aria-hidden="true">
+                    <div class="hint">Click an element of the page to write a remark
+                    about it.</div>
+                    <div class="target">
+                        <span class="fake-cta">Start free trial</span>
+                        <span class="marker">1</span>
+                    </div>
+                </div>
+                <h3>Point</h3>
+                <p>Click what you see. The tool draws its own rectangle around it &mdash;
+                it never puts an outline on your element. Escape stops.</p>
+            </div>
+
+            <div class="gesture">
+                <div class="frame" aria-hidden="true">
+                    <div class="mini-form">
+                        <div class="lbl">About: Start free trial</div>
+                        <div class="lbl">Your name</div>
+                        <div class="fld">Camille</div>
+                        <div class="fld tall">What you noticed</div>
+                        <span class="send">Send</span>
+                    </div>
+                </div>
+                <h3>Write</h3>
+                <p>Your name is remembered for next time. The remark is sealed in the
+                browser, then pinned to that element for everybody.</p>
+            </div>
+
+        </div>
+
+        <div class="note-aside">
+            <p>What goes out is an <strong>AES-256-GCM envelope</strong>: the text, but
+            also the page, the selector, the excerpt, the name, the version, the
+            environment and the viewport. What comes back is pinned to the element again
+            by its selector and its fingerprint &mdash; and when the element has really
+            changed, the note is listed as an orphan rather than pinned to the wrong
+            thing.</p>
+
+            <p>Once in place the tool no longer keeps quiet. Every failure is shown, with
+            the message the server wrote, and <strong>the text typed stays in the
+            form</strong>. A remark believed saved and not saved is worse than no tool at
+            all.</p>
+        </div>
+    </div>
+</section>
+
+<!-- 4. HOW AN AI USES IT =============================================== -->
+<section id="assistant">
+    <div class="wrap">
+        <h2>How an assistant uses it</h2>
+        <p class="lead">
+            Two commands to plug one in. Then it reads the review, replies in the thread,
+            and stamps the fix with the version it ships in.
+        </p>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">plug it in</span>
+                <button class="copy" type="button" data-copy="snip-mcp">Copy</button>
+            </div>
+<pre id="snip-mcp"><code>npm install -g annotepage-mcp
+claude mcp add annotepage -- annotepage-mcp</code></pre>
+        </div>
+
+        <p class="small dim">
+            The same package installs an <code>annotepage</code> command, for a script, a
+            CI job, or an assistant with no MCP client. It holds the project salt, so it
+            is the only place the plaintext comes back. Node 18 or later, no
+            dependencies.
+        </p>
+
+        <div class="step">
+            <div class="step-head">
+                <span class="step-num">01</span>
+                <h3>Read what is still open</h3>
+            </div>
+            <div class="step-body">
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">command</span>
+                        <button class="copy" type="button" data-copy="snip-open">Copy</button>
+                    </div>
+<pre id="snip-open"><code>annotepage open --page /pricing</code></pre>
+                </div>
+
+                <div class="snip out">
+                    <div class="snip-head">
+                        <span class="snip-name">what it returns</span>
+                        <button class="copy" type="button" data-copy="snip-open-out">Copy</button>
+                    </div>
+<pre id="snip-open-out"><code>tool annotepage
+format 2
+version 2.0.0
+project 7Qb1kZ3xNvA9dLpEqKf2Zt
+encryption yes
+export 2026-09-01T09:14:22+00:00
+notes 1
+
+<b>note 12</b>
+page /pricing
+page-index 9dLpEqKf2Zt8ArC1vXbQ3s
+element button.cta
+excerpt Start free trial
+mode encrypted
+author Camille
+date 2026-08-30T14:02:11+00:00
+version 1.4.12
+environment staging
+viewport 360x780
+status open
+text
+    The label wraps below 380px and the button grows a second line.</code></pre>
+                </div>
+
+                <p class="small dim">
+                    One fact per line, <code>key value</code>, two-space steps for
+                    replies. The remark arrives with the page, the element, the excerpt,
+                    the version, the environment and the viewport it was written at
+                    &mdash; enough to reproduce it without asking anyone.
+                </p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-head">
+                <span class="step-num">02</span>
+                <h3>Answer in the thread, then stamp the fix</h3>
+            </div>
+            <div class="step-body">
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">command</span>
+                        <button class="copy" type="button" data-copy="snip-loop">Copy</button>
+                    </div>
+<pre id="snip-loop"><code>annotepage reply 12 "Measured at 360px: the label wrapped at 372px and the button grew to
+two lines. The call to action now uses a fluid font-size and the label
+is one word shorter; it holds down to 320px."
+
+annotepage resolve 12 1.4.13</code></pre>
+                </div>
+
+                <div class="snip out">
+                    <div class="snip-head">
+                        <span class="snip-name">annotepage note 12</span>
+                        <button class="copy" type="button" data-copy="snip-loop-out">Copy</button>
+                    </div>
+<pre id="snip-loop-out"><code>tool annotepage
+format 2
+version 2.0.0
+project 7Qb1kZ3xNvA9dLpEqKf2Zt
+encryption yes
+export 2026-09-01T09:31:05+00:00
+notes 2
+
+<b>note 12</b>
+page /pricing
+page-index 9dLpEqKf2Zt8ArC1vXbQ3s
+element button.cta
+excerpt Start free trial
+mode encrypted
+author Camille
+date 2026-08-30T14:02:11+00:00
+version 1.4.12
+environment staging
+viewport 360x780
+<b>resolved 2026-08-30T16:20:09+00:00 by Assistant in 1.4.13</b>
+text
+    The label wraps below 380px and the button grows a second line.
+
+  <b>reply 14</b>
+  to note 12
+  mode encrypted
+  author Assistant
+  date 2026-08-30T16:18:52+00:00
+  status open
+  text
+      Measured at 360px: the label wrapped at 372px and the button grew to
+      two lines. The call to action now uses a fluid font-size and the label
+      is one word shorter; it holds down to 320px.</code></pre>
+                </div>
+
+                <p class="small dim">
+                    That thread is what the reviewer sees at the top of this page, on the
+                    element they clicked. The version is the point: the client compares
+                    <code>1.4.13</code> with the version the site declares it is serving.
+                    Newer than the site, and the note stays under the reviewer's eyes,
+                    because the defect is still on screen.
+                </p>
+            </div>
+        </div>
+
+        <h3 style="margin-top:2.6rem;">The seven tools an assistant gets</h3>
+        <div class="tbl-wrap">
+            <table>
+                <thead>
+                    <tr><th scope="col">Tool</th><th scope="col">What it does</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>annotepage_open_notes</code></td><td>the remarks still open, optionally for one page</td></tr>
+                    <tr><td><code>annotepage_read_note</code></td><td>one note with its replies</td></tr>
+                    <tr><td><code>annotepage_reply</code></td><td>answer in the thread</td></tr>
+                    <tr><td><code>annotepage_mark_resolved</code></td><td>resolve, stating the version the fix ships in</td></tr>
+                    <tr><td><code>annotepage_reopen</code></td><td>put a note back, when the fix was incomplete</td></tr>
+                    <tr><td><code>annotepage_export</code></td><td>the whole review as text</td></tr>
+                    <tr><td><code>annotepage_projects</code></td><td>the projects this configuration knows</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="note-aside">
+            <p>The package <strong>never creates a note</strong>. A note is pinned to an
+            element of a page; an assistant has no browser and no element to point at, so
+            what it manufactured would be undisplayable where it counts. The thread of an
+            existing note is the place provided for it to speak. Nothing is ever erased:
+            resolving and reopening are the only two state changes.</p>
+
+            <p>Every write is <strong>signed</strong> with the name in the configuration.
+            A thread where everybody signs and one voice does not is a thread you doubt
+            entirely. Set <code>"read_only": true</code> when plugging an assistant onto a
+            review you do not know yet: it cuts every write.</p>
+        </div>
+
+        <h3 style="margin-top:2.6rem;">Or use nothing at all</h3>
+        <p class="small dim" style="margin-top:.6rem;">
+            In <em>plain</em> mode &mdash; self-hosted only &mdash; the server serves the
+            same document, and any assistant that can fetch a URL reads the whole review
+            with no integration whatsoever.
+        </p>
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">plain mode, no package</span>
+                <button class="copy" type="button" data-copy="snip-curl">Copy</button>
+            </div>
+<pre id="snip-curl"><code>curl 'https://staging.example.com/notes/api.php?action=text&amp;project=&lt;id&gt;'</code></pre>
+        </div>
+        <p class="small dim">
+            In <strong>encrypted</strong> mode that same address returns only the
+            structure &mdash; note numbers, page indexes, dates, status &mdash; because
+            the server has neither the paths, nor the names, nor the texts. A reader
+            therefore knows, with no special-case code, that it is missing the salt.
+            <code>annotepage text</code> is the step that fills it in, and it emits the
+            same grammar: a tool reading the export cannot tell which of the two
+            produced it.
+        </p>
+    </div>
+</section>
+
+<!-- 5. THE REST ======================================================== -->
+<section id="data">
+    <div class="wrap">
+        <h2>Where the notes live, and who can read them</h2>
+        <p class="lead">
+            You choose the server: the site itself, or a separate machine hosting several
+            projects. Either way the notes are encrypted in the browser by default, and
+            whoever runs the server &mdash; including you &mdash; cannot read the review.
+        </p>
+
+        <div class="facts">
+            <div>
+                <h3>One secret, three keys</h3>
+                <p>HKDF-SHA-256 derives everything from the 256-bit salt: the public
+                project id (22 characters), the AES-256-GCM key, and an HMAC key for the
+                page index. One secret to manage, and it never leaves the browser.</p>
+            </div>
+            <div>
+                <h3>Grouped without being read</h3>
+                <p>The server groups pages by a <em>blind index</em>: the first 16 bytes
+                of an HMAC of the path, which it cannot invert. It nests replies, dates
+                writes and sorts open from resolved without opening anything.</p>
+            </div>
+            <div>
+                <h3>Everything observed, sealed</h3>
+                <p>Not just the text. Encrypting the remark alone would hand over the
+                site's tree, its wording and the list of its reviewers &mdash; and a
+                staging site is precisely what has not been published yet.</p>
+            </div>
+            <div>
+                <h3>The domain is not in the key</h3>
+                <p>The day staging becomes production, the notes stay readable. Each
+                reviewer pastes the salt once more on the new domain; the notes
+                themselves do not move.</p>
+            </div>
+        </div>
+
+        <h3 style="margin-top:2.8rem;">What the server sees anyway</h3>
+        <p class="small dim" style="margin-top:.6rem; max-width:44em;">
+            Encrypting the fields is not invisibility. An operator must be able to read
+            this without feeling betrayed, and you must know it before choosing where to
+            put the server.
+        </p>
+        <ul class="plain">
+            <li>The <b>number of projects</b>, and of notes in each.</li>
+            <li>The <b>number of distinct pages</b> annotated, and the notes per page: a
+            page that collects forty remarks is visible.</li>
+            <li>The <b>time of every write</b>, hence the rhythm of the review and the
+            date of the last note.</li>
+            <li>The <b>shape of the threads</b>, and the fix rate and delay, through the
+            resolution dates.</li>
+            <li>The <b>approximate length of every remark</b>: the size of the envelope
+            gives it away to within a few bytes. It is not masked.</li>
+            <li>The <b>IP address and user agent</b> of every reviewer, like any HTTP
+            server.</li>
+            <li>On a shared server, the <b>domain of the site under review</b>, through
+            the <code>Origin</code> header the domain lock has to read. The promise is not
+            &ldquo;it does not know which site you are reviewing&rdquo;; it is &ldquo;it
+            can read neither your paths, nor your names, nor your remarks&rdquo;.</li>
+        </ul>
+
+        <div class="callout">
+            <p><strong>The domain lock is an anti-abuse measure, not an XSS defence.</strong>
+            It stops another site consuming a project id found in the source of a page. An
+            XSS runs <em>inside</em> the target page, so with the legitimate origin: it
+            goes through the lock without effort, and it reaches
+            <code>localStorage</code> anyway &mdash; hence the salt. The XSS defence is
+            elsewhere: the tool assigns text through <code>textContent</code> and never
+            parses it as markup, and a check in <code>npm run check</code> enforces it.</p>
+        </div>
+
+        <h3 style="margin-top:2.8rem;">What it deliberately does not do</h3>
+        <p class="small dim" style="margin-top:.6rem; max-width:44em;">
+            These are choices. Saying them is more useful than discovering them later.
+        </p>
+        <ul class="plain">
+            <li><b>No accounts, no login.</b> The name typed in is a convenience, not an
+            identity. The project id is a bearer token: whoever has it can read and write
+            &mdash; and in encrypted mode, what they read is useless without the salt.</li>
+            <li><b>No moderation, no deletion.</b> A note that is posted stays. The only
+            state it can change is resolved, and that can be taken back.</li>
+            <li><b>No notifications.</b> Nobody is told that a note has arrived.</li>
+            <li><b>No salt rotation,</b> and no channel for handing the salt to the second
+            reviewer.</li>
+            <li><b>No overview across pages.</b> Open a page, or read the export.</li>
+            <li><b>No screenshots</b> attached to a note &mdash; weighed, and not settled:
+            the reasons are written down in the roadmap.</li>
+        </ul>
+
+        <p class="small dim" style="margin-top:1.6rem;">
+            <code>data-mode="plain"</code> exists, and is only acceptable when self-hosted,
+            where encryption protects nothing: the notes sit in the same database, on the
+            same machine, behind the same access restriction as the site under review. A
+            shared relay refuses it with a 400, and shows its message.
+        </p>
+    </div>
+</section>
+
+</main>
+
+<footer>
+    <div class="wrap">
+        <ul class="foot-links">
+            <li><a href="https://github.com/tuxo83/annotepage">Source</a></li>
+            <li><a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md">Format &amp; security model</a></li>
+            <li><a href="https://github.com/tuxo83/annotepage/blob/main/client/README.md">Client</a></li>
+            <li><a href="https://github.com/tuxo83/annotepage/blob/main/mcp/README.md">MCP &amp; CLI</a></li>
+            <li><a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">Server install</a></li>
+            <li><a href="https://github.com/tuxo83/annotepage/blob/main/ROADMAP.md">Roadmap</a></li>
+        </ul>
+        <p>
+            annotepage is MIT-licensed. Two packages on npm:
+            <code>annotepage-client</code> and <code>annotepage-mcp</code>.
+            <code>FORMAT.md</code> is the reference; where any other document disagrees
+            with it, it is right.
+        </p>
+        <p style="margin-top:.8rem;">
+            This page loads no font, no script and no image from anywhere else. It makes
+            no outgoing request at all.
+        </p>
+    </div>
+</footer>
+
+<span class="vh" id="copy-status" role="status" aria-live="polite"></span>
+
+<script>
+/* The copy buttons. The text copied is the text of the block above, exactly:
+   textContent, so the escaped markup in the snippets comes back as the markup
+   you would paste.
+
+   The Clipboard API needs a secure context and a user gesture; both hold here.
+   The fallback exists for the case where it is refused anyway -- a copy button
+   that copies nothing, on a page selling simplicity, is the worst possible
+   admission. */
+(function () {
+    'use strict';
+
+    var status = document.getElementById('copy-status');
+
+    var textOf = function (id) {
+        var target = document.getElementById(id);
+        if (!target) return null;
+        /* Trailing newline removed: a paste that lands with a blank line at the
+           end is a paste somebody has to tidy up. */
+        return target.textContent.replace(/\s+$/, '');
+    };
+
+    /* The old way, kept because it is the only one that works when the
+       Clipboard API is refused. execCommand is deprecated, not gone. */
+    var copyByHand = function (text) {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.top = '0';
+        area.style.left = '0';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        area.setSelectionRange(0, text.length);
+        var done = false;
+        try { done = document.execCommand('copy'); } catch (e) { done = false; }
+        document.body.removeChild(area);
+        return done;
+    };
+
+    var timers = new WeakMap();
+
+    var announce = function (button, ok) {
+        var original = button.getAttribute('data-label') || button.textContent;
+        button.setAttribute('data-label', original);
+        button.textContent = ok ? 'Copied' : 'Select and copy';
+        button.setAttribute('data-state', ok ? 'done' : 'failed');
+        status.textContent = ok
+            ? 'Copied to the clipboard.'
+            : 'Copying was refused: select the block and copy it by hand.';
+
+        clearTimeout(timers.get(button));
+        timers.set(button, setTimeout(function () {
+            button.textContent = original;
+            button.removeAttribute('data-state');
+            status.textContent = '';
+        }, ok ? 1800 : 4000));
+    };
+
+    var buttons = document.querySelectorAll('button.copy');
+    for (var i = 0; i < buttons.length; i++) {
+        (function (button) {
+            var id = button.getAttribute('data-copy');
+            /* A button whose target does not exist would copy nothing in
+               silence. It does not get to pretend: it goes away. */
+            if (textOf(id) === null) { button.hidden = true; return; }
+
+            button.addEventListener('click', function () {
+                var text = textOf(id);
+                if (text === null) { announce(button, false); return; }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function () {
+                        announce(button, true);
+                    }, function () {
+                        announce(button, copyByHand(text));
+                    });
+                } else {
+                    announce(button, copyByHand(text));
+                }
+            });
+        }(buttons[i]));
+    }
+}());
+</script>
+
+</body>
+</html>

@@ -18,7 +18,7 @@ off to a tracker and the trail ends there.
 One tag, at the end of `<body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"
+<script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.0/dist/annotepage.js"
         integrity="sha384-A5Wrzv2mtFVnn8Mt0xC7BglTbxbb75unG3CNt5YHUNQ6X5QcwfFPI0OWtANjN2V/"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
