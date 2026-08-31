@@ -1,0 +1,49 @@
+{
+  "name": "@annotepage/mcp",
+  "version": "2.0.0",
+  "description": "L'acces des assistants aux notes d'annotepage : un serveur MCP et un utilitaire en ligne de commande qui recuperent et dechiffrent les remarques de relecture, y repondent, et marquent une note corrigee avec la version ou le correctif part.",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "annotation",
+    "relecture",
+    "recette",
+    "chiffrement",
+    "annotepage"
+  ],
+  "type": "module",
+  "main": "source/notes.mjs",
+  "exports": {
+    ".": "./source/notes.mjs",
+    "./format": "./source/format.mjs",
+    "./chiffrement": "./source/chiffrement.mjs",
+    "./export-texte": "./source/export-texte.mjs",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "annotepage": "annotepage.mjs",
+    "annotepage-mcp": "serveur-mcp.mjs"
+  },
+  "files": [
+    "annotepage.mjs",
+    "serveur-mcp.mjs",
+    "source/",
+    "annotepage.exemple.json",
+    "outils/",
+    "LISEZMOI.md",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node outils/verifier.mjs && node outils/verifier-bout-en-bout.mjs",
+    "prepublishOnly": "node outils/verifier.mjs && node outils/verifier-bout-en-bout.mjs"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

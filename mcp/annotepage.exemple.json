@@ -1,0 +1,49 @@
+{
+  "_lisez_ceci": [
+    "MODELE. Recopiez-le sous le nom .annotepage.json et remplissez-le.",
+    "",
+    "CE FICHIER CONTIENT LE SEL DU PROJET, c'est-a-dire la totalite des notes.",
+    "Qui le lit lit tout. Il ne se versionne pas, il ne se recopie pas dans un",
+    "ticket, il ne se colle pas dans une conversation. Il n'existe aucune",
+    "rotation de sel : un sel qui fuit oblige a repartir d'un projet neuf, en",
+    "abandonnant les notes deja ecrites.",
+    "",
+    "Sur une machine partagee :  chmod 600 .annotepage.json",
+    "Dans un depot git         :  echo .annotepage.json >> .gitignore",
+    "",
+    "Les cles commencant par un tiret bas sont ignorees par l'outil : elles",
+    "sont la pour etre lues par la personne qui ouvre le fichier."
+  ],
+
+  "projet_par_defaut": "recette",
+
+  "projets": {
+    "recette": {
+      "_api": "L'adresse du point d'entree PHP, api.php compris. C'est la meme que celle du navigateur.",
+      "api": "https://preprod.exemple.fr/notes/api.php",
+
+      "_sel": "Les 43 caracteres montres par l'ecran d'installation, dans le navigateur. Ni espaces, ni tirets decoratifs. L'identifiant de projet en est derive : on ne l'ecrit pas ici.",
+      "sel": "REMPLACEZ-MOI-43-caracteres-base64url-exactement",
+
+      "_mode": "« chiffre » (defaut) ou « clair ». C'est celui du projet, decide a l'installation.",
+      "mode": "chiffre",
+
+      "_auteur": "Le nom dont l'assistant signe ses reponses et ses corrections. Il apparait dans le fil, sous les yeux des relecteurs. Obligatoire pour ecrire quoi que ce soit.",
+      "auteur": "Assistant",
+
+      "_origine": "L'origine a annoncer au serveur, quand celui-ci est un RELAIS : il refuse toute ecriture sans entete Origin. Recopiez ici l'une des origines declarees pour ce projet dans la configuration du serveur. Inutile en auto-heberge.",
+      "origine": "https://preprod.exemple.fr",
+
+      "_lecture_seule": "true coupe toute ecriture : ni reponse, ni correction, ni reouverture. A choisir quand on branche un assistant sur une recette qu'on ne connait pas encore.",
+      "lecture_seule": false
+    }
+  },
+
+  "_exemple_mode_clair": {
+    "_pourquoi": "En mode clair, les notes sont lisibles telles quelles et « curl ?action=texte » suffit. On peut alors declarer un projet SANS sel, en donnant son identifiant : la lecture marche, l'ecriture non — il n'y a pas de quoi calculer un index de page.",
+    "api": "http://localhost:8080/notes/api.php",
+    "mode": "clair",
+    "identifiant": "7Qb1kZ3xNvA9dLpEqKf2Zt",
+    "lecture_seule": true
+  }
+}

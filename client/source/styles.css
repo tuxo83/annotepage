@@ -1,0 +1,714 @@
+/* ============================================================================
+   styles.css — STYLES DE L'OUTIL, ET D'AUCUN AUTRE ELEMENT.
+
+   Cette feuille est INLINE dans le fichier servi par la construction, puis
+   posee dans le shadow root de l'outil — en feuille construite quand le
+   navigateur sait le faire, en <style> sinon. Elle etait chargee par un
+   <link> dans l'outil d'origine ; le passage au CDN sous SRI l'a fait rentrer
+   dans le fichier, pour n'avoir qu'une seule empreinte a tenir a jour. Le
+   confinement, lui, n'a pas change et reste double :
+
+     - de l'outil vers le site : aucune regle d'ici ne peut atteindre un
+       element du site hote, le navigateur s'en charge. C'est ce qui rend
+       l'affirmation « la couche ne touche a rien » verifiable plutot que
+       promise ;
+     - du site vers l'outil : aucune regle du site ne peut atteindre un
+       element d'ici. Une refonte de la feuille de style du site ne peut donc
+       pas deformer l'outil, ni l'inverse.
+
+   Le prefixe « ap- » sur toutes les classes est la troisieme securite : le
+   jour ou quelqu'un chargerait ces styles SANS shadow root — par erreur, ou
+   pour deboguer — rien ne repondrait a un selecteur du site.
+
+   AUCUNE REGLE NE CIBLE html, body, * NI UN SELECTEUR DU SITE. C'est la
+   seule interdiction absolue de ce fichier.
+
+   COULEURS : l'outil a sa PROPRE palette, definie sur la racine du shadow.
+   Il ne lit ni les variables du site, ni son attribut de theme : il n'a
+   aucune raison de savoir comment le site nomme ses couleurs, et il doit
+   rester lisible sur un site clair comme sur un site sombre. La bascule se
+   fait sur la preference du systeme, seule information dont l'outil dispose
+   sans rien demander a personne.
+   ============================================================================ */
+
+
+:host {
+    --ap-fond: #ffffff;
+    --ap-fond-doux: #f4f6f8;
+    --ap-fond-appui: #e9edf2;
+    --ap-texte: #1a1d21;
+    --ap-texte-doux: #5b6570;
+    --ap-bord: #d5dbe2;
+    --ap-accent: #2f6fed;
+    --ap-accent-sombre: #1d55c8;
+    --ap-accent-texte: #ffffff;
+    --ap-accent-voile: rgba(47, 111, 237, 0.14);
+    --ap-alerte-fond: #fdeceb;
+    --ap-alerte-bord: #e3a9a4;
+    --ap-alerte-texte: #8a1f16;
+    --ap-ombre: 0 6px 24px rgba(16, 24, 40, 0.18);
+    --ap-rayon: 10px;
+    --ap-police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+                  Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :host {
+        --ap-fond: #1d2126;
+        --ap-fond-doux: #262b32;
+        --ap-fond-appui: #323942;
+        --ap-texte: #e9ecf0;
+        --ap-texte-doux: #a4adb8;
+        --ap-bord: #3a424c;
+        --ap-accent: #6d9bff;
+        --ap-accent-sombre: #8fb4ff;
+        --ap-accent-texte: #10151c;
+        --ap-accent-voile: rgba(109, 155, 255, 0.18);
+        --ap-alerte-fond: #3a1f1c;
+        --ap-alerte-bord: #7c3a33;
+        --ap-alerte-texte: #ffb9b1;
+        --ap-ombre: 0 6px 24px rgba(0, 0, 0, 0.55);
+    }
+}
+
+/* ----------------------------------------------------------------------------
+   La couche.
+
+   Elle occupe le viewport et ne recoit AUCUN clic : c'est ce qui permet a la
+   page de se comporter exactement comme d'habitude tant que l'outil n'est pas
+   en mode annotation. Chaque widget re-active les clics pour lui seul.
+   ---------------------------------------------------------------------------- */
+
+.ap-couche {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    font-family: var(--ap-police);
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--ap-texte);
+    text-align: left;
+    -webkit-font-smoothing: antialiased;
+}
+
+.ap-couche button,
+.ap-couche input,
+.ap-couche textarea {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+/* ----------------------------------------------------------------------------
+   Le bouton : la seule chose visible quand l'outil est au repos.
+   ---------------------------------------------------------------------------- */
+
+.ap-bouton {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 1px solid var(--ap-bord);
+    border-radius: 999px;
+    background: var(--ap-fond);
+    color: var(--ap-texte);
+    box-shadow: var(--ap-ombre);
+    cursor: pointer;
+    pointer-events: auto;
+    opacity: 0.92;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.ap-bouton:hover,
+.ap-bouton:focus-visible {
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+.ap-bouton:focus-visible {
+    outline: 2px solid var(--ap-accent);
+    outline-offset: 2px;
+}
+
+.ap-bouton[aria-pressed="true"] {
+    background: var(--ap-accent);
+    border-color: var(--ap-accent);
+    color: var(--ap-accent-texte);
+    opacity: 1;
+}
+
+.ap-bouton-pastille {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ap-accent);
+    flex: none;
+}
+
+.ap-bouton[aria-pressed="true"] .ap-bouton-pastille {
+    background: var(--ap-accent-texte);
+}
+
+.ap-bouton-compte {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--ap-fond-appui);
+    color: var(--ap-texte-doux);
+    font-size: 12px;
+}
+
+.ap-bouton[aria-pressed="true"] .ap-bouton-compte {
+    background: rgba(255, 255, 255, 0.22);
+    color: var(--ap-accent-texte);
+}
+
+/* ----------------------------------------------------------------------------
+   La surbrillance de designation.
+
+   Elle est DESSINEE ICI, a partir des coordonnees de l'element vise. Rien
+   n'est pose sur l'element lui-meme : ni classe, ni attribut, ni style. Le
+   site ne peut donc pas bouger d'un pixel du fait de la designation.
+   ---------------------------------------------------------------------------- */
+
+.ap-surbrillance {
+    position: fixed;
+    border: 2px solid var(--ap-accent);
+    border-radius: 3px;
+    background: var(--ap-accent-voile);
+    pointer-events: none;
+    display: none;
+}
+
+.ap-surbrillance-etiquette {
+    position: fixed;
+    max-width: 320px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--ap-accent);
+    color: var(--ap-accent-texte);
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    display: none;
+    box-shadow: var(--ap-ombre);
+}
+
+/* ----------------------------------------------------------------------------
+   Les marqueurs : « il y a deja des notes ici ».
+   ---------------------------------------------------------------------------- */
+
+.ap-marqueur {
+    position: fixed;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border: 2px solid var(--ap-fond);
+    border-radius: 999px;
+    background: var(--ap-accent);
+    color: var(--ap-accent-texte);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: var(--ap-ombre);
+}
+
+.ap-marqueur:focus-visible {
+    outline: 2px solid var(--ap-accent-sombre);
+    outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------------------
+   Le panneau.
+   ---------------------------------------------------------------------------- */
+
+.ap-panneau {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    bottom: 72px;
+    width: 360px;
+    max-width: calc(100vw - 24px);
+    display: none;
+    flex-direction: column;
+    border: 1px solid var(--ap-bord);
+    border-radius: var(--ap-rayon);
+    background: var(--ap-fond);
+    box-shadow: var(--ap-ombre);
+    pointer-events: auto;
+    overflow: hidden;
+}
+
+.ap-panneau.ap-ouvert {
+    display: flex;
+}
+
+.ap-panneau-entete {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--ap-bord);
+    background: var(--ap-fond-doux);
+}
+
+.ap-panneau-titre {
+    font-size: 15px;
+    font-weight: 600;
+    flex: 1 1 auto;
+}
+
+.ap-panneau-consigne {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--ap-bord);
+    color: var(--ap-texte-doux);
+    font-size: 13px;
+}
+
+.ap-panneau-corps {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px 14px 14px;
+}
+
+.ap-panneau-pied {
+    padding: 8px 14px;
+    border-top: 1px solid var(--ap-bord);
+    background: var(--ap-fond-doux);
+    color: var(--ap-texte-doux);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ap-section-titre {
+    margin: 14px 0 6px;
+    color: var(--ap-texte-doux);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.ap-section-aide {
+    margin: 0 0 8px;
+    color: var(--ap-texte-doux);
+    font-size: 12px;
+}
+
+.ap-vide {
+    margin: 16px 0;
+    color: var(--ap-texte-doux);
+}
+
+/* ----------------------------------------------------------------------------
+   Une note, et ses reponses.
+   ---------------------------------------------------------------------------- */
+
+.ap-note {
+    margin: 8px 0;
+    padding: 10px 12px;
+    border: 1px solid var(--ap-bord);
+    border-radius: var(--ap-rayon);
+    background: var(--ap-fond);
+}
+
+.ap-note.ap-orpheline {
+    background: var(--ap-fond-doux);
+}
+
+.ap-note.ap-visee {
+    border-color: var(--ap-accent);
+    box-shadow: 0 0 0 3px var(--ap-accent-voile);
+}
+
+.ap-note-entete {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ap-note-auteur {
+    font-weight: 600;
+}
+
+.ap-note-date {
+    color: var(--ap-texte-doux);
+    font-size: 12px;
+}
+
+.ap-note-cible {
+    margin: 4px 0 0;
+    color: var(--ap-texte-doux);
+    font-size: 12px;
+    font-style: italic;
+    overflow-wrap: anywhere;
+}
+
+.ap-note-texte {
+    margin: 6px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.ap-note-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ap-reponses {
+    margin: 8px 0 0;
+    padding-left: 10px;
+    border-left: 2px solid var(--ap-bord);
+}
+
+.ap-reponse {
+    margin: 8px 0 0;
+}
+
+/* ----------------------------------------------------------------------------
+   Le formulaire, ancre pres de l'element designe.
+   ---------------------------------------------------------------------------- */
+
+.ap-fiche {
+    position: fixed;
+    width: 340px;
+    max-width: calc(100vw - 24px);
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border: 1px solid var(--ap-bord);
+    border-radius: var(--ap-rayon);
+    background: var(--ap-fond);
+    box-shadow: var(--ap-ombre);
+    pointer-events: auto;
+}
+
+.ap-fiche.ap-ouvert {
+    display: flex;
+}
+
+.ap-fiche-titre {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.ap-fiche-cible {
+    color: var(--ap-texte-doux);
+    font-size: 12px;
+    font-style: italic;
+    overflow-wrap: anywhere;
+}
+
+.ap-etiquette {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ap-texte-doux);
+}
+
+.ap-aide {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: var(--ap-texte-doux);
+}
+
+.ap-champ,
+.ap-zone {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--ap-bord);
+    border-radius: 8px;
+    background: var(--ap-fond-doux);
+    color: var(--ap-texte);
+}
+
+.ap-champ:focus,
+.ap-zone:focus {
+    outline: 2px solid var(--ap-accent);
+    outline-offset: 1px;
+}
+
+.ap-zone {
+    min-height: 92px;
+    resize: vertical;
+}
+
+.ap-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ap-compteur {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ap-texte-doux);
+}
+
+/* ----------------------------------------------------------------------------
+   Boutons.
+   ---------------------------------------------------------------------------- */
+
+.ap-primaire,
+.ap-secondaire,
+.ap-lien {
+    border-radius: 8px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.ap-primaire {
+    padding: 8px 14px;
+    border: 1px solid var(--ap-accent);
+    background: var(--ap-accent);
+    color: var(--ap-accent-texte);
+    font-weight: 600;
+}
+
+.ap-primaire:hover {
+    background: var(--ap-accent-sombre);
+    border-color: var(--ap-accent-sombre);
+}
+
+.ap-secondaire {
+    padding: 8px 14px;
+    border: 1px solid var(--ap-bord);
+    background: var(--ap-fond);
+    color: var(--ap-texte);
+}
+
+.ap-secondaire:hover {
+    background: var(--ap-fond-appui);
+}
+
+.ap-lien {
+    padding: 2px 4px;
+    border: 0;
+    background: none;
+    color: var(--ap-accent);
+    text-decoration: underline;
+    font-size: 13px;
+}
+
+.ap-primaire:disabled,
+.ap-secondaire:disabled,
+.ap-lien:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.ap-primaire:focus-visible,
+.ap-secondaire:focus-visible,
+.ap-lien:focus-visible {
+    outline: 2px solid var(--ap-accent);
+    outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------------------
+   Les pannes.
+
+   Elles sont ROUGES, en haut du bloc concerne, et portent le message rendu
+   par le serveur tel quel : c'est ainsi qu'une equipe non technique apprend
+   que sa remarque n'est pas enregistree, au lieu de le croire.
+   ---------------------------------------------------------------------------- */
+
+.ap-erreur {
+    margin: 8px 0;
+    padding: 10px 12px;
+    border: 1px solid var(--ap-alerte-bord);
+    border-radius: var(--ap-rayon);
+    background: var(--ap-alerte-fond);
+    color: var(--ap-alerte-texte);
+}
+
+.ap-erreur-titre {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.ap-erreur-detail {
+    margin: 6px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+}
+
+.ap-erreur .ap-lien {
+    color: var(--ap-alerte-texte);
+}
+
+/* ----------------------------------------------------------------------------
+   Etroit : le panneau prend toute la largeur, le formulaire aussi.
+   ---------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------------
+   Etroit.
+
+   DEFAUT CONSTATE a 375 px de large : un panneau occupant toute la hauteur
+   recouvre la page entiere, et plus aucun element ne peut etre designe — tout
+   clic atterrit sur le panneau. Il devient donc un bandeau bas, qui laisse
+   libre la moitie haute du viewport ; on y fait defiler la page pour amener
+   l'element voulu. Le formulaire, lui, masque le panneau le temps de la
+   saisie (voir notes.js) : sur un ecran de cette taille, ecrire et lire la
+   liste en meme temps n'est pas tenable.
+   ---------------------------------------------------------------------------- */
+
+/* Sur ecran etroit, le panneau devient un bandeau bas et le formulaire prend
+   toute la largeur.
+
+   LE PLAFOND DE LARGEUR EST CONSERVE, et c'est un defaut mesure : « left: 8 ;
+   right: 8 » dimensionne l'element sur son BLOC CONTENEUR, que le debordement
+   horizontal du site hote peut rendre plus large que la fenetre visible.
+   Mesure, en emulation mobile a 390 px : le site deborde a 407 px (avec comme
+   sans l'outil), le panneau sortait a 391 px de large a partir de 8, soit
+   9 px hors de l'ecran. « 100vw » vaut la fenetre, pas le bloc conteneur :
+   le plafond est donc sans effet quand le site ne deborde pas, et rattrape la
+   largeur quand il deborde. */
+@media (max-width: 560px) {
+    .ap-panneau {
+        top: auto;
+        right: 8px;
+        left: 8px;
+        bottom: 66px;
+        height: 52vh;
+        width: auto;
+        max-width: calc(100vw - 16px);
+    }
+
+    .ap-fiche {
+        left: 8px;
+        right: 8px;
+        width: auto;
+        max-width: calc(100vw - 16px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ap-bouton {
+        transition: none;
+    }
+}
+
+/* La panne se voit sans ouvrir le panneau : la pastille du bouton change de
+   couleur. Une equipe qui ne clique pas doit pouvoir constater que quelque
+   chose ne va pas. */
+.ap-bouton.ap-panne .ap-bouton-pastille {
+    background: var(--ap-alerte-texte);
+}
+
+.ap-bouton.ap-panne {
+    border-color: var(--ap-alerte-bord);
+}
+
+/* Rappel de signature, dans le formulaire de note.
+   Le nom etait indique en pied de panneau seulement : invisible au moment ou
+   l'on ecrit. Un utilisateur a signale ne pas savoir sous quel nom il ecrivait. */
+.ap-fiche-signature {
+    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+    margin: 0 0 .6rem; font-size: .85rem; opacity: .8;
+}
+
+/* Etat de correction, dit sur la carte.
+   Deux cas qu'il ne faut PAS confondre : corrigee et en ligne, corrigee mais
+   pas encore deployee. Le second garde le defaut a l'ecran du relecteur ; le
+   masquer ou l'annoncer comme regle lui ferait perdre confiance dans l'outil. */
+.ap-marque-etat {
+    display: inline-block; margin: 0 0 .5rem;
+    padding: .15rem .55rem; border-radius: 4px;
+    font-size: .75rem; font-weight: 600; letter-spacing: .02em;
+}
+.ap-note.ap-corrigee { opacity: .72; }
+.ap-note.ap-corrigee .ap-marque-etat {
+    color: #0f7a52; background: rgba(16, 185, 129, .14);
+}
+.ap-note.ap-corrigee-attente .ap-marque-etat {
+    color: #8a5a00; background: rgba(245, 158, 11, .16);
+}
+/* Le bloc « c'est corrige » / « rouvrir », ouvert sous la carte. Meme forme
+   que le bloc de reponse : c'est le meme geste, on repond a une remarque. */
+.ap-resoudre,
+.ap-repondre {
+    margin-top: .6rem;
+    padding-top: .6rem;
+    border-top: 1px solid var(--ap-bord);
+}
+
+.ap-historique-bascule {
+    display: block; width: 100%; margin: 1rem 0 .25rem;
+    padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;
+    background: none; color: inherit; font: inherit; opacity: .7; cursor: pointer;
+}
+.ap-historique-bascule:hover { opacity: 1; }
+
+
+/* ----------------------------------------------------------------------------
+   L'installation et le collage du sel.
+
+   Ce sont les seuls ecrans ou l'on recopie quelque chose a la main. Tout y
+   est SELECTIONNABLE et en chasse fixe : un sel de 43 caracteres recopie de
+   travers ne se rattrape pas, et rien n'aide moins qu'une police qui confond
+   le I, le l et le 1.
+   ---------------------------------------------------------------------------- */
+
+.ap-panneau-large {
+    width: 560px;
+}
+
+.ap-copie {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 12px;
+}
+
+.ap-code {
+    flex: 1 1 auto;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--ap-bord);
+    border-radius: 8px;
+    background: var(--ap-fond-doux);
+    color: var(--ap-texte);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+                 monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    resize: vertical;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+.ap-code:focus-visible {
+    outline: 2px solid var(--ap-accent);
+    outline-offset: 1px;
+}
+
+@media (max-width: 560px) {
+    .ap-panneau-large {
+        width: auto;
+    }
+
+    .ap-copie {
+        flex-direction: column;
+    }
+}

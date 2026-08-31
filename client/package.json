@@ -1,0 +1,42 @@
+{
+  "name": "@annotepage/client",
+  "version": "2.0.0",
+  "description": "La couche d'annotation d'annotepage : on clique sur un element d'une page, on y laisse une remarque, elle est chiffree dans le navigateur.",
+  "license": "MIT",
+  "keywords": [
+    "annotation",
+    "relecture",
+    "recette",
+    "chiffrement",
+    "webcrypto",
+    "shadow-dom"
+  ],
+  "main": "dist/annotepage.js",
+  "unpkg": "dist/annotepage.js",
+  "jsdelivr": "dist/annotepage.js",
+  "exports": {
+    ".": "./dist/annotepage.js",
+    "./dist/annotepage.js": "./dist/annotepage.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "source/",
+    "outils/",
+    "LISEZMOI.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node outils/construire.mjs",
+    "test": "node outils/verifier.mjs",
+    "prepublishOnly": "node outils/construire.mjs && node outils/verifier.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": true,
+  "type": "commonjs"
+}

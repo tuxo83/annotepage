@@ -1,0 +1,92 @@
+# ============================================================================
+# controle.yml — ce qui tourne a chaque poussee.
+#
+# But : qu'une etiquette de publication ne soit jamais la premiere occasion de
+# decouvrir qu'un paquet ne se construit pas ou n'emballe pas. « npm pack
+# --dry-run » repond a la seule question que le registre posera : quels
+# fichiers partent, et est-ce que le manifeste tient debout.
+# ============================================================================
+
+name: controle
+
+on:
+  push:
+    branches: ['**']
+  # Les poussees dans une fourche ne declenchent rien ici ; la demande de
+  # fusion, si. C'est la seule facon de voir passer une contribution externe.
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  paquets:
+    runs-on: ubuntu-latest
+    strategy:
+      # Un paquet casse n'empeche pas de voir l'etat de l'autre.
+      fail-fast: false
+      matrix:
+        paquet: [client, mcp]
+    steps:
+      - uses: actions/checkout@v5
+
+      # La meme version que la publication : un controle qui tourne ailleurs
+      # que la mise en ligne ne controle pas la mise en ligne.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Emballer a blanc
+        run: |
+          set -eu
+          repertoire="${{ matrix.paquet }}"
+          if [ ! -f "${repertoire}/package.json" ]; then
+            # Avertissement et non echec : les paquets n'arrivent pas le meme
+            # jour. Mais l'avertissement reste visible, il ne se tait pas.
+            echo "::warning::${repertoire}/package.json est absent, rien a controler"
+            exit 0
+          fi
+          cd "${repertoire}"
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+          npm run build --if-present
+          npm test --if-present
+          npm pack --dry-run
+
+  bout-en-bout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Jouer le test de bout en bout s'il existe
+        run: |
+          set -eu
+          # Le test n'existe pas encore au moment ou ce fichier est ecrit. On
+          # le cherche aux endroits ou il peut atterrir plutot que d'imposer
+          # une place : le premier trouve est joue, sinon on le dit et on
+          # continue. Un travail qui echouerait faute de test qu'on n'a pas
+          # encore ecrit serait desactive avant d'avoir servi.
+          trouve=''
+          for candidat in \
+              outils/bout-en-bout.mjs \
+              tests/bout-en-bout.mjs \
+              mcp/outils/bout-en-bout.mjs \
+              client/outils/bout-en-bout.mjs \
+              serveur/outils/bout-en-bout.mjs ; do
+            if [ -f "${candidat}" ]; then trouve="${candidat}"; break; fi
+          done
+
+          if [ -n "${trouve}" ]; then
+            echo "test de bout en bout : ${trouve}"
+            # php est present sur l'image du runner : un test qui leve le
+            # serveur PHP pour parler au client n'a rien a installer.
+            php -v || true
+            node "${trouve}"
+          elif [ -f package.json ] && node -p "!!(require('./package.json').scripts||{})['bout-en-bout']" | grep -q true; then
+            npm run bout-en-bout
+          else
+            echo "::warning::aucun test de bout en bout trouve ; ajouter outils/bout-en-bout.mjs a la racine le fera jouer ici"
+          fi
