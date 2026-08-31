@@ -88,6 +88,30 @@ Header keys: `tool`, `format`, `version`, `project`, `encryption`, `export`,
 Check `to note` against the longest-prefix rule before shipping: `note` is not
 a prefix of `to note`, so both resolve. That property is why the rule exists.
 
+### Names the first pass had to invent
+
+These were missing from the glossary while the conversion ran. All three
+components already agree on every one of them -- what was incomplete was this
+file, not the code. Recorded here so the next change has one place to look.
+
+| French | English |
+|---|---|
+| actions `liste` `ajout` `resoudre` `texte` `diagnostic` `reprise` | `list` `add` `resolve` `text` `diagnostic` `backfill` |
+| HTTP parameters `par` `resolue` | `by` `resolved` |
+| export keys `charge` `charge_resolution` `saute` `saute_raison` | `payload` `resolution-payload` `skipped` `skipped-reason` |
+| MCP config `sel` `identifiant` `lecture_seule` `projet_par_defaut` | `salt` `id` `read_only` `default_project` |
+| `marqueur` | `marker` -- distinct from `repere`/`ancre`, which is `anchor` |
+| `annotepage/sel/<id>` `annotepage/auteur` | `annotepage/salt/<project_id>` `annotepage/author` |
+| `preprod` (example values) | `staging` |
+
+One term splits, deliberately: `etat` is `status` on the wire, where it means
+open or resolved, and `state` in `ApStore::state()`, which is the diagnostic.
+Two different things that shared a French word.
+
+The four export keys above are emitted by both producers and accepted by the
+reader, but were absent from the closed list in section 2. They are part of
+it.
+
 ### Files and directories
 
 | French | English |
@@ -142,3 +166,26 @@ Short sentences. Say why, not what. No marketing register, no superlatives, no
 the French said something sharp, keep the sharpness; do not smooth it into
 corporate English. A comment that explains a trap is worth ten that restate
 the code.
+
+## 5. Nothing that identifies anyone
+
+This repository is generic. It names no client, no company, no employer, no
+supplier, no production site, and no person's real name — not in the code, the
+comments, the examples, the fixtures, the documentation, the website, the
+published READMEs, the `.gitignore`, the git hooks, the commit messages, the
+branch names, or the git author field.
+
+Nor anything that identifies without naming: an absolute path from someone's
+machine, a real email address, a fixed IP address, the URL of a staging site.
+
+Use `example.com`, `/path/to/site`, `you@example.com`. The only real name
+anywhere is the project's own: `annotepage`.
+
+This is not tidiness. Once pushed, it is public forever — a later commit that
+removes the word does not erase it, because the earlier commit still holds it
+and the mirrors already have a copy. The only cheap moment to get this right
+is before the first push.
+
+A guard enforces it on every commit and every push. It lives outside the
+repository, because a list of words that must not be published cannot itself
+be published.

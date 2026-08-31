@@ -1,81 +1,81 @@
-# Ce qui reste a faire, et ce qu'on a decide de ne pas faire tout de suite
+# What is left to do, and what we decided not to do yet
 
-Une entree = un sujet, sa raison d'etre, et les pieges deja reperes. Ce qui
-n'est pas encore tranche est marque comme tel : ce fichier ne decide pas a la
-place du mainteneur.
-
----
-
-## Captures d'ecran jointes aux notes
-
-**Pourquoi.** Les outils concurrents (BugHerd, Marker.io, Usersnap) joignent
-une capture a chaque remarque. Aujourd'hui une note d'annotepage porte la page,
-le selecteur, un extrait de texte, la version, l'environnement et la taille de
-fenetre — c'est deja beaucoup, mais ca ne montre pas ce que la personne a VU.
-Or l'experience de ce projet est claire : plusieurs fois, la description seule
-a envoye la correction dans la mauvaise direction, et c'est une capture qui a
-tranche.
-
-**A REGARDER, pas encore decide.** Quatre difficultes reelles, a peser avant de
-se lancer :
-
-1. **Le poids.** Une note pese quelques centaines d'octets ; une capture, des
-   centaines de kilo-octets — mille fois plus. Ca change le dimensionnement du
-   stockage, et l'economie d'un relais public partage.
-2. **Le chiffrement.** Si le chiffrement est actif, la capture doit l'etre
-   aussi, cote navigateur. Le relais devient alors incapable d'en fabriquer une
-   vignette : l'affichage doit tout dechiffrer pour montrer quoi que ce soit.
-3. **La vie privee, et c'est le point le plus serieux.** Une capture prise sur
-   une preproduction peut contenir des donnees reelles affichees a l'ecran —
-   un nom, une adresse, un dossier client. La remarque, elle, n'en contient
-   presque jamais. Joindre une image change la nature de ce qu'on stocke.
-4. **La fidelite.** Une capture rasterisee vieillit mal et ne se cherche pas.
-   Une capture du DOM de l'element (son HTML et ses styles calcules) pese mille
-   fois moins, se relit, se compare — et suffit peut-etre a l'usage reel.
-
-**Pistes, par cout croissant :** capturer seulement la boite de l'element vise
-plutot que la page entiere ; ou capturer le DOM plutot qu'une image ; ou la
-page entiere, en option desactivable par defaut.
+One entry = one subject, the reason it exists, and the traps already spotted.
+Anything not yet settled is marked as such: this file does not decide in the
+maintainer's place.
 
 ---
 
-## Positionnement du produit — a refleter dans le site et le README
+## Screenshots attached to notes
 
-Constate en examinant les projets voisins : cusdis, remark42, giscus,
-utterances, umami sont des SYSTEMES DE COMMENTAIRES — des lecteurs qui
-commentent un article publie. Meme forme technique qu'annotepage (un widget,
-un serveur auto-hebergeable, une option hebergee), metier different.
+**Why.** The competing tools (BugHerd, Marker.io, Usersnap) attach a
+screenshot to every remark. Today an annotepage note carries the page, the
+selector, an excerpt of text, the version, the environment and the viewport
+size — that is already a lot, but it does not show what the person SAW. And
+the experience of this project is clear: several times, the description alone
+sent the fix in the wrong direction, and it was a screenshot that settled it.
 
-**Les concurrents reels sont BugHerd, Marker.io et Usersnap** : du SaaS payant,
-sans auto-hebergement, sans boucle IA.
+**TO LOOK AT, not decided yet.** Four real difficulties, to weigh before
+starting:
 
-Ce qui NE differencie PAS, et qu'il ne faut donc pas mettre en avant :
-- le serveur public par defaut + l'auto-hebergement : c'est le standard de la
-  famille, tout le monde le fait ;
-- « ultra simple » : tout le monde le revendique.
+1. **Weight.** A note weighs a few hundred bytes; a screenshot, hundreds of
+   kilobytes — a thousand times more. That changes the sizing of the storage,
+   and the economics of a shared public relay.
+2. **Encryption.** If encryption is on, the screenshot has to be encrypted too,
+   browser side. The relay then becomes unable to build a thumbnail of it: the
+   display has to decrypt everything in order to show anything.
+3. **Privacy, and this is the most serious point.** A screenshot taken on a
+   staging site can contain real data displayed on screen — a name, an address,
+   a customer record. The remark itself almost never does. Attaching an image
+   changes the nature of what we store.
+4. **Fidelity.** A rasterised screenshot ages badly and cannot be searched. A
+   capture of the element's DOM (its HTML and its computed styles) weighs a
+   thousand times less, can be reread, can be compared — and may well be enough
+   for the real use.
 
-Ce qui differencie, et qu'il faut montrer : **la boucle fermee**. Le relecteur
-annote, l'IA lit, corrige, REPOND DANS LE FIL en disant ce qu'elle a mesure,
-puis ARCHIVE la note en l'estampillant de la version ou le correctif part.
-Aucun outil de cette famille ne va au-dela de « exporter vers Jira ».
-
-**Et surtout la COMBINAISON** : open source + auto-hebergeable + chiffre de
-bout en bout. Un MCP se copie en un week-end ; un SaaS ne peut pas suivre sur
-le chiffrement aveugle sans contredire son propre modele.
+**Leads, by increasing cost:** capture only the box of the targeted element
+rather than the whole page; or capture the DOM rather than an image; or the
+whole page, as an option, off by default.
 
 ---
 
-## Autres sujets ouverts
+## Product positioning — to be reflected in the site and the README
 
-- **Notifications.** Aujourd'hui personne n'est prevenu qu'une note est
-  arrivee. Sur le projet d'origine, c'est une tache periodique qui les
-  relevait. Un courriel a chaque nouvelle note fermerait la boucle.
-- **Vue d'ensemble.** Aucun ecran ne liste les notes ouvertes toutes pages
-  confondues. Il faut ouvrir chaque page, ou lire l'export brut.
-- **Refus du serveur mal expliques.** Constate en vrai : quand un pare-feu
-  d'hebergeur repond 403 avec du HTML, le relecteur lit « Le serveur a repondu
-  quelque chose d'inattendu ». Le texte saisi est bien conserve, mais le
-  message devrait nommer le refus et suggerer de reformuler.
-- **Suppression.** Choix d'origine : aucune note ne s'efface, on n'efface pas
-  la remarque de quelqu'un d'autre. A conserver — mais un operateur qui laisse
-  un message par erreur n'a aucun recours. Constate, sans solution retenue.
+Observed while examining neighbouring projects: cusdis, remark42, giscus,
+utterances, umami are COMMENT SYSTEMS — readers commenting on a published
+article. Same technical shape as annotepage (a widget, a self-hostable server,
+a hosted option), different business.
+
+**The real competitors are BugHerd, Marker.io and Usersnap**: paid SaaS, no
+self-hosting, no AI loop.
+
+What does NOT differentiate, and must therefore not be put forward:
+- the public server by default + self-hosting: it is the standard of the
+  family, everybody does it;
+- "dead simple": everybody claims it.
+
+What does differentiate, and must be shown: **the closed loop**. The reviewer
+annotates, the AI reads, fixes, REPLIES IN THE THREAD saying what it measured,
+then ARCHIVES the note stamping it with the version the fix ships in. No tool
+in this family goes beyond "export to Jira".
+
+**And above all the COMBINATION**: open source + self-hostable + end-to-end
+encrypted. An MCP can be copied in a weekend; a SaaS cannot follow on blind
+encryption without contradicting its own model.
+
+---
+
+## Other open subjects
+
+- **Notifications.** Today nobody is told that a note has arrived. On the
+  original project, a periodic task collected them. An email on every new note
+  would close the loop.
+- **Overview.** No screen lists the open notes across all pages. You have to
+  open each page, or read the raw export.
+- **Badly explained server refusals.** Seen for real: when a host's firewall
+  answers 403 with HTML, the reviewer reads "The server answered something
+  unexpected". The typed text is kept, but the message should name the refusal
+  and suggest rewording.
+- **Deletion.** Original choice: no note is ever erased, you do not erase
+  somebody else's remark. To be kept — but an operator who leaves a message by
+  mistake has no recourse. Observed, with no solution adopted.

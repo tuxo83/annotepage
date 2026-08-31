@@ -1,0 +1,20 @@
+{
+  "name": "annotepage",
+  "private": true,
+  "description": "Monorepo root. The published packages are client/ and mcp/.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuxo83/annotepage.git"
+  },
+  "scripts": {
+    "build": "node client/tools/build.mjs",
+    "check": "npm run check:sri && npm run check:injection && npm run check:versions && npm run check:client && npm run check:mcp",
+    "check:sri": "node tools/check-sri.mjs",
+    "check:injection": "node tools/check-no-html-injection.mjs",
+    "check:versions": "node tools/check-versions.mjs",
+    "check:client": "node client/tools/check.mjs",
+    "check:mcp": "node mcp/tools/check.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

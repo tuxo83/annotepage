@@ -1,0 +1,49 @@
+{
+  "_read_this": [
+    "TEMPLATE. Copy it as .annotepage.json and fill it in.",
+    "",
+    "THIS FILE CONTAINS THE PROJECT SALT, that is to say every note there is.",
+    "Whoever reads it reads everything. It is not committed, it is not copied",
+    "into a ticket, it is not pasted into a conversation. There is no salt",
+    "rotation: a leaked salt forces you to start from a fresh project,",
+    "abandoning the notes already written.",
+    "",
+    "On a shared machine :  chmod 600 .annotepage.json",
+    "In a git repository :  echo .annotepage.json >> .gitignore",
+    "",
+    "Keys beginning with an underscore are ignored by the tool: they are there",
+    "to be read by whoever opens the file."
+  ],
+
+  "default_project": "review",
+
+  "projects": {
+    "review": {
+      "_api": "The address of the PHP entry point, api.php included. The same one the browser uses.",
+      "api": "https://staging.example.com/notes/api.php",
+
+      "_salt": "The 43 characters shown by the setup screen, in the browser. No spaces, no decorative dashes. The project id is derived from it: do not write it here.",
+      "salt": "REPLACE-ME-43-characters-of-base64url-exactly",
+
+      "_mode": "\"encrypted\" (default) or \"plain\". It is the project's mode, decided at setup.",
+      "mode": "encrypted",
+
+      "_author": "The name the assistant signs its replies and its fixes with. It appears in the thread, under the reviewers' eyes. Required in order to write anything at all.",
+      "author": "Assistant",
+
+      "_origin": "The origin to announce to the server, when that server is a RELAY: it refuses every write with no Origin header. Copy here one of the origins declared for this project in the server configuration. Not needed when self-hosted.",
+      "origin": "https://staging.example.com",
+
+      "_read_only": "true cuts every write: no reply, no fix, no reopening. To be chosen when plugging an assistant onto a review you do not know yet.",
+      "read_only": false
+    }
+  },
+
+  "_plain_mode_example": {
+    "_why": "In plain mode the notes are readable as they are and \"curl ?action=text\" is enough. You can then declare a project WITH NO salt, by giving its id: reading works, writing does not — there is nothing to compute a page index with.",
+    "api": "http://localhost:8080/notes/api.php",
+    "mode": "plain",
+    "id": "7Qb1kZ3xNvA9dLpEqKf2Zt",
+    "read_only": true
+  }
+}

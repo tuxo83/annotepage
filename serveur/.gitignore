@@ -1,4 +1,0 @@
-# La configuration locale porte les identifiants de la base et la liste des
-# projets. Elle est DEPOSEE sur chaque serveur, jamais versionnee — et le
-# modele a recopier, lui, l'est.
-racine-web/interne/configuration-locale.php

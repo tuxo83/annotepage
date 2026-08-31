@@ -1,0 +1,365 @@
+/* mcp-tools.mjs — WHAT THE ASSISTANT CAN DO, AND HOW WE TELL IT SO.
+ *
+ * THIS IS THE POINT OF THE WHOLE PROJECT. The human half — click an element,
+ * leave a remark on it — exists elsewhere. What does not exist elsewhere is
+ * the AI as a full participant in the review loop: it reads the remarks where
+ * they are, it fixes, it replies in the thread, and it stamps the version the
+ * fix ships in.
+ *
+ * THREE RULES OF WRITING, and they are worth as much as the code:
+ *
+ *  1. EVERYTHING THAT COMES OUT OF HERE IS IN THE GRAMMAR OF THE FOUR MARGINS.
+ *     No JSON, no table, no markup. It is the same text that "curl
+ *     ?action=text" returns in plain mode, and that is on purpose: an
+ *     assistant that can read one can read the other, and the MCP stays an
+ *     ADDITION, never a compulsory step. The day those two formats diverge,
+ *     the simple path is broken and nobody notices before needing it.
+ *
+ *  2. A TOOL'S DESCRIPTION STATES ITS CONSEQUENCE, not its mechanics.
+ *     "Nothing is ever erased in this tool" counts for more than "calls POST
+ *     ?action=add". The assistant reading these descriptions is deciding to
+ *     write into somebody's review database.
+ *
+ *  3. WE DO NOT LIE ABOUT WHAT WE DO NOT KNOW. A count of unreadable notes is
+ *     said, an encryption we could not open is said, a missing version is
+ *     said. A note that disappears in silence makes you believe the review is
+ *     finished.
+ */
+
+import {
+    retrieve, filledExport, findNote, isOpen,
+    reply, markResolved, reopen,
+} from './notes.mjs';
+import { writeExport } from './text-export.mjs';
+import { readDiagnostic } from './api.mjs';
+import { chooseProject } from './config.mjs';
+
+/* The schema of a "project" argument, added to every tool. When the
+   configuration declares only one project it is useless; when it declares
+   several, omitting it is an error and not a lottery — writing into the wrong
+   project cannot be undone. */
+const PROJECT_ARG = {
+    type: 'string',
+    description: 'The name of the project in the local configuration. Not needed '
+        + 'if there is only one, or if one of them is declared as the default.',
+};
+
+const integer = (value, what) => {
+    const n = parseInt(value, 10);
+    if (!Number.isFinite(n) || String(n) !== String(value).trim()) {
+        throw new Error('The field "' + what + '" expects a whole note number. '
+            + 'Received: ' + JSON.stringify(value));
+    }
+    return n;
+};
+
+/** A subset of notes, returned in the same grammar as the export. */
+const renderList = (state, project, notes, footer) =>
+    writeExport({
+        format: state.header.format,
+        version: state.header.version,
+        project: state.header.project || project.id,
+        encryption: state.header.encryption,
+    }, notes, footer === undefined ? state.footer : footer);
+
+export const buildTools = (configuration) => {
+
+    /* Each tool fetches the fresh state of the project it aims at. api.mjs
+       keeps the export for a few seconds and every write empties it: listing
+       then reading three notes therefore makes one single export, and a note
+       just written reappears at once. */
+    const stateOf = async (args) => {
+        const project = chooseProject(configuration, args && args.project);
+        const state = await retrieve(project);
+        return { project, state };
+    };
+
+    return [
+        {
+            name: 'annotepage_open_notes',
+            title: 'Open notes',
+            description:
+                'The review remarks THAT ARE STILL TO BE FIXED, with their reply '
+                + 'threads. This is the starting point: an open note points at a '
+                + 'precise element of a precise page and says what is wrong.\n\n'
+                + 'The result is plain text, one piece of information per line, the '
+                + 'indentation alone saying what you are reading: 0 spaces for the '
+                + 'structure of a note, 2 for that of a reply, 4 for the text of a '
+                + 'note, 6 for that of a reply. The key of a line is the longest '
+                + 'known prefix, the value is the rest; a missing line means an '
+                + 'empty value.\n\n'
+                + 'A "skipped" line at the end reports the notes that could NOT be '
+                + 'read. If it is there, the list is incomplete, and that has to be '
+                + 'said before concluding that the review is finished.',
+            schema: {
+                type: 'object',
+                properties: {
+                    project: PROJECT_ARG,
+                    page: {
+                        type: 'string',
+                        description: 'Keep only the notes of this page path, for '
+                            + 'example "/en/contact.html". Exact comparison: "/a" and '
+                            + '"/a/" are two pages.',
+                    },
+                    limit: {
+                        type: 'integer',
+                        description: 'Maximum number of notes returned, oldest first. '
+                            + 'No limit by default.',
+                        minimum: 1,
+                    },
+                },
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                const { project, state } = await stateOf(args);
+                let notes = state.notes.filter(isOpen);
+
+                if (args.page) {
+                    const wanted = String(args.page);
+                    const before = notes.length;
+                    notes = notes.filter((n) => n.page === wanted);
+                    if (notes.length === 0 && before > 0 && !project.keys
+                        && state.header.encryption !== 'no') {
+                        return 'No open note on "' + wanted + '".\n'
+                            + 'Careful: this project is encrypted and the configuration '
+                            + 'carries no salt, so the page paths are not readable. The '
+                            + 'filter had nothing to compare.\n';
+                    }
+                }
+
+                if (args.limit) notes = notes.slice(0, integer(args.limit, 'limit'));
+                return renderList(state, project, notes);
+            },
+        },
+
+        {
+            name: 'annotepage_read_note',
+            title: 'Read a note',
+            description:
+                'One note and its complete thread, resolved or not. It carries the '
+                + 'path of the page, the CSS selector of the element aimed at (key '
+                + '"element") and the visible text of that element at the time of the '
+                + 'remark (key "excerpt"): that is enough to find the element again '
+                + 'in the sources, even if the page has moved since.\n\n'
+                + 'Same grammar as the list of open notes.',
+            schema: {
+                type: 'object',
+                properties: {
+                    id: { type: 'integer', description: 'The number of the note, as '
+                        + 'the "note" line shows it.' },
+                    project: PROJECT_ARG,
+                },
+                required: ['id'],
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                const { project, state } = await stateOf(args);
+                const id = integer(args.id, 'id');
+                const found = findNote(state, id);
+                if (!found) {
+                    return 'No note ' + id + ' in this project.\n'
+                        + (state.footer.skipped
+                            ? 'Careful: ' + state.footer.skipped + ' note(s) of this '
+                              + 'project could not be read. It may be one of them.\n'
+                            : '');
+                }
+                // A reply is read inside its parent's thread: pulling it out
+                // alone would give a text without what it comments on.
+                return renderList(state, project, [found.parent || found.note], {});
+            },
+        },
+
+        {
+            name: 'annotepage_reply',
+            title: 'Reply to a note',
+            description:
+                'Writes a reply into the thread of a note. This is how an assistant '
+                + 'says what it understood, what it changed, or why it is changing '
+                + 'nothing.\n\n'
+                + 'The reply is SIGNED with the name declared in the local '
+                + 'configuration: the human reviewer sees who is speaking.\n\n'
+                + 'NOTHING IS EVER ERASED IN THIS TOOL. A reply once written stays, '
+                + 'it cannot be edited and it cannot be deleted. The thread has one '
+                + 'depth only: you reply to a note, never to a reply.',
+            schema: {
+                type: 'object',
+                properties: {
+                    id: { type: 'integer', description: 'The number of the note being '
+                        + 'replied to. Not the number of a reply.' },
+                    text: { type: 'string', description: 'The text of the reply. It '
+                        + 'will be read by a human on the annotated page.' },
+                    project: PROJECT_ARG,
+                },
+                required: ['id', 'text'],
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                const { project, state } = await stateOf(args);
+                const id = integer(args.id, 'id');
+                await reply(project, state, id, args.text);
+                return 'Reply written in the thread of note ' + id + ', signed "'
+                    + project.author + '".\nIt can no longer be edited or deleted.\n';
+            },
+        },
+
+        {
+            name: 'annotepage_mark_resolved',
+            title: 'Mark a note resolved',
+            description:
+                'Marks a note resolved and STAMPS THE VERSION the fix ships in. This '
+                + 'is the gesture that closes the review loop.\n\n'
+                + 'The version matters, and it has a visible consequence on the page: '
+                + 'the client compares the version of the fix with the one the site '
+                + 'declares it is serving. Fix newer than the site: the note STAYS '
+                + 'under the reviewer\'s eyes, because the defect is still on screen. '
+                + 'Fix already online: the note moves into folded history. Empty '
+                + 'version: the fix is taken as not deployed, and the note stays '
+                + 'visible.\n\n'
+                + 'Only mark resolved a note whose fix you have REALLY applied. A '
+                + 'note closed by mistake leaves the list of what is left to do, and '
+                + 'nobody reads it again. It can be reopened, but somebody has to '
+                + 'notice the mistake first.',
+            schema: {
+                type: 'object',
+                properties: {
+                    id: { type: 'integer', description: 'The number of the note that '
+                        + 'was fixed.' },
+                    version: {
+                        type: 'string',
+                        description: 'The version the fix ships in, as the site names '
+                            + 'it (for example "1.4.13"). Empty string if it is not '
+                            + 'known: the note will then stay visible on the page, '
+                            + 'which is the intended behaviour as long as the fix is '
+                            + 'not deployed.',
+                    },
+                    project: PROJECT_ARG,
+                },
+                required: ['id', 'version'],
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                const { project, state } = await stateOf(args);
+                const id = integer(args.id, 'id');
+                const version = String(args.version == null ? '' : args.version).trim();
+                await markResolved(project, state, id, version);
+                return 'Note ' + id + ' marked resolved by "' + project.author + '"'
+                    + (version ? ', in version ' + version : ', with no version declared')
+                    + '.\n'
+                    + (version
+                        ? 'It will move into folded history as soon as the site serves '
+                          + 'this version or a newer one.\n'
+                        : 'With no version, the fix is taken as not deployed: the note '
+                          + 'stays visible on the page.\n');
+            },
+        },
+
+        {
+            name: 'annotepage_reopen',
+            title: 'Reopen a note',
+            description:
+                'Cancels the "resolved" mark of a note, on the day the fix turns out '
+                + 'to be incomplete. The remark comes back under the reviewer\'s eyes '
+                + 'WITH its reply thread: the note is not recreated, and what has been '
+                + 'said is not lost.\n\n'
+                + 'Reopening writes no name: we do not ask who signs in order to '
+                + 'cancel a fix.',
+            schema: {
+                type: 'object',
+                properties: {
+                    id: { type: 'integer', description: 'The number of the note to '
+                        + 'reopen.' },
+                    project: PROJECT_ARG,
+                },
+                required: ['id'],
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                const { project, state } = await stateOf(args);
+                const id = integer(args.id, 'id');
+                await reopen(project, state, id);
+                return 'Note ' + id + ' reopened. Its reply thread is intact.\n';
+            },
+        },
+
+        {
+            name: 'annotepage_export',
+            title: 'Complete export',
+            description:
+                'ALL the notes of the project, resolved ones included, in the grammar '
+                + 'of the four margins. This is the document you read from end to end '
+                + 'to take stock of a review, and it is exactly what "curl '
+                + '?action=text" would return if the project were not encrypted.\n\n'
+                + 'The header says how many notes there are, and whether the project '
+                + 'is encrypted, plain, or "mixed" — an installation that changed its '
+                + 'mind along the way.',
+            schema: {
+                type: 'object',
+                properties: {
+                    project: PROJECT_ARG,
+                    status: {
+                        type: 'string',
+                        enum: ['all', 'open', 'resolved'],
+                        description: 'Filter by status. "all" by default.',
+                    },
+                },
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                const { project, state } = await stateOf(args);
+                const what = args.status || 'all';
+                if (what === 'all') return filledExport(state, project);
+                const keep = what === 'open' ? isOpen : (n) => !isOpen(n);
+                return renderList(state, project, state.notes.filter(keep));
+            },
+        },
+
+        {
+            name: 'annotepage_projects',
+            title: 'Projects and server state',
+            description:
+                'What the local configuration declares, and the state of the server '
+                + 'hosting the notes: PHP version, extensions, database reachable, '
+                + 'table present. Call it when another command fails without anyone '
+                + 'understanding why.\n\n'
+                + 'The salt never appears there, in any form, not even truncated. '
+                + 'What identifies a project is its id, which is already public.',
+            schema: {
+                type: 'object',
+                properties: {
+                    project: PROJECT_ARG,
+                    server: {
+                        type: 'boolean',
+                        description: 'Question the server as well '
+                            + '(?action=diagnostic). False by default: it makes a '
+                            + 'network request.',
+                    },
+                },
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                let out = 'configuration ' + configuration.path + '\n';
+                for (const [name, p] of configuration.projects) {
+                    out += '\nproject ' + name + '\n';
+                    out += '  id ' + p.id + '\n';
+                    out += '  api ' + p.api + '\n';
+                    out += '  mode ' + p.mode + '\n';
+                    out += '  salt ' + (p.keys ? 'present' : 'absent') + '\n';
+                    out += '  author ' + (p.author || '(none: writing refused)') + '\n';
+                    out += '  writing ' + (p.read_only ? 'read only'
+                        : (p.author ? 'allowed' : 'refused, for want of a name')) + '\n';
+                    if (p.origin) out += '  origin ' + p.origin + '\n';
+                    if (configuration.defaultProject === name) out += '  default yes\n';
+                }
+                for (const word of configuration.warnings) {
+                    out += '\nwarning ' + word.replace(/\n/g, '\n  ') + '\n';
+                }
+                if (args.server) {
+                    const project = chooseProject(configuration, args.project);
+                    out += '\ndiagnostic ' + project.api + '\n\n';
+                    out += await readDiagnostic(project);
+                }
+                return out;
+            },
+        },
+    ];
+};

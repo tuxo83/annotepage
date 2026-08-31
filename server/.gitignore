@@ -1,0 +1,4 @@
+# The local configuration carries the database credentials and the list of
+# projects. It is DROPPED IN on each server, never versioned -- the template to
+# copy from is.
+webroot/internal/config-local.php

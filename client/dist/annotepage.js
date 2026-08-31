@@ -1,254 +1,251 @@
 /* ============================================================================
-   annotepage — la couche d'annotation, cote navigateur.
+   annotepage -- the annotation layer, browser side.
 
-   Version du paquet : 2.0.0
-   Version de format : 2   (voir FORMAT.md)
+   Package version : 2.0.0
+   Format version  : 2   (see FORMAT.md)
    Licence : MIT
 
-   FICHIER ENGENDRE — ne pas le modifier a la main. Les sources sont dans
-   source/, et « npm run build » refait ce fichier. Une correction portee ici
-   serait perdue a la construction suivante, et l'empreinte SRI publiee ne
-   correspondrait plus a rien.
+   GENERATED FILE -- do not edit it by hand. The sources are in src/, and
+   "npm run build" remakes this file. A fix made here would be lost at the
+   next build, and the published SRI digest would no longer match anything.
    ============================================================================ */
 
 (function () {
     'use strict';
 
-    /* Injectes par la construction : ils viennent de package.json et de
-       source/styles.css, pour qu'aucune valeur ne soit ecrite a deux
-       endroits et ne puisse donc diverger. */
-    const VERSION_OUTIL = "2.0.0";
+    /* Injected by the build: they come from package.json and from
+       src/styles.css, so that no value is written in two places and can
+       therefore diverge. */
+    const TOOL_VERSION = "2.0.0";
     const FORMAT = 2;
-    const STYLES = "/* ============================================================================\n   styles.css — STYLES DE L'OUTIL, ET D'AUCUN AUTRE ELEMENT.\n\n   Cette feuille est INLINE dans le fichier servi par la construction, puis\n   posee dans le shadow root de l'outil — en feuille construite quand le\n   navigateur sait le faire, en <style> sinon. Elle etait chargee par un\n   <link> dans l'outil d'origine ; le passage au CDN sous SRI l'a fait rentrer\n   dans le fichier, pour n'avoir qu'une seule empreinte a tenir a jour. Le\n   confinement, lui, n'a pas change et reste double :\n\n     - de l'outil vers le site : aucune regle d'ici ne peut atteindre un\n       element du site hote, le navigateur s'en charge. C'est ce qui rend\n       l'affirmation « la couche ne touche a rien » verifiable plutot que\n       promise ;\n     - du site vers l'outil : aucune regle du site ne peut atteindre un\n       element d'ici. Une refonte de la feuille de style du site ne peut donc\n       pas deformer l'outil, ni l'inverse.\n\n   Le prefixe « ap- » sur toutes les classes est la troisieme securite : le\n   jour ou quelqu'un chargerait ces styles SANS shadow root — par erreur, ou\n   pour deboguer — rien ne repondrait a un selecteur du site.\n\n   AUCUNE REGLE NE CIBLE html, body, * NI UN SELECTEUR DU SITE. C'est la\n   seule interdiction absolue de ce fichier.\n\n   COULEURS : l'outil a sa PROPRE palette, definie sur la racine du shadow.\n   Il ne lit ni les variables du site, ni son attribut de theme : il n'a\n   aucune raison de savoir comment le site nomme ses couleurs, et il doit\n   rester lisible sur un site clair comme sur un site sombre. La bascule se\n   fait sur la preference du systeme, seule information dont l'outil dispose\n   sans rien demander a personne.\n   ============================================================================ */\n\n\n:host {\n    --ap-fond: #ffffff;\n    --ap-fond-doux: #f4f6f8;\n    --ap-fond-appui: #e9edf2;\n    --ap-texte: #1a1d21;\n    --ap-texte-doux: #5b6570;\n    --ap-bord: #d5dbe2;\n    --ap-accent: #2f6fed;\n    --ap-accent-sombre: #1d55c8;\n    --ap-accent-texte: #ffffff;\n    --ap-accent-voile: rgba(47, 111, 237, 0.14);\n    --ap-alerte-fond: #fdeceb;\n    --ap-alerte-bord: #e3a9a4;\n    --ap-alerte-texte: #8a1f16;\n    --ap-ombre: 0 6px 24px rgba(16, 24, 40, 0.18);\n    --ap-rayon: 10px;\n    --ap-police: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\",\n                  Arial, sans-serif;\n}\n\n@media (prefers-color-scheme: dark) {\n    :host {\n        --ap-fond: #1d2126;\n        --ap-fond-doux: #262b32;\n        --ap-fond-appui: #323942;\n        --ap-texte: #e9ecf0;\n        --ap-texte-doux: #a4adb8;\n        --ap-bord: #3a424c;\n        --ap-accent: #6d9bff;\n        --ap-accent-sombre: #8fb4ff;\n        --ap-accent-texte: #10151c;\n        --ap-accent-voile: rgba(109, 155, 255, 0.18);\n        --ap-alerte-fond: #3a1f1c;\n        --ap-alerte-bord: #7c3a33;\n        --ap-alerte-texte: #ffb9b1;\n        --ap-ombre: 0 6px 24px rgba(0, 0, 0, 0.55);\n    }\n}\n\n/* ----------------------------------------------------------------------------\n   La couche.\n\n   Elle occupe le viewport et ne recoit AUCUN clic : c'est ce qui permet a la\n   page de se comporter exactement comme d'habitude tant que l'outil n'est pas\n   en mode annotation. Chaque widget re-active les clics pour lui seul.\n   ---------------------------------------------------------------------------- */\n\n.ap-couche {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    font-family: var(--ap-police);\n    font-size: 14px;\n    line-height: 1.45;\n    color: var(--ap-texte);\n    text-align: left;\n    -webkit-font-smoothing: antialiased;\n}\n\n.ap-couche button,\n.ap-couche input,\n.ap-couche textarea {\n    font-family: inherit;\n    font-size: inherit;\n    line-height: inherit;\n    color: inherit;\n    margin: 0;\n    box-sizing: border-box;\n}\n\n/* ----------------------------------------------------------------------------\n   Le bouton : la seule chose visible quand l'outil est au repos.\n   ---------------------------------------------------------------------------- */\n\n.ap-bouton {\n    position: fixed;\n    right: 16px;\n    bottom: 16px;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 9px 14px;\n    border: 1px solid var(--ap-bord);\n    border-radius: 999px;\n    background: var(--ap-fond);\n    color: var(--ap-texte);\n    box-shadow: var(--ap-ombre);\n    cursor: pointer;\n    pointer-events: auto;\n    opacity: 0.92;\n    transition: opacity 0.15s ease, transform 0.15s ease;\n}\n\n.ap-bouton:hover,\n.ap-bouton:focus-visible {\n    opacity: 1;\n    transform: translateY(-1px);\n}\n\n.ap-bouton:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n.ap-bouton[aria-pressed=\"true\"] {\n    background: var(--ap-accent);\n    border-color: var(--ap-accent);\n    color: var(--ap-accent-texte);\n    opacity: 1;\n}\n\n.ap-bouton-pastille {\n    display: inline-block;\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    background: var(--ap-accent);\n    flex: none;\n}\n\n.ap-bouton[aria-pressed=\"true\"] .ap-bouton-pastille {\n    background: var(--ap-accent-texte);\n}\n\n.ap-bouton-compte {\n    padding: 1px 7px;\n    border-radius: 999px;\n    background: var(--ap-fond-appui);\n    color: var(--ap-texte-doux);\n    font-size: 12px;\n}\n\n.ap-bouton[aria-pressed=\"true\"] .ap-bouton-compte {\n    background: rgba(255, 255, 255, 0.22);\n    color: var(--ap-accent-texte);\n}\n\n/* ----------------------------------------------------------------------------\n   La surbrillance de designation.\n\n   Elle est DESSINEE ICI, a partir des coordonnees de l'element vise. Rien\n   n'est pose sur l'element lui-meme : ni classe, ni attribut, ni style. Le\n   site ne peut donc pas bouger d'un pixel du fait de la designation.\n   ---------------------------------------------------------------------------- */\n\n.ap-surbrillance {\n    position: fixed;\n    border: 2px solid var(--ap-accent);\n    border-radius: 3px;\n    background: var(--ap-accent-voile);\n    pointer-events: none;\n    display: none;\n}\n\n.ap-surbrillance-etiquette {\n    position: fixed;\n    max-width: 320px;\n    padding: 4px 8px;\n    border-radius: 6px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-texte);\n    font-size: 12px;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    pointer-events: none;\n    display: none;\n    box-shadow: var(--ap-ombre);\n}\n\n/* ----------------------------------------------------------------------------\n   Les marqueurs : « il y a deja des notes ici ».\n   ---------------------------------------------------------------------------- */\n\n.ap-marqueur {\n    position: fixed;\n    min-width: 22px;\n    height: 22px;\n    padding: 0 6px;\n    border: 2px solid var(--ap-fond);\n    border-radius: 999px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-texte);\n    font-size: 12px;\n    font-weight: 700;\n    line-height: 18px;\n    text-align: center;\n    cursor: pointer;\n    pointer-events: auto;\n    box-shadow: var(--ap-ombre);\n}\n\n.ap-marqueur:focus-visible {\n    outline: 2px solid var(--ap-accent-sombre);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   Le panneau.\n   ---------------------------------------------------------------------------- */\n\n.ap-panneau {\n    position: fixed;\n    top: 12px;\n    right: 12px;\n    bottom: 72px;\n    width: 360px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    border: 1px solid var(--ap-bord);\n    border-radius: var(--ap-rayon);\n    background: var(--ap-fond);\n    box-shadow: var(--ap-ombre);\n    pointer-events: auto;\n    overflow: hidden;\n}\n\n.ap-panneau.ap-ouvert {\n    display: flex;\n}\n\n.ap-panneau-entete {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--ap-bord);\n    background: var(--ap-fond-doux);\n}\n\n.ap-panneau-titre {\n    font-size: 15px;\n    font-weight: 600;\n    flex: 1 1 auto;\n}\n\n.ap-panneau-consigne {\n    padding: 10px 14px;\n    border-bottom: 1px solid var(--ap-bord);\n    color: var(--ap-texte-doux);\n    font-size: 13px;\n}\n\n.ap-panneau-corps {\n    flex: 1 1 auto;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 14px 14px;\n}\n\n.ap-panneau-pied {\n    padding: 8px 14px;\n    border-top: 1px solid var(--ap-bord);\n    background: var(--ap-fond-doux);\n    color: var(--ap-texte-doux);\n    font-size: 12px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n\n.ap-section-titre {\n    margin: 14px 0 6px;\n    color: var(--ap-texte-doux);\n    font-size: 12px;\n    font-weight: 600;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n\n.ap-section-aide {\n    margin: 0 0 8px;\n    color: var(--ap-texte-doux);\n    font-size: 12px;\n}\n\n.ap-vide {\n    margin: 16px 0;\n    color: var(--ap-texte-doux);\n}\n\n/* ----------------------------------------------------------------------------\n   Une note, et ses reponses.\n   ---------------------------------------------------------------------------- */\n\n.ap-note {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-bord);\n    border-radius: var(--ap-rayon);\n    background: var(--ap-fond);\n}\n\n.ap-note.ap-orpheline {\n    background: var(--ap-fond-doux);\n}\n\n.ap-note.ap-visee {\n    border-color: var(--ap-accent);\n    box-shadow: 0 0 0 3px var(--ap-accent-voile);\n}\n\n.ap-note-entete {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-note-auteur {\n    font-weight: 600;\n}\n\n.ap-note-date {\n    color: var(--ap-texte-doux);\n    font-size: 12px;\n}\n\n.ap-note-cible {\n    margin: 4px 0 0;\n    color: var(--ap-texte-doux);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-texte {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-actions {\n    margin-top: 8px;\n    display: flex;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-reponses {\n    margin: 8px 0 0;\n    padding-left: 10px;\n    border-left: 2px solid var(--ap-bord);\n}\n\n.ap-reponse {\n    margin: 8px 0 0;\n}\n\n/* ----------------------------------------------------------------------------\n   Le formulaire, ancre pres de l'element designe.\n   ---------------------------------------------------------------------------- */\n\n.ap-fiche {\n    position: fixed;\n    width: 340px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    gap: 8px;\n    padding: 14px;\n    border: 1px solid var(--ap-bord);\n    border-radius: var(--ap-rayon);\n    background: var(--ap-fond);\n    box-shadow: var(--ap-ombre);\n    pointer-events: auto;\n}\n\n.ap-fiche.ap-ouvert {\n    display: flex;\n}\n\n.ap-fiche-titre {\n    font-size: 15px;\n    font-weight: 600;\n}\n\n.ap-fiche-cible {\n    color: var(--ap-texte-doux);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-etiquette {\n    display: block;\n    margin-bottom: 3px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--ap-texte-doux);\n}\n\n.ap-aide {\n    margin: 3px 0 0;\n    font-size: 12px;\n    color: var(--ap-texte-doux);\n}\n\n.ap-champ,\n.ap-zone {\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-bord);\n    border-radius: 8px;\n    background: var(--ap-fond-doux);\n    color: var(--ap-texte);\n}\n\n.ap-champ:focus,\n.ap-zone:focus {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n.ap-zone {\n    min-height: 92px;\n    resize: vertical;\n}\n\n.ap-actions {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-compteur {\n    margin-left: auto;\n    font-size: 12px;\n    color: var(--ap-texte-doux);\n}\n\n/* ----------------------------------------------------------------------------\n   Boutons.\n   ---------------------------------------------------------------------------- */\n\n.ap-primaire,\n.ap-secondaire,\n.ap-lien {\n    border-radius: 8px;\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.ap-primaire {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-accent);\n    background: var(--ap-accent);\n    color: var(--ap-accent-texte);\n    font-weight: 600;\n}\n\n.ap-primaire:hover {\n    background: var(--ap-accent-sombre);\n    border-color: var(--ap-accent-sombre);\n}\n\n.ap-secondaire {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-bord);\n    background: var(--ap-fond);\n    color: var(--ap-texte);\n}\n\n.ap-secondaire:hover {\n    background: var(--ap-fond-appui);\n}\n\n.ap-lien {\n    padding: 2px 4px;\n    border: 0;\n    background: none;\n    color: var(--ap-accent);\n    text-decoration: underline;\n    font-size: 13px;\n}\n\n.ap-primaire:disabled,\n.ap-secondaire:disabled,\n.ap-lien:disabled {\n    opacity: 0.6;\n    cursor: default;\n}\n\n.ap-primaire:focus-visible,\n.ap-secondaire:focus-visible,\n.ap-lien:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   Les pannes.\n\n   Elles sont ROUGES, en haut du bloc concerne, et portent le message rendu\n   par le serveur tel quel : c'est ainsi qu'une equipe non technique apprend\n   que sa remarque n'est pas enregistree, au lieu de le croire.\n   ---------------------------------------------------------------------------- */\n\n.ap-erreur {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-alerte-bord);\n    border-radius: var(--ap-rayon);\n    background: var(--ap-alerte-fond);\n    color: var(--ap-alerte-texte);\n}\n\n.ap-erreur-titre {\n    font-weight: 700;\n    margin-bottom: 4px;\n}\n\n.ap-erreur-detail {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    font-size: 13px;\n}\n\n.ap-erreur .ap-lien {\n    color: var(--ap-alerte-texte);\n}\n\n/* ----------------------------------------------------------------------------\n   Etroit : le panneau prend toute la largeur, le formulaire aussi.\n   ---------------------------------------------------------------------------- */\n\n/* ----------------------------------------------------------------------------\n   Etroit.\n\n   DEFAUT CONSTATE a 375 px de large : un panneau occupant toute la hauteur\n   recouvre la page entiere, et plus aucun element ne peut etre designe — tout\n   clic atterrit sur le panneau. Il devient donc un bandeau bas, qui laisse\n   libre la moitie haute du viewport ; on y fait defiler la page pour amener\n   l'element voulu. Le formulaire, lui, masque le panneau le temps de la\n   saisie (voir notes.js) : sur un ecran de cette taille, ecrire et lire la\n   liste en meme temps n'est pas tenable.\n   ---------------------------------------------------------------------------- */\n\n/* Sur ecran etroit, le panneau devient un bandeau bas et le formulaire prend\n   toute la largeur.\n\n   LE PLAFOND DE LARGEUR EST CONSERVE, et c'est un defaut mesure : « left: 8 ;\n   right: 8 » dimensionne l'element sur son BLOC CONTENEUR, que le debordement\n   horizontal du site hote peut rendre plus large que la fenetre visible.\n   Mesure, en emulation mobile a 390 px : le site deborde a 407 px (avec comme\n   sans l'outil), le panneau sortait a 391 px de large a partir de 8, soit\n   9 px hors de l'ecran. « 100vw » vaut la fenetre, pas le bloc conteneur :\n   le plafond est donc sans effet quand le site ne deborde pas, et rattrape la\n   largeur quand il deborde. */\n@media (max-width: 560px) {\n    .ap-panneau {\n        top: auto;\n        right: 8px;\n        left: 8px;\n        bottom: 66px;\n        height: 52vh;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n\n    .ap-fiche {\n        left: 8px;\n        right: 8px;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-bouton {\n        transition: none;\n    }\n}\n\n/* La panne se voit sans ouvrir le panneau : la pastille du bouton change de\n   couleur. Une equipe qui ne clique pas doit pouvoir constater que quelque\n   chose ne va pas. */\n.ap-bouton.ap-panne .ap-bouton-pastille {\n    background: var(--ap-alerte-texte);\n}\n\n.ap-bouton.ap-panne {\n    border-color: var(--ap-alerte-bord);\n}\n\n/* Rappel de signature, dans le formulaire de note.\n   Le nom etait indique en pied de panneau seulement : invisible au moment ou\n   l'on ecrit. Un utilisateur a signale ne pas savoir sous quel nom il ecrivait. */\n.ap-fiche-signature {\n    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;\n    margin: 0 0 .6rem; font-size: .85rem; opacity: .8;\n}\n\n/* Etat de correction, dit sur la carte.\n   Deux cas qu'il ne faut PAS confondre : corrigee et en ligne, corrigee mais\n   pas encore deployee. Le second garde le defaut a l'ecran du relecteur ; le\n   masquer ou l'annoncer comme regle lui ferait perdre confiance dans l'outil. */\n.ap-marque-etat {\n    display: inline-block; margin: 0 0 .5rem;\n    padding: .15rem .55rem; border-radius: 4px;\n    font-size: .75rem; font-weight: 600; letter-spacing: .02em;\n}\n.ap-note.ap-corrigee { opacity: .72; }\n.ap-note.ap-corrigee .ap-marque-etat {\n    color: #0f7a52; background: rgba(16, 185, 129, .14);\n}\n.ap-note.ap-corrigee-attente .ap-marque-etat {\n    color: #8a5a00; background: rgba(245, 158, 11, .16);\n}\n/* Le bloc « c'est corrige » / « rouvrir », ouvert sous la carte. Meme forme\n   que le bloc de reponse : c'est le meme geste, on repond a une remarque. */\n.ap-resoudre,\n.ap-repondre {\n    margin-top: .6rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-bord);\n}\n\n.ap-historique-bascule {\n    display: block; width: 100%; margin: 1rem 0 .25rem;\n    padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;\n    background: none; color: inherit; font: inherit; opacity: .7; cursor: pointer;\n}\n.ap-historique-bascule:hover { opacity: 1; }\n\n\n/* ----------------------------------------------------------------------------\n   L'installation et le collage du sel.\n\n   Ce sont les seuls ecrans ou l'on recopie quelque chose a la main. Tout y\n   est SELECTIONNABLE et en chasse fixe : un sel de 43 caracteres recopie de\n   travers ne se rattrape pas, et rien n'aide moins qu'une police qui confond\n   le I, le l et le 1.\n   ---------------------------------------------------------------------------- */\n\n.ap-panneau-large {\n    width: 560px;\n}\n\n.ap-copie {\n    display: flex;\n    align-items: flex-start;\n    gap: 8px;\n    margin: 0 0 12px;\n}\n\n.ap-code {\n    flex: 1 1 auto;\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-bord);\n    border-radius: 8px;\n    background: var(--ap-fond-doux);\n    color: var(--ap-texte);\n    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\",\n                 monospace;\n    font-size: 12.5px;\n    line-height: 1.5;\n    resize: vertical;\n    white-space: pre;\n    overflow-x: auto;\n}\n\n.ap-code:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n@media (max-width: 560px) {\n    .ap-panneau-large {\n        width: auto;\n    }\n\n    .ap-copie {\n        flex-direction: column;\n    }\n}\n";
+    const STYLES = "/* ============================================================================\n   styles.css -- THE STYLES OF THE TOOL, AND OF NO OTHER ELEMENT.\n\n   This sheet is INLINED into the served file by the build, then put into the\n   tool's shadow root -- as a constructed sheet when the browser can do it, in\n   a <style> otherwise. It was loaded by a <link> in the original tool; the\n   move to a CDN under SRI brought it inside the file, so that there is only\n   one digest to keep up to date. The containment itself has not changed, and\n   is still twofold:\n\n     - from the tool towards the site: no rule from here can reach an element\n       of the host site, the browser sees to that. That is what makes the\n       claim \"the layer touches nothing\" checkable rather than promised;\n     - from the site towards the tool: no rule of the site can reach an\n       element here. A redesign of the site's stylesheet therefore cannot\n       distort the tool, nor the other way round.\n\n   The \"ap-\" prefix on every class is the third safeguard: the day somebody\n   loads these styles WITHOUT a shadow root -- by mistake, or to debug --\n   nothing would answer a selector of the site.\n\n   NO RULE TARGETS html, body, * OR ANY SELECTOR OF THE SITE. That is the one\n   absolute prohibition of this file.\n\n   COLOURS: the tool has its OWN palette, defined on the shadow root. It\n   reads neither the site's variables nor its theme attribute: it has no\n   reason to know how the site names its colours, and it must stay readable\n   on a light site as on a dark one. The switch follows the system\n   preference, the only information the tool has without asking anyone.\n   ============================================================================ */\n\n\n:host {\n    --ap-bg: #ffffff;\n    --ap-bg-soft: #f4f6f8;\n    --ap-bg-raised: #e9edf2;\n    --ap-text: #1a1d21;\n    --ap-text-soft: #5b6570;\n    --ap-border: #d5dbe2;\n    --ap-accent: #2f6fed;\n    --ap-accent-dark: #1d55c8;\n    --ap-accent-text: #ffffff;\n    --ap-accent-veil: rgba(47, 111, 237, 0.14);\n    --ap-alert-bg: #fdeceb;\n    --ap-alert-border: #e3a9a4;\n    --ap-alert-text: #8a1f16;\n    --ap-shadow: 0 6px 24px rgba(16, 24, 40, 0.18);\n    --ap-radius: 10px;\n    --ap-font: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\",\n                  Arial, sans-serif;\n}\n\n@media (prefers-color-scheme: dark) {\n    :host {\n        --ap-bg: #1d2126;\n        --ap-bg-soft: #262b32;\n        --ap-bg-raised: #323942;\n        --ap-text: #e9ecf0;\n        --ap-text-soft: #a4adb8;\n        --ap-border: #3a424c;\n        --ap-accent: #6d9bff;\n        --ap-accent-dark: #8fb4ff;\n        --ap-accent-text: #10151c;\n        --ap-accent-veil: rgba(109, 155, 255, 0.18);\n        --ap-alert-bg: #3a1f1c;\n        --ap-alert-border: #7c3a33;\n        --ap-alert-text: #ffb9b1;\n        --ap-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);\n    }\n}\n\n/* ----------------------------------------------------------------------------\n   The layer.\n\n   It covers the viewport and receives NO click: that is what lets the page\n   behave exactly as usual as long as the tool is not in annotation mode.\n   Each widget re-enables clicks for itself alone.\n   ---------------------------------------------------------------------------- */\n\n.ap-layer {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    font-family: var(--ap-font);\n    font-size: 14px;\n    line-height: 1.45;\n    color: var(--ap-text);\n    text-align: left;\n    -webkit-font-smoothing: antialiased;\n}\n\n.ap-layer button,\n.ap-layer input,\n.ap-layer textarea {\n    font-family: inherit;\n    font-size: inherit;\n    line-height: inherit;\n    color: inherit;\n    margin: 0;\n    box-sizing: border-box;\n}\n\n/* ----------------------------------------------------------------------------\n   The button: the only thing visible when the tool is at rest.\n   ---------------------------------------------------------------------------- */\n\n.ap-button {\n    position: fixed;\n    right: 16px;\n    bottom: 16px;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 9px 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: 999px;\n    background: var(--ap-bg);\n    color: var(--ap-text);\n    box-shadow: var(--ap-shadow);\n    cursor: pointer;\n    pointer-events: auto;\n    opacity: 0.92;\n    transition: opacity 0.15s ease, transform 0.15s ease;\n}\n\n.ap-button:hover,\n.ap-button:focus-visible {\n    opacity: 1;\n    transform: translateY(-1px);\n}\n\n.ap-button:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n.ap-button[aria-pressed=\"true\"] {\n    background: var(--ap-accent);\n    border-color: var(--ap-accent);\n    color: var(--ap-accent-text);\n    opacity: 1;\n}\n\n.ap-button-dot {\n    display: inline-block;\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    background: var(--ap-accent);\n    flex: none;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-dot {\n    background: var(--ap-accent-text);\n}\n\n.ap-button-count {\n    padding: 1px 7px;\n    border-radius: 999px;\n    background: var(--ap-bg-raised);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-count {\n    background: rgba(255, 255, 255, 0.22);\n    color: var(--ap-accent-text);\n}\n\n/* ----------------------------------------------------------------------------\n   The pointing highlight.\n\n   It is DRAWN HERE, from the coordinates of the element being pointed at.\n   Nothing is put on the element itself: no class, no attribute, no style. So\n   the site cannot move by a single pixel because of the pointing.\n   ---------------------------------------------------------------------------- */\n\n.ap-highlight {\n    position: fixed;\n    border: 2px solid var(--ap-accent);\n    border-radius: 3px;\n    background: var(--ap-accent-veil);\n    pointer-events: none;\n    display: none;\n}\n\n.ap-highlight-label {\n    position: fixed;\n    max-width: 320px;\n    padding: 4px 8px;\n    border-radius: 6px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    pointer-events: none;\n    display: none;\n    box-shadow: var(--ap-shadow);\n}\n\n/* ----------------------------------------------------------------------------\n   The markers: \"there are already notes here\".\n   ---------------------------------------------------------------------------- */\n\n.ap-marker {\n    position: fixed;\n    min-width: 22px;\n    height: 22px;\n    padding: 0 6px;\n    border: 2px solid var(--ap-bg);\n    border-radius: 999px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    font-weight: 700;\n    line-height: 18px;\n    text-align: center;\n    cursor: pointer;\n    pointer-events: auto;\n    box-shadow: var(--ap-shadow);\n}\n\n.ap-marker:focus-visible {\n    outline: 2px solid var(--ap-accent-dark);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The panel.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel {\n    position: fixed;\n    top: 12px;\n    right: 12px;\n    bottom: 72px;\n    width: 360px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n    overflow: hidden;\n}\n\n.ap-panel.ap-open {\n    display: flex;\n}\n\n.ap-panel-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n}\n\n.ap-panel-title {\n    font-size: 15px;\n    font-weight: 600;\n    flex: 1 1 auto;\n}\n\n.ap-panel-instructions {\n    padding: 10px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    color: var(--ap-text-soft);\n    font-size: 13px;\n}\n\n.ap-panel-body {\n    flex: 1 1 auto;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 14px 14px;\n}\n\n.ap-panel-footer {\n    padding: 8px 14px;\n    border-top: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n\n.ap-section-title {\n    margin: 14px 0 6px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-weight: 600;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n\n.ap-section-help {\n    margin: 0 0 8px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-empty {\n    margin: 16px 0;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   A note, and its replies.\n   ---------------------------------------------------------------------------- */\n\n.ap-note {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n}\n\n.ap-note.ap-orphan {\n    background: var(--ap-bg-soft);\n}\n\n.ap-note.ap-focused {\n    border-color: var(--ap-accent);\n    box-shadow: 0 0 0 3px var(--ap-accent-veil);\n}\n\n.ap-note-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-note-author {\n    font-weight: 600;\n}\n\n.ap-note-date {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-note-target {\n    margin: 4px 0 0;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-text {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-actions {\n    margin-top: 8px;\n    display: flex;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-replies {\n    margin: 8px 0 0;\n    padding-left: 10px;\n    border-left: 2px solid var(--ap-border);\n}\n\n.ap-reply {\n    margin: 8px 0 0;\n}\n\n/* ----------------------------------------------------------------------------\n   The form, anchored near the element pointed at.\n   ---------------------------------------------------------------------------- */\n\n.ap-form {\n    position: fixed;\n    width: 340px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    gap: 8px;\n    padding: 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n}\n\n.ap-form.ap-open {\n    display: flex;\n}\n\n.ap-form-title {\n    font-size: 15px;\n    font-weight: 600;\n}\n\n.ap-form-target {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-label {\n    display: block;\n    margin-bottom: 3px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--ap-text-soft);\n}\n\n.ap-help {\n    margin: 3px 0 0;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n.ap-field,\n.ap-area {\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n}\n\n.ap-field:focus,\n.ap-area:focus {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n.ap-area {\n    min-height: 92px;\n    resize: vertical;\n}\n\n.ap-actions {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-counter {\n    margin-left: auto;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   Buttons.\n   ---------------------------------------------------------------------------- */\n\n.ap-primary,\n.ap-secondary,\n.ap-link {\n    border-radius: 8px;\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.ap-primary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-accent);\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-weight: 600;\n}\n\n.ap-primary:hover {\n    background: var(--ap-accent-dark);\n    border-color: var(--ap-accent-dark);\n}\n\n.ap-secondary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-border);\n    background: var(--ap-bg);\n    color: var(--ap-text);\n}\n\n.ap-secondary:hover {\n    background: var(--ap-bg-raised);\n}\n\n.ap-link {\n    padding: 2px 4px;\n    border: 0;\n    background: none;\n    color: var(--ap-accent);\n    text-decoration: underline;\n    font-size: 13px;\n}\n\n.ap-primary:disabled,\n.ap-secondary:disabled,\n.ap-link:disabled {\n    opacity: 0.6;\n    cursor: default;\n}\n\n.ap-primary:focus-visible,\n.ap-secondary:focus-visible,\n.ap-link:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The failures.\n\n   They are RED, at the top of the block concerned, and carry the message the\n   server returned as it stands: that is how a non-technical team learns that\n   its remark is not saved, instead of believing it is.\n   ---------------------------------------------------------------------------- */\n\n.ap-error {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-alert-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-alert-bg);\n    color: var(--ap-alert-text);\n}\n\n.ap-error-title {\n    font-weight: 700;\n    margin-bottom: 4px;\n}\n\n.ap-error-detail {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    font-size: 13px;\n}\n\n.ap-error .ap-link {\n    color: var(--ap-alert-text);\n}\n\n/* ----------------------------------------------------------------------------\n   Narrow: the panel takes the full width, and so does the form.\n   ---------------------------------------------------------------------------- */\n\n/* ----------------------------------------------------------------------------\n   Narrow.\n\n   DEFECT OBSERVED at 375 px wide: a panel taking the full height covers the\n   whole page, and no element can be pointed at any more -- every click lands\n   on the panel. So it becomes a bottom band, which leaves the top half of\n   the viewport free; one scrolls the page there to bring the wanted element\n   into view. The form, for its part, hides the panel while typing (see\n   notes.js): on a screen that size, writing and reading the list at the same\n   time does not hold.\n   ---------------------------------------------------------------------------- */\n\n/* On a narrow screen the panel becomes a bottom band and the form takes the\n   full width.\n\n   THE WIDTH CEILING IS KEPT, and it comes from a measured defect: \"left: 8;\n   right: 8\" sizes the element against its CONTAINING BLOCK, which the host\n   site's horizontal overflow can make wider than the visible window.\n   Measured, in mobile emulation at 390 px: the site overflows to 407 px\n   (with the tool and without it), and the panel came out 391 px wide\n   starting at 8, that is 9 px off screen. \"100vw\" is the window, not the\n   containing block: the ceiling therefore does nothing when the site does\n   not overflow, and pulls the width back when it does. */\n@media (max-width: 560px) {\n    .ap-panel {\n        top: auto;\n        right: 8px;\n        left: 8px;\n        bottom: 66px;\n        height: 52vh;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n\n    .ap-form {\n        left: 8px;\n        right: 8px;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-button {\n        transition: none;\n    }\n}\n\n/* The failure shows without opening the panel: the button's dot changes\n   colour. A team that does not click must be able to see that something is\n   wrong. */\n.ap-button.ap-failed .ap-button-dot {\n    background: var(--ap-alert-text);\n}\n\n.ap-button.ap-failed {\n    border-color: var(--ap-alert-border);\n}\n\n/* Signature reminder, in the note form.\n   The name was shown at the foot of the panel only: invisible at the moment\n   one writes. A user reported not knowing which name they were writing\n   under. */\n.ap-form-signature {\n    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;\n    margin: 0 0 .6rem; font-size: .85rem; opacity: .8;\n}\n\n/* Resolution state, said on the card.\n   Two cases NOT to be confused: resolved and online, resolved but not\n   deployed yet. The second keeps the defect on the reviewer's screen; hiding\n   it or announcing it as fixed would cost them their trust in the tool. */\n.ap-state-mark {\n    display: inline-block; margin: 0 0 .5rem;\n    padding: .15rem .55rem; border-radius: 4px;\n    font-size: .75rem; font-weight: 600; letter-spacing: .02em;\n}\n.ap-note.ap-resolved { opacity: .72; }\n.ap-note.ap-resolved .ap-state-mark {\n    color: #0f7a52; background: rgba(16, 185, 129, .14);\n}\n.ap-note.ap-resolved-pending .ap-state-mark {\n    color: #8a5a00; background: rgba(245, 158, 11, .16);\n}\n/* The \"it is fixed\" / \"reopen\" block, opened under the card. Same shape as\n   the reply block: it is the same gesture, one answers a remark. */\n.ap-resolve,\n.ap-reply-form {\n    margin-top: .6rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-border);\n}\n\n.ap-history-toggle {\n    display: block; width: 100%; margin: 1rem 0 .25rem;\n    padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;\n    background: none; color: inherit; font: inherit; opacity: .7; cursor: pointer;\n}\n.ap-history-toggle:hover { opacity: 1; }\n\n\n/* ----------------------------------------------------------------------------\n   Setup and pasting the salt.\n\n   These are the only screens where something is copied by hand. Everything\n   there is SELECTABLE and monospaced: a 43-character salt copied wrong\n   cannot be recovered, and nothing helps less than a font that confuses I, l\n   and 1.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel-wide {\n    width: 560px;\n}\n\n.ap-copy {\n    display: flex;\n    align-items: flex-start;\n    gap: 8px;\n    margin: 0 0 12px;\n}\n\n.ap-code {\n    flex: 1 1 auto;\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\",\n                 monospace;\n    font-size: 12.5px;\n    line-height: 1.5;\n    resize: vertical;\n    white-space: pre;\n    overflow-x: auto;\n}\n\n.ap-code:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n@media (max-width: 560px) {\n    .ap-panel-wide {\n        width: auto;\n    }\n\n    .ap-copy {\n        flex-direction: column;\n    }\n}\n";
 
-    /* ==== 00-preambule.js ==== */
+    /* ==== 00-preamble.js ==== */
 
-    /* -- 0. Ou suis-je, quel projet, et donc ou est l'API --------------------
-       Rien de ce qui suit n'est devine. Tout est DECLARE sur la balise, parce
-       qu'un client servi par un CDN ne peut plus rien deduire de sa propre
-       adresse : elle ne parle pas du site relu. */
+    /* -- 0. Where am I, which project, and therefore where is the API --------
+       Nothing below is guessed. Everything is DECLARED on the tag, because a
+       client served by a CDN can no longer deduce anything from its own
+       address: that address says nothing about the site under review. */
 
     const script = document.currentScript;
     if (!script || !script.src) {
-        /* Charge autrement qu'en <script src> : on ne devine pas une adresse
-           d'API, on s'abstient. Attention, cela couvre aussi le cas
-           type="module" — document.currentScript y vaut null. La balise doit
-           rester une balise classique, et le LISEZMOI le dit. */
+        /* Loaded some other way than <script src>: we do not guess an API
+           address, we stay out. Careful, this also covers type="module" --
+           document.currentScript is null there. The tag must stay a classic
+           tag, and the README says so. */
         return;
     }
 
-    const donnees = script.dataset || {};
-    const lire = (nom) => String((donnees[nom] === undefined ? '' : donnees[nom])).trim();
+    const data = script.dataset || {};
+    const read = (name) => String((data[name] === undefined ? '' : data[name])).trim();
 
-    /* L'adresse du serveur.
+    /* The server address.
 
-       En auto-heberge, le client est servi par le site lui-meme et l'ancienne
-       deduction « ../api.php » suffit encore : elle a fonctionne pendant toute la
-       vie du format 1, on ne la retire pas.
+       Self-hosted, the client is served by the site itself and the old
+       "../api.php" deduction is still enough: it worked for the whole life of
+       format 1, we are not removing it.
 
-       Des que le client part en CDN, elle devient fausse — l'API n'est pas chez
-       le CDN — et il faut la declarer. On ne cherche pas a rattraper : une
-       adresse d'API devinee de travers enverrait les remarques nulle part. */
-    const ADRESSE_DECLAREE = lire('serveur');
+       As soon as the client goes to a CDN it becomes wrong -- the API is not at
+       the CDN -- and it has to be declared. We do not try to recover: an API
+       address guessed wrong would send the remarks nowhere. */
+    const DECLARED_SERVER = read('server');
     let API = '';
-    if (ADRESSE_DECLAREE) {
-        API = new URL(ADRESSE_DECLAREE, document.baseURI).href;
+    if (DECLARED_SERVER) {
+        API = new URL(DECLARED_SERVER, document.baseURI).href;
     } else if (new URL(script.src).origin === location.origin) {
         API = new URL('../api.php', script.src).href;
     }
 
-    /* L'identifiant du projet, engendre a l'installation (voir 70-installation).
-       22 caracteres de base64url : la forme est verifiee ici, parce qu'un
-       identifiant tronque par un copier-coller produirait sinon un projet vide
-       cote serveur, et une page qui ne montre jamais aucune note. */
-    const PROJET_DECLARE = lire('projet');
-    const PROJET_BIEN_FORME = /^[A-Za-z0-9_-]{22}$/.test(PROJET_DECLARE);
-    const PROJET = PROJET_BIEN_FORME ? PROJET_DECLARE : '';
+    /* The project id, generated at setup (see 70-setup). 22 base64url
+       characters: the shape is checked here, because an id truncated by a
+       copy-paste would otherwise produce an empty project on the server side,
+       and a page that never shows a single note. */
+    const DECLARED_PROJECT = read('project');
+    const PROJECT_WELL_FORMED = /^[A-Za-z0-9_-]{22}$/.test(DECLARED_PROJECT);
+    const PROJECT = PROJECT_WELL_FORMED ? DECLARED_PROJECT : '';
 
-    /* Le mode d'ecriture des notes A VENIR. Chiffre par defaut : c'est le seul
-       defaut qui ne demande pas a l'installateur de comprendre le modele de
-       menace avant d'ecrire sa premiere remarque.
+    /* The write mode for the notes TO COME. Encrypted by default: it is the only
+       default that does not ask the installer to understand the threat model
+       before writing a first remark.
 
-       Le serveur reste l'autorite : en relais il REFUSE « clair » en 400, et
-       c'est son message qui s'affiche. On ne duplique pas ici une regle qu'on ne
-       peut pas verifier — le client ne sait pas s'il parle a un relais. */
-    const MODE = lire('mode').toLowerCase() === 'clair' ? 'clair' : 'chiffre';
+       The server stays the authority: on a relay it REFUSES "plain" with a 400,
+       and its message is what gets shown. We do not duplicate here a rule we
+       cannot check -- the client does not know whether it is talking to a relay. */
+    const MODE = read('mode').toLowerCase() === 'plain' ? 'plain' : 'encrypted';
 
-    /* La portee : quelles pages appartiennent au projet.
+    /* The scope: which pages belong to the project.
 
-       Le prefixe de chemin est verifie ICI, avant tout, et c'est le seul endroit
-       ou il puisse l'etre : le serveur ne voit pas les chemins (index aveugle,
-       FORMAT.md §4). C'est donc du RANGEMENT — la balise peut rester en pied de
-       toutes les pages du site sans que la documentation en ligne recolte les
-       notes de la preproduction — et PAS une frontiere de securite : qui a
-       l'identifiant de projet et le sel ecrit ou il veut. */
-    const PREFIXE_CHEMIN = lire('chemin');
+       The path prefix is checked HERE, before anything else, and this is the
+       only place where it can be: the server does not see paths (blind index,
+       FORMAT.md section 4). So it is TIDINESS -- the tag can stay at the foot of
+       every page of the site without the online documentation collecting the
+       staging notes -- and NOT a security boundary: whoever has the project id
+       and the salt writes wherever they like. */
+    const PATH_PREFIX = read('path');
 
-    /* Les origines du projet. Le vrai verrou est celui du serveur (FORMAT.md
-       §6.2) ; celui-ci evite seulement de parler a un serveur qui va dire non,
-       par exemple quand la balise a ete recopiee sur un autre site avec le reste
-       du gabarit. Il ne protege rien : un client fabrique ne le lit pas. */
-    const DOMAINES = lire('domaines').split(',').map((d) => d.trim()).filter(Boolean);
+    /* The project origins. The real lock is the server's (FORMAT.md section
+       6.2); this one only avoids talking to a server that is going to say no,
+       for instance when the tag was copied onto another site along with the
+       rest of a template. It protects nothing: a hand-made client does not read
+       it. */
+    const DOMAINS = read('domains').split(',').map((d) => d.trim()).filter(Boolean);
 
-    /* Ecran d'installation. Il ne s'ouvre QUE si on le demande par un attribut :
-       sans lui, une balise sans projet ne fait strictement rien, comme un dossier
-       recopie par erreur. C'est la regle du silence, appliquee a l'installation. */
-    const INSTALLATION_DEMANDEE = Object.prototype.hasOwnProperty.call(donnees, 'installation');
+    /* Setup screen. It opens ONLY when asked for by an attribute: without it, a
+       tag with no project does strictly nothing, like a directory copied there
+       by mistake. That is the rule of silence, applied to setup. */
+    const SETUP_REQUESTED = Object.prototype.hasOwnProperty.call(data, 'setup');
 
-    /* Contexte de prise de note, DECLARE par le site hote, jamais devine. Un
-       outil autonome ne peut pas savoir comment le site nomme sa version ; le
-       site, lui, le sait. Sans ces attributs les champs restent vides : une
-       version inventee enverrait chercher un defaut sur une construction qui n'a
-       jamais existe.
+    /* Note-taking context, DECLARED by the host site, never guessed. A
+       standalone tool cannot know how the site names its version; the site
+       does. Without these attributes the fields stay empty: an invented version
+       would send someone hunting for a defect in a build that never existed.
 
-       La taille de la fenetre est relevee A L'ENVOI et non ici : la personne a pu
-       redimensionner, ou basculer son telephone, entre le chargement et la
-       remarque. C'est la taille qu'elle avait sous les yeux qui compte. */
-    const VERSION_SITE = lire('version');
-    const ENVIRONNEMENT = lire('environnement');
-    const fenetreCourante = () =>
+       The viewport size is read AT SEND TIME and not here: the person may have
+       resized, or flipped their phone, between the page load and the remark.
+       What counts is the size they had in front of them. */
+    const SITE_VERSION = read('version');
+    const ENVIRONMENT = read('environment');
+    const currentViewport = () =>
         String(window.innerWidth || 0) + 'x' + String(window.innerHeight || 0);
 
-    /* Fichier de libelles propre au site : DECLARE, et resolu par rapport au
-       DOCUMENT et non a ce fichier-ci. Un fichier de traduction appartient au
-       site relu, pas au CDN qui sert le client. */
-    const URL_LIBELLES_LOCAUX = lire('libelles')
-        ? new URL(lire('libelles'), document.baseURI).href
+    /* A label file belonging to the site: DECLARED, and resolved against the
+       DOCUMENT and not against this file. A translation file belongs to the site
+       under review, not to the CDN serving the client. */
+    const LOCAL_LABELS_URL = read('labels')
+        ? new URL(read('labels'), document.baseURI).href
         : null;
 
-    /* -- Bornes ------------------------------------------------------------
-       Le SERVEUR est l'autorite : il applique les siennes et refuse en les
-       nommant, et c'est SON message qui s'affiche alors. Celles-ci ne servent
-       qu'a prevenir avant l'envoi et a ne pas expedier une chaine absurde.
+    /* -- Limits ------------------------------------------------------------
+       The SERVER is the authority: it applies its own and refuses by naming
+       them, and it is ITS message that gets shown then. These only warn before
+       sending, and keep an absurd string from going out.
 
-       A ecrire franchement : en mode chiffre, le serveur ne voit plus de champs,
-       seulement une enveloppe (FORMAT.md §3.6). Ces bornes-la deviennent donc une
-       CONVENTION DU CLIENT, que rien ne fait respecter a un client modifie. C'est
-       le prix du chiffrement de bout en bout, et il est paye volontiers : l'outil
-       s'adresse a une equipe de recette, pas a un public hostile. */
+       To be said plainly: in encrypted mode the server no longer sees fields,
+       only an envelope (FORMAT.md section 3.6). Those limits then become a
+       CLIENT CONVENTION, which nothing enforces on a modified client. That is
+       the price of end-to-end encryption, and it is paid gladly: this tool is
+       for a review team, not for a hostile audience. */
 
-    const MAX_TEXTE = 4000;
-    const MAX_AUTEUR = 80;
-    const MAX_SELECTEUR = 500;
-    const MAX_EMPREINTE = 255;
-    const MAX_EXTRAIT = 160;
+    const MAX_TEXT = 4000;
+    const MAX_AUTHOR = 80;
+    const MAX_SELECTOR = 500;
+    const MAX_FINGERPRINT = 255;
+    const MAX_EXCERPT = 160;
 
-    /* ==== 10-outils.js ==== */
+    /* ==== 10-utils.js ==== */
 
-    /* -- 1. Libelles --------------------------------------------------------
-       Aucun texte destine a l'ecran n'est ecrit ailleurs que dans 15-libelles.
-       Voir l'en-tete de ce fichier pour les deux facons de les remplacer. */
+    /* -- 1. Labels ----------------------------------------------------------
+       No text meant for the screen is written anywhere but in 15-labels. See
+       the header of that file for the two ways of replacing them. */
 
-    const espace = (window.Annotepage = window.Annotepage || {});
+    const ns = (window.Annotepage = window.Annotepage || {});
 
-    /* La version du paquet, posee la ou une console peut la lire. C'est le seul
-       renseignement que l'outil publie sur lui-meme : quand une equipe dit « ca ne
-       marche plus depuis ce matin », la premiere question est laquelle tourne. */
-    espace.version = VERSION_OUTIL;
-    espace.format = FORMAT;
+    /* The package version, put where a console can read it. It is the only fact
+       the tool publishes about itself: when a team says "it stopped working
+       this morning", the first question is which one is running. */
+    ns.version = TOOL_VERSION;
+    ns.format = FORMAT;
 
-    const T = (cle, valeurs) => {
-        const locaux = espace.libelles || {};
-        const defauts = espace.libellesParDefaut || {};
-        // Un libelle absent retombe sur le francais ; a defaut de francais, sur
-        // la cle — qui ne devrait jamais atteindre l'ecran, mais vaut mieux
-        // qu'un trou.
-        let texte = locaux[cle];
-        if (typeof texte !== 'string') texte = defauts[cle];
-        if (typeof texte !== 'string') texte = cle;
-        if (!valeurs) return texte;
-        return texte.replace(/\{([a-z]+)\}/g, (brut, nom) =>
-            Object.prototype.hasOwnProperty.call(valeurs, nom) ? String(valeurs[nom]) : brut
+    const T = (key, values) => {
+        const local = ns.labels || {};
+        const defaults = ns.defaultLabels || {};
+        // A missing label falls back on the default set; failing that, on the
+        // key -- which should never reach the screen, but beats a hole.
+        let text = local[key];
+        if (typeof text !== 'string') text = defaults[key];
+        if (typeof text !== 'string') text = key;
+        if (!values) return text;
+        return text.replace(/\{([a-z]+)\}/g, (raw, name) =>
+            Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : raw
         );
     };
 
-    /** « 0 note », « 1 note », « n notes » — le pluriel est un libelle. */
-    const compteLisible = (n, zero, une, plusieurs) =>
-        n === 0 ? T(zero) : n === 1 ? T(une) : T(plusieurs, { n: n });
+    /** "0 notes", "1 note", "n notes" -- the plural is a label. */
+    const readableCount = (n, zero, one, many) =>
+        n === 0 ? T(zero) : n === 1 ? T(one) : T(many, { n: n });
 
-    /* -- 2. Petits outils ---------------------------------------------------- */
+    /* -- 2. Small utilities -------------------------------------------------- */
 
-    const creer = (balise, classe, texte) => {
-        const e = document.createElement(balise);
-        if (classe) e.className = classe;
-        // textContent partout, innerHTML nulle part : le texte d'une note est
-        // saisi par un humain et ne doit jamais etre interprete comme du
-        // balisage, quoi qu'il contienne. Cette regle ne connait pas d'exception
-        // dans ce paquet, pas meme pour l'ecran d'installation.
-        if (texte !== undefined && texte !== null) e.textContent = texte;
+    const create = (tag, cls, text) => {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        // textContent everywhere, innerHTML nowhere: the text of a note is typed
+        // by a human and must never be interpreted as markup, whatever it
+        // contains. This rule has no exception in this package, not even for the
+        // setup screen.
+        if (text !== undefined && text !== null) e.textContent = text;
         return e;
     };
 
-    const vider = (e) => {
+    const empty = (e) => {
         while (e.firstChild) e.removeChild(e.firstChild);
     };
 
-    const normaliser = (t) => String(t == null ? '' : t).replace(/\s+/g, ' ').trim();
+    const normalize = (t) => String(t == null ? '' : t).replace(/\s+/g, ' ').trim();
 
-    const couper = (t, max) => (t.length > max ? t.slice(0, max) : t);
+    const clip = (t, max) => (t.length > max ? t.slice(0, max) : t);
 
-    /* -- 3. Octets, texte, base64url ----------------------------------------
-       base64url SANS remplissage : c'est la seule forme du format (FORMAT.md
-       §1.1 et §3.3). Elle traverse une chaine de requete, un corps urlencode et
-       une colonne SQL sans echappement, et se recopie a la main sans qu'un « = »
-       final se perde dans un courriel. */
+    /* -- 3. Bytes, text, base64url ------------------------------------------
+       base64url WITHOUT padding: it is the only form in the format (FORMAT.md
+       sections 1.1 and 3.3). It goes through a query string, a urlencoded body
+       and an SQL column without escaping, and it can be copied by hand without a
+       trailing "=" getting lost in an email. */
 
-    const encodeurUtf8 = new TextEncoder();
-    const decodeurUtf8 = new TextDecoder();
+    const utf8Encoder = new TextEncoder();
+    const utf8Decoder = new TextDecoder();
 
-    const utf8 = (t) => encodeurUtf8.encode(String(t));
-    const deUtf8 = (octets) => decodeurUtf8.decode(octets);
+    const utf8 = (t) => utf8Encoder.encode(String(t));
+    const fromUtf8 = (bytes) => utf8Decoder.decode(bytes);
 
     const b64url = (source) => {
         const u = new Uint8Array(source);
-        let brut = '';
-        // Par paquets : String.fromCharCode.apply sur un tableau de 24000 octets
-        // depasse la pile d'appels de certains navigateurs.
+        let raw = '';
+        // In chunks: String.fromCharCode.apply on an array of 24000 bytes blows
+        // the call stack in some browsers.
         for (let i = 0; i < u.length; i += 4096) {
-            brut += String.fromCharCode.apply(null, u.subarray(i, i + 4096));
+            raw += String.fromCharCode.apply(null, u.subarray(i, i + 4096));
         }
-        return btoa(brut).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     };
 
     /**
-     * Rend un Uint8Array, ou null si la chaine n'est pas du base64url.
+     * Returns a Uint8Array, or null if the string is not base64url.
      *
-     * Rendre null plutot que lever : l'appelant est toujours en train de lire une
-     * ligne venue du reseau, et une ligne illisible se compte, elle n'arrete pas
-     * la lecture des autres.
+     * Returning null rather than throwing: the caller is always in the middle of
+     * reading a line that came off the network, and an unreadable line gets
+     * counted, it does not stop the others from being read.
      */
-    const deB64url = (texte) => {
-        const t = String(texte).replace(/-/g, '+').replace(/_/g, '/');
+    const fromB64url = (text) => {
+        const t = String(text).replace(/-/g, '+').replace(/_/g, '/');
         if (!/^[A-Za-z0-9+/]*$/.test(t)) return null;
-        let brut = '';
+        let raw = '';
         try {
-            brut = atob(t + '==='.slice((t.length + 3) % 4));
+            raw = atob(t + '==='.slice((t.length + 3) % 4));
         } catch (e) {
             return null;
         }
-        const u = new Uint8Array(brut.length);
-        for (let i = 0; i < brut.length; i += 1) u[i] = brut.charCodeAt(i);
+        const u = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i += 1) u[i] = raw.charCodeAt(i);
         return u;
     };
 
     /* -- 4. Versions ---------------------------------------------------------
-       Le correctif d'une note est-il DEJA EN LIGNE ?
-       On compare les trois nombres de tete de la version (1.0.69-rc.abc1234) :
-       ils croissent a chaque construction. Une note corrigee dans une version
-       plus recente que celle servie est corrigee mais pas encore deployee, et il
-       faut le dire — sinon on la masque alors que le defaut est toujours la.
-       Version illisible ou absente : on considere le correctif NON deploye,
-       parce qu'afficher une note de trop coute moins cher que d'en cacher une
-       qui vaut encore. */
+       Is the fix for a note ALREADY ONLINE?
+       We compare the three leading numbers of the version (1.0.69-rc.abc1234):
+       they grow with every build. A note resolved in a version more recent than
+       the one being served is fixed but not deployed yet, and that has to be
+       said -- otherwise we hide it while the defect is still there.
+       Unreadable or missing version: the fix is taken as NOT deployed, because
+       showing one note too many costs less than hiding one that still counts. */
 
-    const chiffresVersion = (v) => {
+    const versionNumbers = (v) => {
         const m = /^(\d+)\.(\d+)\.(\d+)/.exec(String(v || ''));
         return m ? [+m[1], +m[2], +m[3]] : null;
     };
 
-    const dejaDeploye = (versionCorrection) => {
-        const a = chiffresVersion(versionCorrection);
-        const b = chiffresVersion(VERSION_SITE);
+    const alreadyDeployed = (fixVersion) => {
+        const a = versionNumbers(fixVersion);
+        const b = versionNumbers(SITE_VERSION);
         if (!a || !b) return false;
         for (let i = 0; i < 3; i += 1) {
             if (b[i] !== a[i]) return b[i] > a[i];
@@ -257,22 +254,21 @@
     };
 
     /**
-     * Date ISO du serveur -> heure LOCALE DU LECTEUR.
+     * ISO date from the server -> THE READER'S LOCAL TIME.
      *
-     * Le serveur ecrit en UTC avec le decalage explicite ; la conversion se fait
-     * ici, une seule fois, et personne n'a a se demander de quel fuseau il
-     * s'agit.
+     * The server writes in UTC with an explicit offset; the conversion happens
+     * here, once, and nobody has to wonder which time zone they are looking at.
      *
-     * La langue est celle DU DOCUMENT (attribut lang de <html>), et a defaut
-     * celle du navigateur : sur une page francaise lue depuis un navigateur
-     * anglais, « 20 aout 2026 » est plus juste que « Aug 20, 2026 ».
+     * The language is THE DOCUMENT'S (the lang attribute of <html>), falling
+     * back on the browser's: on a French page read from an English browser,
+     * "20 aout 2026" is more accurate than "Aug 20, 2026".
      */
-    const dateLisible = (iso) => {
+    const readableDate = (iso) => {
         const d = new Date(iso);
-        if (isNaN(d.getTime())) return T('date.inconnue');
-        const langue = (document.documentElement.getAttribute('lang') || '').trim();
+        if (isNaN(d.getTime())) return T('date.unknown');
+        const language = (document.documentElement.getAttribute('lang') || '').trim();
         try {
-            return d.toLocaleString(langue || undefined,
+            return d.toLocaleString(language || undefined,
                 { dateStyle: 'medium', timeStyle: 'short' });
         } catch (e) {
             try {
@@ -283,363 +279,363 @@
         }
     };
 
-    /* ==== 15-libelles.js ==== */
+    /* ==== 15-labels.js ==== */
 
-    /* -- 5. TOUS LES TEXTES AFFICHES PAR L'OUTIL -----------------------------
+    /* -- 5. EVERY TEXT THE TOOL PUTS ON SCREEN -------------------------------
 
-       Le francais est la langue par defaut, et c'est le seul endroit ou elle
-       s'ecrit : aucun autre fichier de ce paquet ne contient une phrase destinee
-       a l'ecran. Traduire l'outil, ou simplement changer un mot qui ne convient
-       pas a une equipe, ne demande donc jamais de toucher au code.
+       English is the default language, and this is the only place it is
+       written: no other file in this package contains a sentence meant for the
+       screen. Translating the tool, or simply changing a word that does not suit
+       a team, therefore never means touching the code.
 
-       DEUX FACONS DE REMPLACER UN LIBELLE, par ordre de priorite :
+       TWO WAYS TO REPLACE A LABEL, in order of priority:
 
-         1. un objet defini AVANT le chargement du client :
+         1. an object defined BEFORE the client is loaded:
 
                 <script>
-                  window.Annotepage = { libelles: {
-                    'bouton.ouvrir': 'Annotate this page'
+                  window.Annotepage = { labels: {
+                    'button.open': 'Annoter la page'
                   } };
                 </script>
                 <script src="https://.../annotepage.js" ... defer></script>
 
-         2. un fichier voisin, DECLARE sur la balise :
+         2. a neighbouring file, DECLARED on the tag:
 
                 <script src="https://.../annotepage.js"
-                        data-libelles="/libelles-locaux.js" defer></script>
+                        data-labels="/local-labels.js" defer></script>
 
-            Ce fichier ecrit, comme celui-ci, dans window.Annotepage : il pose
-            « libelles » (ses propres textes) et non « libellesParDefaut ». Il est
-            resolu par rapport au DOCUMENT, pas au CDN : une traduction appartient
-            au site relu.
+            That file writes, like this one, into window.Annotepage: it sets
+            "labels" (its own texts) and not "defaultLabels". It is resolved
+            against the DOCUMENT, not against the CDN: a translation belongs to
+            the site under review.
 
-       Pourquoi le fichier local est DECLARE et non cherche : aller voir « s'il
-       est present » suppose une requete qui, le plus souvent, repond 404 — et le
-       navigateur journalise lui-meme cet echec dans la console de CHAQUE page.
+       A full French set ships in labels/fr.json, as a worked example.
 
-       UN LIBELLE ABSENT RETOMBE SUR LE FRANCAIS. Une traduction partielle est
-       donc utilisable telle quelle.
+       Why the local file is DECLARED and not looked for: going to see "whether
+       it is there" means a request that usually answers 404 -- and the browser
+       logs that failure itself, in the console of EVERY page.
 
-       FORME : un objet PLAT. Les cles sont pointees pour se lire, pas pour etre
-       imbriquees — « bouton.ouvrir » est une chaine, pas un chemin.
+       A MISSING LABEL FALLS BACK ON ENGLISH. A partial translation is therefore
+       usable as it is.
 
-       { ... } dans une valeur est un emplacement remplace a l'affichage
-       ({n}, {max}, {nom}, {extrait}, {code}). Un emplacement inconnu est laisse
-       tel quel. */
+       SHAPE: a FLAT object. The keys are dotted so they read, not so they nest --
+       "button.open" is a string, not a path.
 
-    espace.libellesParDefaut = {
+       { ... } in a value is a placeholder replaced at display time ({n}, {max},
+       {name}, {excerpt}, {code}). An unknown placeholder is left as it is. */
 
-        /* -- Le bouton, seule trace de l'outil quand il est au repos ------- */
-        'bouton.ouvrir': 'Annoter la page',
-        'bouton.fermer': 'Terminer',
-        'bouton.aide': 'Écrire et lire les remarques sur cette page',
-        'bouton.notes_zero': '',
-        'bouton.notes_une': '1 note',
-        'bouton.notes_n': '{n} notes',
+    ns.defaultLabels = {
 
-        /* -- Le panneau ---------------------------------------------------- */
-        'panneau.titre': 'Notes de relecture',
-        'panneau.fermer': 'Fermer',
-        'panneau.consigne': 'Cliquez sur un élément de la page pour écrire une remarque à son sujet.',
-        'panneau.echap': 'Touche Échap pour arrêter.',
-        'panneau.vide': 'Personne n’a encore écrit de note sur cette page.',
-        'panneau.section_page': 'Sur cette page',
-        'panneau.actualiser': 'Actualiser',
+        /* -- The button, the tool's only trace when it is at rest ---------- */
+        'button.open': 'Annotate this page',
+        'button.close': 'Done',
+        'button.help': 'Write and read the remarks on this page',
+        'button.notes_zero': '',
+        'button.notes_one': '1 note',
+        'button.notes_n': '{n} notes',
 
-        /* -- Les notes dont l'element ne se retrouve plus ------------------- */
-        'orphelines.titre': 'Notes dont l’élément a changé',
-        'orphelines.aide':
-            'Ces remarques portaient sur un élément qui n’existe plus sous la même '
-            + 'forme. Elles sont conservées telles quelles.',
+        /* -- The panel ----------------------------------------------------- */
+        'panel.title': 'Review notes',
+        'panel.close': 'Close',
+        'panel.instructions': 'Click an element of the page to write a remark about it.',
+        'panel.escape': 'Press Escape to stop.',
+        'panel.empty': 'Nobody has written a note on this page yet.',
+        'panel.section_page': 'On this page',
+        'panel.refresh': 'Refresh',
 
-        /* -- Une note ------------------------------------------------------ */
-        'note.sur': 'À propos de : {extrait}',
-        'note.sans_element': 'À propos de la page entière',
-        'note.element_perdu': 'Élément non retrouvé sur la page actuelle',
-        'note.voir': 'Montrer sur la page',
-        'note.repondre': 'Répondre',
-        'note.reponse_placeholder': 'Votre réponse',
-        'note.reponse_envoyer': 'Envoyer la réponse',
-        'note.annuler': 'Annuler',
-        'note.marquer_corrigee': 'Marquer corrigée',
-        'note.rouvrir': 'Rouvrir cette remarque',
+        /* -- Notes whose element cannot be found any more ------------------- */
+        'orphans.title': 'Notes whose element has changed',
+        'orphans.help':
+            'These remarks were about an element that no longer exists in the same '
+            + 'form. They are kept as they are.',
 
-        /* -- Marquer une remarque corrigee, et revenir sur cette marque ----- */
-        'resolution.aide':
-            'La remarque sera rangée dans l’historique une fois la correction en '
-            + 'ligne. Elle n’est jamais supprimée : elle peut être rouverte.',
-        'resolution.valider': 'C’est corrigé',
-        'reouverture.aide':
-            'La remarque revient dans la liste, avec ses réponses. À faire si la '
-            + 'correction se révèle incomplète.',
-        'reouverture.valider': 'Rouvrir',
+        /* -- A note -------------------------------------------------------- */
+        'note.about': 'About: {excerpt}',
+        'note.no_element': 'About the whole page',
+        'note.element_lost': 'Element not found on the current page',
+        'note.show': 'Show on the page',
+        'note.reply': 'Reply',
+        'note.reply_placeholder': 'Your reply',
+        'note.reply_send': 'Send the reply',
+        'note.cancel': 'Cancel',
+        'note.mark_resolved': 'Mark resolved',
+        'note.reopen': 'Reopen this remark',
 
-        /* -- Le formulaire ------------------------------------------------- */
-        'formulaire.titre': 'Votre remarque',
-        'formulaire.sur': 'À propos de : {extrait}',
-        'formulaire.sur_sans_texte': 'À propos de l’élément que vous venez de désigner',
-        'formulaire.nom': 'Votre nom',
-        'formulaire.nom_aide': 'Il apparaîtra à côté de vos remarques, et sera retenu pour la prochaine fois.',
-        'formulaire.nom_placeholder': 'Prénom, ou prénom et nom',
-        'formulaire.texte_placeholder': 'Ce que vous avez remarqué',
-        'formulaire.envoyer': 'Envoyer',
-        'formulaire.envoi': 'Envoi en cours...',
-        'formulaire.annuler': 'Annuler',
-        'formulaire.nom_manquant': 'Indiquez votre nom avant d’envoyer.',
-        'formulaire.texte_manquant': 'Écrivez votre remarque avant d’envoyer.',
-        'formulaire.trop_long': 'Votre remarque fait {n} caractères ; la limite est de {max}.',
-        'formulaire.restants': '{n} caractères restants',
+        /* -- Marking a remark resolved, and taking that mark back ----------- */
+        'resolution.help':
+            'The remark moves to the history once the fix is online. It is never '
+            + 'deleted: it can be reopened.',
+        'resolution.confirm': 'It is fixed',
+        'reopening.help':
+            'The remark comes back into the list, with its replies. Do this if the '
+            + 'fix turns out to be incomplete.',
+        'reopening.confirm': 'Reopen',
 
-        /* -- Le nom du relecteur ------------------------------------------- */
-        'auteur.connu': 'Vous écrivez sous le nom de {nom}.',
-        'auteur.changer': 'Changer',
-        'historique.montrer': 'Voir l’historique ({n} corrigée·s)',
-        'historique.masquer': 'Masquer l’historique',
-        'historique.aide': 'Remarques corrigées, dont le correctif est en ligne. '
-            + 'Elles restent ici : une correction jugée faite peut se révéler incomplète.',
-        'note.corrigee': 'Corrigée le {date} par {par}',
-        'note.corrigee_attente': 'Corrigée, en attente de déploiement',
+        /* -- The form ------------------------------------------------------ */
+        'form.title': 'Your remark',
+        'form.about': 'About: {excerpt}',
+        'form.about_no_text': 'About the element you have just pointed at',
+        'form.name': 'Your name',
+        'form.name_help': 'It will appear next to your remarks, and be remembered for next time.',
+        'form.name_placeholder': 'First name, or first and last name',
+        'form.text_placeholder': 'What you noticed',
+        'form.send': 'Send',
+        'form.sending': 'Sending...',
+        'form.cancel': 'Cancel',
+        'form.name_missing': 'Give your name before sending.',
+        'form.text_missing': 'Write your remark before sending.',
+        'form.too_long': 'Your remark is {n} characters long; the limit is {max}.',
+        'form.remaining': '{n} characters left',
 
-        /* -- Les pannes. Elles s'affichent, elles ne se taisent jamais ------ */
-        'erreur.titre': 'Votre remarque n’a PAS été enregistrée',
-        'erreur.titre_lecture': 'Les notes n’ont pas pu être relues',
-        'erreur.titre_resolution': 'L’état de la remarque n’a PAS été changé',
-        'erreur.reseau':
-            'Le serveur n’a pas répondu. Votre texte est conservé ci-dessus : '
-            + 'réessayez dans un instant.',
-        'erreur.inattendue':
-            'Le serveur a répondu quelque chose d’inattendu. Votre texte est '
-            + 'conservé ci-dessus ; prévenez la personne qui suit le site.',
+        /* -- The reviewer's name ------------------------------------------- */
+        'author.known': 'You are writing as {name}.',
+        'author.change': 'Change',
+        'history.show': 'See the history ({n} resolved)',
+        'history.hide': 'Hide the history',
+        'history.help': 'Remarks that are resolved, and whose fix is online. '
+            + 'They stay here: a correction believed done can turn out to be incomplete.',
+        'note.resolved': 'Resolved on {date} by {by}',
+        'note.resolved_pending': 'Resolved, waiting to be deployed',
+        'note.resolved_version': 'Fix shipped in version {version}',
 
-        /* Le refus SEC : un code 4xx sans message lisible, presque toujours une
-           page HTML de pare-feu. Il a sa propre phrase parce que « quelque chose
-           d’inattendu » n’aidait personne : le refus est net, il a un code, et il
-           existe un geste qui le contourne souvent — reformuler. */
-        'erreur.refus':
-            'Le serveur a REFUSÉ la requête (code {code}) sans expliquer pourquoi. '
-            + 'C’est presque toujours un pare-feu placé devant le site, qui a pris '
-            + 'le texte pour une attaque. Votre texte est conservé ci-dessus : '
-            + 'reformulez-le — sans balises < >, sans guillemets, sans fragment de '
-            + 'code ni adresse web — puis réessayez. Si le refus persiste, '
-            + 'prévenez la personne qui suit le site : c’est une règle de pare-feu '
-            + 'à ajuster, pas une panne de l’outil.',
-        'erreur.refus_taille':
-            'Le serveur a refusé la requête parce qu’elle est trop longue (code '
-            + '{code}). Votre texte est conservé ci-dessus : raccourcissez-le, ou '
-            + 'découpez-le en deux remarques.',
-        'erreur.refus_frequence':
-            'Le serveur a refusé la requête parce qu’il en a reçu trop en peu de '
-            + 'temps (code {code}). Votre texte est conservé ci-dessus : attendez '
-            + 'une minute et réessayez.',
-        'erreur.panne_serveur':
-            'Le serveur a échoué (code {code}). Ce n’est pas votre texte : il est '
-            + 'conservé ci-dessus. Réessayez dans un instant, puis prévenez la '
-            + 'personne qui suit le site.',
-        'erreur.chiffrement':
-            'Le chiffrement a échoué dans ce navigateur : rien n’a été envoyé. '
-            + 'Votre texte est conservé ci-dessus. Rechargez la page et réessayez ; '
-            + 'si cela se reproduit, prévenez la personne qui suit le site.',
-        'erreur.lecture_incomplete': 'Ce qui s’affiche peut être incomplet.',
-        'erreur.masquer': 'Masquer',
+        /* -- Failures. They are shown, they are never kept quiet ----------- */
+        'error.title': 'Your remark has NOT been saved',
+        'error.title_read': 'The notes could not be read back',
+        'error.title_resolution': 'The state of the remark has NOT been changed',
+        'error.network':
+            'The server did not answer. Your text is kept above: try again in a '
+            + 'moment.',
+        'error.unexpected':
+            'The server answered something unexpected. Your text is kept above; '
+            + 'tell whoever looks after the site.',
 
-        /* -- Les notes qu'on ne sait pas lire, et qu'on ne cache pas -------- */
-        'lecture.recentes_une':
-            '1 note a été écrite par une version plus récente d’annotepage et n’a '
-            + 'pas pu être lue.',
-        'lecture.recentes_n':
-            '{n} notes ont été écrites par une version plus récente d’annotepage et '
-            + 'n’ont pas pu être lues.',
-        'lecture.illisibles_une':
-            '1 note n’a pas pu être déchiffrée. Le sel de ce navigateur n’est '
-            + 'peut-être pas celui avec lequel elle a été écrite.',
-        'lecture.illisibles_n':
-            '{n} notes n’ont pas pu être déchiffrées. Le sel de ce navigateur n’est '
-            + 'peut-être pas celui avec lequel elles ont été écrites.',
-        'lecture.inconnues_une':
-            '1 note est écrite dans un mode que cet outil ne connaît pas et n’a pas '
-            + 'été lue.',
-        'lecture.inconnues_n':
-            '{n} notes sont écrites dans un mode que cet outil ne connaît pas et '
-            + 'n’ont pas été lues.',
-        'lecture.titre_partielle': 'Certaines notes n’ont pas pu être lues',
+        /* A FLAT refusal: a 4xx code with no readable message, almost always a
+           firewall's HTML page. It gets its own sentence because "something
+           unexpected" helped nobody: the refusal is plain, it has a code, and
+           there is a move that often gets around it -- rephrasing. */
+        'error.refused':
+            'The server REFUSED the request (code {code}) without saying why. '
+            + 'That is almost always a firewall in front of the site, which took '
+            + 'the text for an attack. Your text is kept above: rephrase it -- no '
+            + '< > tags, no quotes, no fragment of code or web address -- then try '
+            + 'again. If the refusal persists, tell whoever looks after the site: '
+            + 'it is a firewall rule to adjust, not a broken tool.',
+        'error.refused_size':
+            'The server refused the request because it is too long (code {code}). '
+            + 'Your text is kept above: shorten it, or split it into two remarks.',
+        'error.refused_rate':
+            'The server refused the request because it received too many in too '
+            + 'little time (code {code}). Your text is kept above: wait a minute '
+            + 'and try again.',
+        'error.server_failure':
+            'The server failed (code {code}). It is not your text: it is kept '
+            + 'above. Try again in a moment, then tell whoever looks after the '
+            + 'site.',
+        'error.encryption':
+            'Encryption failed in this browser: nothing was sent. Your text is '
+            + 'kept above. Reload the page and try again; if it happens again, '
+            + 'tell whoever looks after the site.',
+        'error.partial_read': 'What is shown may be incomplete.',
+        'error.hide': 'Hide',
 
-        /* -- Les marqueurs poses sur les elements deja annotes -------------- */
-        'marqueur.une': '1 note ici',
-        'marqueur.n': '{n} notes ici',
+        /* -- The notes we cannot read, and do not hide --------------------- */
+        'read.newer_one':
+            '1 note was written by a more recent version of annotepage and could '
+            + 'not be read.',
+        'read.newer_n':
+            '{n} notes were written by a more recent version of annotepage and '
+            + 'could not be read.',
+        'read.unreadable_one':
+            '1 note could not be decrypted. The salt in this browser may not be '
+            + 'the one it was written with.',
+        'read.unreadable_n':
+            '{n} notes could not be decrypted. The salt in this browser may not be '
+            + 'the one they were written with.',
+        'read.unknown_one':
+            '1 note is written in a mode this tool does not know, and was not '
+            + 'read.',
+        'read.unknown_n':
+            '{n} notes are written in a mode this tool does not know, and were not '
+            + 'read.',
+        'read.title_partial': 'Some notes could not be read',
 
-        /* -- Le sel : le seul secret, et il ne se recupere pas -------------- */
-        'sel.titre': 'Le sel de ce projet est nécessaire',
-        'sel.aide':
-            'Les notes de ce projet sont chiffrées dans votre navigateur. Sans le '
-            + 'sel du projet, ce navigateur ne peut ni les lire, ni en écrire. '
-            + 'Demandez-le à la personne qui a installé l’outil, et collez-le '
-            + 'ci-dessous. Il sera retenu par ce navigateur, pour ce site.',
-        'sel.etiquette': 'Le sel du projet (43 caractères)',
-        'sel.valider': 'Utiliser ce sel',
-        'sel.vide': 'Collez le sel avant de valider.',
-        'sel.forme':
-            'Ce n’est pas un sel : on attend 43 caractères parmi A-Z a-z 0-9 - _, '
-            + 'sans espace ni tiret décoratif. Recopiez-le d’un seul bloc.',
-        'sel.mauvais':
-            'Ce sel n’est pas celui de ce projet. Rien n’a été envoyé, rien n’a été '
-            + 'déchiffré. Vérifiez que vous collez le sel du bon projet.',
-        'sel.origine_changee':
-            'Ce sel est retenu par navigateur ET par domaine. Le jour où la '
-            + 'préproduction devient la production, il faut le recoller une fois '
-            + 'sur le nouveau domaine — les notes, elles, ne bougent pas.',
-        'sel.non_retenu':
-            'Ce navigateur refuse de retenir le sel (navigation privée, ou stockage '
-            + 'bloqué). L’outil fonctionne pour cette page, mais le sel sera à '
-            + 'recoller au prochain chargement.',
-        'sel.remplacer': 'Coller un autre sel',
-        'sel.oublier': 'Oublier le sel sur ce navigateur',
+        /* -- The markers put on the elements already annotated ------------- */
+        'marker.one': '1 note here',
+        'marker.n': '{n} notes here',
 
-        /* -- L'installation ------------------------------------------------ */
-        'installation.titre': 'Installer annotepage sur ce site',
-        'installation.engendrer': 'Engendrer un sel et créer le projet',
-        'installation.avertissement_titre': 'À lire avant de continuer',
-        'installation.avertissement':
-            'Le sel ci-dessous est le SEUL secret du projet, et personne d’autre ne '
-            + 'l’a : ni le serveur, ni l’auteur de l’outil, ni personne à qui le '
-            + 'demander. SEL PERDU = NOTES PERDUES, définitivement, sans '
-            + 'récupération possible. Rangez-le maintenant, là où votre équipe range '
-            + 'ses mots de passe, avant de continuer.',
-        'installation.sel': 'Le sel du projet — à conserver',
-        'installation.projet': 'L’identifiant du projet — public, il va dans la page',
-        'installation.balise': 'La balise à coller en fin de <body>, sur les pages à annoter',
-        'installation.serveur': 'À déclarer dans la configuration du serveur',
-        'installation.copier': 'Copier',
-        'installation.copie': 'Copié',
-        'installation.copie_echec': 'Sélectionnez le texte et copiez-le à la main.',
-        'installation.continuer': 'J’ai rangé le sel, continuer',
-        'installation.faite':
-            'Le sel est retenu par ce navigateur. Collez la balise ci-dessus dans '
-            + 'les pages, déclarez le projet côté serveur, puis rechargez cette '
-            + 'page : l’outil prend la suite.',
-        'installation.sans_serveur':
-            'Aucune adresse de serveur n’est déclarée sur la balise (data-serveur), '
-            + 'et le client ne vient pas du site : il ne peut pas deviner où écrire. '
-            + 'Ajoutez data-serveur à la balise.',
-        'installation.mode_clair':
-            'Ce projet est déclaré en mode CLAIR : le serveur lira les remarques, '
-            + 'les noms et les chemins. Ce mode n’est acceptable que si le serveur '
-            + 'est le site lui-même, derrière la même restriction d’accès. Un relais '
-            + 'le refusera.',
+        /* -- The salt: the only secret, and it cannot be recovered ---------- */
+        'salt.title': 'The salt of this project is needed',
+        'salt.help':
+            'The notes of this project are encrypted in your browser. Without the '
+            + 'project salt, this browser can neither read them nor write any. Ask '
+            + 'whoever installed the tool for it, and paste it below. It will be '
+            + 'remembered by this browser, for this site.',
+        'salt.label': 'The project salt (43 characters)',
+        'salt.confirm': 'Use this salt',
+        'salt.empty': 'Paste the salt before confirming.',
+        'salt.shape':
+            'This is not a salt: 43 characters are expected, from A-Z a-z 0-9 - _, '
+            + 'with no space and no decorative dash. Copy it in one block.',
+        'salt.wrong':
+            'This salt is not the one for this project. Nothing was sent, nothing '
+            + 'was decrypted. Check that you are pasting the salt of the right '
+            + 'project.',
+        'salt.origin_changed':
+            'This salt is remembered per browser AND per domain. The day staging '
+            + 'becomes production, it has to be pasted once more on the new domain '
+            + '-- the notes themselves do not move.',
+        'salt.not_kept':
+            'This browser refuses to remember the salt (private browsing, or '
+            + 'storage blocked). The tool works for this page, but the salt will '
+            + 'have to be pasted again on the next load.',
+        'salt.replace': 'Paste another salt',
+        'salt.forget': 'Forget the salt on this browser',
 
-        /* -- Le contexte sur, sans lequel rien n'est possible --------------- */
-        'contexte.titre': 'annotepage ne peut pas fonctionner sur cette page',
-        'contexte.aide':
-            'Le chiffrement des notes et le regroupement par page reposent sur '
-            + 'WebCrypto, que le navigateur ne fournit que dans un contexte sûr : '
-            + 'https, ou localhost. Cette page n’en est pas un. Rien ne peut être '
-            + 'écrit ni relu ici tant qu’elle est servie ainsi.',
+        /* -- Setup --------------------------------------------------------- */
+        'setup.title': 'Install annotepage on this site',
+        'setup.generate': 'Generate a salt and create the project',
+        'setup.warning_title': 'Read this before continuing',
+        'setup.warning':
+            'The salt below is the ONLY secret of the project, and nobody else has '
+            + 'it: not the server, not the author of the tool, nobody you can ask. '
+            + 'SALT LOST = NOTES LOST, for good, with no recovery. Put it away now, '
+            + 'where your team keeps its passwords, before continuing.',
+        'setup.salt': 'The project salt -- keep it',
+        'setup.project': 'The project id -- public, it goes into the page',
+        'setup.tag': 'The tag to paste at the end of <body>, on the pages to annotate',
+        'setup.server': 'To declare in the server configuration',
+        'setup.copy': 'Copy',
+        'setup.copied': 'Copied',
+        'setup.copy_failed': 'Select the text and copy it by hand.',
+        'setup.continue': 'I have put the salt away, continue',
+        'setup.done':
+            'The salt is remembered by this browser. Paste the tag above into the '
+            + 'pages, declare the project on the server, then reload this page: the '
+            + 'tool takes over.',
+        'setup.no_server':
+            'No server address is declared on the tag (data-server), and the client '
+            + 'does not come from the site: it cannot guess where to write. Add '
+            + 'data-server to the tag.',
+        'setup.plain_mode':
+            'This project is declared in PLAIN mode: the server will read the '
+            + 'remarks, the names and the paths. That mode is only acceptable if '
+            + 'the server is the site itself, behind the same access restriction. A '
+            + 'relay will refuse it.',
 
-        /* -- Divers -------------------------------------------------------- */
-        'date.inconnue': 'date inconnue'
+        /* -- The secure context, without which nothing is possible --------- */
+        'context.title': 'annotepage cannot work on this page',
+        'context.help':
+            'Encrypting the notes and grouping them by page rest on WebCrypto, '
+            + 'which the browser only provides in a secure context: https, or '
+            + 'localhost. This page is not one. Nothing can be written or read '
+            + 'back here while it is served this way.',
+
+        /* -- Odds and ends ------------------------------------------------- */
+        'date.unknown': 'unknown date'
     };
 
-    /* ==== 20-chiffrement.js ==== */
+    /* ==== 20-crypto.js ==== */
 
-    /* -- 6. Le sel, les trois derivations, l'enveloppe -----------------------
+    /* -- 6. The salt, the three derivations, the envelope --------------------
 
-       Tout ce fichier implante FORMAT.md §1, §3 et §4, et rien d'autre. Quand une
-       ligne d'ici contredit FORMAT.md, c'est cette ligne qui a tort.
+       This whole file implements FORMAT.md sections 1, 3 and 4, and nothing
+       else. When a line here contradicts FORMAT.md, this line is wrong.
 
-       LE SEL NE QUITTE JAMAIS LE NAVIGATEUR. Il n'est envoye au serveur sous
-       aucune forme, dans aucun mode, y compris derivee. Le seul chemin par lequel
-       il sort d'ici est l'ecran d'installation, qui le montre a la personne qui
-       vient de l'engendrer pour qu'elle le range. */
+       THE SALT NEVER LEAVES THE BROWSER. It is not sent to the server in any
+       form, in any mode, derived forms included. The only path out of here is
+       the setup screen, which shows it to the person who has just generated it
+       so that they can put it away. */
 
-    const CHAINE_HKDF = 'annotepage/1';
-    const LONGUEUR_SEL = 43;        // 32 octets en base64url sans remplissage
-    const LONGUEUR_NONCE = 16;      // 12 octets en base64url sans remplissage
+    const HKDF_SALT_STRING = 'annotepage/1';
+    const SALT_LENGTH = 43;         // 32 bytes in base64url without padding
+    const NONCE_LENGTH = 16;        // 12 bytes in base64url without padding
 
-    /* WebCrypto n'existe que dans un contexte SUR : https, ou localhost. Sur une
-       preproduction servie en http nu, subtle est absent et l'outil ne peut RIEN
-       faire — pas meme calculer l'index de page, qui est un HMAC dans les deux
-       modes. On le constate ici, une fois, pour pouvoir le dire a l'ecran au lieu
-       de lever une erreur illisible au premier clic. */
+    /* WebCrypto only exists in a SECURE context: https, or localhost. On a
+       staging site served over bare http, subtle is missing and the tool can do
+       NOTHING -- not even compute the page index, which is an HMAC in both modes.
+       We find that out here, once, so we can say it on screen instead of
+       throwing an unreadable error on the first click. */
     const CRYPTO = window.crypto && window.crypto.subtle ? window.crypto : null;
 
-    /** 32 octets tires du generateur du navigateur, et de nulle part ailleurs. */
-    const engendrerSel = () => {
-        const octets = new Uint8Array(32);
-        CRYPTO.getRandomValues(octets);
-        return b64url(octets);
+    /** 32 bytes from the browser's generator, and from nowhere else. */
+    const generateSalt = () => {
+        const bytes = new Uint8Array(32);
+        CRYPTO.getRandomValues(bytes);
+        return b64url(bytes);
     };
 
     /**
-     * Le texte d'un sel -> ses 32 octets, ou null.
+     * The text of a salt -> its 32 bytes, or null.
      *
-     * On refuse ce qui n'a pas exactement la bonne forme au lieu de « nettoyer »
-     * les espaces ou les tirets : un sel presque juste rend un identifiant de
-     * projet faux, et le message « ce sel n'est pas celui de ce projet » ferait
-     * alors chercher au mauvais endroit.
+     * We refuse anything that has not exactly the right shape rather than
+     * "cleaning up" spaces or dashes: an almost-right salt derives a wrong
+     * project id, and the message "this salt is not the salt of this project"
+     * would then send someone looking in the wrong place.
      */
-    const selDepuisTexte = (texte) => {
-        const t = String(texte == null ? '' : texte).trim();
+    const saltFromText = (text) => {
+        const t = String(text == null ? '' : text).trim();
         if (!/^[A-Za-z0-9_-]{43}$/.test(t)) return null;
-        const octets = deB64url(t);
-        return octets && octets.length === 32 ? octets : null;
+        const bytes = fromB64url(t);
+        return bytes && bytes.length === 32 ? bytes : null;
     };
 
     /**
-     * Les trois derivations, en une fois.
+     * The three derivations, in one go.
      *
-     * PIEGE, nomme parce qu'il se paie cher : le parametre « salt » de HKDF n'est
-     * PAS notre sel. Notre sel est le materiau d'entree (IKM) ; le salt de HKDF
-     * est la chaine fixe et publique « annotepage/1 », qui separe cet outil de
-     * tout autre logiciel a qui l'on confierait un jour le meme secret. Les
-     * inverser produit un systeme qui marche, qui chiffre, et dont les notes
-     * deviennent illisibles a la premiere reimplantation.
+     * TRAP, named because it costs dearly: HKDF's "salt" parameter is NOT our
+     * salt. Our salt is the input keying material (IKM); HKDF's salt is the
+     * fixed, public string "annotepage/1", which separates this tool from any
+     * other software one might one day trust with the same secret. Swapping them
+     * produces a system that works, that encrypts, and whose notes become
+     * unreadable on the first reimplementation.
      */
-    const deriver = (selOctets) => {
-        const params = (etiquette) => ({
+    const derive = (saltBytes) => {
+        const params = (label) => ({
             name: 'HKDF',
             hash: 'SHA-256',
-            salt: utf8(CHAINE_HKDF),   // PAS le sel : voir ci-dessus
-            info: utf8(etiquette)
+            salt: utf8(HKDF_SALT_STRING),   // NOT the salt: see above
+            info: utf8(label)
         });
 
         return CRYPTO.subtle
-            .importKey('raw', selOctets, 'HKDF', false, ['deriveBits', 'deriveKey'])
-            .then((maitresse) => Promise.all([
-                CRYPTO.subtle.deriveBits(params('id'), maitresse, 256),
-                // La cle de chiffrement est engendree NON EXTRACTIBLE. C'est de
-                // l'hygiene, pas une barriere : le sel dort dans le localStorage
-                // juste a cote, et qui lit l'un refait l'autre en trois lignes.
-                // On l'ecrit pour que personne ne prenne ce « false » pour une
-                // protection qu'il n'est pas.
-                CRYPTO.subtle.deriveKey(params('chiffre'), maitresse,
+            .importKey('raw', saltBytes, 'HKDF', false, ['deriveBits', 'deriveKey'])
+            .then((master) => Promise.all([
+                CRYPTO.subtle.deriveBits(params('id'), master, 256),
+                // The encryption key is generated NON-EXTRACTABLE. That is
+                // hygiene, not a barrier: the salt sleeps in localStorage right
+                // next to it, and whoever reads one rebuilds the other in three
+                // lines. We write it down so that nobody takes this "false" for
+                // a protection it is not.
+                CRYPTO.subtle.deriveKey(params('encrypted'), master,
                     { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']),
-                CRYPTO.subtle.deriveBits(params('index'), maitresse, 256)
+                CRYPTO.subtle.deriveBits(params('index'), master, 256)
             ]))
-            .then((trois) => CRYPTO.subtle
-                .importKey('raw', trois[2], { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-                .then((cleIndex) => ({
-                    // 16 octets et non 32 : cette valeur voyage dans une chaine de
-                    // requete, un attribut de balise, un fichier de configuration
-                    // et une colonne indexee. 128 bits sont indevinables, et 22
-                    // caracteres se recopient — 43 ne se recopient pas.
-                    identifiant: b64url(new Uint8Array(trois[0]).subarray(0, 16)),
-                    cleChiffre: trois[1],
-                    cleIndex: cleIndex
+            .then((three) => CRYPTO.subtle
+                .importKey('raw', three[2], { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+                .then((indexKey) => ({
+                    // 16 bytes and not 32: this value travels in a query string,
+                    // a tag attribute, a configuration file and an indexed
+                    // column. 128 bits are unguessable, and 22 characters can be
+                    // copied by hand -- 43 cannot.
+                    id: b64url(new Uint8Array(three[0]).subarray(0, 16)),
+                    encryptionKey: three[1],
+                    indexKey: indexKey
                 })));
     };
 
     /**
-     * index_page = HMAC(cle_index, chemin), 16 premiers octets, base64url.
+     * page_index = HMAC(index_key, path), first 16 bytes, base64url.
      *
-     * AUCUNE normalisation autre que celle du format 1 (une seule barre initiale,
-     * pas de segment « .. ») : ni minuscules, ni suppression d'une barre finale,
-     * ni decodage des %xx. « /Contact » et « /contact » sont deux pages ; « /a/ »
-     * et « /a » sont deux pages. C'est ce que le navigateur donne, c'est ce qu'on
-     * indexe — et c'est la seule facon que deux implantations tombent d'accord.
+     * NO normalisation other than format 1's (a single leading slash, no ".."
+     * segment): no lowercasing, no stripping of a trailing slash, no decoding of
+     * %xx. "/Contact" and "/contact" are two pages; "/a/" and "/a" are two
+     * pages. It is what the browser gives, it is what we index -- and it is the
+     * only way two implementations agree.
      *
-     * Le calcul a lieu DANS LES DEUX MODES : un seul chemin de code, une seule
-     * facon de grouper. Deux auraient diverge a la deuxieme correction.
+     * The computation happens IN BOTH MODES: one code path, one way of grouping.
+     * Two would have diverged by the second fix.
      */
-    const cheminDePage = () => {
+    const pagePath = () => {
         let c = String(location.pathname || '/');
         if (c.charAt(0) !== '/') c = '/' + c;
         c = c.replace(/^\/+/, '/');
@@ -650,542 +646,544 @@
         return c;
     };
 
-    const indexDeChemin = (cleIndex, chemin) =>
-        CRYPTO.subtle.sign('HMAC', cleIndex, utf8(chemin))
+    const indexOfPath = (indexKey, path) =>
+        CRYPTO.subtle.sign('HMAC', indexKey, utf8(path))
             .then((signature) => b64url(new Uint8Array(signature).subarray(0, 16)));
 
-    /* -- L'enveloppe ---------------------------------------------------------
-       AES-256-GCM, sans exception et sans repli. Pas de choix d'algorithme, pas
-       de negociation, pas de « suite » : un format qui negocie est un format
-       qu'on fait retomber sur son option la plus faible. */
+    /* -- The envelope --------------------------------------------------------
+       AES-256-GCM, no exception and no fallback. No choice of algorithm, no
+       negotiation, no "suite": a format that negotiates is a format that gets
+       pushed down onto its weakest option. */
 
     /**
-     * L'AAD lie l'enveloppe a sa place. Sans elle, un serveur malveillant peut
-     * deplacer une note d'une page a l'autre, ou d'un projet a l'autre : le
-     * dechiffrement reussirait et la remarque apparaitrait sous un element
-     * qu'elle ne visait pas.
+     * The AAD binds the envelope to its place. Without it, a malicious server
+     * can move a note from one page to another, or from one project to another:
+     * decryption would succeed and the remark would appear under an element it
+     * was not aimed at.
      */
-    const aad = (projet, indexPage, role) =>
-        utf8(FORMAT + '\n' + projet + '\n' + indexPage + '\n' + role);
+    const aad = (project, pageIndex, role) =>
+        utf8(FORMAT + '\n' + project + '\n' + pageIndex + '\n' + role);
 
-    const erreurEnveloppe = (raison) => {
-        const e = new Error('enveloppe ' + raison);
-        e.raison = raison;
+    const envelopeError = (reason) => {
+        const e = new Error('envelope ' + reason);
+        e.reason = reason;
         return e;
     };
 
-    /** Un champ vide est ABSENT de l'objet, il n'est pas ecrit a "". Meme regle
-        que dans l'export texte, et pour la meme raison : ne pas ecrire une cle
-        pour dire qu'il n'y a rien. */
-    const compacter = (objet) => {
-        const net = {};
-        Object.keys(objet).forEach((cle) => {
-            const v = objet[cle];
-            if (v !== undefined && v !== null && String(v) !== '') net[cle] = String(v);
+    /** An empty field is ABSENT from the object, it is not written as "". Same
+        rule as in the text export, and for the same reason: do not write a key
+        to say there is nothing. */
+    const compact = (object) => {
+        const clean = {};
+        Object.keys(object).forEach((key) => {
+            const v = object[key];
+            if (v !== undefined && v !== null && String(v) !== '') clean[key] = String(v);
         });
-        return net;
+        return clean;
     };
 
-    const sceller = (cleChiffre, projet, indexPage, role, objet) => {
-        // Nonce de 12 octets tire a CHAQUE chiffrement. Jamais un compteur,
-        // jamais derive du contenu, jamais reutilise : un nonce repete avec la
-        // meme cle en GCM ne fait pas fuir une note, il fait fuir la cle
-        // d'authentification.
+    const seal = (encryptionKey, project, pageIndex, role, object) => {
+        // A 12-byte nonce drawn at EVERY encryption. Never a counter, never
+        // derived from the content, never reused: a nonce repeated with the same
+        // key under GCM does not leak a note, it leaks the authentication key.
         const nonce = new Uint8Array(12);
         CRYPTO.getRandomValues(nonce);
-        const clair = utf8(JSON.stringify(compacter(objet)));
+        const plain = utf8(JSON.stringify(compact(object)));
         return CRYPTO.subtle.encrypt(
-            { name: 'AES-GCM', iv: nonce, additionalData: aad(projet, indexPage, role), tagLength: 128 },
-            cleChiffre, clair
-        ).then((chiffre) => 'ap' + FORMAT + '.' + b64url(nonce) + '.' + b64url(chiffre));
+            { name: 'AES-GCM', iv: nonce, additionalData: aad(project, pageIndex, role), tagLength: 128 },
+            encryptionKey, plain
+        ).then((ciphertext) => 'ap' + FORMAT + '.' + b64url(nonce) + '.' + b64url(ciphertext));
     };
 
     /**
-     * Rend l'objet JSON de l'enveloppe.
+     * Returns the JSON object of the envelope.
      *
-     * Rejette avec une raison :
-     *   'recente'   l'enveloppe porte un numero de format superieur au notre. On
-     *               ne devine pas une cryptographie : refus net, la note est
-     *               sautee et comptee, et l'outil DIT qu'elle existe.
-     *   'illisible' forme invalide, ou dechiffrement echoue — mauvais sel, note
-     *               deplacee par le serveur, octets abimes. Les trois se valent
-     *               du point de vue du lecteur : il n'a pas de quoi lire.
+     * Rejects with a reason:
+     *   'newer'       the envelope carries a format number above ours. We do not
+     *                 guess at cryptography: flat refusal, the note is skipped
+     *                 and counted, and the tool SAYS that it exists.
+     *   'unreadable'  invalid shape, or decryption failed -- wrong salt, note
+     *                 moved by the server, damaged bytes. All three are worth
+     *                 the same to the reader: there is nothing to read.
      */
-    const ouvrir = (cleChiffre, projet, indexPage, role, enveloppe) => {
-        const parts = String(enveloppe == null ? '' : enveloppe).split('.');
-        if (parts.length !== 3) return Promise.reject(erreurEnveloppe('illisible'));
+    const open = (encryptionKey, project, pageIndex, role, envelope) => {
+        const parts = String(envelope == null ? '' : envelope).split('.');
+        if (parts.length !== 3) return Promise.reject(envelopeError('unreadable'));
 
-        const marque = /^ap(\d+)$/.exec(parts[0]);
-        if (!marque) return Promise.reject(erreurEnveloppe('illisible'));
-        const numero = parseInt(marque[1], 10);
-        if (numero > FORMAT) return Promise.reject(erreurEnveloppe('recente'));
-        if (numero !== FORMAT) return Promise.reject(erreurEnveloppe('illisible'));
+        const mark = /^ap(\d+)$/.exec(parts[0]);
+        if (!mark) return Promise.reject(envelopeError('unreadable'));
+        const number = parseInt(mark[1], 10);
+        if (number > FORMAT) return Promise.reject(envelopeError('newer'));
+        if (number !== FORMAT) return Promise.reject(envelopeError('unreadable'));
 
-        // Un lecteur qui compte un nonce d'une autre longueur refuse la ligne au
-        // lieu de deviner.
-        if (parts[1].length !== LONGUEUR_NONCE) return Promise.reject(erreurEnveloppe('illisible'));
-        const nonce = deB64url(parts[1]);
-        const chiffre = deB64url(parts[2]);
-        if (!nonce || nonce.length !== 12 || !chiffre) {
-            return Promise.reject(erreurEnveloppe('illisible'));
+        // A reader that counts a nonce of another length refuses the row instead
+        // of guessing.
+        if (parts[1].length !== NONCE_LENGTH) return Promise.reject(envelopeError('unreadable'));
+        const nonce = fromB64url(parts[1]);
+        const ciphertext = fromB64url(parts[2]);
+        if (!nonce || nonce.length !== 12 || !ciphertext) {
+            return Promise.reject(envelopeError('unreadable'));
         }
 
         return CRYPTO.subtle.decrypt(
-            { name: 'AES-GCM', iv: nonce, additionalData: aad(projet, indexPage, role), tagLength: 128 },
-            cleChiffre, chiffre
-        ).then((clair) => {
-            let objet = null;
+            { name: 'AES-GCM', iv: nonce, additionalData: aad(project, pageIndex, role), tagLength: 128 },
+            encryptionKey, ciphertext
+        ).then((plain) => {
+            let object = null;
             try {
-                objet = JSON.parse(deUtf8(new Uint8Array(clair)));
+                object = JSON.parse(fromUtf8(new Uint8Array(plain)));
             } catch (e) {
-                throw erreurEnveloppe('illisible');
+                throw envelopeError('unreadable');
             }
-            if (!objet || typeof objet !== 'object' || Array.isArray(objet)) {
-                throw erreurEnveloppe('illisible');
+            if (!object || typeof object !== 'object' || Array.isArray(object)) {
+                throw envelopeError('unreadable');
             }
-            return objet;
+            return object;
         }, () => {
-            // GCM ne dit pas POURQUOI il refuse, et c'est voulu : mauvaise cle,
-            // AAD differente, octet modifie, tout tombe ici.
-            throw erreurEnveloppe('illisible');
+            // GCM does not say WHY it refuses, and that is intended: wrong key,
+            // different AAD, one changed byte, everything lands here.
+            throw envelopeError('unreadable');
         });
     };
 
-    /* ==== 30-etat.js ==== */
+    /* ==== 30-state.js ==== */
 
-    /* -- 7. Etat, memoire du navigateur, portee ------------------------------ */
+    /* -- 7. State, browser memory, scope ------------------------------------- */
 
-    let hote = null;            // l'unique element ajoute au site
-    let racine = null;          // son shadow root
-    let ui = null;              // les elements de l'interface, une fois batie
-    let mode = false;           // mode annotation actif ?
-    let notes = [];             // notes de la page, telles que le serveur les dit
-    let ancrees = [];           // { element, notes[] } : les notes retrouvees
-    let orphelines = [];        // notes dont l'element n'a pas ete retrouve
-    let historiqueOuvert = false;   // les notes corrigees ET deployees sont repliees
-    let cible = null;           // element en cours d'annotation
-    let survole = null;         // element sous le pointeur
-    let panneEnCours = null;    // { titre, detail } affiche dans le panneau
-    let auteur = '';            // lu au demarrage : voir 90-demarrage
-    let minuterie = null;
-    let rafDemande = false;
+    let host = null;            // the single element added to the site
+    let root = null;            // its shadow root
+    let ui = null;              // the interface elements, once built
+    let mode = false;           // is annotation mode on?
+    let notes = [];             // the page's notes, as the server states them
+    let anchored = [];          // { element, notes[] } : the notes found again
+    let orphans = [];           // notes whose element was not found
+    let historyOpen = false;    // resolved AND deployed notes are folded away
+    let target = null;          // element being annotated
+    let hovered = null;         // element under the pointer
+    let currentFailure = null;  // { title, detail } shown in the panel
+    let author = '';            // read at startup: see 90-boot
+    let timer = null;
+    let rafPending = false;
 
-    /* Ce qu'on n'a PAS su lire au dernier chargement. On le compte pour pouvoir
-       le dire : une note sautee en silence est une remarque qui disparait. */
-    let sautees = { recentes: 0, illisibles: 0, inconnues: 0 };
+    /* What we did NOT manage to read at the last load. We count it so we can say
+       it: a note skipped in silence is a remark that disappears. */
+    let skipped = { newer: 0, unreadable: 0, unknown: 0 };
 
-    /* Le sel de ce projet, et ce qui en descend. « cles » reste null tant que le
-       sel n'est pas connu : aucune requete, aucun dechiffrement ne part avant. */
-    let selTexte = '';
-    let cles = null;            // { identifiant, cleChiffre, cleIndex }
-    let INDEX_PAGE = '';        // index aveugle de la page courante
+    /* The salt of this project, and everything derived from it. "keys" stays
+       null as long as the salt is unknown: no request, no decryption goes out
+       before then. */
+    let saltText = '';
+    let keys = null;            // { id, encryptionKey, indexKey }
+    let PAGE_INDEX = '';        // blind index of the current page
 
-    const dansOutil = (n) => !!(hote && n && (n === hote || hote.contains(n)));
+    const inTool = (n) => !!(host && n && (n === host || host.contains(n)));
 
-    /* -- La memoire du navigateur --------------------------------------------
-       Les try/catch n'entourent QUE l'acces au stockage, parce que c'est la seule
-       chose qui ait le droit d'echouer ici : navigation privee, ou stockage
-       refuse par une politique du navigateur. Tout elargir serait transformer une
-       faute de programmation en panne muette, et donc introuvable. */
+    /* -- The browser's memory ------------------------------------------------
+       The try/catch blocks wrap ONLY the storage access, because that is the
+       only thing here that is allowed to fail: private browsing, or storage
+       refused by a browser policy. Widening them would turn a programming
+       mistake into a silent failure, and therefore into one nobody can find. */
 
-    // Confort par navigateur, pas une identite : personne n'est authentifie, et
-    // le nom sert a savoir a qui parler, pas a prouver qui l'on est.
-    const CLE_AUTEUR = 'annotepage/auteur';
+    // A per-browser convenience, not an identity: nobody is authenticated, and
+    // the name is there to know who to talk to, not to prove who one is.
+    const AUTHOR_KEY = 'annotepage/author';
 
-    /* Le sel est range SOUS L'IDENTIFIANT DU PROJET. Ce nommage n'est pas
-       cosmetique : deux projets relus depuis le meme navigateur ne doivent pas
-       s'ecraser l'un l'autre.
+    /* The salt is stored UNDER THE PROJECT ID. That naming is not cosmetic: two
+       projects reviewed from the same browser must not overwrite each other.
 
-       Consequence desagreable, a dire : localStorage est PAR ORIGINE. Le jour ou
-       la preproduction devient la production, chaque relecteur doit recoller le
-       sel une fois sur le nouveau domaine. Les notes, elles, ne bougent pas — et
-       c'est exactement ce que la regle « le domaine n'entre pas dans la cle »
-       achete. */
-    const cleSel = (projet) => 'annotepage/sel/' + projet;
+       An unpleasant consequence, to be stated: localStorage is PER ORIGIN. The
+       day staging becomes production, every reviewer has to paste the salt once
+       more on the new domain. The notes themselves do not move -- and that is
+       exactly what the rule "the domain is not in the key" buys. */
+    const saltKey = (project) => 'annotepage/salt/' + project;
 
-    const lireSel = (projet) => {
+    const readSalt = (project) => {
         try {
-            return String(window.localStorage.getItem(cleSel(projet)) || '').trim();
+            return String(window.localStorage.getItem(saltKey(project)) || '').trim();
         } catch (e) {
-            // Sans stockage, le sel sera redemande a chaque visite : c'est moins
-            // confortable, ce n'est pas une panne.
+            // Without storage the salt will be asked for on every visit: that is
+            // less comfortable, it is not a failure.
             return '';
         }
     };
 
-    const ecrireSel = (projet, texte) => {
+    const writeSalt = (project, text) => {
         try {
-            window.localStorage.setItem(cleSel(projet), texte);
+            window.localStorage.setItem(saltKey(project), text);
             return true;
         } catch (e) {
-            // On rend faux pour que l'ecran puisse le DIRE : un sel qui n'est pas
-            // retenu se recollera a chaque page, et il vaut mieux le savoir tout
-            // de suite qu'a la troisieme fois.
+            // We return false so the screen can SAY it: a salt that is not kept
+            // will have to be pasted again on every page, and it is better to
+            // know that straight away than on the third time.
             return false;
         }
     };
 
-    const oublierSel = (projet) => {
+    const forgetSalt = (project) => {
         try {
-            window.localStorage.removeItem(cleSel(projet));
+            window.localStorage.removeItem(saltKey(project));
         } catch (e) {
-            // Rien a faire : il n'y avait deja pas de stockage.
+            // Nothing to do: there was no storage in the first place.
         }
     };
 
-    function lireAuteur() {
-        let brut = '';
+    function readAuthor() {
+        let raw = '';
         try {
-            brut = window.localStorage.getItem(CLE_AUTEUR) || '';
+            raw = window.localStorage.getItem(AUTHOR_KEY) || '';
         } catch (e) {
             return '';
         }
-        return normaliser(brut);
+        return normalize(raw);
     }
 
-    function ecrireAuteur(valeur) {
-        auteur = valeur;
+    function writeAuthor(value) {
+        author = value;
         try {
-            window.localStorage.setItem(CLE_AUTEUR, valeur);
+            window.localStorage.setItem(AUTHOR_KEY, value);
         } catch (e) {
-            // Sans consequence : seule la memoire du nom est perdue.
+            // No consequence: only the memory of the name is lost.
         }
     }
 
-    /* -- La portee -----------------------------------------------------------
-       Deux verifications, et aucune des deux n'est une securite. Elles evitent
-       qu'une balise laissee dans un gabarit commun recolte des notes la ou le
-       projet ne va pas, et qu'un client parle a un serveur qui va dire non. La
-       frontiere, la vraie, est le verrou de domaine du serveur (FORMAT.md §6.2),
-       qui n'est lui-meme qu'une mesure anti-abus. */
+    /* -- The scope -----------------------------------------------------------
+       Two checks, and neither is a security measure. They keep a tag left in a
+       shared template from collecting notes where the project does not go, and
+       keep a client from talking to a server that is going to say no. The real
+       boundary is the server's domain lock (FORMAT.md section 6.2), which is
+       itself only an anti-abuse measure. */
 
-    const dansLaPortee = () => {
-        if (DOMAINES.length && DOMAINES.indexOf(location.origin) === -1) return false;
-        if (PREFIXE_CHEMIN && cheminDePage().indexOf(PREFIXE_CHEMIN) !== 0) return false;
+    const inScope = () => {
+        if (DOMAINS.length && DOMAINS.indexOf(location.origin) === -1) return false;
+        if (PATH_PREFIX && pagePath().indexOf(PATH_PREFIX) !== 0) return false;
         return true;
     };
 
     /* ==== 40-api.js ==== */
 
-    /* -- 8. L'API -----------------------------------------------------------
-       Le contrat, tel que le serveur l'a fixe :
+    /* -- 8. The API ---------------------------------------------------------
+       The contract, as the server fixed it:
 
-         200 + application/json      reponse normale
-         200 + JSON « actif: false » outil depose, pas configure -> se retirer
-         404 + text/plain            rien a cette adresse -> se retirer
-         4xx/5xx + text/plain        message redige pour un humain -> AFFICHER
-         4xx sans texte lisible      REFUS SEC, presque toujours un pare-feu ->
-                                     le nommer, avec son code (voir plus bas)
-         tout le reste               PHP non execute -> se retirer
+         200 + application/json      normal response
+         200 + JSON "active: false"  tool dropped in, not configured -> stand down
+         404 + text/plain            nothing at this address -> stand down
+         4xx/5xx + text/plain        message written for a human -> SHOW IT
+         4xx with no readable text   FLAT REFUSAL, almost always a firewall ->
+                                     name it, with its code (see below)
+         anything else               PHP not executed -> stand down
 
-       Cette fonction ne rejette jamais et n'ecrit jamais dans la console : elle
-       rend une cause, et c'est l'appelant qui decide si l'on se tait ou si l'on
-       parle. */
+       This function never rejects and never writes to the console: it returns a
+       cause, and the caller decides whether we keep quiet or speak. */
 
-    const appeler = (action, corps) => {
-        if (!API) return Promise.resolve({ ok: false, cause: 'inactif' });
+    const call = (action, body) => {
+        if (!API) return Promise.resolve({ ok: false, cause: 'inactive' });
 
         const options = {
-            method: corps ? 'POST' : 'GET',
+            method: body ? 'POST' : 'GET',
             cache: 'no-store',
-            // Sur un relais, cela vaut « aucun cookie » : c'est ce qu'on veut. Le
-            // projet n'est pas une session, il est un jeton porteur (FORMAT.md
-            // §6.3), et le corps urlencode fait de l'ecriture une « requete
-            // simple » au sens CORS — donc sans requete preliminaire OPTIONS.
+            // On a relay this means "no cookie": that is what we want. The
+            // project is not a session, it is a bearer token (FORMAT.md section
+            // 6.3), and the urlencoded body makes a write a "simple request" in
+            // the CORS sense -- so no OPTIONS preflight.
             credentials: 'same-origin'
         };
-        if (corps) options.body = corps;
+        if (body) options.body = body;
 
-        let adresse = API + (API.indexOf('?') === -1 ? '?' : '&')
+        let address = API + (API.indexOf('?') === -1 ? '?' : '&')
             + 'action=' + encodeURIComponent(action);
-        if (!corps) {
-            // Le chemin reel n'est JAMAIS envoye, dans aucun mode : seul l'index
-            // aveugle part. Envoyer le chemin en clair et l'index en chiffre
-            // ferait deux chemins de code, et le second serait le moins teste.
-            adresse += '&projet=' + encodeURIComponent(PROJET)
-                + '&index=' + encodeURIComponent(INDEX_PAGE);
+        if (!body) {
+            // The real path is NEVER sent, in any mode: only the blind index
+            // goes out. Sending the path in plain mode and the index in
+            // encrypted mode would make two code paths, and the second would be
+            // the less tested one.
+            address += '&project=' + encodeURIComponent(PROJECT)
+                + '&index=' + encodeURIComponent(PAGE_INDEX);
         }
 
-        return fetch(adresse, options)
-            .then((reponse) => reponse.text().then((texte) => ({ reponse: reponse, texte: texte })))
+        return fetch(address, options)
+            .then((response) => response.text().then((text) => ({ response: response, text: text })))
             .then((r) => {
-                const etat = r.reponse.status;
-                const type = (r.reponse.headers.get('content-type') || '').toLowerCase();
-                const estJson = type.indexOf('application/json') !== -1;
+                const status = r.response.status;
+                const type = (r.response.headers.get('content-type') || '').toLowerCase();
+                const isJson = type.indexOf('application/json') !== -1;
 
-                if (r.reponse.ok && estJson) {
-                    let donnees = null;
+                if (r.response.ok && isJson) {
+                    let data = null;
                     try {
-                        donnees = JSON.parse(r.texte);
+                        data = JSON.parse(r.text);
                     } catch (e) {
                         return { ok: false, cause: 'nonjson' };
                     }
-                    // L'outil est depose ici mais pas configure : il le DIT en
-                    // 200, pour ne pas laisser au navigateur une erreur a
-                    // journaliser. On se retire, comme sur un 404.
-                    if (donnees && donnees.actif === false) {
-                        return { ok: false, cause: 'inactif' };
+                    // The tool is dropped in here but not configured: it SAYS so
+                    // with a 200, so as not to leave the browser an error to log.
+                    // We stand down, as on a 404.
+                    if (data && data.active === false) {
+                        return { ok: false, cause: 'inactive' };
                     }
-                    return { ok: true, donnees: donnees };
+                    return { ok: true, data: data };
                 }
-                if (etat === 404) {
-                    // L'outil n'est pas configure ici — ou il n'y a rien a cette
-                    // adresse. Dans les deux cas : silence.
-                    return { ok: false, cause: 'inactif' };
+                if (status === 404) {
+                    // The tool is not configured here -- or there is nothing at
+                    // this address. Either way: silence.
+                    return { ok: false, cause: 'inactive' };
                 }
-                if (!r.reponse.ok && type.indexOf('text/plain') !== -1) {
-                    return { ok: false, cause: 'serveur', message: couper(r.texte.trim(), 2000) };
+                if (!r.response.ok && type.indexOf('text/plain') !== -1) {
+                    return { ok: false, cause: 'server', message: clip(r.text.trim(), 2000) };
                 }
 
-                /* LE REFUS SEC. Constate en production : un pare-feu d'hebergeur
-                   repond 403 avec une page HTML, et le client affichait « le
-                   serveur a repondu quelque chose d'inattendu ». C'etait vrai et
-                   inutile — personne ne savait quoi faire de cette phrase.
+                /* THE FLAT REFUSAL. Seen in production: a hosting firewall
+                   answers 403 with an HTML page, and the client showed "the
+                   server answered something unexpected". That was true and
+                   useless -- nobody knew what to do with the sentence.
 
-                   Ce n'est pas notre serveur qui parle : c'est un intermediaire
-                   qui a decide que la requete ressemblait a une attaque, souvent
-                   a cause d'un mot du texte saisi. On nomme donc le refus, on
-                   donne son code, et on suggere le seul geste qui le contourne
-                   vraiment : reformuler. Le texte reste dans le formulaire — cela
-                   n'a jamais change et ne changera pas. */
-                if (etat === 413) return { ok: false, cause: 'refus-taille', code: etat };
-                if (etat === 429) return { ok: false, cause: 'refus-frequence', code: etat };
-                if (etat >= 400 && etat < 500) return { ok: false, cause: 'refus', code: etat };
-                if (etat >= 500) return { ok: false, cause: 'panne', code: etat };
+                   It is not our server speaking: it is an intermediary that
+                   decided the request looked like an attack, often because of a
+                   word in the text that was typed. So we name the refusal, we
+                   give its code, and we suggest the one move that really gets
+                   around it: rephrase. The text stays in the form -- that has
+                   never changed and will not. */
+                if (status === 413) return { ok: false, cause: 'refused-size', code: status };
+                if (status === 429) return { ok: false, cause: 'refused-rate', code: status };
+                if (status >= 400 && status < 500) return { ok: false, cause: 'refused', code: status };
+                if (status >= 500) return { ok: false, cause: 'failure', code: status };
 
-                // 200 qui n'est pas du JSON : PHP n'est pas execute, le source est
-                // servi en clair, ou un intermediaire a repondu.
+                // A 200 that is not JSON: PHP is not executed, the source is
+                // served in the clear, or an intermediary answered.
                 return { ok: false, cause: 'nonjson' };
             })
-            .catch(() => ({ ok: false, cause: 'reseau' }));
+            .catch(() => ({ ok: false, cause: 'network' }));
     };
 
-    /** Traduit une cause en panne affichable. Rend null s'il n'y a rien a dire. */
-    const panneDe = (resultat, titre) => {
-        if (resultat.ok) return null;
-        const dit = (cle) => ({ titre: T(titre), detail: T(cle, { code: resultat.code }) });
-        if (resultat.cause === 'serveur') return { titre: T(titre), detail: resultat.message };
-        if (resultat.cause === 'reseau') return dit('erreur.reseau');
-        if (resultat.cause === 'refus') return dit('erreur.refus');
-        if (resultat.cause === 'refus-taille') return dit('erreur.refus_taille');
-        if (resultat.cause === 'refus-frequence') return dit('erreur.refus_frequence');
-        if (resultat.cause === 'panne') return dit('erreur.panne_serveur');
-        return dit('erreur.inattendue');
+    /** Turns a cause into a showable failure. Returns null if there is nothing
+        to say. */
+    const failureFrom = (result, title) => {
+        if (result.ok) return null;
+        const say = (key) => ({ title: T(title), detail: T(key, { code: result.code }) });
+        if (result.cause === 'server') return { title: T(title), detail: result.message };
+        if (result.cause === 'network') return say('error.network');
+        if (result.cause === 'refused') return say('error.refused');
+        if (result.cause === 'refused-size') return say('error.refused_size');
+        if (result.cause === 'refused-rate') return say('error.refused_rate');
+        if (result.cause === 'failure') return say('error.server_failure');
+        return say('error.unexpected');
     };
 
-    /* -- 9. Ecrire : le mode decide ou vont les champs -----------------------
-       Un seul endroit construit un corps de requete. En clair, les champs partent
-       tels quels — exactement les colonnes du format 1. En chiffre, TOUT ce qui
-       est saisi ou observe passe dans l'enveloppe : chiffrer le seul texte
-       livrerait l'arborescence du site, les intitules de ses elements et le nom
-       de ses relecteurs (FORMAT.md §2.3). */
+    /* -- 9. Writing: the mode decides where the fields go --------------------
+       One single place builds a request body. In plain mode the fields go out as
+       they are -- exactly format 1's columns. In encrypted mode, EVERYTHING typed
+       or observed goes into the envelope: encrypting the text alone would hand
+       over the site's tree, the wording of its elements and the names of its
+       reviewers (FORMAT.md section 2.3). */
 
-    const CHAMPS_DE_CHARGE = ['page', 'selecteur', 'empreinte', 'extrait',
-                              'auteur', 'texte', 'version', 'environnement', 'fenetre'];
+    const PAYLOAD_FIELDS = ['page', 'selector', 'fingerprint', 'excerpt',
+                            'author', 'text', 'version', 'environment', 'viewport'];
 
-    const corpsDeNote = (champs, reponseA) => {
-        const corps = new URLSearchParams();
-        corps.set('projet', PROJET);
-        corps.set('mode', MODE);
-        if (reponseA) {
-            // Une reponse HERITE de l'index de page de sa mere, et en mode clair
-            // de sa page et de son element. Les redemander au client ouvrirait la
-            // porte a une reponse rattachee ailleurs que la note qu'elle commente.
-            corps.set('reponse_a', String(reponseA));
+    const noteBody = (fields, replyTo) => {
+        const body = new URLSearchParams();
+        body.set('project', PROJECT);
+        body.set('mode', MODE);
+        if (replyTo) {
+            // A reply INHERITS the page index of its parent, and in plain mode
+            // its page and its element. Asking the client for them again would
+            // open the door to a reply attached somewhere other than the note it
+            // comments on.
+            body.set('reply_to', String(replyTo));
         } else {
-            corps.set('index', INDEX_PAGE);
+            body.set('index', PAGE_INDEX);
         }
 
-        if (MODE === 'clair') {
-            CHAMPS_DE_CHARGE.forEach((cle) => {
-                if (champs[cle] !== undefined) corps.set(cle, String(champs[cle]));
+        if (MODE === 'plain') {
+            PAYLOAD_FIELDS.forEach((key) => {
+                if (fields[key] !== undefined) body.set(key, String(fields[key]));
             });
-            return Promise.resolve(corps);
+            return Promise.resolve(body);
         }
-        // L'AAD emploie l'index de page que NOUS avons calcule, jamais celui que
-        // le serveur annonce : c'est precisement contre un serveur qui deplace une
-        // note d'une page a l'autre que l'AAD existe.
-        return sceller(cles.cleChiffre, PROJET, INDEX_PAGE, 'note', champs)
-            .then((enveloppe) => {
-                corps.set('charge', enveloppe);
-                return corps;
-            });
-    };
-
-    const corpsDeResolution = (note, marquer, nom) => {
-        const corps = new URLSearchParams();
-        corps.set('projet', PROJET);
-        corps.set('id', String(note.id));
-        corps.set('resolue', marquer ? '1' : '0');
-        if (!marquer) {
-            // Rouvrir n'ecrit rien : le serveur vide la resolution. On ne demande
-            // pas le nom du correcteur pour annuler la correction.
-            return Promise.resolve(corps);
-        }
-        if (MODE === 'clair') {
-            corps.set('par', nom);
-            corps.set('version', VERSION_SITE);
-            return Promise.resolve(corps);
-        }
-        // Seconde enveloppe, son propre nonce, son propre role : elle est ecrite
-        // par une autre personne, a un autre moment, souvent depuis une autre
-        // machine. La fondre dans l'enveloppe de la note obligerait a rechiffrer
-        // une remarque qu'on n'a pas le droit de reecrire.
-        return sceller(cles.cleChiffre, PROJET, INDEX_PAGE, 'resolution',
-                       { par: nom, version: VERSION_SITE })
-            .then((enveloppe) => {
-                corps.set('charge_resolution', enveloppe);
-                return corps;
+        // The AAD uses the page index WE computed, never the one the server
+        // announces: it is precisely against a server that moves a note from one
+        // page to another that the AAD exists.
+        return seal(keys.encryptionKey, PROJECT, PAGE_INDEX, 'note', fields)
+            .then((envelope) => {
+                body.set('payload', envelope);
+                return body;
             });
     };
 
-    /* -- 10. Lire : ouvrir ce qu'on peut, compter ce qu'on ne peut pas -------- */
+    const resolutionBody = (note, mark, name) => {
+        const body = new URLSearchParams();
+        body.set('project', PROJECT);
+        body.set('id', String(note.id));
+        body.set('resolved', mark ? '1' : '0');
+        if (!mark) {
+            // Reopening writes nothing: the server clears the resolution. We do
+            // not ask for the fixer's name in order to cancel the fix.
+            return Promise.resolve(body);
+        }
+        if (MODE === 'plain') {
+            body.set('by', name);
+            body.set('version', SITE_VERSION);
+            return Promise.resolve(body);
+        }
+        // A second envelope, its own nonce, its own role: it is written by
+        // another person, at another moment, often from another machine. Melting
+        // it into the note's envelope would mean re-encrypting a remark we have
+        // no right to rewrite.
+        return seal(keys.encryptionKey, PROJECT, PAGE_INDEX, 'resolution',
+                    { by: name, version: SITE_VERSION })
+            .then((envelope) => {
+                body.set('resolution_payload', envelope);
+                return body;
+            });
+    };
 
-    const remplirDepuis = (note, objet) => {
-        // Les champs INCONNUS de l'objet sont ignores en silence : c'est ce qui
-        // rend possible d'en ajouter un jour sans changer le numero de format.
-        CHAMPS_DE_CHARGE.forEach((cle) => {
-            note[cle] = objet[cle] === undefined ? '' : String(objet[cle]);
+    /* -- 10. Reading: open what we can, count what we cannot ------------------ */
+
+    const fillFrom = (note, object) => {
+        // UNKNOWN fields of the object are ignored in silence: that is what
+        // makes it possible to add one some day without changing the format
+        // number.
+        PAYLOAD_FIELDS.forEach((key) => {
+            note[key] = object[key] === undefined ? '' : String(object[key]);
         });
         return note;
     };
 
     /**
-     * Une ligne -> une note lisible, ou null si on ne sait pas la lire.
-     * Ce qui est saute est COMPTE : une note qui disparait en silence est pire
-     * qu'une note qu'on annonce ne pas savoir lire.
+     * One row -> one readable note, or null if we cannot read it.
+     * What is skipped is COUNTED: a note that disappears in silence is worse
+     * than a note we announce we cannot read.
      */
-    const ouvrirNote = (note) => {
+    const openNote = (note) => {
         if (!note || typeof note !== 'object') return Promise.resolve(null);
 
-        // « mode » absent ou vide : la ligne vient du format 1, elle vaut clair.
-        const m = String(note.mode || 'clair');
+        // "mode" missing or empty: the row comes from format 1, it is plain.
+        const m = String(note.mode || 'plain');
 
-        if (m === 'clair') return Promise.resolve(note);
+        if (m === 'plain') return Promise.resolve(note);
 
-        if (m !== 'chiffre') {
-            // Ni devinee, ni rendue vide sans le dire.
-            sautees.inconnues += 1;
+        if (m !== 'encrypted') {
+            // Neither guessed, nor blanked without saying so.
+            skipped.unknown += 1;
             return Promise.resolve(null);
         }
 
-        return ouvrir(cles.cleChiffre, PROJET, INDEX_PAGE, 'note', note.charge)
+        return open(keys.encryptionKey, PROJECT, PAGE_INDEX, 'note', note.payload)
             .then(
-                (objet) => remplirDepuis(note, objet),
+                (object) => fillFrom(note, object),
                 (e) => {
-                    if (e && e.raison === 'recente') sautees.recentes += 1;
-                    else sautees.illisibles += 1;
+                    if (e && e.reason === 'newer') skipped.newer += 1;
+                    else skipped.unreadable += 1;
                     return null;
                 }
             )
-            .then((lue) => {
-                if (!lue || !lue.charge_resolution) return lue;
-                return ouvrir(cles.cleChiffre, PROJET, INDEX_PAGE, 'resolution', lue.charge_resolution)
+            .then((read) => {
+                if (!read || !read.resolution_payload) return read;
+                return open(keys.encryptionKey, PROJECT, PAGE_INDEX, 'resolution', read.resolution_payload)
                     .then(
-                        (objet) => {
-                            lue.resolue_par = objet.par === undefined ? '' : String(objet.par);
-                            lue.resolue_version = objet.version === undefined ? '' : String(objet.version);
-                            return lue;
+                        (object) => {
+                            read.resolved_by = object.by === undefined ? '' : String(object.by);
+                            read.resolved_version = object.version === undefined ? '' : String(object.version);
+                            return read;
                         },
                         () => {
-                            /* La note se lit, sa resolution non. On garde la note :
-                               « corrigee par quelqu'un » vaut mieux que rien, et la
-                               date de correction, elle, est en clair. */
-                            lue.resolue_par = '';
-                            lue.resolue_version = '';
-                            return lue;
+                            /* The note reads, its resolution does not. We keep
+                               the note: "resolved by somebody" beats nothing, and
+                               the resolution date is in the clear anyway. */
+                            read.resolved_by = '';
+                            read.resolved_version = '';
+                            return read;
                         }
                     );
             });
     };
 
-    /** Ouvre une note et ses reponses. Une reponse est une note : meme role. */
-    const ouvrirFil = (note) =>
-        ouvrirNote(note).then((mere) => {
-            if (!mere) return null;
-            const filles = Array.isArray(mere.reponses) ? mere.reponses : [];
-            if (!filles.length) return mere;
-            return Promise.all(filles.map(ouvrirNote))
-                .then((lues) => {
-                    mere.reponses = lues.filter(Boolean);
-                    return mere;
+    /** Opens a note and its replies. A reply is a note: same role. */
+    const openThread = (note) =>
+        openNote(note).then((parent) => {
+            if (!parent) return null;
+            const children = Array.isArray(parent.replies) ? parent.replies : [];
+            if (!children.length) return parent;
+            return Promise.all(children.map(openNote))
+                .then((read) => {
+                    parent.replies = read.filter(Boolean);
+                    return parent;
                 });
         });
 
-    const lireListe = (donnees) => {
-        sautees = { recentes: 0, illisibles: 0, inconnues: 0 };
-        const brutes = donnees && Array.isArray(donnees.notes) ? donnees.notes : [];
-        return Promise.all(brutes.map(ouvrirFil)).then((lues) => lues.filter(Boolean));
+    const readList = (data) => {
+        skipped = { newer: 0, unreadable: 0, unknown: 0 };
+        const raw = data && Array.isArray(data.notes) ? data.notes : [];
+        return Promise.all(raw.map(openThread)).then((read) => read.filter(Boolean));
     };
 
-    /** Ce qu'on n'a pas su lire, dit a l'ecran. Rend null s'il n'y a rien a dire. */
-    const panneDeLecture = () => {
-        const lignes = [];
-        if (sautees.recentes) {
-            lignes.push(compteLisible(sautees.recentes, '', 'lecture.recentes_une', 'lecture.recentes_n'));
+    /** What we could not read, said on screen. Returns null if there is nothing
+        to say. */
+    const readFailure = () => {
+        const lines = [];
+        if (skipped.newer) {
+            lines.push(readableCount(skipped.newer, '', 'read.newer_one', 'read.newer_n'));
         }
-        if (sautees.illisibles) {
-            lignes.push(compteLisible(sautees.illisibles, '', 'lecture.illisibles_une', 'lecture.illisibles_n'));
+        if (skipped.unreadable) {
+            lines.push(readableCount(skipped.unreadable, '', 'read.unreadable_one', 'read.unreadable_n'));
         }
-        if (sautees.inconnues) {
-            lignes.push(compteLisible(sautees.inconnues, '', 'lecture.inconnues_une', 'lecture.inconnues_n'));
+        if (skipped.unknown) {
+            lines.push(readableCount(skipped.unknown, '', 'read.unknown_one', 'read.unknown_n'));
         }
-        if (!lignes.length) return null;
-        return { titre: T('lecture.titre_partielle'), detail: lignes.join('\n') };
+        if (!lines.length) return null;
+        return { title: T('read.title_partial'), detail: lines.join('\n') };
     };
 
-    /* ==== 50-reperes.js ==== */
+    /* ==== 50-anchors.js ==== */
 
-    /* -- 11. Les trois reperes d'un element ----------------------------------
-       Aucun n'est fiable seul : un chemin casse au premier bloc insere, une
-       empreinte de classes casse a la refonte du style, un extrait de texte casse
-       a la relecture editoriale. Ensemble, ils permettent de DEGRADER — signaler
-       la note comme orpheline — au lieu de la perdre. */
+    /* -- 11. The three anchors of an element ---------------------------------
+       None is reliable on its own: a path breaks at the first inserted block, a
+       fingerprint of classes breaks when the styling is redone, a text excerpt
+       breaks at the editorial pass. Together they make it possible to DEGRADE --
+       to flag the note as orphaned -- instead of losing it. */
 
-    const cheminCss = (el) => {
-        const bouts = [];
+    const cssPath = (el) => {
+        const parts = [];
         let n = el;
         while (n && n.nodeType === 1 && n !== document.body && n !== document.documentElement) {
-            const balise = n.localName;
-            let rang = 1;
-            let f = n.previousElementSibling;
-            while (f) {
-                if (f.localName === balise) rang += 1;
-                f = f.previousElementSibling;
+            const tag = n.localName;
+            let rank = 1;
+            let s = n.previousElementSibling;
+            while (s) {
+                if (s.localName === tag) rank += 1;
+                s = s.previousElementSibling;
             }
-            bouts.unshift(balise + ':nth-of-type(' + rang + ')');
+            parts.unshift(tag + ':nth-of-type(' + rank + ')');
             n = n.parentElement;
         }
-        // Trop long pour la colonne : on abandonne les segments de tete. Le chemin
-        // devient relatif et peut designer plusieurs elements — c'est exactement
-        // pour cela que l'empreinte et l'extrait existent.
-        let chemin = bouts.join(' > ');
-        while (chemin.length > MAX_SELECTEUR && bouts.length > 1) {
-            bouts.shift();
-            chemin = bouts.join(' > ');
+        // Too long for the column: we drop the leading segments. The path becomes
+        // relative and may designate several elements -- which is exactly why the
+        // fingerprint and the excerpt exist.
+        let path = parts.join(' > ');
+        while (path.length > MAX_SELECTOR && parts.length > 1) {
+            parts.shift();
+            path = parts.join(' > ');
         }
-        return couper(chemin, MAX_SELECTEUR);
+        return clip(path, MAX_SELECTOR);
     };
 
-    const empreinteDe = (el) => {
+    const fingerprintOf = (el) => {
         if (!el || el.nodeType !== 1) return '';
         let e = el.localName;
         if (el.id) e += '#' + el.id;
         const classes = (el.getAttribute('class') || '').split(/\s+/).filter(Boolean);
         for (let i = 0; i < classes.length && i < 4; i += 1) e += '.' + classes[i];
-        return couper(e, MAX_EMPREINTE);
+        return clip(e, MAX_FINGERPRINT);
     };
 
     /**
-     * Le texte par lequel un humain reconnait l'element. C'est ce qui s'affiche
-     * dans le panneau : « A propos de : Contactez-nous ». Jamais le chemin,
-     * jamais l'empreinte — ce sont des reperes de machine.
+     * The text by which a human recognises the element. It is what shows in the
+     * panel: "About: Contact us". Never the path, never the fingerprint -- those
+     * are anchors for machines.
      */
-    const extraitDe = (el) => {
+    const excerptOf = (el) => {
         if (!el || el.nodeType !== 1) return '';
-        let t = normaliser(el.textContent);
+        let t = normalize(el.textContent);
         if (!t) {
-            t = normaliser(
+            t = normalize(
                 el.getAttribute('alt') ||
                 el.getAttribute('aria-label') ||
                 el.getAttribute('placeholder') ||
@@ -1194,131 +1192,131 @@
                 ''
             );
         }
-        return couper(t, MAX_EXTRAIT);
+        return clip(t, MAX_EXCERPT);
     };
 
-    /* -- 12. Retrouver l'element d'une note ---------------------------------- */
+    /* -- 12. Finding the element of a note ----------------------------------- */
 
     const score = (el, note) => {
         let s = 0;
-        if (note.empreinte && empreinteDe(el) === note.empreinte) s += 2;
-        if (note.extrait) {
-            const t = extraitDe(el);
-            if (t === note.extrait) s += 2;
-            else if (t && note.extrait.length >= 12 && t.indexOf(note.extrait.slice(0, 24)) === 0) s += 1;
+        if (note.fingerprint && fingerprintOf(el) === note.fingerprint) s += 2;
+        if (note.excerpt) {
+            const t = excerptOf(el);
+            if (t === note.excerpt) s += 2;
+            else if (t && note.excerpt.length >= 12 && t.indexOf(note.excerpt.slice(0, 24)) === 0) s += 1;
         }
         return s;
     };
 
     /**
-     * Trois tentatives, de la plus precise a la plus large. Si aucune ne rend un
-     * element assez ressemblant, la note devient ORPHELINE : elle reste lisible
-     * dans le panneau, avec sa date et son auteur, au lieu de disparaitre sans
-     * que personne le sache.
+     * Three attempts, from the most precise to the widest. If none returns an
+     * element that resembles it enough, the note becomes ORPHANED: it stays
+     * readable in the panel, with its date and its author, instead of vanishing
+     * without anyone knowing.
      */
-    const retrouver = (note) => {
-        if (!note.selecteur && !note.empreinte && !note.extrait) return null;
+    const findElement = (note) => {
+        if (!note.selector && !note.fingerprint && !note.excerpt) return null;
 
-        // 1. Le chemin, verifie par au moins un des deux autres reperes.
-        if (note.selecteur) {
+        // 1. The path, confirmed by at least one of the two other anchors.
+        if (note.selector) {
             let el = null;
             try {
-                el = document.body.querySelector(note.selecteur);
+                el = document.body.querySelector(note.selector);
             } catch (e) {
-                el = null; // chemin devenu invalide : ce n'est pas une panne
+                el = null; // path gone invalid: this is not a failure
             }
-            if (el && !dansOutil(el)) {
-                if (!note.empreinte && !note.extrait) return el;
+            if (el && !inTool(el)) {
+                if (!note.fingerprint && !note.excerpt) return el;
                 if (score(el, note) >= 1) return el;
             }
         }
 
-        // 2. L'empreinte : meme balise, memes classes, meme identifiant.
-        if (note.empreinte) {
-            const balise = note.empreinte.split(/[#.]/)[0];
-            let candidats = [];
+        // 2. The fingerprint: same tag, same classes, same id.
+        if (note.fingerprint) {
+            const tag = note.fingerprint.split(/[#.]/)[0];
+            let candidates = [];
             try {
-                candidats = Array.prototype.slice.call(document.body.querySelectorAll(balise));
+                candidates = Array.prototype.slice.call(document.body.querySelectorAll(tag));
             } catch (e) {
-                candidats = [];
+                candidates = [];
             }
-            let meilleur = null;
-            let meilleurScore = 0;
-            for (let i = 0; i < candidats.length; i += 1) {
-                const c = candidats[i];
-                if (dansOutil(c)) continue;
+            let best = null;
+            let bestScore = 0;
+            for (let i = 0; i < candidates.length; i += 1) {
+                const c = candidates[i];
+                if (inTool(c)) continue;
                 const s = score(c, note);
-                if (s > meilleurScore) {
-                    meilleur = c;
-                    meilleurScore = s;
+                if (s > bestScore) {
+                    best = c;
+                    bestScore = s;
                 }
             }
-            if (meilleur && meilleurScore >= 2) return meilleur;
+            if (best && bestScore >= 2) return best;
         }
 
-        // 3. Le texte seul, s'il est assez long pour ne pas designer n'importe
-        //    quoi. C'est le repere qui survit le mieux a une refonte du style.
-        if (note.extrait && note.extrait.length >= 12) {
-            const tous = document.body.querySelectorAll('*');
-            for (let i = 0; i < tous.length; i += 1) {
-                const c = tous[i];
-                if (dansOutil(c)) continue;
-                if (extraitDe(c) === note.extrait) return c;
+        // 3. The text alone, if it is long enough not to designate just
+        //    anything. It is the anchor that best survives a restyling.
+        if (note.excerpt && note.excerpt.length >= 12) {
+            const all = document.body.querySelectorAll('*');
+            for (let i = 0; i < all.length; i += 1) {
+                const c = all[i];
+                if (inTool(c)) continue;
+                if (excerptOf(c) === note.excerpt) return c;
             }
         }
 
         return null;
     };
 
-    /** Repartit les notes du serveur entre elements retrouves et orphelines. */
-    const ancrer = () => {
-        ancrees = [];
-        orphelines = [];
+    /** Splits the server's notes between elements found again and orphans. */
+    const anchor = () => {
+        anchored = [];
+        orphans = [];
         for (let i = 0; i < notes.length; i += 1) {
             const note = notes[i];
-            const el = retrouver(note);
+            const el = findElement(note);
             if (!el) {
-                orphelines.push(note);
+                orphans.push(note);
                 continue;
             }
-            let groupe = null;
-            for (let j = 0; j < ancrees.length; j += 1) {
-                if (ancrees[j].element === el) groupe = ancrees[j];
+            let group = null;
+            for (let j = 0; j < anchored.length; j += 1) {
+                if (anchored[j].element === el) group = anchored[j];
             }
-            if (!groupe) {
-                groupe = { element: el, notes: [] };
-                ancrees.push(groupe);
+            if (!group) {
+                group = { element: el, notes: [] };
+                anchored.push(group);
             }
-            groupe.notes.push(note);
+            group.notes.push(note);
         }
     };
 
-    /* ==== 60-interface.js ==== */
+    /* ==== 60-ui.js ==== */
 
-    /* -- 13. Construction de l'interface -------------------------------------
-       Tout ce qui suit vit dans le shadow root. Le site hote n'en voit rien,
-       et n'est vu de rien. */
+    /* -- 13. Building the interface -------------------------------------------
+       Everything below lives in the shadow root. The host site sees none of it,
+       and is seen by none of it. */
 
     /**
-     * L'element hote et son shadow root, et RIEN D'AUTRE.
+     * The host element and its shadow root, and NOTHING ELSE.
      *
-     * Il est cree avant que les libelles soient charges — il faut un shadow
-     * root pour les y charger — mais il ne montre rien : l'interface, elle,
-     * n'est batie qu'une fois les textes disponibles.
+     * It is created before the labels are loaded -- a shadow root is needed to
+     * load them into -- but it shows nothing: the interface itself is only built
+     * once the texts are available.
      */
-    const batirHote = () => {
-        // IDEMPOTENT, et ce n'est pas une precaution de style : l'ecran de collage
-        // du sel bati l'hote AVANT que le demarrage normal ne le demande a son
-        // tour. Sans cette garde, le site recevait DEUX elements, dont un vide et
-        // orphelin — la promesse « un seul element ajoute » tombait au premier
-        // sel colle.
-        if (hote) return;
-        hote = document.createElement('annotepage-notes');
-        // Ces proprietes sont posees EN LIGNE et en !important, sur notre propre
-        // element : une regle du site visant « body > div » ne doit pas pouvoir
-        // deplacer la couche. « all: initial » coupe en outre tout heritage du
-        // site vers l'outil.
-        hote.style.cssText =
+    const buildHost = () => {
+        // IDEMPOTENT, and this is not a stylistic precaution: the salt-pasting
+        // screen built the host BEFORE the normal startup asked for it in turn.
+        // Without this guard, the site received TWO elements, one of them empty
+        // and orphaned -- the promise "one single element added" fell over at the
+        // first pasted salt.
+        if (host) return;
+        host = document.createElement('annotepage-notes');
+        // These properties are set INLINE and with !important, on our own
+        // element: a site rule aiming at "body > div" must not be able to move
+        // the layer. "all: initial" also cuts off any inheritance from the site
+        // into the tool.
+        host.style.cssText =
             'all: initial !important;' +
             'position: fixed !important;' +
             'top: 0 !important; left: 0 !important;' +
@@ -1327,1249 +1325,1249 @@
             'margin: 0 !important; padding: 0 !important; border: 0 !important;' +
             'pointer-events: none !important;' +
             'z-index: 2147483000 !important;';
-        document.body.appendChild(hote);
-        racine = hote.attachShadow({ mode: 'open' });
+        document.body.appendChild(host);
+        root = host.attachShadow({ mode: 'open' });
 
-        /* La feuille de style est POSEE ICI, en <style>, et non chargee par un
-           <link> comme dans l'outil d'origine.
+        /* The stylesheet is PUT HERE, in a <style>, and not loaded by a <link>
+           as in the original tool.
 
-           Raison : le client part en CDN sous SRI. Une seconde requete vers un
-           fichier voisin demanderait une seconde empreinte a tenir a jour, et
-           personne ne tient deux empreintes en accord bien longtemps. Un seul
-           fichier, une seule empreinte, une seule chose a verifier.
+           Reason: the client goes to a CDN under SRI. A second request to a
+           neighbouring file would mean a second digest to keep up to date, and
+           nobody keeps two digests in agreement for long. One file, one digest,
+           one thing to check.
 
-           Effet de bord agreable : la feuille est la avant le premier pixel. Le
-           masquage puis l'affichage de l'element hote, qui existaient pour ne pas
-           montrer l'outil sans style pendant une fraction de seconde, n'ont plus
-           lieu d'etre et ont disparu.
+           Pleasant side effect: the sheet is there before the first pixel. The
+           hiding and then showing of the host element, which existed so as not
+           to show the tool unstyled for a fraction of a second, no longer has
+           any reason to be and is gone.
 
-           Prix a dire : la feuille pese dans le fichier servi, et le style ne se
-           remplace plus en changeant un fichier voisin — il faut reconstruire. */
-        /* Deux voies, et la premiere n'est pas de la coquetterie : une politique
-           de securite de contenu stricte (style-src sans 'unsafe-inline') BLOQUE
-           un element <style>, et l'outil s'afficherait sans style — ce qui
-           ressemble a une page cassee. Une feuille CONSTRUITE, elle, n'est pas
-           une feuille en ligne au sens de la politique, et passe. On garde
-           <style> pour les navigateurs qui ne construisent pas de feuille. */
-        let posee = false;
+           The price, to be stated: the sheet weighs in the served file, and the
+           styling can no longer be replaced by changing a neighbouring file -- it
+           has to be rebuilt. */
+        /* Two routes, and the first is not vanity: a strict content security
+           policy (style-src without 'unsafe-inline') BLOCKS a <style> element,
+           and the tool would show up unstyled -- which looks like a broken page.
+           A CONSTRUCTED sheet, on the other hand, is not an inline sheet in the
+           policy's sense, and goes through. We keep <style> for the browsers
+           that do not construct sheets. */
+        let placed = false;
         try {
-            if (racine.adoptedStyleSheets && typeof CSSStyleSheet === 'function') {
-                const feuille = new CSSStyleSheet();
-                feuille.replaceSync(STYLES);
-                racine.adoptedStyleSheets = [feuille];
-                posee = true;
+            if (root.adoptedStyleSheets && typeof CSSStyleSheet === 'function') {
+                const sheet = new CSSStyleSheet();
+                sheet.replaceSync(STYLES);
+                root.adoptedStyleSheets = [sheet];
+                placed = true;
             }
         } catch (e) {
-            posee = false;
+            placed = false;
         }
-        if (!posee) {
+        if (!placed) {
             const style = document.createElement('style');
             style.textContent = STYLES;
-            racine.appendChild(style);
+            root.appendChild(style);
         }
     };
 
-    /** L'interface. Batie APRES les libelles : aucun texte de repli a poser. */
-    const batirUi = () => {
-        const couche = creer('div', 'ap-couche');
-        racine.appendChild(couche);
+    /** The interface. Built AFTER the labels: no fallback text to put in. */
+    const buildUi = () => {
+        const layer = create('div', 'ap-layer');
+        root.appendChild(layer);
 
-        /* -- le bouton -- */
-        const bouton = creer('button', 'ap-bouton');
-        bouton.type = 'button';
-        bouton.setAttribute('aria-pressed', 'false');
-        bouton.title = T('bouton.aide');
-        const pastille = creer('span', 'ap-bouton-pastille');
-        const boutonTexte = creer('span', null, T('bouton.ouvrir'));
-        const boutonCompte = creer('span', 'ap-bouton-compte');
-        bouton.appendChild(pastille);
-        bouton.appendChild(boutonTexte);
-        bouton.appendChild(boutonCompte);
-        bouton.addEventListener('click', () => basculerMode());
-        couche.appendChild(bouton);
+        /* -- the button -- */
+        const button = create('button', 'ap-button');
+        button.type = 'button';
+        button.setAttribute('aria-pressed', 'false');
+        button.title = T('button.help');
+        const dot = create('span', 'ap-button-dot');
+        const buttonText = create('span', null, T('button.open'));
+        const buttonCount = create('span', 'ap-button-count');
+        button.appendChild(dot);
+        button.appendChild(buttonText);
+        button.appendChild(buttonCount);
+        button.addEventListener('click', () => toggleMode());
+        layer.appendChild(button);
 
-        /* -- surbrillance de designation -- */
-        const surbrillance = creer('div', 'ap-surbrillance');
-        const etiquette = creer('div', 'ap-surbrillance-etiquette');
-        couche.appendChild(surbrillance);
-        couche.appendChild(etiquette);
+        /* -- pointing highlight -- */
+        const highlight = create('div', 'ap-highlight');
+        const label = create('div', 'ap-highlight-label');
+        layer.appendChild(highlight);
+        layer.appendChild(label);
 
-        /* -- marqueurs -- */
-        const marqueurs = creer('div', 'ap-marqueurs');
-        couche.appendChild(marqueurs);
+        /* -- markers -- */
+        const markers = create('div', 'ap-markers');
+        layer.appendChild(markers);
 
-        /* -- panneau -- */
-        const panneau = creer('aside', 'ap-panneau');
-        panneau.setAttribute('role', 'complementary');
-        const entete = creer('div', 'ap-panneau-entete');
-        const titre = creer('span', 'ap-panneau-titre', T('panneau.titre'));
-        const fermer = creer('button', 'ap-lien', T('panneau.fermer'));
-        fermer.type = 'button';
-        fermer.addEventListener('click', () => quitterMode());
-        entete.appendChild(titre);
-        entete.appendChild(fermer);
-        const consigne = creer('div', 'ap-panneau-consigne');
-        consigne.appendChild(creer('div', null, T('panneau.consigne')));
-        consigne.appendChild(creer('div', null, T('panneau.echap')));
-        const corps = creer('div', 'ap-panneau-corps');
-        const pied = creer('div', 'ap-panneau-pied');
-        panneau.appendChild(entete);
-        panneau.appendChild(consigne);
-        panneau.appendChild(corps);
-        panneau.appendChild(pied);
-        couche.appendChild(panneau);
+        /* -- panel -- */
+        const panel = create('aside', 'ap-panel');
+        panel.setAttribute('role', 'complementary');
+        const header = create('div', 'ap-panel-header');
+        const title = create('span', 'ap-panel-title', T('panel.title'));
+        const close = create('button', 'ap-link', T('panel.close'));
+        close.type = 'button';
+        close.addEventListener('click', () => leaveMode());
+        header.appendChild(title);
+        header.appendChild(close);
+        const instructions = create('div', 'ap-panel-instructions');
+        instructions.appendChild(create('div', null, T('panel.instructions')));
+        instructions.appendChild(create('div', null, T('panel.escape')));
+        const body = create('div', 'ap-panel-body');
+        const footer = create('div', 'ap-panel-footer');
+        panel.appendChild(header);
+        panel.appendChild(instructions);
+        panel.appendChild(body);
+        panel.appendChild(footer);
+        layer.appendChild(panel);
 
-        /* -- formulaire -- */
-        const fiche = creer('div', 'ap-fiche');
-        couche.appendChild(fiche);
+        /* -- form -- */
+        const form = create('div', 'ap-form');
+        layer.appendChild(form);
 
         ui = {
-            couche: couche,
-            bouton: bouton,
-            boutonTexte: boutonTexte,
-            boutonCompte: boutonCompte,
-            surbrillance: surbrillance,
-            etiquette: etiquette,
-            marqueurs: marqueurs,
-            panneau: panneau,
-            corps: corps,
-            pied: pied,
-            fiche: fiche
+            layer: layer,
+            button: button,
+            buttonText: buttonText,
+            buttonCount: buttonCount,
+            highlight: highlight,
+            label: label,
+            markers: markers,
+            panel: panel,
+            body: body,
+            footer: footer,
+            form: form
         };
     };
 
-    /* -- 14. Surbrillance et marqueurs --------------------------------------- */
+    /* -- 14. Highlight and markers ------------------------------------------- */
 
-    const placer = (el, rect, marge) => {
-        const m = marge || 0;
+    const place = (el, rect, margin) => {
+        const m = margin || 0;
         el.style.left = Math.max(0, rect.left - m) + 'px';
         el.style.top = Math.max(0, rect.top - m) + 'px';
         el.style.width = Math.max(0, rect.width + m * 2) + 'px';
         el.style.height = Math.max(0, rect.height + m * 2) + 'px';
     };
 
-    const montrerSurbrillance = (el) => {
-        if (!el) return cacherSurbrillance();
+    const showHighlight = (el) => {
+        if (!el) return hideHighlight();
         const r = el.getBoundingClientRect();
-        if (r.width === 0 && r.height === 0) return cacherSurbrillance();
-        placer(ui.surbrillance, r, 1);
-        ui.surbrillance.style.display = 'block';
+        if (r.width === 0 && r.height === 0) return hideHighlight();
+        place(ui.highlight, r, 1);
+        ui.highlight.style.display = 'block';
 
-        const texte = extraitDe(el);
-        ui.etiquette.textContent = texte || T('formulaire.sur_sans_texte');
-        ui.etiquette.style.display = 'block';
-        const haut = r.top > 26 ? r.top - 24 : Math.min(window.innerHeight - 24, r.bottom + 4);
-        ui.etiquette.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 330)) + 'px';
-        ui.etiquette.style.top = haut + 'px';
+        const text = excerptOf(el);
+        ui.label.textContent = text || T('form.about_no_text');
+        ui.label.style.display = 'block';
+        const top = r.top > 26 ? r.top - 24 : Math.min(window.innerHeight - 24, r.bottom + 4);
+        ui.label.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 330)) + 'px';
+        ui.label.style.top = top + 'px';
     };
 
-    const cacherSurbrillance = () => {
+    const hideHighlight = () => {
         if (!ui) return;
-        ui.surbrillance.style.display = 'none';
-        ui.etiquette.style.display = 'none';
+        ui.highlight.style.display = 'none';
+        ui.label.style.display = 'none';
     };
 
-    /** Un pastillage par element annote. Il n'apparait qu'en mode annotation :
-        hors de ce mode, la page est exactement celle du site. */
-    const dessinerMarqueurs = () => {
-        vider(ui.marqueurs);
+    /** One badge per annotated element. It only appears in annotation mode:
+        outside that mode, the page is exactly the site's. */
+    const drawMarkers = () => {
+        empty(ui.markers);
         if (!mode) return;
-        for (let i = 0; i < ancrees.length; i += 1) {
-            const groupe = ancrees[i];
-            const r = groupe.element.getBoundingClientRect();
+        for (let i = 0; i < anchored.length; i += 1) {
+            const group = anchored[i];
+            const r = group.element.getBoundingClientRect();
             if (r.width === 0 && r.height === 0) continue;
             if (r.bottom < 0 || r.top > window.innerHeight) continue;
-            const n = groupe.notes.length;
-            const pastille = creer('button', 'ap-marqueur', String(n));
-            pastille.type = 'button';
-            pastille.title = n === 1 ? T('marqueur.une') : T('marqueur.n', { n: n });
-            pastille.style.left = Math.max(2, Math.min(r.left - 8, window.innerWidth - 30)) + 'px';
-            pastille.style.top = Math.max(2, Math.min(r.top - 8, window.innerHeight - 30)) + 'px';
-            pastille.addEventListener('click', ((note) => () => viser(note))(groupe.notes[0]));
-            ui.marqueurs.appendChild(pastille);
+            const n = group.notes.length;
+            const badge = create('button', 'ap-marker', String(n));
+            badge.type = 'button';
+            badge.title = n === 1 ? T('marker.one') : T('marker.n', { n: n });
+            badge.style.left = Math.max(2, Math.min(r.left - 8, window.innerWidth - 30)) + 'px';
+            badge.style.top = Math.max(2, Math.min(r.top - 8, window.innerHeight - 30)) + 'px';
+            badge.addEventListener('click', ((note) => () => focusNote(note))(group.notes[0]));
+            ui.markers.appendChild(badge);
         }
     };
 
-    const rafraichirPositions = () => {
-        if (rafDemande) return;
-        rafDemande = true;
+    const refreshPositions = () => {
+        if (rafPending) return;
+        rafPending = true;
         window.requestAnimationFrame(() => {
-            rafDemande = false;
+            rafPending = false;
             if (!mode) return;
-            dessinerMarqueurs();
-            if (survole && document.contains(survole)) montrerSurbrillance(survole);
-            if (cible && document.contains(cible)) positionnerFiche(cible);
+            drawMarkers();
+            if (hovered && document.contains(hovered)) showHighlight(hovered);
+            if (target && document.contains(target)) positionForm(target);
         });
     };
 
-    /* -- 15. Le panneau ------------------------------------------------------ */
+    /* -- 15. The panel ------------------------------------------------------- */
 
-    const blocPanne = (panne, surFermeture) => {
-        const bloc = creer('div', 'ap-erreur');
-        bloc.setAttribute('role', 'alert');
-        bloc.appendChild(creer('div', 'ap-erreur-titre', panne.titre));
-        // Le message du serveur est affiche TEL QU'IL A ETE REDIGE : c'est
-        // ainsi que « la base est injoignable » atteint l'ecran d'un relecteur.
-        bloc.appendChild(creer('p', 'ap-erreur-detail', panne.detail));
-        if (surFermeture) {
-            const masquer = creer('button', 'ap-lien', T('erreur.masquer'));
-            masquer.type = 'button';
-            masquer.addEventListener('click', surFermeture);
-            bloc.appendChild(masquer);
+    const failureBlock = (failure, onClose) => {
+        const block = create('div', 'ap-error');
+        block.setAttribute('role', 'alert');
+        block.appendChild(create('div', 'ap-error-title', failure.title));
+        // The server's message is shown AS IT WAS WRITTEN: that is how "the
+        // database is unreachable" reaches a reviewer's screen.
+        block.appendChild(create('p', 'ap-error-detail', failure.detail));
+        if (onClose) {
+            const hide = create('button', 'ap-link', T('error.hide'));
+            hide.type = 'button';
+            hide.addEventListener('click', onClose);
+            block.appendChild(hide);
         }
-        return bloc;
+        return block;
     };
 
-    const carteNote = (note, orpheline) => {
-        /* Etat de correction, dit sur la carte elle-meme. Deux cas distincts :
-           corrigee et en ligne, ou corrigee mais pas encore deployee — le
-           second doit se voir, sinon on croit le defaut resolu alors qu'il est
-           toujours a l'ecran. */
-        const enLigne = note.resolue_le ? dejaDeploye(note.resolue_version) : false;
-        const carte = creer('article', 'ap-note'
-            + (orpheline ? ' ap-orpheline' : '')
-            + (note.resolue_le ? (enLigne ? ' ap-corrigee' : ' ap-corrigee-attente') : ''));
-        carte.setAttribute('data-ap-note', String(note.id));
-        if (note.resolue_le) {
-            const marque = creer('div', 'ap-marque-etat',
-                enLigne
-                    ? T('note.corrigee', {
-                        date: dateLisible(note.resolue_le),
-                        par: note.resolue_par || '?',
+    const noteCard = (note, orphan) => {
+        /* Resolution state, said on the card itself. Two distinct cases:
+           resolved and online, or resolved but not deployed yet -- the second has
+           to show, otherwise one believes the defect gone while it is still on
+           screen. */
+        const live = note.resolved_at ? alreadyDeployed(note.resolved_version) : false;
+        const card = create('article', 'ap-note'
+            + (orphan ? ' ap-orphan' : '')
+            + (note.resolved_at ? (live ? ' ap-resolved' : ' ap-resolved-pending') : ''));
+        card.setAttribute('data-ap-note', String(note.id));
+        if (note.resolved_at) {
+            const mark = create('div', 'ap-state-mark',
+                live
+                    ? T('note.resolved', {
+                        date: readableDate(note.resolved_at),
+                        by: note.resolved_by || '?',
                       })
-                    : T('note.corrigee_attente'));
-            marque.title = note.resolue_version
-                ? 'Correction partie en version ' + note.resolue_version
+                    : T('note.resolved_pending'));
+            mark.title = note.resolved_version
+                ? T('note.resolved_version', { version: note.resolved_version })
                 : '';
-            carte.appendChild(marque);
+            card.appendChild(mark);
         }
 
-        const entete = creer('div', 'ap-note-entete');
-        entete.appendChild(creer('span', 'ap-note-auteur', note.auteur));
-        entete.appendChild(creer('span', 'ap-note-date', dateLisible(note.cree_le)));
-        carte.appendChild(entete);
+        const header = create('div', 'ap-note-header');
+        header.appendChild(create('span', 'ap-note-author', note.author));
+        header.appendChild(create('span', 'ap-note-date', readableDate(note.created_at)));
+        card.appendChild(header);
 
-        // Ce que le relecteur voit de l'element : son TEXTE, jamais son chemin.
-        const cibleTexte = orpheline
-            ? (note.extrait
-                ? T('note.sur', { extrait: note.extrait }) + ' — ' + T('note.element_perdu')
-                : T('note.element_perdu'))
-            : (note.extrait ? T('note.sur', { extrait: note.extrait }) : T('note.sans_element'));
-        carte.appendChild(creer('p', 'ap-note-cible', cibleTexte));
+        // What the reviewer sees of the element: its TEXT, never its path.
+        const targetText = orphan
+            ? (note.excerpt
+                ? T('note.about', { excerpt: note.excerpt }) + ' -- ' + T('note.element_lost')
+                : T('note.element_lost'))
+            : (note.excerpt ? T('note.about', { excerpt: note.excerpt }) : T('note.no_element'));
+        card.appendChild(create('p', 'ap-note-target', targetText));
 
-        carte.appendChild(creer('p', 'ap-note-texte', note.texte));
+        card.appendChild(create('p', 'ap-note-text', note.text));
 
-        const actions = creer('div', 'ap-note-actions');
-        const repondre = creer('button', 'ap-secondaire', T('note.repondre'));
-        repondre.type = 'button';
-        actions.appendChild(repondre);
-        if (!orpheline) {
-            const montrer = creer('button', 'ap-lien', T('note.voir'));
-            montrer.type = 'button';
-            montrer.addEventListener('click', () => montrerElement(note));
-            actions.appendChild(montrer);
+        const actions = create('div', 'ap-note-actions');
+        const reply = create('button', 'ap-secondary', T('note.reply'));
+        reply.type = 'button';
+        actions.appendChild(reply);
+        if (!orphan) {
+            const show = create('button', 'ap-link', T('note.show'));
+            show.type = 'button';
+            show.addEventListener('click', () => showElement(note));
+            actions.appendChild(show);
         }
-        /* Marquer corrigee, et revenir sur cette marque. Sans ce bouton, la
-           moitie de l'outil — l'action serveur, ses colonnes, l'historique et
-           ses libelles — restait ecrite et injoignable : personne ne pouvait
-           poser l'etat que le panneau savait afficher. */
-        const etat = creer('button', 'ap-lien',
-            T(note.resolue_le ? 'note.rouvrir' : 'note.marquer_corrigee'));
-        etat.type = 'button';
-        etat.addEventListener('click', () => {
-            const ouvert = carte.querySelector('.ap-resoudre');
-            if (ouvert) {
-                ouvert.remove();
+        /* Mark resolved, and take that mark back. Without this button, half the
+           tool -- the server action, its columns, the history and its labels --
+           stayed written and out of reach: nobody could set the state the panel
+           already knew how to show. */
+        const state = create('button', 'ap-link',
+            T(note.resolved_at ? 'note.reopen' : 'note.mark_resolved'));
+        state.type = 'button';
+        state.addEventListener('click', () => {
+            const alreadyOpen = card.querySelector('.ap-resolve');
+            if (alreadyOpen) {
+                alreadyOpen.remove();
                 return;
             }
-            carte.appendChild(formulaireResolution(note, !note.resolue_le));
+            card.appendChild(resolutionForm(note, !note.resolved_at));
         });
-        actions.appendChild(etat);
-        carte.appendChild(actions);
+        actions.appendChild(state);
+        card.appendChild(actions);
 
-        const reponses = creer('div', 'ap-reponses');
-        const liste = note.reponses || [];
-        for (let i = 0; i < liste.length; i += 1) {
-            const r = liste[i];
-            const bloc = creer('div', 'ap-reponse');
-            const e = creer('div', 'ap-note-entete');
-            e.appendChild(creer('span', 'ap-note-auteur', r.auteur));
-            e.appendChild(creer('span', 'ap-note-date', dateLisible(r.cree_le)));
-            bloc.appendChild(e);
-            bloc.appendChild(creer('p', 'ap-note-texte', r.texte));
-            reponses.appendChild(bloc);
+        const replies = create('div', 'ap-replies');
+        const list = note.replies || [];
+        for (let i = 0; i < list.length; i += 1) {
+            const r = list[i];
+            const block = create('div', 'ap-reply');
+            const e = create('div', 'ap-note-header');
+            e.appendChild(create('span', 'ap-note-author', r.author));
+            e.appendChild(create('span', 'ap-note-date', readableDate(r.created_at)));
+            block.appendChild(e);
+            block.appendChild(create('p', 'ap-note-text', r.text));
+            replies.appendChild(block);
         }
-        if (liste.length) carte.appendChild(reponses);
+        if (list.length) card.appendChild(replies);
 
-        repondre.addEventListener('click', () => {
-            if (carte.querySelector('.ap-repondre')) return;
-            carte.appendChild(formulaireReponse(note));
+        reply.addEventListener('click', () => {
+            if (card.querySelector('.ap-reply-form')) return;
+            card.appendChild(replyForm(note));
         });
 
-        return carte;
+        return card;
     };
 
     /**
-     * Marquer une note corrigee, ou rouvrir une note corrigee.
+     * Mark a note resolved, or reopen a resolved note.
      *
-     * Le nom n'est demande QUE pour marquer une correction : c'est lui qui
-     * signe le geste. Pour rouvrir, le serveur ne l'exige pas et l'effacerait
-     * de toute facon — demander le nom du correcteur pour annuler la
-     * correction n'aurait aucun sens.
+     * The name is asked for ONLY to mark a fix: it is what signs the gesture. To
+     * reopen, the server does not require it and would erase it anyway -- asking
+     * for the fixer's name in order to cancel the fix would make no sense.
      *
-     * La version du site est envoyee avec la marque : c'est elle qui permet
-     * ensuite de distinguer « corrigee et en ligne » de « corrigee, pas encore
-     * deployee ». Sans elle, une note serait rangee dans l'historique alors
-     * que le defaut est toujours a l'ecran.
+     * The site version is sent with the mark: it is what then allows "resolved
+     * and online" to be told apart from "resolved, not deployed yet". Without
+     * it, a note would be filed into the history while the defect is still on
+     * screen.
      */
-    const formulaireResolution = (note, marquer) => {
-        const bloc = creer('div', 'ap-resoudre');
-        bloc.appendChild(creer('p', 'ap-aide',
-            T(marquer ? 'resolution.aide' : 'reouverture.aide')));
+    const resolutionForm = (note, mark) => {
+        const block = create('div', 'ap-resolve');
+        block.appendChild(create('p', 'ap-help',
+            T(mark ? 'resolution.help' : 'reopening.help')));
 
-        const champsNom = marquer ? champNom() : null;
-        if (champsNom) bloc.appendChild(champsNom.bloc);
+        const nameParts = mark ? nameField() : null;
+        if (nameParts) block.appendChild(nameParts.block);
 
-        const actions = creer('div', 'ap-actions');
-        const valider = creer('button', 'ap-primaire',
-            T(marquer ? 'resolution.valider' : 'reouverture.valider'));
-        valider.type = 'button';
-        const annuler = creer('button', 'ap-secondaire', T('note.annuler'));
-        annuler.type = 'button';
-        annuler.addEventListener('click', () => bloc.remove());
-        actions.appendChild(valider);
-        actions.appendChild(annuler);
-        bloc.appendChild(actions);
+        const actions = create('div', 'ap-actions');
+        const confirm = create('button', 'ap-primary',
+            T(mark ? 'resolution.confirm' : 'reopening.confirm'));
+        confirm.type = 'button';
+        const cancel = create('button', 'ap-secondary', T('note.cancel'));
+        cancel.type = 'button';
+        cancel.addEventListener('click', () => block.remove());
+        actions.appendChild(confirm);
+        actions.appendChild(cancel);
+        block.appendChild(actions);
 
-        const dire = (panne) => {
-            const ancien = bloc.querySelector('.ap-erreur');
-            if (ancien) ancien.remove();
-            if (panne) bloc.insertBefore(blocPanne(panne), bloc.firstChild);
+        const say = (failure) => {
+            const previous = block.querySelector('.ap-error');
+            if (previous) previous.remove();
+            if (failure) block.insertBefore(failureBlock(failure), block.firstChild);
         };
 
-        valider.addEventListener('click', () => {
-            const nom = champsNom ? normaliser(champsNom.champ.value) : auteur;
-            if (marquer && !nom) {
-                return dire({ titre: T('erreur.titre_resolution'),
-                              detail: T('formulaire.nom_manquant') });
+        confirm.addEventListener('click', () => {
+            const name = nameParts ? normalize(nameParts.field.value) : author;
+            if (mark && !name) {
+                return say({ title: T('error.title_resolution'),
+                             detail: T('form.name_missing') });
             }
-            dire(null);
-            valider.disabled = true;
-            annuler.disabled = true;
+            say(null);
+            confirm.disabled = true;
+            cancel.disabled = true;
 
-            // Le corps est bati AVANT l'envoi et, en mode chiffre, il faut
-            // chiffrer pour l'obtenir : c'est asynchrone, comme le reste.
-            corpsDeResolution(note, marquer, nom)
-                .then((corps) => appeler('resoudre', corps))
+            // The body is built BEFORE the send and, in encrypted mode, it has
+            // to be encrypted to be obtained: that is asynchronous, like the
+            // rest.
+            resolutionBody(note, mark, name)
+                .then((body) => call('resolve', body))
                 .then((r) => {
-                    valider.disabled = false;
-                    annuler.disabled = false;
+                    confirm.disabled = false;
+                    cancel.disabled = false;
                     if (!r.ok) {
-                        dire(panneDe(r, 'erreur.titre_resolution'));
+                        say(failureFrom(r, 'error.title_resolution'));
                         return;
                     }
-                    if (nom) ecrireAuteur(nom);
-                    bloc.remove();
-                    // Comme partout : on relit le serveur au lieu de supposer.
-                    recharger();
+                    if (name) writeAuthor(name);
+                    block.remove();
+                    // As everywhere: we read the server back instead of assuming.
+                    reload();
                 }, () => {
-                    valider.disabled = false;
-                    annuler.disabled = false;
-                    dire({ titre: T('erreur.titre_resolution'), detail: T('erreur.chiffrement') });
+                    confirm.disabled = false;
+                    cancel.disabled = false;
+                    say({ title: T('error.title_resolution'), detail: T('error.encryption') });
                 });
         });
 
-        return bloc;
+        return block;
     };
 
-    const formulaireReponse = (note) => {
-        const bloc = creer('div', 'ap-repondre');
-        const zone = creer('textarea', 'ap-zone');
-        zone.setAttribute('placeholder', T('note.reponse_placeholder'));
-        zone.setAttribute('maxlength', String(MAX_TEXTE));
-        bloc.appendChild(zone);
+    const replyForm = (note) => {
+        const block = create('div', 'ap-reply-form');
+        const area = create('textarea', 'ap-area');
+        area.setAttribute('placeholder', T('note.reply_placeholder'));
+        area.setAttribute('maxlength', String(MAX_TEXT));
+        block.appendChild(area);
 
-        const champsNom = champNom();
-        if (champsNom) bloc.appendChild(champsNom.bloc);
+        const nameParts = nameField();
+        if (nameParts) block.appendChild(nameParts.block);
 
-        const actions = creer('div', 'ap-actions');
-        const envoyer = creer('button', 'ap-primaire', T('note.reponse_envoyer'));
-        envoyer.type = 'button';
-        const annuler = creer('button', 'ap-secondaire', T('note.annuler'));
-        annuler.type = 'button';
-        annuler.addEventListener('click', () => bloc.remove());
-        actions.appendChild(envoyer);
-        actions.appendChild(annuler);
-        bloc.appendChild(actions);
+        const actions = create('div', 'ap-actions');
+        const send = create('button', 'ap-primary', T('note.reply_send'));
+        send.type = 'button';
+        const cancel = create('button', 'ap-secondary', T('note.cancel'));
+        cancel.type = 'button';
+        cancel.addEventListener('click', () => block.remove());
+        actions.appendChild(send);
+        actions.appendChild(cancel);
+        block.appendChild(actions);
 
-        const dire = (panne) => {
-            const ancien = bloc.querySelector('.ap-erreur');
-            if (ancien) ancien.remove();
-            if (panne) bloc.insertBefore(blocPanne(panne), bloc.firstChild);
+        const say = (failure) => {
+            const previous = block.querySelector('.ap-error');
+            if (previous) previous.remove();
+            if (failure) block.insertBefore(failureBlock(failure), block.firstChild);
         };
 
-        envoyer.addEventListener('click', () => {
-            const texte = zone.value.trim();
-            const nom = champsNom ? normaliser(champsNom.champ.value) : auteur;
-            if (!nom) return dire({ titre: T('erreur.titre'), detail: T('formulaire.nom_manquant') });
-            if (!texte) return dire({ titre: T('erreur.titre'), detail: T('formulaire.texte_manquant') });
-            if (texte.length > MAX_TEXTE) {
-                return dire({
-                    titre: T('erreur.titre'),
-                    detail: T('formulaire.trop_long', { n: texte.length, max: MAX_TEXTE })
+        send.addEventListener('click', () => {
+            const text = area.value.trim();
+            const name = nameParts ? normalize(nameParts.field.value) : author;
+            if (!name) return say({ title: T('error.title'), detail: T('form.name_missing') });
+            if (!text) return say({ title: T('error.title'), detail: T('form.text_missing') });
+            if (text.length > MAX_TEXT) {
+                return say({
+                    title: T('error.title'),
+                    detail: T('form.too_long', { n: text.length, max: MAX_TEXT })
                 });
             }
-            dire(null);
-            envoyer.disabled = true;
-            annuler.disabled = true;
-            envoyer.textContent = T('formulaire.envoi');
+            say(null);
+            send.disabled = true;
+            cancel.disabled = true;
+            send.textContent = T('form.sending');
 
-            corpsDeNote({
-                auteur: nom,
-                texte: texte,
-                version: VERSION_SITE,
-                environnement: ENVIRONNEMENT,
-                fenetre: fenetreCourante()
-            }, note.id).then((corps) => appeler('ajout', corps)).then((r) => {
-                envoyer.disabled = false;
-                annuler.disabled = false;
-                envoyer.textContent = T('note.reponse_envoyer');
+            noteBody({
+                author: name,
+                text: text,
+                version: SITE_VERSION,
+                environment: ENVIRONMENT,
+                viewport: currentViewport()
+            }, note.id).then((body) => call('add', body)).then((r) => {
+                send.disabled = false;
+                cancel.disabled = false;
+                send.textContent = T('note.reply_send');
                 if (!r.ok) {
-                    // Le texte reste dans la zone : rien n'est perdu.
-                    dire(panneDe(r, 'erreur.titre'));
+                    // The text stays in the area: nothing is lost.
+                    say(failureFrom(r, 'error.title'));
                     return;
                 }
-                ecrireAuteur(nom);
-                bloc.remove();
-                // On re-interroge le serveur au lieu d'ajouter la reponse a
-                // l'ecran : ce qui s'affiche est ce que le serveur dit, jamais
-                // ce que le navigateur suppose.
-                recharger();
+                writeAuthor(name);
+                block.remove();
+                // We ask the server again instead of adding the reply to the
+                // screen: what is shown is what the server says, never what the
+                // browser assumes.
+                reload();
             }, () => {
-                envoyer.disabled = false;
-                annuler.disabled = false;
-                envoyer.textContent = T('note.reponse_envoyer');
-                // Le chiffrement a echoue : la reponse n'est PAS partie, et le
-                // texte reste dans la zone.
-                dire({ titre: T('erreur.titre'), detail: T('erreur.chiffrement') });
+                send.disabled = false;
+                cancel.disabled = false;
+                send.textContent = T('note.reply_send');
+                // Encryption failed: the reply did NOT go out, and the text
+                // stays in the area.
+                say({ title: T('error.title'), detail: T('error.encryption') });
             });
         });
 
-        // Confort : la reponse s'ecrit tout de suite.
-        window.setTimeout(() => zone.focus(), 0);
-        return bloc;
+        // Convenience: the reply can be written straight away.
+        window.setTimeout(() => area.focus(), 0);
+        return block;
     };
 
-    /** Champ « votre nom », seulement tant qu'on ne le connait pas. */
-    const champNom = () => {
-        if (auteur) return null;
-        const bloc = creer('div');
-        const etiquette = creer('label', 'ap-etiquette', T('formulaire.nom'));
-        const champ = creer('input', 'ap-champ');
-        champ.type = 'text';
-        champ.setAttribute('maxlength', String(MAX_AUTEUR));
-        champ.setAttribute('placeholder', T('formulaire.nom_placeholder'));
-        champ.setAttribute('autocomplete', 'off');
-        const id = 'ap-nom-' + Math.random().toString(36).slice(2, 8);
-        champ.id = id;
-        etiquette.setAttribute('for', id);
-        bloc.appendChild(etiquette);
-        bloc.appendChild(champ);
-        bloc.appendChild(creer('p', 'ap-aide', T('formulaire.nom_aide')));
-        return { bloc: bloc, champ: champ };
+    /** The "your name" field, only for as long as we do not know it. */
+    const nameField = () => {
+        if (author) return null;
+        const block = create('div');
+        const label = create('label', 'ap-label', T('form.name'));
+        const field = create('input', 'ap-field');
+        field.type = 'text';
+        field.setAttribute('maxlength', String(MAX_AUTHOR));
+        field.setAttribute('placeholder', T('form.name_placeholder'));
+        field.setAttribute('autocomplete', 'off');
+        const id = 'ap-name-' + Math.random().toString(36).slice(2, 8);
+        field.id = id;
+        label.setAttribute('for', id);
+        block.appendChild(label);
+        block.appendChild(field);
+        block.appendChild(create('p', 'ap-help', T('form.name_help')));
+        return { block: block, field: field };
     };
 
-    const dessinerPanneau = () => {
-        vider(ui.corps);
-        vider(ui.pied);
+    const drawPanel = () => {
+        empty(ui.body);
+        empty(ui.footer);
 
-        if (panneEnCours) {
-            ui.corps.appendChild(blocPanne(panneEnCours, () => {
-                panneEnCours = null;
-                dessinerPanneau();
+        if (currentFailure) {
+            ui.body.appendChild(failureBlock(currentFailure, () => {
+                currentFailure = null;
+                drawPanel();
             }));
         }
 
-        /* Ce qu'on n'a pas su lire est DIT, avec son compte. Une note sautee en
-           silence est une remarque qui disparait, et la personne qui l'a ecrite
-           croira que personne ne l'a lue. */
-        const partielle = panneDeLecture();
-        if (partielle) ui.corps.appendChild(blocPanne(partielle));
+        /* What we could not read is SAID, with its count. A note skipped in
+           silence is a remark that disappears, and the person who wrote it will
+           think nobody read it. */
+        const partial = readFailure();
+        if (partial) ui.body.appendChild(failureBlock(partial));
 
-        /* Une note corrigee ET dont le correctif est en ligne quitte la vue
-           principale : elle a fait son travail. Elle n'est pas supprimee — une
-           correction jugee faite peut s'averer incomplete, et la remarque doit
-           pouvoir revenir avec son fil de reponses.
+        /* A note that is resolved AND whose fix is online leaves the main view:
+           it has done its job. It is not deleted -- a correction believed done
+           can turn out to be incomplete, and the remark must be able to come
+           back with its thread of replies.
 
-           Une note corrigee dont le correctif n'est PAS encore deploye reste
-           visible : le defaut est toujours a l'ecran, la masquer ferait croire
-           qu'il a disparu. */
-        const meres = [];
-        const archivees = [];
+           A resolved note whose fix is NOT deployed yet stays visible: the
+           defect is still on screen, hiding it would suggest it is gone. */
+        const current = [];
+        const archived = [];
         for (let i = 0; i < notes.length; i += 1) {
             const n = notes[i];
-            if (orphelines.indexOf(n) !== -1) continue;
-            if (n.resolue_le && dejaDeploye(n.resolue_version)) archivees.push(n);
-            else meres.push(n);
+            if (orphans.indexOf(n) !== -1) continue;
+            if (n.resolved_at && alreadyDeployed(n.resolved_version)) archived.push(n);
+            else current.push(n);
         }
 
-        if (!meres.length && !orphelines.length && !archivees.length) {
-            ui.corps.appendChild(creer('p', 'ap-vide', T('panneau.vide')));
+        if (!current.length && !orphans.length && !archived.length) {
+            ui.body.appendChild(create('p', 'ap-empty', T('panel.empty')));
         }
 
-        if (meres.length) {
-            ui.corps.appendChild(creer('h2', 'ap-section-titre', T('panneau.section_page')));
-            for (let i = 0; i < meres.length; i += 1) {
-                ui.corps.appendChild(carteNote(meres[i], false));
+        if (current.length) {
+            ui.body.appendChild(create('h2', 'ap-section-title', T('panel.section_page')));
+            for (let i = 0; i < current.length; i += 1) {
+                ui.body.appendChild(noteCard(current[i], false));
             }
         }
 
-        if (orphelines.length) {
-            ui.corps.appendChild(creer('h2', 'ap-section-titre', T('orphelines.titre')));
-            ui.corps.appendChild(creer('p', 'ap-section-aide', T('orphelines.aide')));
-            for (let i = 0; i < orphelines.length; i += 1) {
-                ui.corps.appendChild(carteNote(orphelines[i], true));
+        if (orphans.length) {
+            ui.body.appendChild(create('h2', 'ap-section-title', T('orphans.title')));
+            ui.body.appendChild(create('p', 'ap-section-help', T('orphans.help')));
+            for (let i = 0; i < orphans.length; i += 1) {
+                ui.body.appendChild(noteCard(orphans[i], true));
             }
         }
 
-        if (archivees.length) {
-            const bascule = creer('button', 'ap-historique-bascule',
-                T(historiqueOuvert ? 'historique.masquer' : 'historique.montrer',
-                  { n: archivees.length }));
-            bascule.type = 'button';
-            bascule.addEventListener('click', () => {
-                historiqueOuvert = !historiqueOuvert;
-                dessinerPanneau();
+        if (archived.length) {
+            const toggle = create('button', 'ap-history-toggle',
+                T(historyOpen ? 'history.hide' : 'history.show',
+                  { n: archived.length }));
+            toggle.type = 'button';
+            toggle.addEventListener('click', () => {
+                historyOpen = !historyOpen;
+                drawPanel();
             });
-            ui.corps.appendChild(bascule);
+            ui.body.appendChild(toggle);
 
-            if (historiqueOuvert) {
-                ui.corps.appendChild(creer('p', 'ap-section-aide', T('historique.aide')));
-                for (let i = 0; i < archivees.length; i += 1) {
-                    ui.corps.appendChild(carteNote(archivees[i], false));
+            if (historyOpen) {
+                ui.body.appendChild(create('p', 'ap-section-help', T('history.help')));
+                for (let i = 0; i < archived.length; i += 1) {
+                    ui.body.appendChild(noteCard(archived[i], false));
                 }
             }
         }
 
-        if (auteur) {
-            ui.pied.appendChild(creer('span', null, T('auteur.connu', { nom: auteur })));
-            const changer = creer('button', 'ap-lien', T('auteur.changer'));
-            changer.type = 'button';
-            changer.addEventListener('click', () => {
-                ecrireAuteur('');
-                dessinerPanneau();
+        if (author) {
+            ui.footer.appendChild(create('span', null, T('author.known', { name: author })));
+            const change = create('button', 'ap-link', T('author.change'));
+            change.type = 'button';
+            change.addEventListener('click', () => {
+                writeAuthor('');
+                drawPanel();
             });
-            ui.pied.appendChild(changer);
+            ui.footer.appendChild(change);
         }
 
-        /* Le sel se recolle depuis ici. Ce n'est pas un reglage de confort : le
-           jour ou la preproduction devient la production, le localStorage change
-           d'origine et le sel est a recoller une fois, sur chaque navigateur. Sans
-           ce bouton, il faudrait vider le stockage a la main pour y arriver. */
-        if (PROJET && selTexte) {
-            const changerSel = creer('button', 'ap-lien', T('sel.remplacer'));
-            changerSel.type = 'button';
-            changerSel.title = T('sel.origine_changee');
-            changerSel.addEventListener('click', () => ouvrirEcranSel());
-            ui.pied.appendChild(changerSel);
+        /* The salt gets pasted again from here. This is not a convenience
+           setting: the day staging becomes production, localStorage changes
+           origin and the salt has to be pasted once more, on every browser.
+           Without this button, one would have to clear the storage by hand to
+           get there. */
+        if (PROJECT && saltText) {
+            const changeSalt = create('button', 'ap-link', T('salt.replace'));
+            changeSalt.type = 'button';
+            changeSalt.title = T('salt.origin_changed');
+            changeSalt.addEventListener('click', () => openSaltScreen());
+            ui.footer.appendChild(changeSalt);
         }
 
         const total = notes.length;
-        ui.boutonCompte.textContent = compteLisible(
-            total, 'bouton.notes_zero', 'bouton.notes_une', 'bouton.notes_n');
-        // Le bouton porte la panne : quelqu'un qui ne l'ouvre pas doit
-        // pouvoir voir, d'un coup d'oeil, que quelque chose ne va pas.
-        ui.bouton.classList.toggle('ap-panne', !!panneEnCours);
-        ui.bouton.title = panneEnCours ? panneEnCours.titre : T('bouton.aide');
+        ui.buttonCount.textContent = readableCount(
+            total, 'button.notes_zero', 'button.notes_one', 'button.notes_n');
+        // The button carries the failure: someone who does not open it must be
+        // able to see, at a glance, that something is wrong.
+        ui.button.classList.toggle('ap-failed', !!currentFailure);
+        ui.button.title = currentFailure ? currentFailure.title : T('button.help');
     };
 
-    /** Met en avant une note dans le panneau, sans rien changer a la page. */
-    const viser = (note) => {
-        const carte = ui.corps.querySelector('[data-ap-note="' + note.id + '"]');
-        if (!carte) return;
-        const anciennes = ui.corps.querySelectorAll('.ap-visee');
-        for (let i = 0; i < anciennes.length; i += 1) anciennes[i].classList.remove('ap-visee');
-        carte.classList.add('ap-visee');
-        carte.scrollIntoView({ block: 'nearest' });
+    /** Brings a note forward in the panel, without changing anything on the
+        page. */
+    const focusNote = (note) => {
+        const card = ui.body.querySelector('[data-ap-note="' + note.id + '"]');
+        if (!card) return;
+        const previous = ui.body.querySelectorAll('.ap-focused');
+        for (let i = 0; i < previous.length; i += 1) previous[i].classList.remove('ap-focused');
+        card.classList.add('ap-focused');
+        card.scrollIntoView({ block: 'nearest' });
     };
 
-    /** Ramene l'element commente sous les yeux, en le montrant chez nous. */
-    const montrerElement = (note) => {
+    /** Brings the commented element back into view, by showing it on our side. */
+    const showElement = (note) => {
         let el = null;
-        for (let i = 0; i < ancrees.length; i += 1) {
-            if (ancrees[i].notes.indexOf(note) !== -1) el = ancrees[i].element;
+        for (let i = 0; i < anchored.length; i += 1) {
+            if (anchored[i].notes.indexOf(note) !== -1) el = anchored[i].element;
         }
         if (!el) return;
-        // scrollIntoView deplace le point de vue, jamais le document : aucun
-        // noeud, aucun style du site n'est touche.
+        // scrollIntoView moves the viewpoint, never the document: no node, no
+        // style of the site is touched.
         el.scrollIntoView({ block: 'center', behavior: 'smooth' });
         window.setTimeout(() => {
-            montrerSurbrillance(el);
-            window.setTimeout(cacherSurbrillance, 1400);
+            showHighlight(el);
+            window.setTimeout(hideHighlight, 1400);
         }, 350);
     };
 
-    /* -- 16. Le formulaire d'une nouvelle note -------------------------------- */
+    /* -- 16. The form for a new note ------------------------------------------ */
 
-    const positionnerFiche = (el) => {
-        const fiche = ui.fiche;
+    const positionForm = (el) => {
+        const form = ui.form;
         const r = el.getBoundingClientRect();
-        if (ecranEtroit()) {
-            // La feuille de style prend la main : la fiche occupe la largeur.
-            fiche.style.left = '';
-            fiche.style.top = Math.max(8, Math.min(r.bottom + 8, window.innerHeight - 260)) + 'px';
+        if (narrowScreen()) {
+            // The stylesheet takes over: the form takes the full width.
+            form.style.left = '';
+            form.style.top = Math.max(8, Math.min(r.bottom + 8, window.innerHeight - 260)) + 'px';
             return;
         }
-        const largeur = fiche.offsetWidth || 340;
-        const hauteur = fiche.offsetHeight || 260;
-        let gauche = r.left;
-        if (gauche + largeur > window.innerWidth - 12) gauche = window.innerWidth - largeur - 12;
-        let haut = r.bottom + 8;
-        if (haut + hauteur > window.innerHeight - 12) haut = Math.max(8, r.top - hauteur - 8);
-        fiche.style.left = Math.max(8, gauche) + 'px';
-        fiche.style.top = Math.max(8, haut) + 'px';
+        const width = form.offsetWidth || 340;
+        const height = form.offsetHeight || 260;
+        let left = r.left;
+        if (left + width > window.innerWidth - 12) left = window.innerWidth - width - 12;
+        let top = r.bottom + 8;
+        if (top + height > window.innerHeight - 12) top = Math.max(8, r.top - height - 8);
+        form.style.left = Math.max(8, left) + 'px';
+        form.style.top = Math.max(8, top) + 'px';
     };
 
-    /** Vrai sur les ecrans ou le panneau et le formulaire ne tiennent pas
-        cote a cote. Le seuil est celui de la feuille de style. */
-    const ecranEtroit = () => window.innerWidth <= 560;
+    /** True on the screens where the panel and the form do not fit side by
+        side. The threshold is the stylesheet's. */
+    const narrowScreen = () => window.innerWidth <= 560;
 
-    const fermerFiche = () => {
-        cible = null;
-        ui.fiche.classList.remove('ap-ouvert');
-        vider(ui.fiche);
-        // Sur ecran etroit, la liste avait cede la place a la saisie.
-        if (mode) ui.panneau.classList.add('ap-ouvert');
+    const closeForm = () => {
+        target = null;
+        ui.form.classList.remove('ap-open');
+        empty(ui.form);
+        // On a narrow screen, the list had given way to the typing.
+        if (mode) ui.panel.classList.add('ap-open');
     };
 
     /**
-     * @param texteDeja remarque deja saisie, quand le formulaire est
-     *   RECONSTRUIT sans avoir ete ferme (changement de nom). Reconstruire
-     *   une saisie en cours sans la reporter la ferait disparaitre sous les
-     *   doigts de qui ecrit : c'est le meme tort que de perdre une note.
+     * @param existingText remark already typed, when the form is REBUILT without
+     *   having been closed (name change). Rebuilding a piece of typing without
+     *   carrying it over would make it disappear under the fingers of whoever is
+     *   writing: that is the same wrong as losing a note.
      */
-    const ouvrirFiche = (el, texteDeja) => {
-        cible = el;
-        const fiche = ui.fiche;
-        vider(fiche);
+    const openForm = (el, existingText) => {
+        target = el;
+        const form = ui.form;
+        empty(form);
 
-        const extrait = extraitDe(el);
-        fiche.appendChild(creer('div', 'ap-fiche-titre', T('formulaire.titre')));
-        fiche.appendChild(creer('div', 'ap-fiche-cible',
-            extrait ? T('formulaire.sur', { extrait: extrait }) : T('formulaire.sur_sans_texte')));
+        const excerpt = excerptOf(el);
+        form.appendChild(create('div', 'ap-form-title', T('form.title')));
+        form.appendChild(create('div', 'ap-form-target',
+            excerpt ? T('form.about', { excerpt: excerpt }) : T('form.about_no_text')));
 
-        const nom = champNom();
-        if (nom) {
-            fiche.appendChild(nom.bloc);
+        const name = nameField();
+        if (name) {
+            form.appendChild(name.block);
         } else {
-            /* Le nom est deja connu : on le RAPPELLE ici, avec de quoi en
-               changer, au lieu de le laisser en pied de panneau ou personne ne
-               le voit en ecrivant. Signaler qui l'on signe au moment ou l'on
-               signe evite qu'une remarque parte sous le nom d'un collegue qui
-               a utilise le meme poste. */
-            const rappel = creer('div', 'ap-fiche-signature');
-            rappel.appendChild(creer('span', null, T('auteur.connu', { nom: auteur })));
-            const changer = creer('button', 'ap-lien', T('auteur.changer'));
-            changer.type = 'button';
-            changer.addEventListener('click', () => {
-                // La remarque en cours est REPORTEE dans le formulaire
-                // reconstruit : changer de nom ne coute pas ce qu'on a ecrit.
-                const enCours = zone.value;
-                ecrireAuteur('');
-                ouvrirFiche(el, enCours);
+            /* The name is already known: we RECALL it here, with a way to change
+               it, instead of leaving it at the foot of the panel where nobody
+               sees it while writing. Showing what one is signing at the moment
+               one signs it keeps a remark from going out under the name of a
+               colleague who used the same machine. */
+            const reminder = create('div', 'ap-form-signature');
+            reminder.appendChild(create('span', null, T('author.known', { name: author })));
+            const change = create('button', 'ap-link', T('author.change'));
+            change.type = 'button';
+            change.addEventListener('click', () => {
+                // The remark in progress is CARRIED OVER into the rebuilt form:
+                // changing the name does not cost what has been written.
+                const pending = area.value;
+                writeAuthor('');
+                openForm(el, pending);
             });
-            rappel.appendChild(changer);
-            fiche.appendChild(rappel);
+            reminder.appendChild(change);
+            form.appendChild(reminder);
         }
 
-        const zone = creer('textarea', 'ap-zone');
-        zone.setAttribute('placeholder', T('formulaire.texte_placeholder'));
-        zone.setAttribute('maxlength', String(MAX_TEXTE));
-        if (typeof texteDeja === 'string') zone.value = texteDeja;
-        fiche.appendChild(zone);
+        const area = create('textarea', 'ap-area');
+        area.setAttribute('placeholder', T('form.text_placeholder'));
+        area.setAttribute('maxlength', String(MAX_TEXT));
+        if (typeof existingText === 'string') area.value = existingText;
+        form.appendChild(area);
 
-        const actions = creer('div', 'ap-actions');
-        const envoyer = creer('button', 'ap-primaire', T('formulaire.envoyer'));
-        envoyer.type = 'button';
-        const annuler = creer('button', 'ap-secondaire', T('formulaire.annuler'));
-        annuler.type = 'button';
-        const compteur = creer('span', 'ap-compteur',
-            T('formulaire.restants', { n: Math.max(0, MAX_TEXTE - zone.value.length) }));
-        actions.appendChild(envoyer);
-        actions.appendChild(annuler);
-        actions.appendChild(compteur);
-        fiche.appendChild(actions);
+        const actions = create('div', 'ap-actions');
+        const send = create('button', 'ap-primary', T('form.send'));
+        send.type = 'button';
+        const cancel = create('button', 'ap-secondary', T('form.cancel'));
+        cancel.type = 'button';
+        const counter = create('span', 'ap-counter',
+            T('form.remaining', { n: Math.max(0, MAX_TEXT - area.value.length) }));
+        actions.appendChild(send);
+        actions.appendChild(cancel);
+        actions.appendChild(counter);
+        form.appendChild(actions);
 
-        zone.addEventListener('input', () => {
-            compteur.textContent = T('formulaire.restants',
-                { n: Math.max(0, MAX_TEXTE - zone.value.length) });
+        area.addEventListener('input', () => {
+            counter.textContent = T('form.remaining',
+                { n: Math.max(0, MAX_TEXT - area.value.length) });
         });
-        annuler.addEventListener('click', () => fermerFiche());
+        cancel.addEventListener('click', () => closeForm());
 
-        const dire = (panne) => {
-            const ancien = fiche.querySelector('.ap-erreur');
-            if (ancien) ancien.remove();
-            if (panne) fiche.insertBefore(blocPanne(panne), fiche.firstChild);
+        const say = (failure) => {
+            const previous = form.querySelector('.ap-error');
+            if (previous) previous.remove();
+            if (failure) form.insertBefore(failureBlock(failure), form.firstChild);
         };
 
-        envoyer.addEventListener('click', () => {
-            const texte = zone.value.trim();
-            const quiEcrit = nom ? normaliser(nom.champ.value) : auteur;
-            if (!quiEcrit) return dire({ titre: T('erreur.titre'), detail: T('formulaire.nom_manquant') });
-            if (!texte) return dire({ titre: T('erreur.titre'), detail: T('formulaire.texte_manquant') });
-            if (texte.length > MAX_TEXTE) {
-                return dire({
-                    titre: T('erreur.titre'),
-                    detail: T('formulaire.trop_long', { n: texte.length, max: MAX_TEXTE })
+        send.addEventListener('click', () => {
+            const text = area.value.trim();
+            const writer = name ? normalize(name.field.value) : author;
+            if (!writer) return say({ title: T('error.title'), detail: T('form.name_missing') });
+            if (!text) return say({ title: T('error.title'), detail: T('form.text_missing') });
+            if (text.length > MAX_TEXT) {
+                return say({
+                    title: T('error.title'),
+                    detail: T('form.too_long', { n: text.length, max: MAX_TEXT })
                 });
             }
-            dire(null);
-            envoyer.disabled = true;
-            annuler.disabled = true;
-            envoyer.textContent = T('formulaire.envoi');
+            say(null);
+            send.disabled = true;
+            cancel.disabled = true;
+            send.textContent = T('form.sending');
 
-            /* Le chemin de page part dans la CHARGE, jamais dans la chaine de
-               requete : le serveur regroupe par index aveugle. En mode clair il
-               le range quand meme dans sa colonne « page », comme au format 1. */
-            corpsDeNote({
-                page: cheminDePage(),
-                selecteur: cheminCss(el),
-                empreinte: empreinteDe(el),
-                extrait: extrait,
-                auteur: quiEcrit,
-                texte: texte,
-                version: VERSION_SITE,
-                environnement: ENVIRONNEMENT,
-                fenetre: fenetreCourante()
-            }, null).then((corps) => appeler('ajout', corps)).then((r) => {
-                envoyer.disabled = false;
-                annuler.disabled = false;
-                envoyer.textContent = T('formulaire.envoyer');
+            /* The page path goes into the PAYLOAD, never into the query string:
+               the server groups by blind index. In plain mode it still files it
+               in its "page" column, as in format 1. */
+            noteBody({
+                page: pagePath(),
+                selector: cssPath(el),
+                fingerprint: fingerprintOf(el),
+                excerpt: excerpt,
+                author: writer,
+                text: text,
+                version: SITE_VERSION,
+                environment: ENVIRONMENT,
+                viewport: currentViewport()
+            }, null).then((body) => call('add', body)).then((r) => {
+                send.disabled = false;
+                cancel.disabled = false;
+                send.textContent = T('form.send');
                 if (!r.ok) {
-                    // La remarque reste a l'ecran. Rien n'est perdu, et la
-                    // personne sait que rien n'est enregistre.
-                    dire(panneDe(r, 'erreur.titre'));
+                    // The remark stays on screen. Nothing is lost, and the
+                    // person knows nothing is saved.
+                    say(failureFrom(r, 'error.title'));
                     return;
                 }
-                ecrireAuteur(quiEcrit);
-                fermerFiche();
-                recharger();
+                writeAuthor(writer);
+                closeForm();
+                reload();
             }, () => {
-                envoyer.disabled = false;
-                annuler.disabled = false;
-                envoyer.textContent = T('formulaire.envoyer');
-                dire({ titre: T('erreur.titre'), detail: T('erreur.chiffrement') });
+                send.disabled = false;
+                cancel.disabled = false;
+                send.textContent = T('form.send');
+                say({ title: T('error.title'), detail: T('error.encryption') });
             });
         });
 
-        // Sur ecran etroit, ecrire et lire la liste en meme temps est
-        // impossible : la saisie prend toute la place, la liste revient a la
-        // fermeture du formulaire.
-        if (ecranEtroit()) ui.panneau.classList.remove('ap-ouvert');
-        fiche.classList.add('ap-ouvert');
-        positionnerFiche(el);
-        window.setTimeout(() => (nom ? nom.champ : zone).focus(), 0);
+        // On a narrow screen, writing and reading the list at the same time is
+        // impossible: the typing takes the whole space, the list comes back when
+        // the form is closed.
+        if (narrowScreen()) ui.panel.classList.remove('ap-open');
+        form.classList.add('ap-open');
+        positionForm(el);
+        window.setTimeout(() => (name ? name.field : area).focus(), 0);
     };
 
-    /* -- 17. Le mode annotation ---------------------------------------------- */
+    /* -- 17. Annotation mode ------------------------------------------------- */
 
-    const surviser = (evenement) => {
-        const el = evenement.target;
-        if (!el || el.nodeType !== 1 || dansOutil(el)) return;
+    const onHover = (event) => {
+        const el = event.target;
+        if (!el || el.nodeType !== 1 || inTool(el)) return;
         if (el === document.body || el === document.documentElement) return;
-        survole = el;
-        montrerSurbrillance(el);
+        hovered = el;
+        showHighlight(el);
     };
 
-    const surClic = (evenement) => {
-        const el = evenement.target;
-        // Un clic sur l'outil lui-meme : on laisse l'evenement descendre dans
-        // le shadow root, ou nos propres boutons l'attendent.
-        if (dansOutil(el)) return;
-        // Tout le reste est capte : en mode annotation, on designe, on ne
-        // navigue pas. C'est ce qui evite qu'un clic sur un lien emporte la
-        // personne ailleurs au moment ou elle voulait le commenter.
-        evenement.preventDefault();
-        evenement.stopPropagation();
-        if (evenement.type !== 'click') return;
+    const onClick = (event) => {
+        const el = event.target;
+        // A click on the tool itself: we let the event go down into the shadow
+        // root, where our own buttons are waiting for it.
+        if (inTool(el)) return;
+        // Everything else is captured: in annotation mode one points, one does
+        // not navigate. That is what keeps a click on a link from carrying the
+        // person away at the moment they meant to comment on it.
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.type !== 'click') return;
         if (!el || el.nodeType !== 1) return;
         if (el === document.body || el === document.documentElement) return;
-        ouvrirFiche(el);
+        openForm(el);
     };
 
-    const surTouche = (evenement) => {
-        if (evenement.key !== 'Escape') return;
-        if (ui.fiche.classList.contains('ap-ouvert')) {
-            fermerFiche();
+    const onKey = (event) => {
+        if (event.key !== 'Escape') return;
+        if (ui.form.classList.contains('ap-open')) {
+            closeForm();
             return;
         }
-        quitterMode();
+        leaveMode();
     };
 
-    const entrerMode = () => {
+    const enterMode = () => {
         mode = true;
-        ui.bouton.setAttribute('aria-pressed', 'true');
-        ui.boutonTexte.textContent = T('bouton.fermer');
-        ui.panneau.classList.add('ap-ouvert');
+        ui.button.setAttribute('aria-pressed', 'true');
+        ui.buttonText.textContent = T('button.close');
+        ui.panel.classList.add('ap-open');
 
-        document.addEventListener('pointerover', surviser, true);
-        document.addEventListener('pointerdown', surClic, true);
-        document.addEventListener('click', surClic, true);
-        document.addEventListener('auxclick', surClic, true);
-        document.addEventListener('keydown', surTouche, true);
-        window.addEventListener('scroll', rafraichirPositions, true);
-        window.addEventListener('resize', rafraichirPositions);
-        // Un carrousel, un menu deroulant, une image chargee en retard
-        // deplacent les elements sans emettre ni scroll ni resize.
-        minuterie = window.setInterval(rafraichirPositions, 500);
+        document.addEventListener('pointerover', onHover, true);
+        document.addEventListener('pointerdown', onClick, true);
+        document.addEventListener('click', onClick, true);
+        document.addEventListener('auxclick', onClick, true);
+        document.addEventListener('keydown', onKey, true);
+        window.addEventListener('scroll', refreshPositions, true);
+        window.addEventListener('resize', refreshPositions);
+        // A carousel, a dropdown menu, an image loaded late move the elements
+        // without emitting either scroll or resize.
+        timer = window.setInterval(refreshPositions, 500);
 
-        // Les marqueurs de ce qu'on sait DEJA, tout de suite ; le serveur est
-        // interroge ensuite et corrigera s'il y a du nouveau. Attendre le
-        // reseau pour montrer ce qui est deja a l'ecran ferait croire a une
-        // page vide.
-        dessinerMarqueurs();
-        recharger();
+        // The markers for what we ALREADY know, straight away; the server is
+        // asked next and will correct if there is anything new. Waiting for the
+        // network to show what is already on screen would suggest an empty page.
+        drawMarkers();
+        reload();
     };
 
-    const quitterMode = () => {
+    const leaveMode = () => {
         mode = false;
-        ui.bouton.setAttribute('aria-pressed', 'false');
-        ui.boutonTexte.textContent = T('bouton.ouvrir');
-        ui.panneau.classList.remove('ap-ouvert');
-        fermerFiche();
-        cacherSurbrillance();
-        survole = null;
-        vider(ui.marqueurs);
+        ui.button.setAttribute('aria-pressed', 'false');
+        ui.buttonText.textContent = T('button.open');
+        ui.panel.classList.remove('ap-open');
+        closeForm();
+        hideHighlight();
+        hovered = null;
+        empty(ui.markers);
 
-        document.removeEventListener('pointerover', surviser, true);
-        document.removeEventListener('pointerdown', surClic, true);
-        document.removeEventListener('click', surClic, true);
-        document.removeEventListener('auxclick', surClic, true);
-        document.removeEventListener('keydown', surTouche, true);
-        window.removeEventListener('scroll', rafraichirPositions, true);
-        window.removeEventListener('resize', rafraichirPositions);
-        if (minuterie) {
-            window.clearInterval(minuterie);
-            minuterie = null;
+        document.removeEventListener('pointerover', onHover, true);
+        document.removeEventListener('pointerdown', onClick, true);
+        document.removeEventListener('click', onClick, true);
+        document.removeEventListener('auxclick', onClick, true);
+        document.removeEventListener('keydown', onKey, true);
+        window.removeEventListener('scroll', refreshPositions, true);
+        window.removeEventListener('resize', refreshPositions);
+        if (timer) {
+            window.clearInterval(timer);
+            timer = null;
         }
     };
 
-    const basculerMode = () => (mode ? quitterMode() : entrerMode());
+    const toggleMode = () => (mode ? leaveMode() : enterMode());
 
-    /* ==== 70-installation.js ==== */
+    /* ==== 70-setup.js ==== */
 
-    /* -- 18. L'installation, et le sel qu'on colle ---------------------------
+    /* -- 18. Setup, and the salt one pastes ----------------------------------
 
-       Ces ecrans sont les seuls endroits ou le sel s'affiche ou se saisit. Ils
-       sont BLOQUANTS : tant que le sel n'est pas connu, l'outil ne montre ni
-       bouton d'annotation, ni panneau de notes. Il n'y a rien a annoter sans
-       sel — pas meme en mode clair, ou l'index de page est deja un HMAC.
+       These screens are the only places where the salt is shown or typed in.
+       They are BLOCKING: as long as the salt is unknown, the tool shows neither
+       an annotation button nor a panel of notes. There is nothing to annotate
+       without a salt -- not even in plain mode, where the page index is already
+       an HMAC.
 
-       Aucun de ces ecrans ne fait de requete reseau. Consequence a dire : une
-       page qui porte une balise avec un projet, sur un site dont le serveur n'est
-       pas encore configure, montrera quand meme l'ecran « collez le sel ». C'est
-       assume : sans sel on ne peut meme pas demander la liste des notes, donc pas
-       verifier que le serveur repond. La balise, elle, a bien ete posee la par
-       quelqu'un. */
+       None of these screens makes a network request. A consequence to be
+       stated: a page carrying a tag with a project, on a site whose server is
+       not configured yet, will still show the "paste the salt" screen. That is
+       accepted: without a salt we cannot even ask for the list of notes, so we
+       cannot check that the server answers. The tag, on the other hand, was put
+       there by somebody. */
 
-    /** Retire l'interface courante sans toucher a la feuille de style. */
-    const viderCouche = () => {
-        if (!racine) return;
-        const anciennes = racine.querySelectorAll('.ap-couche');
-        for (let i = 0; i < anciennes.length; i += 1) anciennes[i].remove();
+    /** Removes the current interface without touching the stylesheet. */
+    const clearLayer = () => {
+        if (!root) return;
+        const previous = root.querySelectorAll('.ap-layer');
+        for (let i = 0; i < previous.length; i += 1) previous[i].remove();
         ui = null;
     };
 
     /**
-     * Un panneau seul, ouvert, sans bouton d'annotation derriere.
-     * @return { corps, panneau }
+     * A panel on its own, open, with no annotation button behind it.
+     * @return { body, panel }
      */
-    const ecranBloquant = (titre, large) => {
-        if (!hote) batirHote();
-        viderCouche();
+    const blockingScreen = (title, wide) => {
+        if (!host) buildHost();
+        clearLayer();
 
-        const couche = creer('div', 'ap-couche');
-        racine.appendChild(couche);
+        const layer = create('div', 'ap-layer');
+        root.appendChild(layer);
 
-        const panneau = creer('aside', 'ap-panneau ap-ouvert' + (large ? ' ap-panneau-large' : ''));
-        panneau.setAttribute('role', 'complementary');
-        const entete = creer('div', 'ap-panneau-entete');
-        entete.appendChild(creer('span', 'ap-panneau-titre', titre));
-        const fermer = creer('button', 'ap-lien', T('panneau.fermer'));
-        fermer.type = 'button';
-        fermer.addEventListener('click', () => {
-            // On se retire pour ce chargement de page. Rien n'est memorise : au
-            // rechargement suivant, l'ecran revient, parce que le probleme, lui,
-            // n'a pas ete regle.
-            if (hote) hote.remove();
-            hote = null;
-            racine = null;
+        const panel = create('aside', 'ap-panel ap-open' + (wide ? ' ap-panel-wide' : ''));
+        panel.setAttribute('role', 'complementary');
+        const header = create('div', 'ap-panel-header');
+        header.appendChild(create('span', 'ap-panel-title', title));
+        const close = create('button', 'ap-link', T('panel.close'));
+        close.type = 'button';
+        close.addEventListener('click', () => {
+            // We stand down for this page load. Nothing is remembered: on the
+            // next reload the screen comes back, because the problem itself has
+            // not been dealt with.
+            if (host) host.remove();
+            host = null;
+            root = null;
             ui = null;
         });
-        entete.appendChild(fermer);
-        const corps = creer('div', 'ap-panneau-corps');
-        panneau.appendChild(entete);
-        panneau.appendChild(corps);
-        couche.appendChild(panneau);
-        return { corps: corps, panneau: panneau };
+        header.appendChild(close);
+        const body = create('div', 'ap-panel-body');
+        panel.appendChild(header);
+        panel.appendChild(body);
+        layer.appendChild(panel);
+        return { body: body, panel: panel };
     };
 
-    /** Une valeur a recopier : elle est SELECTIONNABLE, et copiable d'un bouton. */
-    const blocCopiable = (parent, etiquette, valeur) => {
-        parent.appendChild(creer('div', 'ap-etiquette', etiquette));
-        const bloc = creer('div', 'ap-copie');
-        const zone = creer('textarea', 'ap-code');
-        zone.value = valeur;
-        zone.readOnly = true;
-        zone.rows = valeur.length > 90 ? 4 : 2;
-        zone.setAttribute('spellcheck', 'false');
-        zone.addEventListener('focus', () => zone.select());
-        bloc.appendChild(zone);
+    /** A value to copy out: it is SELECTABLE, and copiable from a button. */
+    const copyBlock = (parent, label, value) => {
+        parent.appendChild(create('div', 'ap-label', label));
+        const block = create('div', 'ap-copy');
+        const area = create('textarea', 'ap-code');
+        area.value = value;
+        area.readOnly = true;
+        area.rows = value.length > 90 ? 4 : 2;
+        area.setAttribute('spellcheck', 'false');
+        area.addEventListener('focus', () => area.select());
+        block.appendChild(area);
 
-        const copier = creer('button', 'ap-secondaire', T('installation.copier'));
-        copier.type = 'button';
-        copier.addEventListener('click', () => {
-            const dire = (cle) => {
-                copier.textContent = T(cle);
-                window.setTimeout(() => { copier.textContent = T('installation.copier'); }, 2000);
+        const copy = create('button', 'ap-secondary', T('setup.copy'));
+        copy.type = 'button';
+        copy.addEventListener('click', () => {
+            const say = (key) => {
+                copy.textContent = T(key);
+                window.setTimeout(() => { copy.textContent = T('setup.copy'); }, 2000);
             };
-            // Le presse-papier peut etre refuse (contexte non sur, permission).
-            // On le dit et on laisse la selection faire le travail, plutot que de
-            // laisser croire que la copie a eu lieu.
+            // The clipboard can be refused (insecure context, permission). We
+            // say so and let the selection do the work, rather than letting
+            // someone believe the copy happened.
             try {
-                navigator.clipboard.writeText(valeur)
-                    .then(() => dire('installation.copie'), () => {
-                        zone.select();
-                        dire('installation.copie_echec');
+                navigator.clipboard.writeText(value)
+                    .then(() => say('setup.copied'), () => {
+                        area.select();
+                        say('setup.copy_failed');
                     });
             } catch (e) {
-                zone.select();
-                dire('installation.copie_echec');
+                area.select();
+                say('setup.copy_failed');
             }
         });
-        bloc.appendChild(copier);
-        parent.appendChild(bloc);
-        return zone;
+        block.appendChild(copy);
+        parent.appendChild(block);
+        return area;
     };
 
-    /** La balise exacte a coller, avec l'empreinte SRI REELLEMENT servie. */
-    const baliseAColler = (identifiant) => {
+    /** The exact tag to paste, with the SRI digest ACTUALLY being served. */
+    const tagToPaste = (id) => {
         let t = '<script src="' + script.src + '"';
-        // On recopie l'integrite et le crossorigin de la balise en cours : ce sont
-        // ceux qui fonctionnent, ici, maintenant. Une empreinte recopiee d'une
-        // documentation est une empreinte d'une autre version.
-        const attribut = (nom) => (script.getAttribute(nom) || '').trim();
-        if (attribut('integrity')) t += '\n        integrity="' + attribut('integrity') + '"';
-        if (attribut('crossorigin')) t += '\n        crossorigin="' + attribut('crossorigin') + '"';
-        if (ADRESSE_DECLAREE) t += '\n        data-serveur="' + ADRESSE_DECLAREE + '"';
-        t += '\n        data-projet="' + identifiant + '"';
-        if (MODE === 'clair') t += '\n        data-mode="clair"';
-        if (PREFIXE_CHEMIN) t += '\n        data-chemin="' + PREFIXE_CHEMIN + '"';
+        // We copy the integrity and the crossorigin of the current tag: they are
+        // the ones that work, here, now. A digest copied from a documentation
+        // page is a digest of another version.
+        const attribute = (name) => (script.getAttribute(name) || '').trim();
+        if (attribute('integrity')) t += '\n        integrity="' + attribute('integrity') + '"';
+        if (attribute('crossorigin')) t += '\n        crossorigin="' + attribute('crossorigin') + '"';
+        if (DECLARED_SERVER) t += '\n        data-server="' + DECLARED_SERVER + '"';
+        t += '\n        data-project="' + id + '"';
+        if (MODE === 'plain') t += '\n        data-mode="plain"';
+        if (PATH_PREFIX) t += '\n        data-path="' + PATH_PREFIX + '"';
         t += '\n        defer></' + 'script>';
         return t;
     };
 
-    const configurationServeur = (identifiant) =>
-        'projet ' + identifiant + '\n'
-        + '  origines  ' + location.origin + '\n'
-        + '  mode      ' + MODE;
+    const serverConfig = (id) =>
+        'project ' + id + '\n'
+        + '  origins  ' + location.origin + '\n'
+        + '  mode     ' + MODE;
 
-    /* -- L'ecran « collez le sel » ------------------------------------------ */
+    /* -- The "paste the salt" screen ---------------------------------------- */
 
-    const ouvrirEcranSel = () => {
-        const ecran = ecranBloquant(T('sel.titre'), false);
-        ecran.corps.appendChild(creer('p', 'ap-aide', T('sel.aide')));
-        ecran.corps.appendChild(creer('p', 'ap-aide', T('sel.origine_changee')));
+    const openSaltScreen = () => {
+        const screen = blockingScreen(T('salt.title'), false);
+        screen.body.appendChild(create('p', 'ap-help', T('salt.help')));
+        screen.body.appendChild(create('p', 'ap-help', T('salt.origin_changed')));
 
-        ecran.corps.appendChild(creer('div', 'ap-etiquette', T('sel.etiquette')));
-        const champ = creer('input', 'ap-champ');
-        champ.type = 'text';
-        champ.setAttribute('autocomplete', 'off');
-        champ.setAttribute('spellcheck', 'false');
-        champ.setAttribute('maxlength', String(LONGUEUR_SEL + 8));
-        ecran.corps.appendChild(champ);
+        screen.body.appendChild(create('div', 'ap-label', T('salt.label')));
+        const field = create('input', 'ap-field');
+        field.type = 'text';
+        field.setAttribute('autocomplete', 'off');
+        field.setAttribute('spellcheck', 'false');
+        field.setAttribute('maxlength', String(SALT_LENGTH + 8));
+        screen.body.appendChild(field);
 
-        const actions = creer('div', 'ap-actions');
-        const valider = creer('button', 'ap-primaire', T('sel.valider'));
-        valider.type = 'button';
-        actions.appendChild(valider);
-        ecran.corps.appendChild(actions);
+        const actions = create('div', 'ap-actions');
+        const confirm = create('button', 'ap-primary', T('salt.confirm'));
+        confirm.type = 'button';
+        actions.appendChild(confirm);
+        screen.body.appendChild(actions);
 
-        const dire = (detail) => {
-            const ancien = ecran.corps.querySelector('.ap-erreur');
-            if (ancien) ancien.remove();
+        const say = (detail) => {
+            const previous = screen.body.querySelector('.ap-error');
+            if (previous) previous.remove();
             if (detail) {
-                ecran.corps.insertBefore(
-                    blocPanne({ titre: T('sel.titre'), detail: detail }), ecran.corps.firstChild);
+                screen.body.insertBefore(
+                    failureBlock({ title: T('salt.title'), detail: detail }), screen.body.firstChild);
             }
         };
 
-        valider.addEventListener('click', () => {
-            const brut = normaliser(champ.value).replace(/\s+/g, '');
-            if (!brut) return dire(T('sel.vide'));
-            const octets = selDepuisTexte(brut);
-            if (!octets) return dire(T('sel.forme'));
-            dire(null);
-            valider.disabled = true;
+        confirm.addEventListener('click', () => {
+            const raw = normalize(field.value).replace(/\s+/g, '');
+            if (!raw) return say(T('salt.empty'));
+            const bytes = saltFromText(raw);
+            if (!bytes) return say(T('salt.shape'));
+            say(null);
+            confirm.disabled = true;
 
-            /* La verification se fait ICI : on rederive l'identifiant de projet et
-               on le compare a celui de la balise. Egaux, le sel est le bon. Rien
-               n'est envoye au reseau et rien n'est dechiffre avant ce test — c'est
-               ce qui evite d'avoir a transporter une somme de controle a cote du
-               sel : l'identifiant de projet joue deja ce role, et il est public. */
-            deriver(octets).then((derivees) => {
-                valider.disabled = false;
-                if (derivees.identifiant !== PROJET) return dire(T('sel.mauvais'));
-                if (!ecrireSel(PROJET, brut)) {
-                    // Le stockage refuse : on continue quand meme pour cette
-                    // page, mais on ne fait pas croire que c'est retenu.
-                    dire(T('sel.non_retenu'));
+            /* The check happens HERE: we re-derive the project id and compare it
+               with the tag's. Equal, the salt is the right one. Nothing is sent
+               to the network and nothing is decrypted before this test -- which
+               is what saves us from carrying a checksum alongside the salt: the
+               project id already plays that part, and it is public. */
+            derive(bytes).then((derived) => {
+                confirm.disabled = false;
+                if (derived.id !== PROJECT) return say(T('salt.wrong'));
+                if (!writeSalt(PROJECT, raw)) {
+                    // Storage refuses: we carry on for this page anyway, but we
+                    // do not let anyone believe it is remembered.
+                    say(T('salt.not_kept'));
                 }
-                demarrerAvecSel(brut, derivees);
+                startWithSalt(raw, derived);
             }, () => {
-                valider.disabled = false;
-                dire(T('erreur.chiffrement'));
+                confirm.disabled = false;
+                say(T('error.encryption'));
             });
         });
 
-        window.setTimeout(() => champ.focus(), 0);
+        window.setTimeout(() => field.focus(), 0);
     };
 
-    /* -- L'ecran d'installation --------------------------------------------- */
+    /* -- The setup screen --------------------------------------------------- */
 
-    const ouvrirEcranInstallation = () => {
-        const ecran = ecranBloquant(T('installation.titre'), true);
+    const openSetupScreen = () => {
+        const screen = blockingScreen(T('setup.title'), true);
 
-        if (!API) ecran.corps.appendChild(creer('p', 'ap-aide', T('installation.sans_serveur')));
-        if (MODE === 'clair') ecran.corps.appendChild(creer('p', 'ap-aide', T('installation.mode_clair')));
+        if (!API) screen.body.appendChild(create('p', 'ap-help', T('setup.no_server')));
+        if (MODE === 'plain') screen.body.appendChild(create('p', 'ap-help', T('setup.plain_mode')));
 
-        const engendrer = creer('button', 'ap-primaire', T('installation.engendrer'));
-        engendrer.type = 'button';
-        ecran.corps.appendChild(engendrer);
+        const generate = create('button', 'ap-primary', T('setup.generate'));
+        generate.type = 'button';
+        screen.body.appendChild(generate);
 
-        engendrer.addEventListener('click', () => {
-            engendrer.disabled = true;
-            const nouveau = engendrerSel();
-            const octets = selDepuisTexte(nouveau);
-            deriver(octets).then((derivees) => {
-                vider(ecran.corps);
+        generate.addEventListener('click', () => {
+            generate.disabled = true;
+            const fresh = generateSalt();
+            const bytes = saltFromText(fresh);
+            derive(bytes).then((derived) => {
+                empty(screen.body);
 
-                /* L'avertissement vient AVANT le sel, et avant le bouton qui
-                   continue. Il est ecrit en toutes lettres, pas en note de bas de
-                   page : c'est le seul secret du projet, et il n'existe aucune
-                   recuperation. */
-                const avert = creer('div', 'ap-erreur');
-                avert.setAttribute('role', 'alert');
-                avert.appendChild(creer('div', 'ap-erreur-titre', T('installation.avertissement_titre')));
-                avert.appendChild(creer('p', 'ap-erreur-detail', T('installation.avertissement')));
-                ecran.corps.appendChild(avert);
+                /* The warning comes BEFORE the salt, and before the button that
+                   continues. It is spelled out in full, not in a footnote: it is
+                   the only secret of the project, and there is no recovery. */
+                const warning = create('div', 'ap-error');
+                warning.setAttribute('role', 'alert');
+                warning.appendChild(create('div', 'ap-error-title', T('setup.warning_title')));
+                warning.appendChild(create('p', 'ap-error-detail', T('setup.warning')));
+                screen.body.appendChild(warning);
 
-                blocCopiable(ecran.corps, T('installation.sel'), nouveau);
-                blocCopiable(ecran.corps, T('installation.projet'), derivees.identifiant);
-                blocCopiable(ecran.corps, T('installation.balise'), baliseAColler(derivees.identifiant));
-                blocCopiable(ecran.corps, T('installation.serveur'), configurationServeur(derivees.identifiant));
+                copyBlock(screen.body, T('setup.salt'), fresh);
+                copyBlock(screen.body, T('setup.project'), derived.id);
+                copyBlock(screen.body, T('setup.tag'), tagToPaste(derived.id));
+                copyBlock(screen.body, T('setup.server'), serverConfig(derived.id));
 
-                const actions = creer('div', 'ap-actions');
-                const continuer = creer('button', 'ap-primaire', T('installation.continuer'));
-                continuer.type = 'button';
-                continuer.addEventListener('click', () => {
-                    const retenu = ecrireSel(derivees.identifiant, nouveau);
-                    const fin = creer('p', 'ap-aide',
-                        retenu ? T('installation.faite') : T('sel.non_retenu'));
-                    actions.replaceWith(fin);
+                const actions = create('div', 'ap-actions');
+                const proceed = create('button', 'ap-primary', T('setup.continue'));
+                proceed.type = 'button';
+                proceed.addEventListener('click', () => {
+                    const kept = writeSalt(derived.id, fresh);
+                    const done = create('p', 'ap-help',
+                        kept ? T('setup.done') : T('salt.not_kept'));
+                    actions.replaceWith(done);
                 });
-                actions.appendChild(continuer);
-                ecran.corps.appendChild(actions);
+                actions.appendChild(proceed);
+                screen.body.appendChild(actions);
             }, () => {
-                engendrer.disabled = false;
-                ecran.corps.appendChild(blocPanne({
-                    titre: T('installation.titre'), detail: T('erreur.chiffrement')
+                generate.disabled = false;
+                screen.body.appendChild(failureBlock({
+                    title: T('setup.title'), detail: T('error.encryption')
                 }));
             });
         });
     };
 
-    /* -- L'ecran « ce navigateur ne peut pas » ------------------------------- */
+    /* -- The "this browser cannot" screen ------------------------------------ */
 
-    const ouvrirEcranContexte = () => {
-        const ecran = ecranBloquant(T('contexte.titre'), false);
-        ecran.corps.appendChild(creer('p', 'ap-aide', T('contexte.aide')));
+    const openContextScreen = () => {
+        const screen = blockingScreen(T('context.title'), false);
+        screen.body.appendChild(create('p', 'ap-help', T('context.help')));
     };
 
-    /* ==== 90-demarrage.js ==== */
+    /* ==== 90-boot.js ==== */
 
-    /* -- 19. Lecture des notes ----------------------------------------------- */
+    /* -- 19. Reading the notes ----------------------------------------------- */
 
-    const redessiner = () => {
+    const redraw = () => {
         if (!ui) return;
-        ancrer();
-        dessinerPanneau();
-        dessinerMarqueurs();
+        anchor();
+        drawPanel();
+        drawMarkers();
     };
 
-    const recharger = () =>
-        appeler('liste').then((r) => {
+    const reload = () =>
+        call('list').then((r) => {
             if (!r.ok) {
-                // L'outil est deja en place : on ne se tait plus. Les notes deja
-                // affichees restent, avec l'avertissement qu'elles peuvent etre
-                // incompletes.
-                const panne = panneDe(r, 'erreur.titre_lecture');
-                panne.detail = panne.detail + '\n' + T('erreur.lecture_incomplete');
-                panneEnCours = panne;
-                redessiner();
+                // The tool is already in place: we no longer keep quiet. The
+                // notes already on screen stay, with the warning that they may
+                // be incomplete.
+                const failure = failureFrom(r, 'error.title_read');
+                failure.detail = failure.detail + '\n' + T('error.partial_read');
+                currentFailure = failure;
+                redraw();
                 return null;
             }
-            return lireListe(r.donnees).then((lues) => {
-                notes = lues;
-                panneEnCours = null;
-                redessiner();
+            return readList(r.data).then((read) => {
+                notes = read;
+                currentFailure = null;
+                redraw();
                 return null;
             });
         });
 
-    /* -- 20. Demarrage --------------------------------------------------------
-       L'ordre compte : on interroge l'API AVANT de toucher au DOM. Si elle ne
-       repond pas ce qu'il faut, le site n'a jamais rien vu passer.
+    /* -- 20. Startup ----------------------------------------------------------
+       The order matters: we ask the API BEFORE touching the DOM. If it does not
+       answer what it should, the site never saw anything go by.
 
-       Une seule exception, assumee : les ecrans d'installation et de collage du
-       sel, qui ne peuvent PAS interroger l'API — sans sel, il n'y a pas d'index
-       de page a lui donner. Ils sont declares (data-installation) ou demandes par
-       une balise qui porte deja un projet : dans les deux cas, quelqu'un a pose
-       cette balise ici expres. */
+       One exception, accepted: the setup and salt-pasting screens, which CANNOT
+       ask the API -- without a salt there is no page index to give it. They are
+       declared (data-setup) or asked for by a tag that already carries a
+       project: either way, somebody put that tag here on purpose. */
 
-    let libellesLocauxCharges = false;
+    let localLabelsLoaded = false;
 
-    const chargerLibellesLocaux = () => {
-        if (!URL_LIBELLES_LOCAUX || libellesLocauxCharges || !racine) return Promise.resolve();
-        libellesLocauxCharges = true;
-        return new Promise((resoudre) => {
+    const loadLocalLabels = () => {
+        if (!LOCAL_LABELS_URL || localLabelsLoaded || !root) return Promise.resolve();
+        localLabelsLoaded = true;
+        return new Promise((resolve) => {
             const s = document.createElement('script');
-            s.src = URL_LIBELLES_LOCAUX;
-            s.addEventListener('load', () => resoudre(true));
-            s.addEventListener('error', () => resoudre(false));
-            // DANS LE SHADOW ROOT, et non dans <head> ou <body> : un script insere
-            // dans un shadow root est execute comme n'importe quel autre — il est
-            // connecte au document — mais il n'apparait ni dans
-            // document.querySelectorAll('script'), ni dans le comptage des noeuds
-            // de la page. Le seul noeud que le site recoit reste l'element hote,
-            // et c'est verifiable : +1 element, pas +2.
-            racine.appendChild(s);
+            s.src = LOCAL_LABELS_URL;
+            s.addEventListener('load', () => resolve(true));
+            s.addEventListener('error', () => resolve(false));
+            // INSIDE THE SHADOW ROOT, and not in <head> or <body>: a script
+            // inserted into a shadow root runs like any other -- it is connected
+            // to the document -- but it appears neither in
+            // document.querySelectorAll('script') nor in the page's node count.
+            // The only node the site receives stays the host element, and that
+            // is checkable: +1 element, not +2.
+            root.appendChild(s);
         });
     };
 
-    const retirer = () => {
-        if (hote) hote.remove();
-        hote = null;
-        racine = null;
+    const withdraw = () => {
+        if (host) host.remove();
+        host = null;
+        root = null;
         ui = null;
     };
 
-    /** Un ecran bloquant : l'hote existe des maintenant, les libelles d'abord. */
-    const prevoirEcran = (ouvrir) => {
-        batirHote();
-        chargerLibellesLocaux().then(ouvrir);
+    /** A blocking screen: the host exists from now on, the labels come first. */
+    const showScreen = (open) => {
+        buildHost();
+        loadLocalLabels().then(open);
     };
 
     /**
-     * Le serveur a-t-il quelque chose a DIRE au demarrage ?
+     * Does the server have something to SAY at startup?
      *
-     * « inactif », « nonjson » et « reseau » sont des silences : l'outil n'est pas
-     * configure ici, PHP ne tourne pas, ou le navigateur est hors ligne. Personne
-     * n'a encore rien ecrit, il n'y a rien a annoncer.
+     * "inactive", "nonjson" and "network" are silences: the tool is not
+     * configured here, PHP is not running, or the browser is offline. Nobody has
+     * written anything yet, there is nothing to announce.
      *
-     * Un REFUS, lui, se dit — et c'est un changement volontaire par rapport a
-     * l'outil d'origine. Un pare-feu qui repond 403 des la premiere requete
-     * rendait l'outil entierement invisible : on cherchait la panne dans le
-     * mauvais fichier pendant une demi-journee. La balise porte un projet, donc
-     * quelqu'un l'a posee ici expres : on parle.
+     * A REFUSAL, on the other hand, gets said -- and that is a deliberate change
+     * from the original tool. A firewall answering 403 on the very first request
+     * made the tool entirely invisible: one looked for the failure in the wrong
+     * file for half a day. The tag carries a project, so somebody put it here on
+     * purpose: we speak.
      */
-    const parleAuDemarrage = (r) =>
-        r.cause === 'serveur' || r.cause === 'panne' || String(r.cause).indexOf('refus') === 0;
+    const speaksAtStartup = (r) =>
+        r.cause === 'server' || r.cause === 'failure' || String(r.cause).indexOf('refused') === 0;
 
     /**
-     * Le sel est connu et verifie : on derive l'index de page, on interroge le
-     * serveur, et l'outil prend sa forme normale.
+     * The salt is known and checked: we derive the page index, we ask the
+     * server, and the tool takes its normal shape.
      */
-    function demarrerAvecSel(texte, derivees) {
-        selTexte = texte;
-        cles = derivees;
+    function startWithSalt(text, derived) {
+        saltText = text;
+        keys = derived;
 
-        return indexDeChemin(cles.cleIndex, cheminDePage())
+        return indexOfPath(keys.indexKey, pagePath())
             .then((index) => {
-                INDEX_PAGE = index;
-                return appeler('liste');
+                PAGE_INDEX = index;
+                return call('list');
             })
-            .then((premier) => {
-                if (!premier.ok && !parleAuDemarrage(premier)) {
-                    // Silence complet : ni noeud, ni pixel, ni message. Si un
-                    // ecran de sel etait ouvert, il s'en va avec le reste.
-                    retirer();
+            .then((first) => {
+                if (!first.ok && !speaksAtStartup(first)) {
+                    // Complete silence: no node, no pixel, no message. If a salt
+                    // screen was open, it goes away with the rest.
+                    withdraw();
                     return null;
                 }
 
-                // A partir d'ici l'outil EXISTE, et ne se taira plus sur ses
-                // pannes.
-                batirHote();
-                return chargerLibellesLocaux().then(() => {
-                    viderCouche();
-                    batirUi();
-                    if (premier.ok) {
-                        return lireListe(premier.donnees).then((lues) => {
-                            notes = lues;
-                            redessiner();
+                // From here on the tool EXISTS, and will no longer keep quiet
+                // about its failures.
+                buildHost();
+                return loadLocalLabels().then(() => {
+                    clearLayer();
+                    buildUi();
+                    if (first.ok) {
+                        return readList(first.data).then((read) => {
+                            notes = read;
+                            redraw();
                             return null;
                         });
                     }
-                    panneEnCours = panneDe(premier, 'erreur.titre_lecture');
-                    redessiner();
+                    currentFailure = failureFrom(first, 'error.title_read');
+                    redraw();
                     return null;
                 });
             });
     }
 
-    const demarrer = () => {
-        auteur = lireAuteur();
+    const start = () => {
+        author = readAuthor();
 
-        // Hors de la portee du projet : silence. La balise peut donc vivre dans un
-        // gabarit commun a tout le site.
-        if (!dansLaPortee()) return;
+        // Outside the project's scope: silence. So the tag can live in a
+        // template shared by the whole site.
+        if (!inScope()) return;
 
         if (!CRYPTO) {
-            // Sans contexte sur, rien n'est possible — mais si quelqu'un a
-            // declare un projet ici, il a le droit de savoir pourquoi.
-            if (PROJET || INSTALLATION_DEMANDEE) prevoirEcran(ouvrirEcranContexte);
+            // Without a secure context nothing is possible -- but if somebody
+            // declared a project here, they have a right to know why.
+            if (PROJECT || SETUP_REQUESTED) showScreen(openContextScreen);
             return;
         }
 
-        if (!PROJET) {
-            if (INSTALLATION_DEMANDEE) prevoirEcran(ouvrirEcranInstallation);
+        if (!PROJECT) {
+            if (SETUP_REQUESTED) showScreen(openSetupScreen);
             return;
         }
 
-        const texte = lireSel(PROJET);
-        const octets = selDepuisTexte(texte);
-        if (!octets) {
-            prevoirEcran(ouvrirEcranSel);
+        const text = readSalt(PROJECT);
+        const bytes = saltFromText(text);
+        if (!bytes) {
+            showScreen(openSaltScreen);
             return;
         }
 
-        deriver(octets).then((derivees) => {
-            if (derivees.identifiant !== PROJET) {
-                // Le sel range sous cette cle ne derive pas cet identifiant : la
-                // balise a change de projet, ou le stockage a ete bricole. On
-                // redemande, on ne devine pas.
-                prevoirEcran(ouvrirEcranSel);
+        derive(bytes).then((derived) => {
+            if (derived.id !== PROJECT) {
+                // The salt stored under this key does not derive this id: the
+                // tag has changed project, or the storage was tampered with. We
+                // ask again, we do not guess.
+                showScreen(openSaltScreen);
                 return null;
             }
-            return demarrerAvecSel(texte, derivees);
+            return startWithSalt(text, derived);
         }, () => {
-            prevoirEcran(ouvrirEcranSel);
+            showScreen(openSaltScreen);
         });
     };
 
     if (document.body) {
-        demarrer();
+        start();
     } else {
-        document.addEventListener('DOMContentLoaded', demarrer);
+        document.addEventListener('DOMContentLoaded', start);
     }
 }());

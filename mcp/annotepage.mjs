@@ -1,254 +1,252 @@
 #!/usr/bin/env node
-/* annotepage.mjs — L'UTILITAIRE EN LIGNE DE COMMANDE.
+/* annotepage.mjs — THE COMMAND-LINE UTILITY.
  *
- * IL EXISTE POUR QUE LE MCP NE SOIT PAS OBLIGATOIRE.
+ * IT EXISTS SO THAT THE MCP IS NOT COMPULSORY.
  *
- * En mode clair, la lecture a distance se fait deja sans rien installer :
+ * In plain mode, reading from a distance already works with nothing installed:
  *
- *     curl 'https://site/notes/api.php?action=texte&projet=<id>'
+ *     curl 'https://site/notes/api.php?action=text&project=<id>'
  *
- * C'est le chemin simple, et il ne doit jamais casser : c'est lui qui rend
- * l'outil utilisable par n'importe quel assistant, sans integration, sans
- * paquet, sans declaration. En mode CHIFFRE, cette meme adresse ne rend plus
- * que la structure — le serveur n'a ni les chemins, ni les noms, ni les
- * textes. Il manque une etape, et une seule : le dechiffrement.
+ * That is the simple path, and it must never break: it is what makes the tool
+ * usable by any assistant, with no integration, no package, no declaration. In
+ * ENCRYPTED mode, that same address returns nothing but the structure — the
+ * server has neither the paths, nor the names, nor the texts. One step is
+ * missing, and only one: decryption.
  *
- * Cet utilitaire est cette etape, en une commande :
+ * This utility is that step, in one command:
  *
- *     annotepage texte
+ *     annotepage text
  *
- * Il ecrit sur la sortie standard exactement ce que « curl » aurait rendu si
- * le projet n'etait pas chiffre — meme grammaire, memes marges, memes cles.
- * On peut le rediriger dans un fichier, le passer a un assistant, le lire.
- * FORMAT.md §5.3 appelle cela « le second producteur » ; le voici.
+ * It writes on standard output exactly what "curl" would have returned if the
+ * project were not encrypted — same grammar, same margins, same keys. You can
+ * redirect it into a file, hand it to an assistant, read it. FORMAT.md section
+ * 5.3 calls that "the second producer"; here it is.
  *
- * TOUT SORT SUR STDOUT, LES ERREURS SUR STDERR, et le code de retour vaut
- * zero ou non-zero. C'est ce qu'attend un tuyau.
+ * EVERYTHING GOES OUT ON STDOUT, ERRORS ON STDERR, and the exit code is zero
+ * or non-zero. That is what a pipe expects.
  */
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { chargerConfiguration, choisirProjet, ErreurConfiguration } from './source/configuration.mjs';
+import { loadConfiguration, chooseProject, ConfigError } from './src/config.mjs';
 import {
-    recuperer, exportRempli, trouverNote, estOuverte,
-    repondre, marquerCorrigee, rouvrir, ErreurUsage,
-} from './source/notes.mjs';
-import { ecrireExport } from './source/export-texte.mjs';
-import { lireDiagnostic, lireExportBrut, ErreurApi } from './source/api.mjs';
+    retrieve, filledExport, findNote, isOpen,
+    reply, markResolved, reopen, UsageError,
+} from './src/notes.mjs';
+import { writeExport } from './src/text-export.mjs';
+import { readDiagnostic, readRawExport, ApiError } from './src/api.mjs';
 
-const ici = dirname(fileURLToPath(import.meta.url));
+const here = dirname(fileURLToPath(import.meta.url));
 
 const version = () => {
     try {
-        return JSON.parse(readFileSync(join(ici, 'package.json'), 'utf8')).version;
+        return JSON.parse(readFileSync(join(here, 'package.json'), 'utf8')).version;
     } catch (e) {
-        return 'inconnue';
+        return 'unknown';
     }
 };
 
-const AIDE = `annotepage ` + version() + ` — lire et repondre aux notes de relecture.
+const HELP = `annotepage ` + version() + ` — read and answer review notes.
 
-  annotepage texte              l'export complet, dechiffre, sur la sortie standard
-  annotepage ouvertes           les seules notes qui restent a corriger
-  annotepage note <id>          une note et son fil
-  annotepage repondre <id> <texte>
-  annotepage corrigee <id> <version>     version vide : ecrire ""
-  annotepage rouvrir <id>
-  annotepage identifiant        l'identifiant de projet derive du sel
-  annotepage brut               ce que le serveur envoie, sans dechiffrer
-  annotepage diagnostic         l'etat du serveur
-  annotepage projets            ce que la configuration declare
+  annotepage text               the complete export, decrypted, on standard output
+  annotepage open               only the notes still to be fixed
+  annotepage note <id>          one note and its thread
+  annotepage reply <id> <text>
+  annotepage resolve <id> <version>      empty version: write ""
+  annotepage reopen <id>
+  annotepage id                 the project id derived from the salt
+  annotepage raw                what the server sends, without decrypting
+  annotepage diagnostic         the state of the server
+  annotepage projects           what the configuration declares
 
-Options :
-  --projet <nom>    quand la configuration en declare plusieurs
-  --page <chemin>   avec « ouvertes » : ne garder qu'une page
-  --config <fichier>  a defaut : $ANNOTEPAGE_CONFIG, ./.annotepage.json,
-                      ~/.config/annotepage/annotepage.json
+Options:
+  --project <name>  when the configuration declares several
+  --page <path>     with "open": keep one page only
+  --config <file>   failing that: $ANNOTEPAGE_CONFIG, ./.annotepage.json,
+                    ~/.config/annotepage/annotepage.json
 
-Le fichier de configuration porte le SEL du projet. Il ne se versionne pas :
-qui le lit lit toutes les notes, et il n'existe aucune rotation de sel.
+The configuration file carries the project SALT. It is never committed:
+whoever reads it reads every note, and there is no salt rotation.
 
-En mode clair, cet utilitaire n'est pas necessaire :
-  curl '<api>?action=texte&projet=<id>'
-rend deja le meme document. Le MCP et cet utilitaire sont des ajouts.
+In plain mode this utility is not needed:
+  curl '<api>?action=text&project=<id>'
+already returns the same document. The MCP and this utility are additions.
 `;
 
-/* Un analyseur d'arguments de vingt lignes plutot qu'une dependance. Ce
-   paquet detient le sel : chaque dependance est du code tiers dans le meme
-   processus, et la decision de securite du projet dit que le vrai risque est
-   la chaine d'approvisionnement. */
-const analyser = (argv) => {
+/* A twenty-line argument parser rather than a dependency. This package holds
+   the salt: every dependency is third-party code in the same process, and the
+   project's security decision says the real risk is the supply chain. */
+const parse = (argv) => {
     const options = {};
-    const positions = [];
+    const positional = [];
     for (let i = 0; i < argv.length; i += 1) {
         const a = argv[i];
         if (a.startsWith('--')) {
-            const egal = a.indexOf('=');
-            if (egal !== -1) {
-                options[a.slice(2, egal)] = a.slice(egal + 1);
+            const equals = a.indexOf('=');
+            if (equals !== -1) {
+                options[a.slice(2, equals)] = a.slice(equals + 1);
             } else {
                 options[a.slice(2)] = argv[i + 1] !== undefined
                     && !argv[i + 1].startsWith('--') ? argv[++i] : true;
             }
         } else {
-            positions.push(a);
+            positional.push(a);
         }
     }
-    return { options, positions };
+    return { options, positional };
 };
 
-const entier = (valeur, quoi) => {
-    const n = parseInt(valeur, 10);
+const integer = (value, what) => {
+    const n = parseInt(value, 10);
     if (!Number.isFinite(n)) {
-        throw new ErreurUsage('Le champ « ' + quoi + ' » attend un numero de note. Recu : '
-            + String(valeur));
+        throw new UsageError('The field "' + what + '" expects a note number. '
+            + 'Received: ' + String(value));
     }
     return n;
 };
 
-const filtrer = (etat, projet, notes) =>
-    ecrireExport({
-        format: etat.entete.format,
-        version: etat.entete.version,
-        projet: etat.entete.projet || projet.identifiant,
-        chiffrement: etat.entete.chiffrement,
-    }, notes, etat.pied);
+const filter = (state, project, notes) =>
+    writeExport({
+        format: state.header.format,
+        version: state.header.version,
+        project: state.header.project || project.id,
+        encryption: state.header.encryption,
+    }, notes, state.footer);
 
-const principal = async () => {
-    const { options, positions } = analyser(process.argv.slice(2));
-    const commande = positions[0];
+const main = async () => {
+    const { options, positional } = parse(process.argv.slice(2));
+    const command = positional[0];
 
-    if (!commande || options.aide || options.help || commande === 'aide') {
-        process.stdout.write(AIDE);
+    if (!command || options.help || command === 'help') {
+        process.stdout.write(HELP);
         return 0;
     }
 
-    const configuration = await chargerConfiguration(
+    const configuration = await loadConfiguration(
         typeof options.config === 'string' ? options.config : null);
 
-    /* Les avertissements vont sur STDERR : « annotepage texte > notes.txt »
-       doit rendre un fichier qui ne contient que l'export. Un avertissement
-       melange a l'export en ferait une note de plus, avec une marge que
-       personne n'attend. */
-    for (const mot of configuration.avertissements) {
-        process.stderr.write('avertissement : ' + mot + '\n');
+    /* Warnings go on STDERR: "annotepage text > notes.txt" must produce a file
+       containing nothing but the export. A warning mixed into the export would
+       make it one more note, with a margin nobody expects. */
+    for (const word of configuration.warnings) {
+        process.stderr.write('warning: ' + word + '\n');
     }
 
-    if (commande === 'projets') {
-        process.stdout.write('configuration ' + configuration.chemin + '\n');
-        for (const [nom, p] of configuration.projets) {
-            process.stdout.write('\nprojet ' + nom + '\n');
-            process.stdout.write('  identifiant ' + p.identifiant + '\n');
+    if (command === 'projects') {
+        process.stdout.write('configuration ' + configuration.path + '\n');
+        for (const [name, p] of configuration.projects) {
+            process.stdout.write('\nproject ' + name + '\n');
+            process.stdout.write('  id ' + p.id + '\n');
             process.stdout.write('  api ' + p.api + '\n');
             process.stdout.write('  mode ' + p.mode + '\n');
-            process.stdout.write('  sel ' + (p.cles ? 'present' : 'absent') + '\n');
-            process.stdout.write('  auteur ' + (p.auteur || '(aucun)') + '\n');
-            process.stdout.write('  ecriture ' + (p.lecture_seule ? 'lecture seule'
-                : (p.auteur ? 'permise' : 'refusee, faute de nom')) + '\n');
-            if (p.origine) process.stdout.write('  origine ' + p.origine + '\n');
-            if (configuration.defaut === nom) process.stdout.write('  par defaut oui\n');
+            process.stdout.write('  salt ' + (p.keys ? 'present' : 'absent') + '\n');
+            process.stdout.write('  author ' + (p.author || '(none)') + '\n');
+            process.stdout.write('  writing ' + (p.read_only ? 'read only'
+                : (p.author ? 'allowed' : 'refused, for want of a name')) + '\n');
+            if (p.origin) process.stdout.write('  origin ' + p.origin + '\n');
+            if (configuration.defaultProject === name) process.stdout.write('  default yes\n');
         }
         return 0;
     }
 
-    const projet = choisirProjet(configuration,
-        typeof options.projet === 'string' ? options.projet : null);
+    const project = chooseProject(configuration,
+        typeof options.project === 'string' ? options.project : null);
 
-    if (commande === 'identifiant') {
-        /* Ce qu'il faut pour construire une URL « curl » a la main. C'est
-           l'identifiant, jamais le sel : l'un est un jeton porteur public,
-           l'autre est la totalite des notes. */
-        process.stdout.write(projet.identifiant + '\n');
+    if (command === 'id') {
+        /* What you need in order to build a "curl" URL by hand. It is the id,
+           never the salt: one is a public bearer token, the other is every
+           note there is. */
+        process.stdout.write(project.id + '\n');
         return 0;
     }
 
-    if (commande === 'diagnostic') {
-        process.stdout.write(await lireDiagnostic(projet));
+    if (command === 'diagnostic') {
+        process.stdout.write(await readDiagnostic(project));
         return 0;
     }
 
-    if (commande === 'brut') {
-        // Ce que le serveur envoie, sans dechiffrer : utile pour comparer avec
-        // ce que « curl » rend, et pour verifier qu'on parle bien au meme
-        // serveur que le navigateur.
-        process.stdout.write(await lireExportBrut(projet));
+    if (command === 'raw') {
+        // What the server sends, without decrypting: useful to compare with
+        // what "curl" returns, and to check that we are talking to the same
+        // server as the browser.
+        process.stdout.write(await readRawExport(project));
         return 0;
     }
 
-    const etat = await recuperer(projet);
+    const state = await retrieve(project);
 
-    switch (commande) {
-        case 'texte':
-            process.stdout.write(exportRempli(etat, projet));
+    switch (command) {
+        case 'text':
+            process.stdout.write(filledExport(state, project));
             return 0;
 
-        case 'ouvertes': {
-            let notes = etat.notes.filter(estOuverte);
+        case 'open': {
+            let notes = state.notes.filter(isOpen);
             if (typeof options.page === 'string') {
                 notes = notes.filter((n) => n.page === options.page);
             }
-            process.stdout.write(filtrer(etat, projet, notes));
+            process.stdout.write(filter(state, project, notes));
             return 0;
         }
 
         case 'note': {
-            const id = entier(positions[1], 'id');
-            const trouve = trouverNote(etat, id);
-            if (!trouve) {
-                process.stderr.write('Aucune note ' + id + ' dans ce projet.\n');
+            const id = integer(positional[1], 'id');
+            const found = findNote(state, id);
+            if (!found) {
+                process.stderr.write('No note ' + id + ' in this project.\n');
                 return 1;
             }
-            process.stdout.write(filtrer(etat, projet, [trouve.mere || trouve.note]));
+            process.stdout.write(filter(state, project, [found.parent || found.note]));
             return 0;
         }
 
-        case 'repondre': {
-            const id = entier(positions[1], 'id');
-            const texte = positions.slice(2).join(' ');
-            await repondre(projet, etat, id, texte);
-            process.stdout.write('Reponse ecrite dans le fil de la note ' + id
-                + ', signee « ' + projet.auteur + ' ».\n');
+        case 'reply': {
+            const id = integer(positional[1], 'id');
+            const text = positional.slice(2).join(' ');
+            await reply(project, state, id, text);
+            process.stdout.write('Reply written in the thread of note ' + id
+                + ', signed "' + project.author + '".\n');
             return 0;
         }
 
-        case 'corrigee': {
-            const id = entier(positions[1], 'id');
-            if (positions[2] === undefined) {
-                throw new ErreurUsage(
-                    'La version manque. Ecrivez-la, ou "" si elle n\'est pas connue :\n'
-                    + '  annotepage corrigee ' + id + ' 1.4.13\n'
-                    + '  annotepage corrigee ' + id + ' ""\n'
-                    + "Sans version, le correctif est tenu pour non deploye et la note "
-                    + 'reste visible sur la page. C\'est un choix, pas un oubli.');
+        case 'resolve': {
+            const id = integer(positional[1], 'id');
+            if (positional[2] === undefined) {
+                throw new UsageError(
+                    'The version is missing. Write it, or "" if it is not known:\n'
+                    + '  annotepage resolve ' + id + ' 1.4.13\n'
+                    + '  annotepage resolve ' + id + ' ""\n'
+                    + 'With no version, the fix is taken as not deployed and the note '
+                    + 'stays visible on the page. That is a choice, not an oversight.');
             }
-            await marquerCorrigee(projet, etat, id, positions[2]);
-            process.stdout.write('Note ' + id + ' marquee corrigee par « '
-                + projet.auteur + ' »'
-                + (positions[2] ? ', en version ' + positions[2]
-                                : ', sans version declaree') + '.\n');
+            await markResolved(project, state, id, positional[2]);
+            process.stdout.write('Note ' + id + ' marked resolved by "'
+                + project.author + '"'
+                + (positional[2] ? ', in version ' + positional[2]
+                                 : ', with no version declared') + '.\n');
             return 0;
         }
 
-        case 'rouvrir': {
-            const id = entier(positions[1], 'id');
-            await rouvrir(projet, etat, id);
-            process.stdout.write('Note ' + id + ' rouverte. Son fil est intact.\n');
+        case 'reopen': {
+            const id = integer(positional[1], 'id');
+            await reopen(project, state, id);
+            process.stdout.write('Note ' + id + ' reopened. Its thread is intact.\n');
             return 0;
         }
 
         default:
-            process.stderr.write('Commande inconnue : ' + commande + '\n\n' + AIDE);
+            process.stderr.write('Unknown command: ' + command + '\n\n' + HELP);
             return 2;
     }
 };
 
-principal()
+main()
     .then((code) => { process.exitCode = code; })
     .catch((e) => {
-        if (e instanceof ErreurConfiguration || e instanceof ErreurUsage
-            || e instanceof ErreurApi) {
+        if (e instanceof ConfigError || e instanceof UsageError
+            || e instanceof ApiError) {
             process.stderr.write('\n' + e.message + '\n\n');
             process.exitCode = 1;
             return;

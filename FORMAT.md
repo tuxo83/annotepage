@@ -1,757 +1,790 @@
-# annotepage — format d'echange et modele de securite
+# annotepage — exchange format and security model
 
-Version de format : **2**
+Format version: **2**
 
-Ce document est la reference. Le client, le serveur PHP et le paquet MCP
-implantent ce qui est ecrit ici, et rien d'autre. Quand une phrase de ce
-document et une ligne de code se contredisent, c'est le code qui a tort.
+This document is the reference. The client, the PHP server and the MCP package
+implement what is written here, and nothing else. When a sentence of this
+document and a line of code contradict each other, the code is wrong.
 
-Le format 1 est celui de l'outil d'origine (« notes en contexte », 1.2.0) :
-aucun projet, aucun sel, aucun chiffrement, la page en clair. Il n'est pas
-abandonne — il est le cas particulier « mode clair » decrit plus bas, et une
-base ecrite par le format 1 se lit telle quelle.
+Format 1 is the format of the original tool ("in-context notes", 1.2.0): no
+project, no salt, no encryption, the page in the clear. It is not abandoned —
+it is the "plain mode" special case described below, and a database written by
+format 1 is read as it stands (§2.2).
 
 ---
 
-## 1. Le sel, et ce qui en descend
+## 1. The salt, and everything derived from it
 
-### 1.1 Le sel
+### 1.1 The salt
 
-Un **sel de 256 bits** est engendre a l'installation, par
-`crypto.getRandomValues()` sur 32 octets. Il n'y a pas d'autre source
-acceptable : ni horodatage, ni nom de projet, ni mot de passe choisi par un
-humain. Un sel devinable rend tout le reste decoratif.
+A **256-bit salt** is generated at install time, by `crypto.getRandomValues()`
+over 32 bytes. There is no other acceptable source: not a timestamp, not a
+project name, not a password chosen by a human. A guessable salt makes
+everything else decorative.
 
-Il ne quitte jamais le navigateur. Le serveur ne le recoit a aucun moment,
-sous aucune forme, dans aucun mode.
+It never leaves the browser. The server does not receive it at any point, in
+any form, in any mode.
 
-**Sel perdu = notes perdues.** Il n'y a pas de recuperation, pas de question
-secrete, pas de tiers de sequestre : c'est le seul secret, et personne d'autre
-ne l'a. L'ecran d'installation doit l'ecrire en toutes lettres, avant de
-proposer de continuer, et non dans une note de bas de page.
+**Lost salt = lost notes.** There is no recovery, no security question, no
+escrow third party: it is the only secret, and nobody else holds it. The
+install screen must spell this out, in full, before offering to continue, and
+not in a footnote.
 
-Representation destinee a un humain qui le recopie :
-**base64url sans remplissage des 32 octets**, soit exactement 43 caracteres
-pris dans `A-Z a-z 0-9 - _`. Ni espaces, ni groupement, ni tirets decoratifs :
-tout ce qui « aide a lire » finit recopie de travers.
+Representation meant for a human who copies it by hand:
+**base64url without padding of the 32 bytes**, that is exactly 43 characters
+taken from `A-Z a-z 0-9 - _`. No spaces, no grouping, no decorative dashes:
+everything that "helps reading" ends up copied wrong.
 
-Le sel se conserve dans le `localStorage` du navigateur, sous la cle
-`annotepage/sel/<identifiant_projet>`. Le nommage par identifiant de projet
-n'est pas cosmetique : deux projets relus depuis le meme navigateur ne doivent
-pas s'ecraser l'un l'autre.
+The salt is kept in the browser's `localStorage`, under the key
+`annotepage/salt/<project_id>`. Naming it by project id is not cosmetic: two
+projects reviewed from the same browser must not overwrite each other.
 
-Consequence desagreable, a dire : `localStorage` est **par origine**. Le jour
-ou la preproduction devient la production, chaque relecteur doit recoller le
-sel une fois sur le nouveau domaine. Les notes, elles, ne bougent pas — et
-c'est precisement ce que la regle 1.3 achete.
+An unpleasant consequence, to be stated: `localStorage` is **per origin**. The
+day staging becomes production, every reviewer has to paste the salt once more
+on the new domain. The notes themselves do not move — and that is precisely
+what rule 1.3 buys.
 
-### 1.2 Verification d'un sel saisi
+### 1.2 Checking a salt that was typed in
 
-Quand un relecteur colle un sel, le client en derive l'identifiant de projet
-(§1.3) et le compare a celui declare par la page. Egaux : le sel est le bon.
-Differents : le message est « ce sel n'est pas celui de ce projet », affiche
-**avant** toute requete reseau et avant tout dechiffrement.
+When a reviewer pastes a salt, the client derives the project id from it
+(§1.3) and compares it with the one declared by the page. Equal: the salt is
+the right one. Different: the message is "this salt is not the salt of this
+project", shown **before** any network request and before any decryption.
 
-Il n'y a donc ni somme de controle, ni code de verification a transporter a
-cote du sel : l'identifiant de projet joue ce role, il est deja public, et un
-mecanisme de moins est un mecanisme de moins a implanter de travers.
+So there is no checksum and no verification code to carry alongside the salt:
+the project id plays that part, it is already public, and one mechanism less
+is one mechanism less to implement wrong.
 
-### 1.3 Les trois derivations
+### 1.3 The three derivations
 
-Une seule fonction, **HKDF-SHA-256** (RFC 5869), appliquee trois fois au meme
-sel. C'est ce qui tient la promesse « un seul secret a gerer ».
+One single function, **HKDF-SHA-256** (RFC 5869), applied three times to the
+same salt. That is what holds the promise "one single secret to manage".
 
 ```
-IKM        = les 32 octets du sel               (le secret)
-sel HKDF   = "annotepage/1"      en UTF-8       (fixe, public)
-info       = "id" | "chiffre" | "index"  en UTF-8
-L          = 32 octets pour chaque sortie
+IKM        = the 32 bytes of the salt            (the secret)
+HKDF salt  = "annotepage/1"       in UTF-8       (fixed, public)
+info       = "id" | "encrypted" | "index"  in UTF-8
+L          = 32 bytes for each output
 ```
 
-Piege d'implantation, a nommer parce qu'il se paie cher : le parametre
-`salt` de HKDF **n'est pas notre sel**. Notre sel est le materiau d'entree
-(IKM). Le `salt` de HKDF est la chaine fixe et publique `annotepage/1`, qui
-separe cet outil de tout autre logiciel a qui l'on confierait un jour le meme
-secret. Les inverser produit un systeme qui marche, qui chiffre, et dont les
-notes deviennent illisibles a la premiere reimplantation.
+Implementation trap, named here because it costs dearly: HKDF's `salt`
+parameter **is not our salt**. Our salt is the input keying material (IKM).
+HKDF's `salt` is the fixed, public string `annotepage/1`, which separates this
+tool from any other software one might one day trust with the same secret.
+Swapping them produces a system that works, that encrypts, and whose notes
+become unreadable on the first reimplementation.
 
-En WebCrypto :
+In WebCrypto:
 
 ```js
-// La cle maitresse est le sel lui-meme, importe comme materiau HKDF.
-const maitresse = await crypto.subtle.importKey(
-    'raw', selOctets, 'HKDF', false, ['deriveBits', 'deriveKey']);
+// The master key is the salt itself, imported as HKDF key material.
+const master = await crypto.subtle.importKey(
+    'raw', saltBytes, 'HKDF', false, ['deriveBits', 'deriveKey']);
 
-const params = (etiquette) => ({
+const params = (label) => ({
     name: 'HKDF', hash: 'SHA-256',
-    salt: utf8('annotepage/1'),   // PAS le sel : voir ci-dessus
-    info: utf8(etiquette),
+    salt: utf8('annotepage/1'),   // NOT the salt: see above
+    info: utf8(label),
 });
 
-const octetsId    = await crypto.subtle.deriveBits(params('id'), maitresse, 256);
-const octetsIndex = await crypto.subtle.deriveBits(params('index'), maitresse, 256);
-const cleChiffre  = await crypto.subtle.deriveKey(
-    params('chiffre'), maitresse,
+const idBytes    = await crypto.subtle.deriveBits(params('id'), master, 256);
+const indexBytes = await crypto.subtle.deriveBits(params('index'), master, 256);
+const cryptoKey  = await crypto.subtle.deriveKey(
+    params('encrypted'), master,
     { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 ```
 
-`cleChiffre` est engendree **non extractible**. C'est de l'hygiene, pas une
-barriere : le sel dort dans le `localStorage` juste a cote, et qui lit l'un
-refait l'autre en trois lignes. On l'ecrit ici pour que personne ne prenne le
-`false` pour une protection qu'il n'est pas.
+`cryptoKey` is generated **non-extractable**. That is hygiene, not a barrier:
+the salt sleeps in `localStorage` right next to it, and whoever reads one
+rebuilds the other in three lines. It is written here so that nobody takes the
+`false` for a protection it is not.
 
-**identifiant_projet** = base64url sans remplissage des **16 premiers octets**
-de `octetsId`, soit 22 caracteres.
+**project_id** = base64url without padding of the **first 16 bytes** of
+`idBytes`, that is 22 characters.
 
-Pourquoi 16 et non 32 : cette valeur voyage dans une chaine de requete, dans
-un attribut de balise, dans un fichier de configuration PHP et dans une
-colonne indexee. 128 bits sont indevinables (il faudrait 2^64 projets pour
-esperer une seule collision) et 22 caracteres se recopient. 43 ne se recopient
-pas.
+Why 16 and not 32: this value travels in a query string, in a tag attribute,
+in a PHP configuration file and in an indexed column. 128 bits are unguessable
+(it would take 2^64 projects to hope for a single collision) and 22 characters
+can be copied by hand. 43 cannot.
 
-**cle_de_chiffrement** = `cleChiffre`, AES-256-GCM. Ne sort jamais du
-navigateur, sous aucune forme, y compris derivee.
+**encryption_key** = `cryptoKey`, AES-256-GCM. Never leaves the browser, in
+any form, derived forms included.
 
-**cle_index** = les 32 octets de `octetsIndex`, importes en cle HMAC-SHA-256.
-Le cahier des charges ecrit `index_page = HMAC(sel, chemin)` ; on n'emploie
-pas le sel directement, on emploie une sous-cle qui n'a que cet usage. C'est
-la meme decision, resserree : une cle, un usage, toujours.
+**index_key** = the 32 bytes of `indexBytes`, imported as an HMAC-SHA-256 key.
+The specification says `page_index = HMAC(salt, path)`; we do not use the salt
+directly, we use a subkey that has no other use. Same decision, tightened: one
+key, one use, always.
 
-### 1.4 Ce qui n'entre PAS dans la derivation
+### 1.4 What does NOT go into the derivation
 
-**Le domaine n'entre pas dans la cle.** Ni le domaine, ni le prefixe de
-chemin, ni l'environnement, ni la version du site.
+**The domain is not in the key.** Not the domain, not the path prefix, not the
+environment, not the site version.
 
-La raison est operationnelle, pas theorique : le jour ou la preproduction
-devient la production, le domaine change. S'il etait dans la derivation,
-toutes les notes deviendraient illisibles ce jour-la — c'est-a-dire
-exactement le jour ou l'on relit la liste de ce qui reste a corriger.
+The reason is operational, not theoretical: the day staging becomes
+production, the domain changes. If it were in the derivation, every note would
+become unreadable that day — that is, exactly the day one rereads the list of
+what is left to fix.
 
-Le domaine et un prefixe de chemin facultatif definissent la **portee** du
-projet : quelles pages lui appartiennent, quelles origines ont le droit de le
-consommer. C'est de la configuration (§6.2), jamais de la cryptographie.
-
----
-
-## 2. Le schema d'une note
-
-Une note et une reponse sont **la meme chose** : une reponse est une note qui
-porte un `reponse_a`. Une seule table, une seule profondeur de fil. C'est
-l'heritage du format 1, et il n'y a aucune raison d'en changer.
-
-### 2.1 Les colonnes en clair, et pourquoi chacune
-
-Ces champs sont lisibles par l'operateur du serveur, dans les deux modes.
-Chacun est la parce que le serveur ne peut pas faire son travail sans lui.
-
-| Colonne | Type | Pourquoi elle reste claire |
-|---|---|---|
-| `id` | INT UNSIGNED, auto | Il faut bien designer une note pour y repondre ou la marquer corrigee. |
-| `projet` | VARCHAR(22) | Le serveur regroupe par projet. Sans elle, un relais melange tout le monde. |
-| `index_page` | VARCHAR(22) | Le serveur regroupe par page sans savoir laquelle. Voir §4. |
-| `reponse_a` | INT UNSIGNED NULL | La forme du fil. Le serveur imbrique les reponses sans lire un mot. |
-| `format` | INT | Le numero de format de CETTE ligne. Voir §5. |
-| `mode` | VARCHAR(8) | `clair` ou `chiffre`. Voir §3.4. |
-| `cree_le` | DATETIME (UTC) | Ecrit par le serveur. Il connait de toute facon l'heure d'arrivee. |
-| `resolue_le` | DATETIME NULL | Ecrit par le serveur. Permet de trier ouvert/corrige sans dechiffrer. |
-
-`cree_le` et `resolue_le` sont ecrits par PHP en UTC, jamais par `NOW()` du
-moteur SQL : le fuseau de PHP et celui de la base ne sont pas alignes par
-defaut, et une note datee de trois heures dans le futur ferait douter de tout
-le reste.
-
-### 2.2 Les colonnes de charge
-
-| Colonne | mode `clair` | mode `chiffre` |
-|---|---|---|
-| `page` | le chemin reel, `/fr/contact.html` | `''` |
-| `selecteur` | le chemin CSS | `''` |
-| `empreinte` | balise, identifiant, classes | `''` |
-| `extrait` | le texte visible de l'element | `''` |
-| `auteur` | le nom saisi | `''` |
-| `texte` | la remarque | `''` |
-| `version` | la version declaree par le site | `''` |
-| `environnement` | l'environnement declare | `''` |
-| `fenetre` | `1280x800` | `''` |
-| `resolue_par` | le nom du correcteur | `''` |
-| `resolue_version` | la version du correctif | `''` |
-| `charge` | `''` | l'enveloppe de la note (§3) |
-| `charge_resolution` | `''` | l'enveloppe de la resolution (§3.5) |
-
-Le mode `clair` remplit **exactement** les colonnes du format 1 : une base
-ecrite par l'outil d'origine est une base de format 2 en mode clair a qui il
-manque `projet`, `index_page`, `format`, `mode`, `charge` et
-`charge_resolution`. Le rattrapage paresseux de colonnes, deja present dans
-`depot.php`, les ajoute au premier appel. Rien a migrer, rien a exporter,
-rien a reimporter.
-
-### 2.3 Pourquoi la page et l'auteur sont chiffres, eux aussi
-
-La question se pose serieusement, et la reponse facile est mauvaise.
-
-Si l'on ne chiffrait que `texte`, l'operateur du serveur — c'est-a-dire, en
-mode relais, quelqu'un d'autre que le client — lirait :
-
-- **l'arborescence complete du site relu**, page par page, par la colonne
-  `page` ;
-- **qui travaille dessus**, par la colonne `auteur`, avec leurs noms tels
-  qu'ils les ecrivent ;
-- **le texte visible de chaque element annote**, par `extrait` : les intitules
-  de boutons, les titres, les libelles de formulaire. C'est-a-dire une bonne
-  partie du contenu de la page ;
-- **la pile technique et le calendrier**, par `version` et `environnement`.
-
-Une preproduction est exactement ce qu'une entreprise ne publie pas encore. La
-liste de ses URL, de ses intitules et de ses relecteurs est une fuite, meme
-sans une seule remarque.
-
-**Tranche : en mode chiffre, tout ce qui est saisi ou observe passe dans
-l'enveloppe.** Le serveur ne conserve en clair que ce qui lui sert a
-regrouper, imbriquer et dater. La liste du §2.1 est fermee : ajouter une
-colonne claire est un changement de format (§5), pas une commodite.
-
-### 2.4 Ce que le serveur apprend quand meme
-
-Le chiffrement des champs n'est pas une invisibilite. Un operateur de relais
-honnete doit pouvoir lire ce qui suit sans se sentir trahi, et un client doit
-le savoir avant de choisir le relais :
-
-- le **nombre de projets**, et pour chacun le nombre de notes ;
-- le **nombre de pages distinctes** annotees dans un projet, par le nombre de
-  valeurs distinctes d'`index_page`, et le nombre de notes par page. Une page
-  qui recolte quarante remarques se voit ;
-- **l'heure de chaque ecriture**, donc le rythme de la recette, les jours
-  travailles, la date de la derniere note ;
-- la **forme des fils** : combien de reponses, a quelle vitesse ;
-- le **taux et le delai de correction**, par `resolue_le` ;
-- la **longueur approximative de chaque remarque**, par la taille de
-  l'enveloppe. On ne la masque pas (voir §7) ;
-- l'**adresse IP et l'agent utilisateur** de chaque relecteur, comme tout
-  serveur HTTP ;
-- **en mode relais, le domaine du site relu**, par l'entete `Origin` — que le
-  verrou de domaine exige justement de lire (§6.2). Ecrivons-le franchement :
-  la promesse n'est pas « le relais ignore quel site vous relisez ». Elle est
-  « le relais ne peut lire ni vos chemins, ni vos noms, ni vos remarques ».
-- l'`id` est un compteur **global au serveur**. Entre deux notes d'un meme
-  projet, l'ecart des identifiants dit combien de notes tous les autres
-  projets ont ecrites. Fuite mince, reelle, conservee parce que la corriger
-  demanderait une numerotation par projet et son lot de courses (§8).
+The domain and an optional path prefix define the **scope** of the project:
+which pages belong to it, which origins are allowed to consume it. That is
+configuration (§6.2), never cryptography.
 
 ---
 
-## 3. L'enveloppe de chiffrement
+## 2. The schema of a note
 
-### 3.1 Algorithme
+A note and a reply are **the same thing**: a reply is a note that carries a
+`reply_to`. One table, one thread depth. That is format 1's legacy, and there
+is no reason to change it.
 
-**AES-256-GCM**, par WebCrypto, sans exception et sans repli. Pas de choix
-d'algorithme, pas de negociation, pas de « suite » : un format qui negocie est
-un format qu'on fait retomber sur son option la plus faible.
+### 2.1 The plain columns, and why each one
 
-- cle : `cle_de_chiffrement` (§1.3), 256 bits ;
-- **nonce : 12 octets, tires par `crypto.getRandomValues()` a chaque
-  chiffrement.** Jamais un compteur, jamais derive du contenu, jamais reutilise.
-  Un nonce repete avec la meme cle en GCM ne fait pas fuir une note : il fait
-  fuir la cle d'authentification. Le tirage aleatoire sur 96 bits tient jusqu'a
-  environ 2^32 chiffrements par projet — soit quelques milliards de notes, ce
-  qui n'arrivera pas ;
-- **etiquette d'authentification : 128 bits**, la valeur par defaut de
-  WebCrypto, qui la concatene deja au chiffre. On ne la separe pas.
+These fields are readable by the server operator, in both modes. Each one is
+there because the server cannot do its job without it.
 
-### 3.2 Donnees authentifiees associees (AAD)
+| Column | Type | Why it stays plain |
+|---|---|---|
+| `id` | INT UNSIGNED, auto | One has to be able to designate a note to reply to it or mark it resolved. |
+| `project` | VARCHAR(22) | The server groups by project. Without it, a relay mixes everyone together. |
+| `page_index` | VARCHAR(22) | The server groups by page without knowing which page. See §4. |
+| `reply_to` | INT UNSIGNED NULL | The shape of the thread. The server nests replies without reading a word. |
+| `format` | INT | The format number of THIS row. See §5. |
+| `mode` | VARCHAR(16) | `plain` or `encrypted`. See §3.4. |
+| `created_at` | DATETIME (UTC) | Written by the server. It knows the arrival time anyway. |
+| `resolved_at` | DATETIME NULL | Written by the server. Allows sorting open/resolved without decrypting. |
 
-L'AAD lie l'enveloppe a sa place. Sans elle, un serveur malveillant peut
-deplacer une note d'une page a l'autre, ou d'un projet a l'autre : le
-dechiffrement reussirait et la remarque apparaitrait sous un element qu'elle
-ne visait pas.
+`mode` is VARCHAR(**16**), not VARCHAR(8): `encrypted` is nine characters and a
+narrower column truncates it silently. A truncated mode is an unknown mode,
+and an unknown mode means every row is skipped (§3.4). Nine fits in sixteen
+with room to spare; do not tighten it back.
+
+`created_at` and `resolved_at` are written by PHP in UTC, never by the SQL
+engine's `NOW()`: PHP's timezone and the database's are not aligned by
+default, and a note dated three hours in the future would cast doubt on
+everything else.
+
+### 2.2 The payload columns
+
+| Column | `plain` mode | `encrypted` mode |
+|---|---|---|
+| `page` | the real path, `/en/contact.html` | `''` |
+| `selector` | the CSS path | `''` |
+| `fingerprint` | tag, id, classes | `''` |
+| `excerpt` | the visible text of the element | `''` |
+| `author` | the name that was typed | `''` |
+| `text` | the remark | `''` |
+| `version` | the version declared by the site | `''` |
+| `environment` | the declared environment | `''` |
+| `viewport` | `1280x800` | `''` |
+| `resolved_by` | the name of the fixer | `''` |
+| `resolved_version` | the version of the fix | `''` |
+| `payload` | `''` | the envelope of the note (§3) |
+| `resolution_payload` | `''` | the envelope of the resolution (§3.5) |
+
+Plain mode fills **exactly** the columns of format 1 — under their English
+names, which is where the old promise has to be restated honestly.
+
+A format-1 database differs from a format-2 database in plain mode in two
+ways, and only two:
+
+- twelve columns carry French names: `reponse_a`, `cree_le`, `resolue_le`,
+  `selecteur`, `empreinte`, `extrait`, `auteur`, `texte`, `environnement`,
+  `fenetre`, `resolue_par`, `resolue_version`;
+- six columns are missing: `project`, `page_index`, `format`, `mode`,
+  `payload`, `resolution_payload`.
+
+The lazy column catch-up already present in `store.php` covers both on the
+first call: it **adds** the six missing columns and **renames** the twelve
+French ones. One `ALTER TABLE`, once, automatically. No export, no reimport,
+no manual step. `id`, `page` and `version` are spelled the same in both
+languages and are left alone.
+
+What does break, and is accepted: a format-1 **text export** no longer parses.
+Its keys are French, the closed list of §5.1 is English, and a reader will not
+recognise a single structure line — it will not misread them, it will not
+recognise them. Exports are regenerated on demand from the database and nobody
+archives one; the database is what carries the history, and the database
+migrates itself.
+
+### 2.3 Why the page and the author are encrypted too
+
+The question deserves to be asked seriously, and the easy answer is the wrong
+one.
+
+If only `text` were encrypted, the server operator — that is, in relay mode,
+somebody other than the client — would read:
+
+- **the complete tree of the site under review**, page by page, through the
+  `page` column;
+- **who is working on it**, through the `author` column, with their names as
+  they write them;
+- **the visible text of every annotated element**, through `excerpt`: button
+  labels, headings, form labels. That is to say a good part of the content of
+  the page;
+- **the technical stack and the schedule**, through `version` and
+  `environment`.
+
+A staging site is exactly what a company has not published yet. The list of
+its URLs, of its labels and of its reviewers is a leak, even without a single
+remark.
+
+**Settled: in encrypted mode, everything that is typed or observed goes into
+the envelope.** The server keeps in the clear only what it needs in order to
+group, nest and date. The list in §2.1 is closed: adding a plain column is a
+format change (§5), not a convenience.
+
+### 2.4 What the server learns anyway
+
+Encrypting the fields is not invisibility. An honest relay operator must be
+able to read the following without feeling betrayed, and a client must know it
+before choosing the relay:
+
+- the **number of projects**, and for each one the number of notes;
+- the **number of distinct pages** annotated in a project, through the number
+  of distinct `page_index` values, and the number of notes per page. A page
+  that collects forty remarks is visible;
+- the **time of every write**, hence the rhythm of the review, the days worked,
+  the date of the last note;
+- the **shape of the threads**: how many replies, how fast;
+- the **fix rate and fix delay**, through `resolved_at`;
+- the **approximate length of every remark**, through the size of the
+  envelope. It is not masked (see §7);
+- the **IP address and user agent** of every reviewer, like any HTTP server;
+- **in relay mode, the domain of the site under review**, through the `Origin`
+  header — which the domain lock has to read precisely (§6.2). Let us write it
+  plainly: the promise is not "the relay does not know which site you are
+  reviewing". It is "the relay can read neither your paths, nor your names,
+  nor your remarks".
+- `id` is a counter that is **global to the server**. Between two notes of the
+  same project, the gap in ids tells how many notes all the other projects
+  have written. A thin leak, a real one, kept because fixing it would require
+  per-project numbering and its share of races (§8).
+
+---
+
+## 3. The encryption envelope
+
+### 3.1 Algorithm
+
+**AES-256-GCM**, through WebCrypto, without exception and without fallback. No
+algorithm choice, no negotiation, no "suite": a format that negotiates is a
+format you can push down to its weakest option.
+
+- key: `encryption_key` (§1.3), 256 bits;
+- **nonce: 12 bytes, drawn by `crypto.getRandomValues()` at every
+  encryption.** Never a counter, never derived from the content, never reused.
+  A repeated nonce with the same key in GCM does not leak a note: it leaks the
+  authentication key. Random drawing over 96 bits holds up to about 2^32
+  encryptions per project — that is a few billion notes, which will not happen;
+- **authentication tag: 128 bits**, WebCrypto's default value, which it
+  already appends to the ciphertext. We do not separate it.
+
+### 3.2 Additional authenticated data (AAD)
+
+The AAD binds the envelope to its place. Without it, a malicious server can
+move a note from one page to another, or from one project to another: the
+decryption would succeed and the remark would appear under an element it never
+aimed at.
 
 ```
-AAD = UTF-8( format + "\n" + projet + "\n" + index_page + "\n" + role )
+AAD = UTF-8( format + "\n" + project + "\n" + page_index + "\n" + role )
 ```
 
-`format` est le numero decimal (`2`), `role` vaut `note` ou `resolution`. Les
-quatre valeurs sont en base64url ou en chiffres : aucune ne peut contenir de
-saut de ligne, la separation est donc sans ambiguite.
+`format` is the decimal number (`2`), `role` is `note` or `resolution`. The
+four values are in base64url or in digits: none of them can contain a line
+break, so the separation is unambiguous.
 
-### 3.3 Forme serialisee
+### 3.3 Serialised form
 
-Une chaine ASCII, en trois champs separes par des points :
+An ASCII string, in three fields separated by dots:
 
 ```
-ap<format>.<nonce base64url>.<chiffre+etiquette base64url>
+ap<format>.<base64url nonce>.<base64url ciphertext+tag>
 ```
 
-Soit, pour le format 2 :
+That is, for format 2:
 
 ```
 ap2.7Qb1kZ3xNvA9dLpE.qKf2...Zt8
 ```
 
-- `ap2` : le prefixe **est** le numero de format. Il n'y a pas de second
-  compteur pour l'enveloppe : deux numeros de version finissent par diverger,
-  et l'un des deux devient un mensonge ;
-- base64url **sans remplissage**, pour traverser une chaine de requete, un
-  corps `application/x-www-form-urlencoded` et une colonne SQL sans
-  echappement ;
-- le nonce fait toujours 16 caracteres (12 octets). Un lecteur qui en compte
-  un autre refuse la ligne au lieu de deviner.
+- `ap2`: the prefix **is** the format number. There is no second counter for
+  the envelope: two version numbers end up diverging, and one of the two
+  becomes a lie;
+- base64url **without padding**, so it can travel through a query string, an
+  `application/x-www-form-urlencoded` body and a SQL column without escaping;
+- the nonce is always 16 characters (12 bytes). A reader that counts anything
+  else refuses the row instead of guessing.
 
-Le contenu chiffre est un **objet JSON compact, en UTF-8**, avec les noms de
-champs de §2.2 :
-
-```json
-{"page":"/fr/contact.html","selecteur":"main:nth-of-type(1) > h2:nth-of-type(3)",
- "empreinte":"h2.titre-section","extrait":"Contactez-nous","auteur":"Camille",
- "texte":"Le lien pointe encore vers l'ancien formulaire.",
- "version":"1.4.12","environnement":"preprod","fenetre":"1280x800"}
-```
-
-Un champ vide est **absent** de l'objet, il n'est pas ecrit a `""`. Un lecteur
-traite l'absence comme la chaine vide — meme regle que dans l'export texte, et
-pour la meme raison : ne pas ecrire une cle pour dire qu'il n'y a rien.
-
-**Toute la note tient dans UNE enveloppe**, et non un champ par enveloppe.
-Un seul nonce, une seule etiquette, et les longueurs des champs ne se lisent
-pas separement. Le prix habituel de ce choix — modifier un champ oblige a
-tout rechiffrer — ne se paie pas ici : le texte d'une note n'est jamais
-modifie. C'est deja une regle du format 1.
-
-### 3.4 Comment une note porte son mode
-
-La colonne `mode` de chaque ligne vaut `clair` ou `chiffre`. Elle est ecrite
-a l'insertion et n'est jamais recalculee.
-
-Cela n'est pas une precaution theorique : une installation peut avoir tourne
-en clair pendant deux semaines avant qu'on active le chiffrement, ou avoir
-migre d'un auto-heberge vers un relais. **Une base mi-claire mi-chiffree doit
-rester entierement lisible**, et le seul moyen est que chaque ligne dise
-elle-meme ce qu'elle est. Un drapeau global dans la configuration decrirait
-l'installation d'aujourd'hui, pas la ligne d'hier.
-
-Regles de lecture :
-
-- `mode = clair` : les colonnes de §2.2 sont lues telles quelles, `charge` est
-  ignoree ;
-- `mode = chiffre` : `charge` est dechiffree, les colonnes de §2.2 sont
-  ignorees (elles sont vides ; si elles ne le sont pas, elles ne sont pas lues
-  pour autant) ;
-- `mode` absent ou vide : la ligne vient du format 1, elle vaut `clair` ;
-- `mode` inconnu : la ligne est **sautee**, avec un compte affiche. Ni devinee,
-  ni rendue vide sans le dire.
-
-Le mode est decide **a l'installation** et vaut pour les notes ecrites
-ensuite. Le chiffrement est **actif par defaut**. Il ne se desactive qu'en
-auto-heberge, ou il ne protege de rien : les notes sont dans la meme base, sur
-la meme machine, derriere la meme restriction d'acces que le site relu. En
-mode relais, la desactivation est **impossible** — le serveur refuse une
-ecriture `mode=clair` en 400 et le dit.
-
-### 3.5 L'enveloppe de resolution
-
-Marquer une note corrigee ecrit `resolue_par` et `resolue_version`, qui sont
-des donnees de charge : elles sont donc chiffrees elles aussi, dans une
-**seconde enveloppe**, `charge_resolution`, de role `resolution`.
+The encrypted content is a **compact JSON object, in UTF-8**, with the field
+names of §2.2:
 
 ```json
-{"par":"Dominique","version":"1.4.13"}
+{"page":"/en/contact.html","selector":"main:nth-of-type(1) > h2:nth-of-type(3)",
+ "fingerprint":"h2.section-title","excerpt":"Contact us","author":"Camille",
+ "text":"The link still points at the old form.",
+ "version":"1.4.12","environment":"staging","viewport":"1280x800"}
 ```
 
-Elle a son propre nonce. Elle est ecrite par une autre personne, a un autre
-moment, souvent depuis une autre machine : la fondre dans l'enveloppe de la
-note obligerait a rechiffrer une remarque qu'on n'a pas le droit de reecrire.
+An empty field is **absent** from the object, it is not written as `""`. A
+reader treats absence as the empty string — the same rule as in the text
+export, and for the same reason: do not write a key in order to say there is
+nothing.
 
-Rouvrir une note (`resolue=0`) met `resolue_le` a NULL et
-`charge_resolution` a la chaine vide. Le fil de reponses n'est pas touche.
-C'est le comportement du format 1, mot pour mot.
+**The whole note fits in ONE envelope**, not one envelope per field. One
+nonce, one tag, and the lengths of the individual fields cannot be read
+separately. The usual price of that choice — changing one field forces
+re-encrypting everything — is not paid here: the text of a note is never
+modified. That is already a rule of format 1.
 
-### 3.6 Bornes
+### 3.4 How a note carries its mode
 
-En mode clair, les bornes par champ du format 1 sont conservees :
-texte 4000, auteur 80, page 300, selecteur 500, empreinte 255, extrait 300,
-version 60, environnement 20, fenetre 20 — en **caracteres**, pas en octets.
+The `mode` column of each row is `plain` or `encrypted`. It is written at
+insert time and never recomputed.
 
-En mode chiffre, le serveur ne voit qu'une chaine. La seule borne qu'il puisse
-appliquer est **la longueur de l'enveloppe : 24000 caracteres** pour `charge`,
-2000 pour `charge_resolution`. Le depassement rend 400 en nommant la limite,
-jamais une troncature silencieuse.
+This is not a theoretical precaution: an installation may have run in the
+clear for two weeks before encryption was switched on, or may have migrated
+from self-hosted to a relay. **A half-plain, half-encrypted database must stay
+entirely readable**, and the only way is for each row to say what it is
+itself. A global flag in the configuration would describe today's
+installation, not yesterday's row.
 
-Consequence a ecrire, parce qu'elle est desagreable : **en mode chiffre, les
-bornes par champ deviennent une convention du client.** Un client modifie peut
-ranger 3000 caracteres dans le champ `auteur`, et le serveur l'acceptera : il
-ne voit pas de champ `auteur`. C'est le prix du chiffrement de bout en bout,
-et il est paye volontiers — l'outil s'adresse a une equipe de recette, pas a
-un public hostile.
+Reading rules:
+
+- `mode = plain`: the columns of §2.2 are read as they stand, `payload` is
+  ignored;
+- `mode = encrypted`: `payload` is decrypted, the columns of §2.2 are ignored
+  (they are empty; if they are not, they are still not read);
+- `mode` absent or empty: the row comes from format 1, it counts as `plain`;
+- `mode` unknown: the row is **skipped**, with a count displayed. Neither
+  guessed, nor silently rendered empty.
+
+The mode is decided **at install time** and applies to the notes written
+afterwards. Encryption is **on by default**. It can only be switched off when
+self-hosted, where it protects nothing: the notes are in the same database, on
+the same machine, behind the same access restriction as the site under review.
+In relay mode, switching it off is **impossible** — the server refuses a
+`mode=plain` write with a 400 and says so.
+
+### 3.5 The resolution envelope
+
+Marking a note resolved writes `resolved_by` and `resolved_version`, which are
+payload data: so they are encrypted too, in a **second envelope**,
+`resolution_payload`, with role `resolution`.
+
+```json
+{"by":"Dominique","version":"1.4.13"}
+```
+
+It has its own nonce. It is written by another person, at another moment,
+often from another machine: folding it into the note's envelope would force
+re-encrypting a remark that nobody is allowed to rewrite.
+
+Reopening a note (`resolved=0`) sets `resolved_at` to NULL and
+`resolution_payload` to the empty string. The reply thread is not touched.
+That is format 1's behaviour, word for word.
+
+### 3.6 Limits
+
+In plain mode, format 1's per-field limits are kept:
+text 4000, author 80, page 300, selector 500, fingerprint 255, excerpt 300,
+version 60, environment 20, viewport 20 — in **characters**, not in bytes.
+
+In encrypted mode, the server sees only a string. The only limit it can apply
+is **the length of the envelope: 24000 characters** for `payload`, 2000 for
+`resolution_payload`. Going over returns 400 naming the limit, never a silent
+truncation.
+
+A consequence to write down, because it is unpleasant: **in encrypted mode,
+the per-field limits become a client-side convention.** A modified client can
+put 3000 characters in the `author` field, and the server will accept it: it
+does not see an `author` field. That is the price of end-to-end encryption,
+and it is paid gladly — the tool addresses a review team, not a hostile
+audience.
 
 ---
 
-## 4. L'index aveugle
+## 4. The blind index
 
 ```
-index_page = base64url_sans_remplissage(
-                 premiers_16_octets( HMAC-SHA-256(cle_index, UTF-8(chemin)) ) )
+page_index = base64url_without_padding(
+                 first_16_bytes( HMAC-SHA-256(index_key, UTF-8(path)) ) )
 ```
 
-`chemin` est **exactement** ce que produit `location.pathname` : un chemin
-absolu commencant par une seule barre, sans schema, sans hote, sans chaine de
-requete, sans fragment. Les regles de forme du format 1 s'appliquent avant le
-calcul (une seule barre initiale, aucun segment `..`).
+`path` is **exactly** what `location.pathname` produces: an absolute path
+beginning with a single slash, with no scheme, no host, no query string, no
+fragment. Format 1's shape rules apply before the computation (a single
+leading slash, no `..` segment).
 
-Deux points qui font la difference entre deux implantations qui ne se parlent
-pas :
+Two points that make the difference between two implementations that talk to
+each other and two that do not:
 
-- **aucune normalisation autre que celle-la.** Ni minuscules, ni suppression
-  d'une barre finale, ni decodage des sequences `%xx`. `/Contact` et
-  `/contact` sont deux pages ; `/a/` et `/a` sont deux pages. C'est ce que le
-  navigateur donne, c'est ce qu'on indexe ;
-- **le calcul est le meme dans les deux modes.** En mode clair, la colonne
-  `page` porte en plus le chemin lisible, mais le regroupement se fait
-  toujours par `index_page`. Un seul chemin de code, une seule facon de
-  grouper. Deux auraient diverge a la deuxieme correction.
+- **no normalisation other than that one.** No lowercasing, no stripping of a
+  trailing slash, no decoding of `%xx` sequences. `/Contact` and `/contact`
+  are two pages; `/a/` and `/a` are two pages. It is what the browser gives,
+  it is what we index;
+- **the computation is the same in both modes.** In plain mode the `page`
+  column additionally carries the readable path, but the grouping is always
+  done by `page_index`. One code path, one way to group. Two would have
+  diverged by the second fix.
 
-Corollaire du mode clair : perdre le sel n'y perd pas les notes — elles sont
-lisibles dans la base — mais perd le **regroupement par page**, qu'on ne peut
-plus recalculer. On peut alors encore tout lire, plus rien retrouver en
-contexte.
+Corollary of plain mode: losing the salt does not lose the notes there — they
+are readable in the database — but it loses the **grouping by page**, which
+cannot be recomputed. One can then still read everything, and find nothing
+back in context.
 
-### Ce que le serveur peut faire sans dechiffrer
+### What the server can do without decrypting
 
-- rendre les notes d'une page : `WHERE projet = ? AND index_page = ?` ;
-- imbriquer les reponses sous leur mere, par `reponse_a` ;
-- ordonner par `id`, dater, compter ;
-- marquer corrige et rouvrir, en posant `resolue_le` ;
-- refuser une reponse a une reponse (une seule profondeur), et faire heriter
-  une reponse de l'`index_page` de sa mere ;
-- servir l'export texte structurel (§5.3).
+- return the notes of a page: `WHERE project = ? AND page_index = ?`;
+- nest replies under their parent, through `reply_to`;
+- order by `id`, date, count;
+- mark resolved and reopen, by setting `resolved_at`;
+- refuse a reply to a reply (a single depth), and make a reply inherit its
+  parent's `page_index`;
+- serve the structural text export (§5.3).
 
-### Ce qu'il ne peut pas faire
+### What it cannot do
 
-- dire quelles pages existent, ni les enumerer autrement que par leurs index ;
-- chercher dans le texte, trier par auteur, compter les notes d'une personne ;
-- appliquer un **prefixe de chemin** : il ne voit pas les chemins. La portee
-  par prefixe est donc verifiee **par le client**, avant l'envoi. C'est un
-  confort de rangement, **pas une frontiere de securite** — qui a
-  l'identifiant de projet et le sel ecrit ou il veut.
+- say which pages exist, or enumerate them other than by their indexes;
+- search the text, sort by author, count one person's notes;
+- apply a **path prefix**: it does not see the paths. Prefix scope is
+  therefore checked **by the client**, before sending. It is a tidiness
+  convenience, **not a security boundary** — whoever has the project id and
+  the salt writes where they like.
 
 ---
 
-## 5. L'export texte
+## 5. The text export
 
-### 5.1 Le contrat, inchange
+### 5.1 The contract, unchanged
 
-La grammaire du format 1 est un contrat, elle est reprise a l'identique.
-
-```
-0 espace   ligne de structure d'une note      note 4 / page / element / extrait
-2 espaces  ligne de structure d'une reponse   reponse 7 / a la note 4
-4 espaces  texte d'une note
-6 espaces  texte d'une reponse
-```
-
-Une information par ligne, sous la forme « cle valeur ». Une ligne absente
-signifie une valeur vide. Une ligne vide separe deux notes. Les dates sont en
-ISO 8601 avec decalage explicite. Aucune ponctuation decorative.
-
-L'ecart de **quatre** espaces entre la structure et le texte reste delibere :
-a deux, une remarque commencant par le mot « reponse » serait indiscernable
-d'un debut de reponse.
-
-La regle de lecture est precisee ici, parce que le format 1 la laissait
-implicite et qu'une cle comme `a la note` la contredisait : **la cle n'est pas
-le premier mot, c'est le plus long prefixe de la ligne qui figure dans la
-liste fermee des cles**, la valeur est le reste. La liste se lit du plus long
-au plus court.
-
-Cles emises : `note`, `page`, `index-page`, `element`, `extrait`, `mode`,
-`reponse`, `a la note`, `auteur`, `date`, `version`, `environnement`,
-`fenetre`, `etat`, `corrigee`, `texte`.
-
-Le format se defend lui-meme, dans les deux sens : tout ce qu'un lecteur
-compte pour une fin de ligne — `\r\n`, `\r`, U+0085, U+2028, U+2029 — est
-ramene a un simple saut de ligne, a l'ecriture **et** a la relecture, et les
-caracteres de controle autres que `\n` et `\t` sont retires. Sans quoi une
-note fabrique, DANS l'export, une note entiere qui n'a jamais ete ecrite. En
-mode chiffre, ce nettoyage a lieu **apres** le dechiffrement, chez le
-producteur de l'export : c'est la seule place ou le texte existe.
-
-### 5.2 L'en-tete
-
-Le format 1 ecrivait quatre lignes. On en ajoute, jamais on n'en change :
+Format 1's grammar is a contract, it is taken over identically.
 
 ```
-outil annotepage
+0 spaces   structure line of a note      note 4 / page / element / excerpt
+2 spaces   structure line of a reply     reply 7 / to note 4
+4 spaces   text of a note
+6 spaces   text of a reply
+```
+
+One piece of information per line, in the form "key value". A missing line
+means an empty value. An empty line separates two notes. Dates are ISO 8601
+with an explicit offset. No decorative punctuation.
+
+The gap of **four** spaces between structure and text stays deliberate: at
+two, a remark beginning with the word "reply" would be indistinguishable from
+the start of a reply.
+
+The reading rule is stated here, because format 1 left it implicit and a key
+such as `to note` contradicted it: **the key is not the first word, it is the
+longest prefix of the line that appears in the closed list of keys**, and the
+value is the rest. The list is read from the longest to the shortest.
+
+Keys emitted: `note`, `page`, `page-index`, `element`, `excerpt`, `mode`,
+`reply`, `to note`, `author`, `date`, `version`, `environment`, `viewport`,
+`status`, `resolved`, `text`.
+
+Two properties of that list, both of which the rule depends on, and both of
+which have to be rechecked before adding a key:
+
+- `note` is not a prefix of `to note`, so both resolve. That property is why
+  the rule exists at all;
+- `page` **is** a prefix of `page-index`. That is the one place where the list
+  is not prefix-free. It resolves correctly, and only because the rule reads
+  from the longest: `page-index 9dL...` matches `page-index`, never `page`
+  with the value `-index 9dL...`. The reverse cannot happen, because the
+  separator after a key is a space and `page-index` requires a `-` in that
+  position. A reader that scans the list in declaration order and takes the
+  first match reads `page-index` lines as `page` lines and silently loses the
+  index. Longest first, or nothing.
+
+The format defends itself, in both directions: everything a reader counts as
+an end of line — `\r\n`, `\r`, U+0085, U+2028, U+2029 — is reduced to a plain
+line feed, on writing **and** on reading back, and control characters other
+than `\n` and `\t` are removed. Without that, one note manufactures, INSIDE
+the export, a whole note that was never written. In encrypted mode this
+cleanup happens **after** decryption, at the producer of the export: that is
+the only place where the text exists.
+
+### 5.2 The header
+
+Format 1 wrote four lines. We add to them, we never change them:
+
+```
+tool annotepage
 format 2
 version 2.0.0
-projet 7Qb1kZ3xNvA9dLpEqKf2Zt
-chiffrement oui
+project 7Qb1kZ3xNvA9dLpEqKf2Zt
+encryption yes
 export 2026-08-31T09:14:22+00:00
 notes 128
 ```
 
-`chiffrement` vaut `oui`, `non` ou `mixte`. `mixte` est le cas normal d'une
-installation qui a change d'avis : il se dit, il ne se cache pas.
+`encryption` is `yes`, `no` or `mixed`. `mixed` is the normal case of an
+installation that changed its mind: it is said, it is not hidden.
 
-### 5.3 Deux producteurs, une seule grammaire
+### 5.3 Two producers, one grammar
 
-C'est le point de ce chapitre.
+This is the point of this chapter.
 
-**En mode clair, le serveur produit l'export**, comme aujourd'hui, octet pour
-octet comme le format 1 (aux lignes d'en-tete pres).
+**In plain mode, the server produces the export**, as it does today, byte for
+byte like format 1 (apart from the header lines).
 
-**En mode chiffre, le serveur ne le peut pas** : il n'a ni les chemins, ni les
-noms, ni les textes. Il produit alors un **export structurel** — la meme
-grammaire, avec les seules lignes qu'il connait :
+**In encrypted mode, the server cannot**: it has neither the paths, nor the
+names, nor the texts. It then produces a **structural export** — the same
+grammar, with the only lines it knows:
 
 ```
 note 4
-index-page 9dLpEqKf2Zt8ArC1vX
-mode chiffre
+page-index 9dLpEqKf2Zt8ArC1vX
+mode encrypted
 date 2026-08-30T14:02:11+00:00
-etat ouverte
+status open
 ```
 
-Les cles qu'il ne peut pas remplir sont **absentes**, ce qui, par le contrat,
-veut exactement dire « valeur vide ». Aucune ligne `texte` n'est emise : une
-ligne `texte` suivie de rien annoncerait une remarque vide, ce qui serait faux.
-Un lecteur qui recupere cet export sait donc, sans ambiguite et sans code
-special, qu'il lui manque le sel.
+The keys it cannot fill are **absent**, which, by the contract, means exactly
+"empty value". No `text` line is emitted: a `text` line followed by nothing
+would announce an empty remark, which would be false. A reader that receives
+this export therefore knows, unambiguously and with no special-case code, that
+it is missing the salt.
 
-**L'export complet en mode chiffre est produit par `@annotepage/mcp`**, qui a
-le sel : il lit `?action=texte`, dechiffre chaque enveloppe et emet la
-grammaire ci-dessus, **remplie**, avec les memes marges et les memes cles. Un
-outil qui lit l'export ne sait pas — et n'a pas a savoir — lequel des deux
-producteurs l'a ecrit.
+**The complete export in encrypted mode is produced by `annotepage-mcp`**,
+which has the salt: it reads `?action=text`, decrypts each envelope and emits
+the grammar above, **filled in**, with the same indents and the same keys. A
+tool that reads the export does not know — and does not have to know — which
+of the two producers wrote it.
 
-`mode chiffre` n'est emis que pour une note chiffree. Une note claire n'a pas
-de ligne `mode`, et une note du format 1 non plus : la meme absence, la meme
-signification. Les exports du format 1 restent donc valides tels quels.
+`mode encrypted` is emitted only for an encrypted note. A plain note has no
+`mode` line, and neither does a format-1 note: the same absence, the same
+meaning. Format-1 exports are therefore still valid as they stand, as a
+*grammar* — their French keys are another matter, and §2.2 settles it.
 
-### 5.4 Ce que l'export expose
+### 5.4 What the export exposes
 
-Rempli, il contient des noms et des remarques internes. Il n'a rien a faire
-sur un site ouvert — c'etait vrai au format 1, ca l'est toujours. Ce qui
-change : en mode chiffre, l'adresse `?action=texte` ne rend plus que la
-structure, et le document reellement lisible n'existe que sur la machine qui
-detient le sel.
+Filled in, it contains names and internal remarks. It has no business on an
+open site — that was true in format 1, it still is. What changes: in encrypted
+mode, the address `?action=text` returns nothing but the structure, and the
+genuinely readable document exists only on the machine that holds the salt.
 
 ---
 
-## 6. Les cinq adresses
+## 6. The six addresses
 
-Relatives au prefixe de montage. Les cinq du format 1, avec l'identifiant de
-projet ajoute.
+Relative to the mount prefix. Format 1's five, with the project id added,
+plus `backfill`.
 
 ```
-GET  <base>/api.php?action=liste&projet=<id>&index=<index_page>
-POST <base>/api.php?action=ajout
-POST <base>/api.php?action=resoudre
-GET  <base>/api.php?action=texte&projet=<id>
+GET  <base>/api.php?action=list&project=<id>&index=<page_index>
+POST <base>/api.php?action=add
+POST <base>/api.php?action=resolve
+GET  <base>/api.php?action=text&project=<id>
 GET  <base>/api.php?action=diagnostic
+POST <base>/api.php?action=backfill
 ```
 
-Les deux ecritures restent en POST, jamais en GET : une action qui change
-l'etat ne doit pas partir d'un lien qu'on suit ou qu'un aspirateur explore.
-Une action inconnue rend 400 et la liste ci-dessus, jamais un corps vide.
+`backfill` is the one no client calls. It fills `page_index` for rows written
+before the blind index existed, and it is meant to be run by hand, once, after
+an upgrade -- see INSTALL.md. It is a POST for the same reason the other two
+are: it writes.
 
-### 6.1 Champs
+The two writes stay POST, never GET: an action that changes state must not be
+triggered by a link somebody follows or a crawler explores. An unknown action
+returns 400 and the list above, never an empty body.
 
-**`liste`** — `projet`, `index`. Le chemin reel n'est **jamais** envoye, dans
-aucun mode : envoyer le chemin en mode clair et l'index en mode chiffre ferait
-deux chemins de code, et le second serait le moins teste.
+### 6.1 Fields
 
-Reponse : `{"ok":true,"outil":"annotepage","format":2,"version":"...",
-"projet":"...","index":"...","notes":[...]}`. Chaque note porte ses colonnes
-claires (§2.1), ses colonnes de charge (§2.2) et ses reponses imbriquees.
+**`list`** — `project`, `index`. The real path is **never** sent, in any mode:
+sending the path in plain mode and the index in encrypted mode would make two
+code paths, and the second would be the less tested one.
 
-**`ajout`** — `application/x-www-form-urlencoded`. On ne passe pas au JSON :
-un corps urlencode est une « requete simple » au sens CORS et n'entraine pas
-de requete preliminaire, ce qui evite au relais toute une machinerie de
-`OPTIONS`.
+Response: `{"ok":true,"tool":"annotepage","format":2,"version":"...",
+"project":"...","index":"...","notes":[...]}`. Each note carries its plain
+columns (§2.1), its payload columns (§2.2) and its nested replies.
 
-| Champ | Toujours | Mode clair | Mode chiffre |
+**`add`** — `application/x-www-form-urlencoded`. We do not move to JSON: an
+urlencoded body is a "simple request" in the CORS sense and does not trigger a
+preflight, which spares the relay a whole `OPTIONS` machinery.
+
+| Field | Always | Plain mode | Encrypted mode |
 |---|---|---|---|
-| `projet` | oui | | |
-| `index` | note nouvelle | | |
-| `mode` | oui | `clair` | `chiffre` |
-| `reponse_a` | reponse | | |
-| `charge` | | — | l'enveloppe |
-| `auteur`, `texte` | | obligatoires | — |
-| `page`, `selecteur`, `empreinte`, `extrait` | | note nouvelle | — |
-| `version`, `environnement`, `fenetre` | | facultatifs | — |
+| `project` | yes | | |
+| `index` | new note | | |
+| `mode` | yes | `plain` | `encrypted` |
+| `reply_to` | reply | | |
+| `payload` | | — | the envelope |
+| `author`, `text` | | required | — |
+| `page`, `selector`, `fingerprint`, `excerpt` | | new note | — |
+| `version`, `environment`, `viewport` | | optional | — |
 
-Une reponse **herite** de `index_page` et, en mode clair, de la page, du
-selecteur, de l'empreinte et de l'extrait de sa mere. Les redemander au client
-ouvrirait la porte a une reponse rattachee ailleurs que la note qu'elle
-commente. Une reponse a une reponse est refusee en 400.
+A reply **inherits** `page_index` and, in plain mode, the page, the selector,
+the fingerprint and the excerpt of its parent. Asking the client for them
+again would open the door to a reply attached somewhere other than the note it
+comments on. A reply to a reply is refused with a 400.
 
-**`resoudre`** — `projet`, `id`, `resolue` (0 rouvre, defaut 1), plus
-`charge_resolution` en mode chiffre, ou `par` et `version` en mode clair. Le
-nom n'est obligatoire que pour marquer une correction : c'est lui qui signe.
-Pour rouvrir, on ne demande pas le nom du correcteur pour annuler la
-correction.
+**`resolve`** — `project`, `id`, `resolved` (0 reopens, default 1), plus
+`resolution_payload` in encrypted mode, or `by` and `version` in plain mode.
+The name is only required in order to mark something fixed: it is what signs
+it. To reopen, we do not ask for the fixer's name in order to cancel the fix.
 
-**`texte`** — `projet`. Rend l'export complet en mode clair, structurel en
-mode chiffre (§5.3).
+**`text`** — `project`. Returns the complete export in plain mode, the
+structural one in encrypted mode (§5.3).
 
-**`diagnostic`** — aucun parametre, et surtout aucun `projet`. Il rend l'etat
-du serveur, jamais des notes. Il n'affiche **jamais** un identifiant de projet
-en entier : six caracteres suffisent a confirmer qu'on regarde le bon, et
-l'identifiant est ce qui donne acces aux lignes.
+**`diagnostic`** — no parameter, and above all no `project`. It returns the
+state of the server, never notes. It **never** displays a project id in full:
+six characters are enough to confirm one is looking at the right one, and the
+id is what gives access to the rows.
 
-### 6.2 Le verrou de domaine
+### 6.2 The domain lock
 
-Chaque projet declare, dans la configuration du serveur, la liste des origines
-autorisees a le consommer :
+Every project declares, in the server configuration, the list of origins
+allowed to consume it:
 
 ```
-projet 7Qb1kZ3xNvA9dLpEqKf2Zt
-  origines  https://preprod.exemple.fr, https://www.exemple.fr
-  mode      chiffre
+project 7Qb1kZ3xNvA9dLpEqKf2Zt
+  origins  https://staging.example.com, https://www.example.com
+  mode     encrypted
 ```
 
-Un projet peut en declarer plusieurs, et c'est voulu : une preproduction et
-la production qu'elle devient sont le meme projet, avec les memes notes. C'est
-le pendant operationnel de la regle « le domaine n'entre pas dans la cle ».
+A project may declare several, and that is intended: a staging site and the
+production it becomes are the same project, with the same notes. It is the
+operational counterpart of the rule "the domain is not in the key".
 
-Regle appliquee :
+Rule applied:
 
-- entete `Origin` present et absent de la liste : **403**, en `text/plain` ;
-- `Origin` present et reconnu : la reponse porte
-  `Access-Control-Allow-Origin: <l'origine verifiee>`, jamais `*` ;
-- `Origin` absent : en auto-heberge, autorise (une requete de meme origine
-  n'en envoie pas). En relais, **toute ecriture est refusee** — un navigateur
-  envoie toujours `Origin` sur une requete d'origine differente.
+- `Origin` header present and absent from the list: **403**, in `text/plain`;
+- `Origin` present and recognised: the response carries
+  `Access-Control-Allow-Origin: <the verified origin>`, never `*`;
+- `Origin` absent: when self-hosted, allowed (a same-origin request does not
+  send one). On a relay, **every write is refused** — a browser always sends
+  `Origin` on a cross-origin request.
 
-**Ce que ce verrou est, et ce qu'il n'est pas.** C'est une mesure
-**anti-abus** : elle empeche un autre site de consommer un identifiant de
-projet trouve dans le code source d'une page, d'y ecrire du bruit et d'y user
-le quota du relais.
+**What this lock is, and what it is not.** It is an **anti-abuse** measure: it
+stops another site from consuming a project id found in the source of a page,
+writing noise into it and burning the relay's quota.
 
-**Ce n'est pas une protection contre les XSS**, et il ne faut jamais le
-presenter ainsi. Une XSS s'execute **dans** la page visee, donc avec l'origine
-legitime : elle passe le verrou sans effort, et elle a de toute facon acces au
-`localStorage`, donc au sel. Une XSS sur une page annotee compromet les notes
-du projet, point.
+**It is not a protection against XSS**, and it must never be presented as one.
+An XSS runs **inside** the target page, so with the legitimate origin: it goes
+through the lock without effort, and it has access to `localStorage` anyway,
+hence to the salt. An XSS on an annotated page compromises the notes of the
+project, full stop.
 
-### 6.3 Ce que l'identifiant de projet donne
+### 6.3 What the project id gives
 
-L'identifiant de projet est un **jeton porteur** : qui l'a peut lire les
-lignes du projet et en ecrire. Il n'y a pas d'authentification, et c'est
-assume — c'etait deja le cas au format 1.
+The project id is a **bearer token**: whoever has it can read the rows of the
+project and write to it. There is no authentication, and that is accepted — it
+was already the case in format 1.
 
-- en mode **chiffre**, ces lignes sont inexploitables sans le sel. Le jeton
-  seul donne ce que le §2.4 enumere, rien de plus ;
-- en mode **clair**, ces lignes sont lisibles. C'est exactement pourquoi le
-  mode clair est reserve a l'auto-heberge, ou l'API est derriere la meme
-  restriction d'acces que le site relu.
+- in **encrypted** mode, those rows are unusable without the salt. The token
+  alone gives what §2.4 enumerates, nothing more;
+- in **plain** mode, those rows are readable. That is exactly why plain mode
+  is reserved for self-hosting, where the API sits behind the same access
+  restriction as the site under review.
 
-Les deux phrases precedentes sont le meme argument, et il ferme la boucle :
-le mode clair est impossible en relais parce que le relais n'a pas de
-restriction d'acces a offrir.
+The two sentences above are the same argument, and it closes the loop: plain
+mode is impossible on a relay because a relay has no access restriction to
+offer.
 
-### 6.4 Le silence
+### 6.4 Silence
 
-La regle du format 1 est conservee mot pour mot. `?action=liste` sur un outil
-depose mais **pas configure**, ou sur un projet inconnu, repond **200** avec
-`{"ok":false,"actif":false}` et non 404 : un code d'erreur HTTP est journalise
-par le navigateur lui-meme, dans la console de chaque page, sans qu'aucun code
-puisse l'en empecher. Les autres actions, qu'un humain appelle a la main,
-gardent leur 404 explique.
+Format 1's rule is kept word for word. `?action=list` on a tool that is
+deployed but **not configured**, or on an unknown project, answers **200**
+with `{"ok":false,"active":false}` and not 404: an HTTP error code is logged by
+the browser itself, in the console of every page, and no code can prevent it.
+The other actions, which a human calls by hand, keep their explained 404.
 
 ---
 
-## 7. Le numero de format et sa regle d'evolution
+## 7. The format number and its rule of evolution
 
-Le numero de format est un **entier**, sans point. Il vaut **2**.
+The format number is an **integer**, with no dot. It is **2**.
 
-Il apparait a trois endroits, et les trois doivent s'accorder : la colonne
-`format` de chaque ligne, le prefixe `ap<n>` de chaque enveloppe, la ligne
-`format` de l'en-tete d'export.
+It appears in three places, and the three must agree: the `format` column of
+every row, the `ap<n>` prefix of every envelope, the `format` line of the
+export header.
 
-Il est **par ligne**, pas par installation. Une base peut porter des lignes de
-format 1, 2 et 3 : chacune se lit selon le sien. C'est la meme decision que le
-`mode` par note, pour la meme raison.
+It is **per row**, not per installation. A database may carry rows of format
+1, 2 and 3: each is read according to its own. That is the same decision as
+the per-note `mode`, for the same reason.
 
-### Ce qui NE change PAS le numero
+### What does NOT change the number
 
-- ajouter une cle a l'export texte ;
-- ajouter un champ facultatif dans l'objet JSON de l'enveloppe ;
-- ajouter une colonne claire dont l'absence est sans consequence ;
-- ajouter une action a l'API, ou un champ facultatif a une action.
+- adding a key to the text export;
+- adding an optional field to the JSON object of the envelope;
+- adding a plain column whose absence has no consequence;
+- adding an action to the API, or an optional field to an action.
 
-Ces changements sont sans risque **parce que la regle de lecture est
-imperative** : un lecteur **ignore en silence** toute cle d'export inconnue,
-tout champ JSON inconnu, toute colonne inconnue. Un lecteur qui echoue sur ce
-qu'il ne connait pas rend la premiere addition impossible.
+These changes are safe **because the reading rule is mandatory**: a reader
+**silently ignores** any unknown export key, any unknown JSON field, any
+unknown column. A reader that fails on what it does not know makes the first
+addition impossible.
 
-### Ce qui change le numero
+### What changes the number
 
-- toute modification des derivations : l'algorithme, les longueurs, les
-  etiquettes `id` / `chiffre` / `index`, la chaine `annotepage/1` ;
-- tout changement d'algorithme ou de forme d'enveloppe, y compris de la
-  composition de l'AAD ;
-- tout changement de la construction de `index_page` ;
-- toute modification du sens d'une cle d'export existante, de la liste des
-  marges, ou de la regle des quatre espaces ;
-- rendre obligatoire un champ qui ne l'etait pas.
+- any change to the derivations: the algorithm, the lengths, the labels
+  `id` / `encrypted` / `index`, the string `annotepage/1`;
+- any change of algorithm or of envelope shape, the composition of the AAD
+  included;
+- any change to the construction of `page_index`;
+- any change to the meaning of an existing export key, to the list of indents,
+  or to the four-space rule;
+- making a field required that was not.
 
-### Comment un lecteur se comporte devant un format qu'il ne connait pas
+### How a reader behaves in front of a format it does not know
 
-Deux comportements, et la difference compte :
+Two behaviours, and the difference matters:
 
-- **enveloppe de numero superieur** : refus net. On ne devine pas une
-  cryptographie. La note est sautee et comptee, l'outil dit « cette note a ete
-  ecrite par une version plus recente d'annotepage » ;
-- **export texte de numero superieur** : lecture quand meme, en ignorant les
-  cles inconnues. La grammaire des marges est stable par construction, et un
-  export a moitie lu vaut mieux qu'un refus.
+- **envelope with a higher number**: flat refusal. One does not guess at
+  cryptography. The note is skipped and counted, the tool says "this note was
+  written by a newer version of annotepage";
+- **text export with a higher number**: read it anyway, ignoring unknown keys.
+  The grammar of indents is stable by construction, and a half-read export is
+  worth more than a refusal.
 
-Les etiquettes de derivation sont **gelees** par le numero de format. Changer
-`"chiffre"` en `"chiffrement"` rend illisible chaque note deja ecrite. Si cela
-devait arriver un jour, ce serait le format 3, avec une lecture des deux.
+The derivation labels are **frozen** by the format number. Changing
+`"encrypted"` to `"encryption"` makes every note already written unreadable.
+If that ever had to happen, it would be format 3, with a reader for both.
 
 ---
 
-## 8. Ce que cette specification ne tranche pas
+## 8. What this specification does not settle
 
-Rien de ce qui suit n'empeche d'implanter le format 2. Ce sont des questions
-ouvertes, listees pour qu'elles ne se referment pas par accident.
+Nothing that follows prevents implementing format 2. These are open questions,
+listed so that they do not close by accident.
 
-1. **Le remplissage des enveloppes.** La longueur de l'enveloppe donne la
-   longueur de la remarque, a quelques octets pres. Un remplissage au multiple
-   de 256 octets le masquerait, au prix d'un champ de longueur dans le clair et
-   d'un cout en stockage. Non specifie : les enveloppes ne sont pas remplies.
-   Si on le fait un jour, c'est un champ JSON de bourrage, donc sans changement
-   de numero de format.
+1. **Padding the envelopes.** The length of the envelope gives the length of
+   the remark, to within a few bytes. Padding to a multiple of 256 bytes would
+   mask it, at the price of a length field in the clear and a cost in storage.
+   Not specified: envelopes are not padded. If it is ever done, it is a JSON
+   padding field, so no format number change.
 
-2. **La rotation du sel.** Il n'existe aucun mecanisme. Un sel qui fuit oblige
-   a repartir d'un projet neuf, en abandonnant les notes. Un rechiffrement de
-   masse suppose que quelqu'un detienne l'ancien et le nouveau sel et
-   reecrive toutes les lignes — ce qui contredit le modele en ajout seul.
-   A trancher avant de promettre quoi que ce soit sur ce point.
+2. **Salt rotation.** There is no mechanism. A leaked salt forces starting
+   from a fresh project, abandoning the notes. Bulk re-encryption assumes
+   somebody holds both the old and the new salt and rewrites every row — which
+   contradicts the append-only model. To be settled before promising anything
+   on this point.
 
-3. **Comment le sel atteint le deuxieme relecteur.** Hors bande, par un canal
-   que l'outil ne fournit pas. Le fragment d'URL (`#sel=...`) n'est pas envoye
-   au serveur et serait commode, mais il se depose dans l'historique du
-   navigateur et dans tout ce qui journalise des URL. Non tranche.
+3. **How the salt reaches the second reviewer.** Out of band, through a
+   channel the tool does not provide. The URL fragment (`#salt=...`) is not
+   sent to the server and would be convenient, but it lands in the browser
+   history and in everything that logs URLs. Not settled.
 
-4. **Ce qu'un serveur MCP a le droit de faire seul.** Il detient le sel, donc
-   tout. Peut-il marquer une note corrigee sans qu'un humain confirme ? Ecrire
-   une note de son propre chef ? Le format le permet ; la politique n'est pas
-   ecrite.
+4. **What an MCP server is allowed to do on its own.** It holds the salt, so
+   everything. May it mark a note resolved without a human confirming? Write a
+   note of its own accord? The format allows it; the policy is not written.
 
-5. **La pagination de `?action=texte`.** Le format 1 rend tout, en flux. Un
-   projet de dix mille notes rend un document que personne ne lit et qu'aucun
-   modele n'avale. Ni bornes, ni filtre par etat, ni filtre par date.
+5. **Pagination of `?action=text`.** Format 1 returns everything, as a stream.
+   A project with ten thousand notes returns a document nobody reads and no
+   model swallows. No limits, no filter by status, no filter by date.
 
-6. **Le quota et la retention en mode relais.** Combien de projets, combien de
-   notes par projet, que devient un projet qu'on n'a pas touche depuis un an.
-   Le verrou de domaine limite l'abus depuis un autre site, pas depuis un
-   client fabrique.
+6. **Quota and retention in relay mode.** How many projects, how many notes
+   per project, what becomes of a project untouched for a year. The domain
+   lock limits abuse from another site, not from a hand-made client.
 
-7. **La numerotation des notes.** Globale au serveur aujourd'hui (§2.4). Une
-   numerotation par projet supprimerait la fuite et rendrait les numeros plus
-   lisibles dans l'export, au prix d'un compteur a tenir sans course entre
-   deux ecritures simultanees.
+7. **Numbering the notes.** Global to the server today (§2.4). Per-project
+   numbering would remove the leak and make the numbers more readable in the
+   export, at the price of a counter to maintain without a race between two
+   simultaneous writes.
 
-8. **Le comportement quand deux projets declarent la meme origine.** Rien ne
-   l'interdit, rien ne le decrit. Une page portant deux balises, deux
-   identifiants et deux sels n'est ni prevue ni refusee.
+8. **What happens when two projects declare the same origin.** Nothing forbids
+   it, nothing describes it. A page carrying two tags, two ids and two salts
+   is neither planned for nor refused.

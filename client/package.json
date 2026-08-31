@@ -1,13 +1,18 @@
 {
-  "name": "@annotepage/client",
+  "name": "annotepage-client",
   "version": "2.0.0",
-  "description": "La couche d'annotation d'annotepage : on clique sur un element d'une page, on y laisse une remarque, elle est chiffree dans le navigateur.",
+  "description": "The annotepage annotation layer: click an element of a page, leave a remark on it, it is encrypted in the browser.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuxo83/annotepage.git",
+    "directory": "client"
+  },
   "keywords": [
     "annotation",
-    "relecture",
-    "recette",
-    "chiffrement",
+    "review",
+    "feedback",
+    "encryption",
     "webcrypto",
     "shadow-dom"
   ],
@@ -17,19 +22,18 @@
   "exports": {
     ".": "./dist/annotepage.js",
     "./dist/annotepage.js": "./dist/annotepage.js",
+    "./labels/fr.json": "./labels/fr.json",
     "./package.json": "./package.json"
   },
   "files": [
     "dist/",
-    "source/",
-    "outils/",
-    "LISEZMOI.md",
+    "labels/",
     "README.md"
   ],
   "scripts": {
-    "build": "node outils/construire.mjs",
-    "test": "node outils/verifier.mjs",
-    "prepublishOnly": "node outils/construire.mjs && node outils/verifier.mjs"
+    "build": "node tools/build.mjs",
+    "test": "node tools/check.mjs",
+    "prepublishOnly": "node tools/build.mjs && node tools/check.mjs"
   },
   "publishConfig": {
     "access": "public"

@@ -1,0 +1,20 @@
+# internal/ — nothing here is meant to be called by the web.
+#
+# BELT. The braces depend on no module: every file in this directory starts
+# with a guard constant set only by api.php, and answers 404 if called
+# directly. That guard is what really protects; this file only doubles it.
+#
+# Why not to rely on it: whether the authorisation directives in a .htaccess
+# are taken into account depends on the server's AllowOverride, which is not
+# always known. If they are not allowed here, the server will answer a 500 on
+# this directory — which refuses access too, but for the wrong reason. A
+# protection is never made to rest on this file alone.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

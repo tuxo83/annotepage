@@ -1,42 +1,46 @@
 {
-  "name": "@annotepage/mcp",
+  "name": "annotepage-mcp",
   "version": "2.0.0",
-  "description": "L'acces des assistants aux notes d'annotepage : un serveur MCP et un utilitaire en ligne de commande qui recuperent et dechiffrent les remarques de relecture, y repondent, et marquent une note corrigee avec la version ou le correctif part.",
+  "description": "The assistants' access to annotepage notes: an MCP server and a command-line utility that fetch and decrypt review remarks, answer them, and mark a note resolved with the version the fix ships in.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuxo83/annotepage.git",
+    "directory": "mcp"
+  },
   "keywords": [
     "mcp",
     "model-context-protocol",
     "annotation",
-    "relecture",
-    "recette",
-    "chiffrement",
+    "review",
+    "feedback",
+    "encryption",
     "annotepage"
   ],
   "type": "module",
-  "main": "source/notes.mjs",
+  "main": "src/notes.mjs",
   "exports": {
-    ".": "./source/notes.mjs",
-    "./format": "./source/format.mjs",
-    "./chiffrement": "./source/chiffrement.mjs",
-    "./export-texte": "./source/export-texte.mjs",
+    ".": "./src/notes.mjs",
+    "./format": "./src/format.mjs",
+    "./crypto": "./src/crypto.mjs",
+    "./text-export": "./src/text-export.mjs",
     "./package.json": "./package.json"
   },
   "bin": {
     "annotepage": "annotepage.mjs",
-    "annotepage-mcp": "serveur-mcp.mjs"
+    "annotepage-mcp": "mcp-server.mjs"
   },
   "files": [
     "annotepage.mjs",
-    "serveur-mcp.mjs",
-    "source/",
-    "annotepage.exemple.json",
-    "outils/",
-    "LISEZMOI.md",
+    "mcp-server.mjs",
+    "src/",
+    "annotepage.example.json",
+    "tools/",
     "README.md"
   ],
   "scripts": {
-    "test": "node outils/verifier.mjs && node outils/verifier-bout-en-bout.mjs",
-    "prepublishOnly": "node outils/verifier.mjs && node outils/verifier-bout-en-bout.mjs"
+    "test": "node tools/check.mjs && node tools/check-end-to-end.mjs",
+    "prepublishOnly": "node tools/check.mjs && node tools/check-end-to-end.mjs"
   },
   "dependencies": {},
   "engines": {

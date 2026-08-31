@@ -1,0 +1,90 @@
+# ============================================================================
+# check.yml — what runs on every push.
+#
+# The point: that a publication tag is never the first chance to discover that
+# a package does not build or does not pack. "npm pack --dry-run" answers the
+# only question the registry will ask: which files go out, and does the
+# manifest hold up.
+# ============================================================================
+
+name: check
+
+on:
+  push:
+    branches: ['**']
+  # Pushes in a fork trigger nothing here; the pull request does. It is the
+  # only way to see an outside contribution go past.
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  packages:
+    runs-on: ubuntu-latest
+    strategy:
+      # A broken package must not hide the state of the other.
+      fail-fast: false
+      matrix:
+        package: [client, mcp]
+    steps:
+      - uses: actions/checkout@v5
+
+      # The same version as the publication: a check that runs somewhere other
+      # than the release does not check the release.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Pack, dry run
+        run: |
+          set -eu
+          directory="${{ matrix.package }}"
+          if [ ! -f "${directory}/package.json" ]; then
+            # A warning and not a failure: the packages do not arrive on the
+            # same day. But the warning stays visible, it does not keep quiet.
+            echo "::warning::${directory}/package.json is missing, nothing to check"
+            exit 0
+          fi
+          cd "${directory}"
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+          npm run build --if-present
+          npm test --if-present
+          npm pack --dry-run
+
+  end-to-end:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Run the end-to-end test if it exists
+        run: |
+          set -eu
+          # The test now exists. The list is kept because a second one may
+          # land elsewhere later, but the first entry is the real path: a
+          # search that matches nothing used to pass this job green with a
+          # warning nobody reads, which is worse than having no job at all.
+          found=''
+          for candidate in \
+              mcp/tools/check-end-to-end.mjs \
+              tools/end-to-end.mjs \
+              tests/end-to-end.mjs ; do
+            if [ -f "${candidate}" ]; then found="${candidate}"; break; fi
+          done
+
+          if [ -n "${found}" ]; then
+            echo "end-to-end test: ${found}"
+            # php is present on the runner image: a test that raises the PHP
+            # server to talk to the client has nothing to install.
+            php -v || true
+            node "${found}"
+          elif [ -f package.json ] && node -p "!!(require('./package.json').scripts||{})['end-to-end']" | grep -q true; then
+            npm run end-to-end
+          else
+            echo "::error::no end-to-end test found -- it existed at mcp/tools/check-end-to-end.mjs; if it moved, update this list"
+            exit 1
+          fi

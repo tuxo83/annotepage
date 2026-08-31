@@ -1,0 +1,174 @@
+# ============================================================================
+# publish.yml — releasing the two npm packages, with no token at all.
+#
+# TAG CONVENTION (it is the only trigger, and it names the package)
+#
+#     client-v<version>   ->  annotepage-client   (directory client/)
+#     mcp-v<version>      ->  annotepage-mcp      (directory mcp/)
+#
+#     git tag client-v2.0.0 && git push origin client-v2.0.0
+#
+# Two packages live in this repository: a bare "v2.0.0" tag would not say
+# which one to release, and publishing both on every tag would republish an
+# already-online version for certain — that is, a failure every time only one
+# of the two moves.
+#
+# BEFORE THE FIRST USE, on the npmjs.com side, for EACH of the two packages:
+# Settings > Trusted Publisher > GitHub Actions, with the name of this file
+# written exactly — "publish.yml". Renaming it breaks publication, and the
+# refusal reads "unable to authenticate", which explains nothing.
+# ============================================================================
+
+name: publish
+
+on:
+  push:
+    tags:
+      - 'client-v*'
+      - 'mcp-v*'
+
+# The only "secret" in this chain is that OIDC token, generated on demand,
+# valid for a few minutes, tied to this repository and to this file. Nothing is
+# stored, so nothing leaks and nothing has to be rotated by hand.
+permissions:
+  id-token: write
+  contents: read
+
+# Two tags pushed one after the other must not cross in the registry; and we do
+# not cancel a publication in flight, it cannot be replayed.
+concurrency:
+  group: publish-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # GitHub-hosted runner: trusted publishing refuses self-hosted runners, it
+    # would not know who it is talking to.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          # A dependency cache in a build that goes online publishes what was
+          # lying in the cache, not what is in the tag. npm's recommendation,
+          # followed as it stands.
+          package-manager-cache: false
+
+      - name: Check the versions trusted publishing requires
+        run: |
+          set -eu
+          # We check instead of assuming, because the assumption is wrong one
+          # time in two: 24.x shipped npm 11.3.0 then 11.4.2 before reaching
+          # 11.5.1, and 22.x is still on npm 10. The day setup-node resolves
+          # "24" onto one of those, the OIDC exchange fails with an
+          # authentication message that sends you looking for a token that does
+          # not exist. Better to fall over here, naming the cause.
+          node_v="$(node -p 'process.versions.node')"
+          npm_v="$(npm -v)"
+          echo "node ${node_v} / npm ${npm_v}"
+          at_least() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n 1)" = "$2" ]; }
+          at_least "${node_v}" 22.14.0 || { echo "::error::node ${node_v}: trusted publishing requires 22.14.0 at least"; exit 1; }
+          at_least "${npm_v}" 11.5.1  || { echo "::error::npm ${npm_v}: trusted publishing requires 11.5.1 at least"; exit 1; }
+
+      - name: Read the tag, and decide whether there is anything to publish
+        id: target
+        run: |
+          set -eu
+          tag="${GITHUB_REF_NAME}"
+          case "${tag}" in
+            client-v*) directory=client; name=annotepage-client; version="${tag#client-v}" ;;
+            mcp-v*)    directory=mcp;    name=annotepage-mcp;    version="${tag#mcp-v}" ;;
+            *) echo "::error::tag \"${tag}\" is outside the convention: client-v<version> or mcp-v<version>"; exit 1 ;;
+          esac
+
+          manifest="${directory}/package.json"
+          [ -f "${manifest}" ] || { echo "::error::${manifest} is missing"; exit 1; }
+
+          # The tag announces a version; the manifest declares one. If the two
+          # differ, the tag was put on the wrong commit, and what would go
+          # online is not what you think you are rereading.
+          declared_name="$(node -p "require('./${manifest}').name")"
+          declared_version="$(node -p "require('./${manifest}').version")"
+          [ "${declared_name}" = "${name}" ] \
+            || { echo "::error::${manifest} is called \"${declared_name}\"; the tag announces \"${name}\". The packages are UNSCOPED."; exit 1; }
+          [ "${declared_version}" = "${version}" ] \
+            || { echo "::error::${manifest} declares ${declared_version}; the tag announces ${version}"; exit 1; }
+
+          # npm refuses a trusted publication whose repository.url does not
+          # name exactly this repository. The refusal itself arrives at publish
+          # time and does not name the cause: we name it here.
+          repository="$(node -p "const r=require('./${manifest}').repository; (typeof r==='string'?r:(r&&r.url)||'')")"
+          case "${repository}" in
+            *"${GITHUB_REPOSITORY}"*) : ;;
+            *) echo "::error::${manifest} must carry a repository field naming ${GITHUB_REPOSITORY} (found: \"${repository}\")"; exit 1 ;;
+          esac
+
+          # Republishing an already-online version fails the job. A routine
+          # failure ends up unread, and the day it says something true nobody
+          # looks at it: we skip, we write it down, and we come out green.
+          status=0
+          output="$(npm view "${name}@${version}" version 2>&1)" || status=$?
+          if [ "${status}" -eq 0 ] && [ -n "${output}" ]; then
+            publish=no
+            echo "::notice::${name}@${version} is already online: nothing to publish"
+          elif [ "${status}" -eq 0 ] || printf '%s' "${output}" | grep -q 'E404'; then
+            publish=yes
+          else
+            # Neither "published" nor "unknown": the registry did not answer.
+            # We do not guess, or we would attempt a double publication.
+            echo "::error::could not question the registry: ${output}"; exit 1
+          fi
+
+          {
+            echo "directory=${directory}"
+            echo "name=${name}"
+            echo "version=${version}"
+            echo "publish=${publish}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Install the dependencies
+        if: steps.target.outputs.publish == 'yes'
+        working-directory: ${{ steps.target.outputs.directory }}
+        run: |
+          set -eu
+          # npm ci requires a lock file, and the client has no dependencies so
+          # not necessarily a lock file. An unconditional "npm ci" would fail on
+          # the simpler of the two packages.
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+
+      # Build and test before going online: a published version cannot be
+      # withdrawn, it can only be replaced by the next one.
+      - name: Build
+        if: steps.target.outputs.publish == 'yes'
+        working-directory: ${{ steps.target.outputs.directory }}
+        run: npm run build --if-present
+
+      - name: Test
+        if: steps.target.outputs.publish == 'yes'
+        working-directory: ${{ steps.target.outputs.directory }}
+        run: npm test --if-present
+
+      - name: Publish
+        if: steps.target.outputs.publish == 'yes'
+        working-directory: ${{ steps.target.outputs.directory }}
+        # Without --provenance: public repository + trusted publishing, npm
+        # generates the attestation by itself. Adding the flag would change
+        # nothing and would suggest it is what produces it.
+        run: npm publish
+
+      - name: Summarise
+        if: always()
+        run: |
+          set -eu
+          {
+            echo "## ${{ steps.target.outputs.name }} ${{ steps.target.outputs.version }}"
+            if [ "${{ steps.target.outputs.publish }}" = "yes" ]; then
+              echo "Published from \`${{ steps.target.outputs.directory }}/\` by OIDC token, with no stored token."
+            else
+              echo "Already online: nothing published."
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
