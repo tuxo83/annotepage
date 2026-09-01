@@ -1,0 +1,11 @@
+# annotepage.com -- one page, everything crawlable.
+#
+# The tool's own API is deliberately NOT here. A relay serves review notes,
+# which carry internal names and internal remarks; it has no business being
+# indexed, and the answer to that is the server refusing to serve them
+# publicly, not a line in this file that a crawler is free to ignore.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://annotepage.com/sitemap.xml
