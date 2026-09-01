@@ -57,9 +57,14 @@ left to a licence badge to imply.
 
 ## Naming another tool, and the line not to cross
 
-The replay shows an assistant working. It is presented as **an example of a
-session with Claude Code**, and that framing is deliberate: it is factually what
-it is, and it claims nothing.
+The replay shows an assistant working. It is captioned **"Example -- a Claude
+Code session"**, and the name is written plainly, not hinted at. That framing is
+deliberate and it is enough: it says what the picture is, exactly as a screen
+recording would, and it claims nothing beyond that.
+
+**Name the client. Do not be coy about it.** A vague "an assistant" would inform
+the reader less while protecting nobody, and a figure whose subject is unnamed
+invites the reader to guess. The honest version is the specific one.
 
 What is allowed, because it is simply true: saying the tool is an MCP server and
 a command line, that it works with Claude Code, and showing a session that
@@ -75,6 +80,11 @@ What is not:
   reviewed it, or that they know it exists;
 - the figure carries a caption saying what it is -- an example session -- so a
   reader who lands on it mid-scroll cannot take it for something official.
+
+None of that forbids showing the thing. A screen recording of a session would
+raise the same questions and be published without hesitation; a replay built
+from a session that really happened is the same object, more accurate and
+lighter. What matters is the caption, not the restraint.
 
 The same holds for any other tool named later: name it factually as something
 this works with, and stop there. A free project with one maintainer has nothing
