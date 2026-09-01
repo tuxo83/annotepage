@@ -55,6 +55,35 @@ an empty alt text, a link that 404s.
 Say the words. "Free" and "open source" belong in the opening, in few words, not
 left to a licence badge to imply.
 
+## The replay: slow enough to read, simple enough to trust
+
+Two decisions by the owner, both against the instinct of whoever builds it.
+
+**GIVE IT TIME.** The end of a cycle currently passes so fast that nobody
+realises it is restarting, and there is no time to read the right-hand picture
+at all. Hold the finished state for SEVERAL SECONDS before the reset -- long
+enough to read the resolved thread on the right, which is the payoff of the
+whole figure and is currently wasted. Then reset visibly, hold that too, and
+only then start again. A figure that has to be watched twice to be understood
+has failed once already.
+
+**SIMPLIFY, EVEN PAST REALISM.** Cut content, or lighten it considerably, even
+if the result is a little caricatural next to what an assistant really prints.
+The goal is not a faithful recording; it is that a stranger understands in
+fifteen seconds that this is simple. Density that impresses a developer costs
+more than it buys.
+
+**But lightening is CHOOSING, never REWRITING.** The rule that every line is
+verbatim from a capture does not bend -- it has caught three fabrications
+already. Lighten by showing fewer lines, by collapsing output the way the real
+interface collapses it, and by preferring the shortest real line over the
+longest. Never by editing what a line said. If no captured line is short enough,
+capture a session where the assistant was asked to be brief; do not trim one
+into shape.
+
+The distinction matters because it is the whole credibility of the page: the
+figure may show LESS than happened, never OTHER than what happened.
+
 ## Naming another tool, and the line not to cross
 
 The replay shows an assistant working. It is captioned **"Example -- a Claude
