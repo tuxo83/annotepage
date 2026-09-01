@@ -48,6 +48,12 @@ writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`  ${manifestPath}  ${previous} -> ${version}`);
 
 if (pkg === 'client') {
+    /* Read BEFORE rebuilding: afterwards the file describes the new bundle, and
+       comparing it would be comparing the new digest with itself. */
+    const digestBefore = existsSync('client/dist/HASHES.txt')
+        ? readFileSync('client/dist/HASHES.txt', 'utf8').match(/sha384-[A-Za-z0-9+/=]+/)?.[0]
+        : null;
+
     /* The bundle carries the version, so it must be rebuilt BEFORE anything
        computes a digest from it. */
     run('node', ['client/tools/build.mjs']);
@@ -72,8 +78,6 @@ if (pkg === 'client') {
 
     /* Every written digest, and every URL naming the version. Prose included:
        these are the lines people copy. */
-    const oldDigest = readFileSync('client/dist/HASHES.txt', 'utf8')
-        .match(/sha384-[A-Za-z0-9+/=]+/)?.[0];
     let touched = 0;
     for (const file of [...files, newer]) {
         if (!/\.(md|html|txt|json|mjs|js)$/.test(file)) continue;
@@ -89,8 +93,9 @@ if (pkg === 'client') {
         if (text !== before) { writeFileSync(file, text); touched++; console.log(`  ${file}`); }
     }
     console.log(`  ${touched} file(s) carried the digest or the version`);
-    if (oldDigest === digest) {
+    if (digestBefore === digest) {
         console.log('  note: the bundle is byte-identical to the previous version.');
+        console.log('  Nothing in the published file changed; only the version did.');
     }
 }
 
