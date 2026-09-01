@@ -56,14 +56,21 @@
  *     store; an update that silently restored ours would take their database
  *     with it.
  *
- * TWO WAYS IN, one code:
+ * THREE WAYS IN, one code:
  *   - from the command line, `php internal/update.php`, by hand or from cron.
  *     Typing that command is itself the consent, so it runs whatever
  *     `auto_update` says;
  *   - from a web request, opportunistically, and ONLY if `auto_update` is on
  *     AND the response can be handed to the visitor first. See
  *     ap_update_schedule() at the bottom for why that second condition is not
- *     negotiable.
+ *     negotiable;
+ *   - from annotepage-install.php, on a machine where NOTHING of this server
+ *     exists yet. That bootstrap downloads THIS FILE, checks it against the
+ *     published manifest, requires it alone -- errors.php and config.php are
+ *     not there yet, and nothing in ap_update_run()'s path may depend on them
+ *     -- and calls ap_update_run(). A fresh install is an update from nothing:
+ *     no VERSION on disk, so every listed hash differs, so the whole release
+ *     is fetched, verified file by file, and abandoned entire on one mismatch.
  */
 
 if (!defined('AP_INTERNAL')) {
@@ -291,7 +298,16 @@ function ap_update_fetch($url, $maxBytes, $timeout = AP_UPDATE_TIMEOUT)
         restore_error_handler();
         if ($stream === false) {
             $why = $warnings ? implode(' / ', $warnings) : 'no reason given';
-            return $fail('HTTPS request refused: ' . ap_truncate($why) . '.');
+            // Trimmed here rather than through errors.php's ap_truncate(), and
+            // that is not a duplication for its own sake: annotepage-install.php
+            // requires THIS FILE ALONE, before any other, and calls
+            // ap_update_run() to fetch the rest of the release. Every line of
+            // this run path therefore has to stand up with nothing else loaded.
+            $why = str_replace(array("\r", "\n"), ' ', $why);
+            if (strlen($why) > 200) {
+                $why = substr($why, 0, 200) . '...';
+            }
+            return $fail('HTTPS request refused: ' . $why . '.');
         }
         // $http_response_header is set by the wrapper in the local scope.
         $status = 0;

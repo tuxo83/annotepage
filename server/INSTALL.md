@@ -5,32 +5,46 @@ and returns them — in JSON to the client, in plain text to an assistant.
 
 ---
 
-## Installing it: upload, open one page, paste one line
+## Installing it: one file, one page, one line to paste
 
-1. **Copy `webroot/`** onto your server, anywhere under the web root, under
-   whatever name you like — over FTP, over SFTP, through the host's file
-   manager. Copy `webroot/` only: the rest of this directory has no business
-   online.
+1. **Drop `annotepage-install.php`** onto your server, anywhere under the web
+   root, under whatever name you like — over FTP, over SFTP, through the host's
+   file manager. One file, and it is the only thing you upload. It is
+   `server/annotepage-install.php` in the release, and on GitHub it is
+   [raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php](https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php).
 
-2. **Open `https://<site>/<where-you-put-it>/install.php`** in a browser. One
-   page, one form, one button. It asks two things — the storage and whether the
+2. **Open it** in a browser: `https://<site>/<where-you-put-it>/annotepage-install.php`.
+   It shows one button. Press it and it downloads the rest of the server from
+   the published release over HTTPS with certificate verification on, checking
+   every file against the release's own `MANIFEST` — one SHA-256 per file —
+   after it has landed on disk and before it is put in place. One bad hash
+   abandons the whole thing and leaves the directory exactly as it was.
+
+3. **Answer the form.** One page, two questions — the storage, and whether the
    server may update itself — and both already carry the answer that works. It
    needs no JavaScript.
 
-3. **Paste the line it prints** into the tag on the pages you want to annotate:
+4. **Paste the line it prints** into the tag on the pages you want to annotate:
 
    ```
    data-server="https://<site>/<where-you-put-it>/api.php"
    ```
 
-Then **delete `install.php`**. The last screen offers to delete it for you and
-says whether it managed.
+Then **delete `annotepage-install.php`**. The last screen offers to delete it
+for you and says whether it managed.
 
-There is no database to create, no `config-local.php` to write by hand, and
-nothing to install on your machine.
+There is no archive to extract — deliberately: shared hosting commonly has
+neither the zip nor the phar extension. There is no database to create, no
+`config-local.php` to write by hand, and nothing to install on your machine.
 
 ### What the installer does while you wait
 
+- **downloads the release and verifies it**, file by file, against the
+  published `MANIFEST`. It carries no list of its own: it reads that manifest
+  at install time and installs exactly what it names, so a file added to the
+  server later needs no new installer. The code doing the downloading is
+  `internal/update.php` — the same code that updates an installed server, which
+  is why there is only one of it to get right;
 - **reports what this PHP offers** — the version really served, `pdo_sqlite`,
   `pdo_mysql`, `mbstring`, `json`, whether the directory is writable, and
   whether the server can reach the outside over HTTPS. Each line says what it
@@ -64,8 +78,11 @@ a server nobody has told anything to yet.
 
 ### If the installer refuses to finish
 
-It refuses for exactly three reasons, and each one names itself on screen:
+It refuses for exactly four reasons, and each one names itself on screen:
 
+- **the host has no way out to HTTPS.** Then it cannot download anything, and
+  it says so on the first screen, before writing a byte. That is the fallback
+  route below, and it is the reason that route exists;
 - **it could not request its own address.** Then it cannot prove anything, and
   a check that could not run must never be read as a check that passed. A
   single-worker development server deadlocks here; a real host does not;
@@ -73,6 +90,28 @@ It refuses for exactly three reasons, and each one names itself on screen:
   Nothing was configured and the file it had just created is gone;
 - **it could not write `internal/config-local.php`.** Grant write permission on
   `internal/` to the user PHP runs as, install, then take it away again.
+
+A download that fails for any reason — a bad hash, a short read, a source that
+answers something else — removes everything it had created before drawing the
+page. Reloading and pressing the button again costs nothing.
+
+### The fallback: copy the directory, for a host with no way out
+
+Some cheap hosting has neither the curl extension nor `allow_url_fopen`, and
+such a host cannot make an outbound HTTPS request at all. The one-file
+installer says exactly that on its first screen and names this route, which
+needs no network:
+
+1. **Copy `webroot/`** onto the server, anywhere under the web root, under
+   whatever name you like. Copy `webroot/` only: the rest of this directory has
+   no business online;
+2. **open `https://<site>/<where-you-put-it>/install.php`** and carry on from
+   step 3 above.
+
+It is the same files, the same one-page form, the same proof that the data file
+cannot be downloaded — `install.php` and `annotepage-install.php` are both a
+short entry point onto `internal/install-flow.php`, which is the installation.
+Only the copying is done by you.
 
 ---
 
@@ -92,7 +131,8 @@ configuration declares `deployment`, and that value changes only the three
 lines of the table above. Which STORAGE holds that table is a separate choice
 (`storage`), and it is the next section but one.
 
-The server is **not** an npm package. It gets copied.
+The server is **not** an npm package. It gets dropped on a host, and it
+fetches itself.
 
 ---
 
@@ -104,8 +144,13 @@ The server is **not** an npm package. It gets copied.
   on nearly every host and needs nothing else, or `pdo_mysql` with a database
   and a user that can write to it.
 
-No dependency to install, no build step, no package, nothing to compile. Copy a
-directory, open one page, add a tag.
+No dependency to install, no build step, no package, nothing to compile. Drop
+one file, open it, add a tag.
+
+The one-file route needs one thing more, and only it: a way out to HTTPS —
+the curl extension, or `allow_url_fopen` with openssl. Without it the copied
+directory installs the same server, and the installer says so rather than
+failing halfway.
 
 ---
 
@@ -302,6 +347,13 @@ hand, with a command your host already has:
 ```
 cd webroot && sha256sum -c MANIFEST
 ```
+
+It is also what the one-file installer reads: `annotepage-install.php` carries
+no list of files and no version of its own, it downloads this manifest and
+installs exactly what it names. Adding a file to the server therefore needs no
+change to the installer — `tools/build-server-manifest.mjs` regenerates the
+manifest and `npm run check` fails on a stale one, and the install side follows
+on its own.
 
 ### The way that costs nothing: from a shell or from cron
 
@@ -773,6 +825,13 @@ saved and which is not is worse than no tool at all.
 
 ```
 INSTALL.md                    this file — never published
+annotepage-install.php        THE ROUTE IN: one file, dropped on a host and
+                              opened in a browser. It downloads webroot/ from
+                              the published release, verifies every file
+                              against MANIFEST's SHA-256 before writing it, and
+                              then runs the installation. It carries no list of
+                              files and no version number — both come from the
+                              manifest it just downloaded. NOT part of webroot/
 webroot/                      THE ONLY part served by the web server
   MANIFEST                    SHA-256 of every shipped file. The integrity check
                               of an update, and `sha256sum -c MANIFEST` verifies
@@ -783,14 +842,26 @@ webroot/                      THE ONLY part served by the web server
                               so that the diagnostic can read it online: a second
                               file at the root would end up diverging from it
   api.php                     single HTTP entry point
-  install.php                 the installer. NOT in the manifest, deliberately:
-                              a listed file is a file the updater restores, and
-                              an installer that comes back after being deleted
-                              is the opposite of what it asks you to do
+  install.php                 the FALLBACK route in, for a host with no way
+                              out to HTTPS: the directory is already here, open
+                              this page. Twenty lines onto install-flow.php.
+                              NOT in the manifest, deliberately: a listed file
+                              is a file the updater restores, and an installer
+                              that comes back after being deleted is the
+                              opposite of what it asks you to do
   index.php                   what a bare visit to the directory gets — a 404,
                               or `forward_root_to` when the operator set one.
                               Without it the answer would be a directory listing
   internal/config.php         defaults + merge of the local file
+  internal/install-flow.php   THE INSTALLATION ITSELF: the report, the one form,
+                              the proof over HTTP, the configuration written,
+                              the offer to delete the installer. Both routes in
+                              are a short entry point onto this file, so there
+                              is one installation and not two that drift. It IS
+                              in the manifest, and may be: under internal/ it
+                              answers 404 and refuses to run without the
+                              constant its caller sets, so restoring it puts
+                              back inert code, not an open door
   internal/origins.php        declared projects, domain lock, sharing
   internal/input.php          bounds and cleanup of everything from the web
   internal/rate-limit.php     rate limiting and size caps
@@ -800,7 +871,10 @@ webroot/                      THE ONLY part served by the web server
   internal/errors.php         a blank screen is never an answer
   internal/update.php         fetching a newer version and putting it in place;
                               off unless `auto_update` is set, and runnable on
-                              its own from a shell or from cron
+                              its own from a shell or from cron. It is also what
+                              annotepage-install.php requires and calls to
+                              install from nothing: a fresh install is an update
+                              from nothing, so there is one downloader
 ```
 
 Exactly ONE store is loaded per request, chosen by `storage`. Both declare the

@@ -43,6 +43,18 @@ const MANIFEST = `${ROOT}/MANIFEST`;
                      is the exact thing install.php's own last screen tells
                      them to prevent. It ships in the release directory; it is
                      not part of what the updater maintains.
+
+                     Only the ENTRY POINT is left out. The installation itself
+                     is internal/install-flow.php, and that one IS listed, like
+                     every other shipped file -- it has to be, because
+                     annotepage-install.php verifies every file it writes
+                     against this manifest, and an unverified file is the one
+                     thing that whole path exists to avoid. Listing it is safe
+                     for the reason listing install.php is not: everything
+                     under internal/ answers 404 when called directly and
+                     refuses to run without the constant its caller sets, so a
+                     restored install-flow.php is inert code and not an open
+                     door.
    .update/          the updater's own staging, backup and state directory. It
                      appears only on a server that has run an update.  */
 const SKIP_FILES = new Set(['MANIFEST', 'config-local.php', 'install.php']);
