@@ -194,6 +194,14 @@ main .wrap > .snip { max-width: 48rem; }
 main .split-col > *     { max-width: var(--measure); }
 main .split-col > h1    { max-width: 58rem; }
 main .split-col > .snip { max-width: 48rem; }
+/* A row of chips is not a line of prose, so the measure has no opinion about
+   it either -- same reason .split is exempt above. It was being capped at the
+   measure, which is 704px, while the column it sits in is 912: the five chips
+   need 890 and had 704, so the fifth dropped to a second line on its own with
+   208px of empty column beside the other four. Uncapped they are one row from
+   1345 up; below that the column really is too narrow and they wrap, which is
+   a wrap and not a defect. */
+main .split-col > .claims { max-width: none; }
 
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
@@ -549,6 +557,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        is why this only ever applies here. */
     .split-col > :first-child { margin-top: 0; }
     .split-col > :last-child  { margin-bottom: 0; }
+
+    /* AND THE SAME RULE AGAIN, LOUD ENOUGH TO BE HEARD. `#install h3` carries
+       an id, so it outranked the two lines above and kept its 2.6rem: "The
+       salt that made it" and "And on the assistant side" sat 42px below the
+       snippet each names, and the row stopped reading as a pair. Selectors
+       that beat an id, for the same declarations, rather than a weaker
+       margin on the heading -- stacked, that 2.6rem is what separates the
+       subsections, and it has to survive down there untouched. */
+    #install .split-col > :first-child { margin-top: 0; }
+    #install .split-col > :last-child  { margin-bottom: 0; }
     .install-split { margin-bottom: 2.6rem; }
     .install-split + .install-split { margin-top: 2.6rem; }
 }
@@ -928,11 +946,15 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         data-version="1.4.13"
         defer&gt;&lt;/script&gt;</code></pre>
         </div>
-        </div>
-        </div>
 
-        <div class="split install-split">
-        <div class="split-col">
+        <!-- THE TAG'S FOOTNOTE, UNDER THE TAG -- same reason the salt warning
+             below sits under the salt. It opened the NEXT row while the salt
+             block was beside it, so the row read "here is the salt" on the
+             right and "nothing in the tag is yours to fill in" on the left,
+             and it pushed "The salt that made it" 110px below the salt. Moved
+             one row up and one column across; the SOURCE ORDER of the whole
+             section is unchanged to the character, which is what a phone
+             reads, and 360, 390 and 768 render to the same pixels. -->
         <p class="small dim">
             Nothing in it is yours to fill in. <code>data-server</code> is the shared
             server; point it at <a href="how-it-works.html#server">your own</a>
@@ -940,6 +962,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             derived in your browser from the salt below.
         </p>
 
+        </div>
+        </div>
+
+        <div class="split install-split">
+        <div class="split-col">
         <h3>The salt that made it</h3>
         <p class="small dim">Generated here, in your browser, and sent nowhere.</p>
         </div>
