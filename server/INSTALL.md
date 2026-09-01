@@ -247,6 +247,86 @@ open. It exposes names and internal remarks: it has no business on an open site.
 
 ---
 
+## Running a public relay
+
+A relay that serves projects nobody declared, so that a tag copied from a web
+page works with nothing to ask and nobody to ask it of. This is what makes the
+shortest path short. It is off by default, and it is wrong on a server that
+hosts one team's notes.
+
+```php
+'deployment'        => 'relay',
+'open_registration' => true,
+'projects'          => array(),   // stays empty; nothing is declared
+```
+
+### What it opens
+
+Any well-formed project id is served. No registration, no account, no
+approval. And such a project has **no domain lock** -- it cannot have one:
+nobody declared its origins, and there is no way to learn them that an abuser
+could not use as well. The project id sits in the tag of every annotated page,
+where anyone who reads the source finds it.
+
+So: a stranger can write notes into your project.
+
+### Why that is survivable
+
+They can write bytes; they cannot write a note that **decrypts**. The salt
+never reached this server, so what a stranger inserts comes back to the reader
+as unreadable rows -- counted, shown as such, and obviously not theirs. That is
+a nuisance, not a disclosure.
+
+What it really costs is storage, and that is what the rate limit and the
+per-project cap are for. Set them before opening the door, not after:
+
+```php
+// The defaults, which are already sane. What changes on an open relay is
+// `max_notes_per_project`: it ships as 0, meaning no limit, which is right
+// for a server serving one team and wrong for one serving strangers.
+'rate_window_seconds'     => 300,
+'rate_writes_per_ip'      => 120,
+'rate_writes_per_project' => 300,
+'rate_exports_per_ip'     => 20,
+'max_notes_per_project'   => 500,   // 0 = no limit. Do not leave 0 here.
+```
+
+A cap on notes per project is the one that decides how much a single abuser
+can cost you, since they cannot be told apart from a legitimate project.
+`internal/config.php` is the reference for every key and its default.
+
+### What it refuses, and will keep refusing
+
+Plain mode. A public relay storing plaintext would hand its operator every
+path, every label and every remark of every site using it -- see FORMAT.md
+section 2.3. A plain write is refused with a 400 whatever the caller asks for,
+and that refusal predates this option.
+
+Self-hosted deployment ignores the flag entirely. There, an id nobody declared
+is a mistake worth reporting -- most often a tag copied from another site,
+which open registration would silently accept and store forever.
+
+### For a team that wants the lock back
+
+Declare its project in `projects` with its origins. Declared projects keep the
+domain lock on a relay that is otherwise open. Or host their own server. Both
+paths stay open; open registration buys zero setup and pays for it in that one
+coin.
+
+### Confirming it is on
+
+```
+GET <base>/api.php?action=diagnostic
+```
+
+```
+config.deployment          relay
+config.open_registration   yes -- any project id is served, no origin lock
+```
+
+A relay that is open without saying so is a trap for whoever operates it. The
+line is always printed.
+
 ## The domain lock
 
 Every project declares its origins. The rule applied:

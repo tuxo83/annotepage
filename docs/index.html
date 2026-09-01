@@ -171,6 +171,23 @@ h2 + .lead, h2 + p { margin-top: .9rem; }
 }
 .claims li span { color: var(--dim); font-weight: 400; }
 
+/* -- The way in ---------------------------------------------------------- */
+
+/* One action on the first screen, and only one. It borrows --accent and
+   --on-accent, which are already defined on bare :root and redefined in the
+   dark block: no colour of its own, hence none that exists in one scheme
+   only. */
+.cta {
+    display: inline-block;
+    margin: 1.7rem 0 0;
+    font-size: .95rem; font-weight: 650;
+    color: var(--on-accent); background: var(--accent);
+    border: 1px solid var(--accent); border-radius: 8px;
+    padding: .55rem 1.15rem;
+    text-decoration: none;
+}
+.cta:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+
 /* -- Code snippets ------------------------------------------------------- */
 
 .snip {
@@ -509,9 +526,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
         <ul class="claims">
             <li>Open source <span>&middot; MIT</span></li>
-            <li>Self-hostable <span>&middot; one PHP codebase</span></li>
+            <li>Self-hostable</li>
             <li>End-to-end encrypted <span>&middot; in the browser</span></li>
         </ul>
+
+        <p><a class="cta" href="#install">Put it on a site</a></p>
 
         <div class="mock" style="margin-top: 2.4rem;">
             <div class="mock-bar">
@@ -615,38 +634,30 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
         data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"
-        data-version="1.4.12"
-        data-environment="staging"
         defer&gt;&lt;/script&gt;</code></pre>
                 </div>
 
-                <div class="note-aside">
-                    <p><strong><code>integrity</code> is not decorative.</strong> Once the
-                    client comes from a CDN, the real risk of this architecture is the
-                    supply chain: a file swapped at the CDN's host runs in your page,
-                    with access to <code>localStorage</code> &mdash; hence to the salt.
-                    The digest makes that swap useless, and
-                    <code>crossorigin="anonymous"</code> goes with it: without it the
-                    browser does not check the digest of a cross-origin resource.</p>
+                <p class="small dim">
+                    Two attributes are optional and left out above.
+                    <code>data-version</code> tells the client which version the site is
+                    serving; <code>data-environment</code> labels what a note was written
+                    against. <code>data-version</code> is what makes a resolved note
+                    disappear from the reviewer's screen once the fix is deployed
+                    &mdash; without it, every fix is taken as not deployed and the note
+                    stays.
+                </p>
 
-                    <p>The digest above is the one for <strong>2.0.0</strong>. Every
-                    version has its own, printed by the build and listed in
-                    <code>dist/HASHES.txt</code> inside the package. Never copy a digest
-                    from a page documenting another version: the browser will refuse the
-                    file, and that is exactly its job.</p>
+                <p class="small dim">
+                    The <code>integrity</code> digest pins that exact file, so a copy
+                    swapped at the CDN does not run &mdash;
+                    <a href="#supply-chain">why that matters, and what else the tag
+                    implies</a>.
+                </p>
 
-                    <p><strong>Do not add <code>type="module"</code>.</strong> A module
-                    script has no <code>document.currentScript</code>: the client could
-                    no longer read its own attributes, and would stand down in silence.</p>
-
-                    <p><code>data-version</code> earns its place. When a note is marked
-                    resolved, the tool compares the version of the fix with the one the
-                    site declares it is serving, to tell &ldquo;resolved and
-                    online&rdquo; &mdash; which folds into the history &mdash; from
-                    &ldquo;resolved, not deployed yet&rdquo;, which stays in front of the
-                    reviewer, because the defect is still on screen. Missing or
-                    unreadable version: the fix is taken as not deployed.</p>
-                </div>
+                <p class="small dim">
+                    It is one script tag, so it goes on any site where a script tag can
+                    be added, whatever builds or serves the pages.
+                </p>
             </div>
         </div>
 
@@ -695,14 +706,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 </p>
             </div>
         </div>
-
-        <div class="note-aside">
-            <p><strong>What it requires, and nothing else:</strong> a recent browser in a
-            <em>secure context</em> &mdash; <code>https</code>, or
-            <code>localhost</code>. Without one the browser does not provide WebCrypto,
-            and the tool can neither encrypt nor even compute the page index; it says so
-            on screen rather than pretending. And a reachable annotepage server.</p>
-        </div>
     </div>
 </section>
 
@@ -712,7 +715,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         <h2>Three gestures</h2>
         <p class="lead">
             At rest the tool is one button, bottom right. It adds a single element at the
-            end of <code>&lt;body&gt;</code> and works inside a shadow root: no class, no
+            end of <code>&lt;body&gt;</code> and keeps everything inside it: no class, no
             attribute and no style lands on an element of your page.
         </p>
 
@@ -762,13 +765,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         </div>
 
         <div class="note-aside">
-            <p>What goes out is an <strong>AES-256-GCM envelope</strong>: the text, but
-            also the page, the selector, the excerpt, the name, the version, the
-            environment and the viewport. What comes back is pinned to the element again
-            by its selector and its fingerprint &mdash; and when the element has really
-            changed, the note is listed as an orphan rather than pinned to the wrong
-            thing.</p>
-
             <p>Once in place the tool no longer keeps quiet. Every failure is shown, with
             the message the server wrote, and <strong>the text typed stays in the
             form</strong>. A remark believed saved and not saved is worse than no tool at
@@ -797,8 +793,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
 
         <p class="small dim">
             The same package installs an <code>annotepage</code> command, for a script, a
-            CI job, or an assistant with no MCP client. It holds the project salt, so it
-            is the only place the plaintext comes back. Node 18 or later, no
+            CI job, or an assistant with no MCP client. Node 18 or later, no
             dependencies.
         </p>
 
@@ -949,8 +944,7 @@ text
 
             <p>Every write is <strong>signed</strong> with the name in the configuration.
             A thread where everybody signs and one voice does not is a thread you doubt
-            entirely. Set <code>"read_only": true</code> when plugging an assistant onto a
-            review you do not know yet: it cuts every write.</p>
+            entirely.</p>
         </div>
 
         <h3 style="margin-top:2.6rem;">Or use nothing at all</h3>
@@ -1015,6 +1009,18 @@ text
             </div>
         </div>
 
+        <div class="note-aside">
+            <p>What goes out is an <strong>AES-256-GCM envelope</strong>: the text, but
+            also the page, the selector, the excerpt, the name, the version, the
+            environment and the viewport. What comes back is pinned to the element again
+            by its selector and its fingerprint &mdash; and when the element has really
+            changed, the note is listed as an orphan rather than pinned to the wrong
+            thing.</p>
+
+            <p>The <code>annotepage</code> command holds the project salt, so it is the
+            only place the plaintext comes back.</p>
+        </div>
+
         <h3 style="margin-top:2.8rem;">What the server sees anyway</h3>
         <p class="small dim" style="margin-top:.6rem; max-width:44em;">
             Encrypting the fields is not invisibility. An operator must be able to read
@@ -1067,7 +1073,52 @@ text
             the reasons are written down in the roadmap.</li>
         </ul>
 
-        <p class="small dim" style="margin-top:1.6rem;">
+        <h3 style="margin-top:2.8rem;">Where the client comes from, and what it needs</h3>
+
+        <div class="note-aside" id="supply-chain">
+            <p><strong><code>integrity</code> is not decorative.</strong> Once the
+            client comes from a CDN, the real risk of this architecture is the
+            supply chain: a file swapped at the CDN's host runs in your page,
+            with access to <code>localStorage</code> &mdash; hence to the salt.
+            The digest makes that swap useless, and
+            <code>crossorigin="anonymous"</code> goes with it: without it the
+            browser does not check the digest of a cross-origin resource.</p>
+
+            <p>The digest on the tag is the one for <strong>2.0.0</strong>. Every
+            version has its own, printed by the build and listed in
+            <code>dist/HASHES.txt</code> inside the package. Never copy a digest
+            from a page documenting another version: the browser will refuse the
+            file, and that is exactly its job.</p>
+
+            <p><strong>Do not add <code>type="module"</code>.</strong> A module
+            script has no <code>document.currentScript</code>: the client could
+            no longer read its own attributes, and would stand down in silence.</p>
+
+            <p><code>data-version</code> earns its place. When a note is marked
+            resolved, the tool compares the version of the fix with the one the
+            site declares it is serving, to tell &ldquo;resolved and
+            online&rdquo; &mdash; which folds into the history &mdash; from
+            &ldquo;resolved, not deployed yet&rdquo;, which stays in front of the
+            reviewer, because the defect is still on screen. Missing or
+            unreadable version: the fix is taken as not deployed.</p>
+        </div>
+
+        <div class="note-aside">
+            <p><strong>What it requires, and nothing else:</strong> a recent browser in a
+            <em>secure context</em> &mdash; <code>https</code>, or
+            <code>localhost</code>. Without one the browser does not provide WebCrypto,
+            and the tool can neither encrypt nor even compute the page index; it says so
+            on screen rather than pretending. And a reachable annotepage server.</p>
+        </div>
+
+        <h3 style="margin-top:2.8rem;">The options</h3>
+
+        <p class="small dim" style="margin-top:.6rem;">
+            Set <code>"read_only": true</code> in the assistant's configuration when
+            plugging it onto a review you do not know yet: it cuts every write.
+        </p>
+
+        <p class="small dim">
             <code>data-mode="plain"</code> exists, and is only acceptable when self-hosted,
             where encryption protects nothing: the notes sit in the same database, on the
             same machine, behind the same access restriction as the site under review. A

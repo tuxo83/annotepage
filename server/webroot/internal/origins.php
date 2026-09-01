@@ -304,6 +304,19 @@ function ap_apply_origin_lock(array $config, $id, array $project, $write)
         return;
     }
 
+    // A project admitted by open registration declares no origin, and cannot:
+    // see `open_registration` in config.php. The header is still required on a
+    // write -- that check is above, and it is what keeps a write coming from
+    // something other than a page out. What is dropped here, deliberately, is
+    // the comparison against a list that does not exist.
+    if ($project['origins'] === null) {
+        ap_cors_headers(array(
+            'Access-Control-Allow-Origin: ' . $origin,
+            'Vary: Origin',
+        ));
+        return;
+    }
+
     if (!in_array($origin, $project['origins'], true)) {
         // The refused origin is copied into the message: it is the one to
         // compare, character by character, with the line in the configuration

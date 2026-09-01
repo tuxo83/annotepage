@@ -106,3 +106,69 @@ hand.
 **The `id` column is a server-global counter.** Between two notes of one
 project, the gap says how much every other project wrote. Thin, real, kept:
 fixing it needs per-project numbering. Documented in FORMAT.md 2.4.
+
+---
+
+## The public endpoint, and what it does not solve
+
+A dedicated subdomain will host a public relay, so that putting the tool on a
+site needs no server at all: paste one tag, done.
+
+**Measured on the site of 1 September, before that endpoint exists:** a reader
+must make or obtain **seventeen** things before a single note can be written.
+The public endpoint removes nine of them -- the hosting, the codebase, the
+database, the API URL, the deployment choice, the mode, the origins, the local
+config file, and the decision of where the server goes.
+
+**Eight remain, and all eight are the salt ceremony or optional attributes.**
+So the endpoint alone does not deliver "paste one tag and you are done". The
+shortest path still opens with: generate a 256-bit secret, store it where you
+keep passwords, there is no recovery.
+
+**Settled: the ceremony stays.** The salt remains an explicit prerequisite,
+generated and safeguarded before anything is written. Silent generation was
+considered and refused: it trades a risk nobody sees -- a reviewer clearing
+their browser having never saved the key -- against a shorter first minute,
+and losing every note of a review is not a risk worth trading for. Plain mode
+on the public relay was refused on sight: a relay reading everyone's staging
+paths, names and remarks is exactly what FORMAT.md 2.3 says must not happen.
+
+**So the site must never promise "one tag".** It would be false. What it can
+do, and does not do today, is make the shape visible before the reader starts:
+
+- say the count up front -- three steps, and roughly how long, so the reader
+  knows what they are entering rather than discovering it at 2.9 screens;
+- make step one feel like the thirty seconds it is. The setup screen already
+  generates the salt and hands over the four things to copy. The page spends
+  62 words describing what that screen will tell the reader anyway;
+- keep the lost-salt warning at full strength, but out from BETWEEN the two
+  script tags. It belongs with the salt step or at the head of the section on
+  where the notes live -- never standing between the reader and the tag that
+  runs the tool;
+- once the public endpoint exists, present it as what removes nine of the
+  seventeen, not as a different product.
+
+## Plugins for off-the-shelf platforms
+
+Wanted, WordPress first. What the neighbours do, checked rather than
+remembered:
+
+- **cusdis** shows a grid of framework logos (Vue, React, Svelte, Hexo,
+  Docsify) between the features and the pricing. It is a trust signal; it
+  carries no instructions and shortens nothing.
+- **giscus** puts a configurator on the page that generates the snippet -- but
+  the snippet stays empty until the form is filled, so the first copyable thing
+  is not copyable.
+- **marker.io** separates "CMS Plugins" (WordPress -- what you install ON your
+  site) from "Issue Trackers" (what you connect the tool TO). That distinction
+  maps exactly onto this project's two audiences, and is worth borrowing.
+
+**What we are not:** annotepage is a script tag, so it already works on every
+platform that lets you add one. A plugin does not add capability; it removes
+the awkwardness of pasting into `<body>` on platforms that hide the template --
+WordPress, Shopify, Webflow, Ghost. Say the generic path works everywhere,
+and offer shortcuts where pasting is genuinely painful. A grid of logos would
+imply the list is the limit, which would be a weaker claim than the truth.
+
+Never publish a platform with a "coming soon" label: it turns a strength into
+a visible gap.

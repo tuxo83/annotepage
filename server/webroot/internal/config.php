@@ -64,6 +64,39 @@ function ap_config_defaults()
         // tenant.
         'projects' => array(),
 
+        // OPEN REGISTRATION -- a relay that accepts projects it was never told
+        // about, so that a tag copied from a web page works with nothing to
+        // declare and nobody to ask. This is what a PUBLIC relay needs; it is
+        // wrong everywhere else, and it is off unless it is switched on.
+        //
+        // WHAT IT OPENS, said plainly, because it is not nothing:
+        //
+        //   - any well-formed project id is served. There is no registration,
+        //     no account, no approval. That is the point;
+        //   - such a project has NO ORIGIN LOCK. It cannot have one: nobody
+        //     declared its origins, and the server has no way to learn them
+        //     that an abuser could not also use. So whoever reads the source of
+        //     an annotated page finds the project id there -- it is in the tag,
+        //     it has to be -- and can write notes into that project.
+        //
+        // WHY THAT IS SURVIVABLE, AND WHERE IT IS NOT. The notes are encrypted
+        // with a salt this server never sees, so a stranger can insert bytes
+        // but cannot read a word, and cannot write a note that DECRYPTS. What
+        // they insert comes back to the reader as unreadable rows, counted and
+        // shown as such -- a nuisance, not a disclosure. The real cost is
+        // storage, which the rate limit and the per-project cap answer.
+        //
+        // A team that wants the origin lock declares its project in `projects`
+        // above -- declared projects keep it -- or hosts its own server. Both
+        // paths stay open; this one buys zero setup and pays for it in that
+        // one coin.
+        //
+        // A project admitted this way is ALWAYS 'encrypted'. Plain mode on a
+        // public relay would hand the operator every path, every name and every
+        // remark of every site using it, which FORMAT.md section 2.3 says must
+        // not happen. It is not an option here, it is a refusal.
+        'open_registration' => false,
+
         // THE STORE'S CONFIGURATION SPACE (internal/store.php), which it alone
         // interprets. This file does not know what a "host" is: it carries
         // keys and resolves values, that is all. Whoever replaces store.php
@@ -207,6 +240,7 @@ function ap_config()
     }
 
     $config['active'] = !empty($config['active']);
+    $config['open_registration'] = !empty($config['open_registration']);
     $config['local_config'] = $local;
     $config['local_config_present'] = is_file($local);
 
@@ -231,6 +265,19 @@ function ap_config()
 function ap_is_self_hosted(array $config)
 {
     return $config['deployment'] === 'self-hosted';
+}
+
+/**
+ * Does this server admit projects nobody declared?
+ *
+ * Only a relay can. Self-hosted, the array holds the one project of the one
+ * site, and an id nobody declared is a mistake worth reporting -- most often a
+ * tag copied from another site, which open registration would silently accept
+ * and store forever.
+ */
+function ap_open_registration(array $config)
+{
+    return !empty($config['open_registration']) && !ap_is_self_hosted($config);
 }
 
 /**

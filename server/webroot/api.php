@@ -366,6 +366,8 @@ function ap_write_diagnostic($config, $version, $configError)
     ap_diag_line('config.loading', 'SUCCEEDED');
     ap_diag_line('config.active', ap_yes_no($config['active']));
     ap_diag_line('config.deployment', $config['deployment']);
+    ap_diag_line('config.open_registration',
+        ap_open_registration($config) ? 'yes -- any project id is served, no origin lock' : 'no');
     ap_diag_line('config.max_text_length', $config['max_text_length']);
     ap_diag_line('config.max_author_length', $config['max_author_length']);
     ap_diag_line('config.max_payload_length', $config['max_payload_length']);
@@ -547,6 +549,24 @@ $input = (strtoupper(isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHO
 // admitted, which mode is accepted, which rows are visible.
 $id = ap_field_project($input, 'project');
 $projects = ap_declared_projects($config);
+
+if (!isset($projects[$id]) && ap_open_registration($config)) {
+    // A PUBLIC RELAY. The tag was copied from a web page, nobody declared
+    // anything, and that is the whole point -- see `open_registration` in
+    // internal/config.php for what it opens and what it costs.
+    //
+    // Encrypted, always. Never the mode the caller asks for: a public relay
+    // that stored plaintext would hand its operator every path, every name and
+    // every remark of every site using it.
+    //
+    // No origin list. Not an empty one -- null, which ap_apply_origin_lock
+    // reads as "any". An empty array would refuse everything, and the failure
+    // would read as a configuration mistake nobody made.
+    $projects[$id] = array(
+        'origins' => null,
+        'mode'    => 'encrypted',
+    );
+}
 
 if (!isset($projects[$id])) {
     // Unknown project: same rule as an unconfigured tool. `list` keeps quiet,
