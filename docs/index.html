@@ -179,6 +179,12 @@ main .wrap > * { max-width: var(--measure); }
    the pane this column was widened for in the first place. It is on
    example-session.html now, and so is the rule that let it span.) */
 main .wrap > .use-steps { max-width: none; }
+/* And the button under them, for the same reason and only from 48rem up: it
+   is laid out on the steps' own two columns down there (see .see-more), and a
+   measure meant for sentences would cap the grid at 704px and put the button
+   back where it was. Below that line it is a paragraph again, capped again,
+   and hard left where a phone has always had it. */
+main .wrap > .see-more { max-width: none; }
 /* A wrapper that only exists to lay two columns out is not a thing the measure
    has an opinion about: it spans, and what it HOLDS is capped instead, one
    level deeper -- see main .split-col > * below. */
@@ -300,6 +306,29 @@ h1 + .lead { margin-top: 1.15rem; }
    used to take from the steps, which is what keeps it reading as the section's
    own conclusion rather than as a stray link under the last one. */
 .see-more { margin: clamp(2.6rem, 5.5vw, 3.4rem) 0 0; }
+
+/* AND IT SITS UNDER THE PICTURES, NOT UNDER NOTHING. It was hard left, in line
+   with three short sentences, while every one of the three rows above it ends
+   918px away on the right: a button alone in the bottom-left corner of a wide
+   section reads as something that fell there.
+
+   Centring it was the other answer, and it is worse here: the middle of this
+   section is the seam BETWEEN the two columns, so a centred button would line
+   up with the one vertical line in the layout that nothing is on.
+
+   So it takes the steps' own grid -- the same two columns, declared once and
+   used by both -- and sits in the second one, hard left against the frames'
+   left edge. What it opens is a session you WATCH, which is the picture
+   column's subject; it reads as the fourth thing in that column, which is what
+   it is.
+
+   Only from 48rem, the line where the two columns exist at all. Below it there
+   is one column, the button is a paragraph's inline-block again, and a phone
+   renders exactly what it rendered before this rule. */
+@media (min-width: 48rem) {
+    .see-more { display: grid; gap: clamp(.9rem, 3.4vw, 2.6rem); }
+    .see-more .cta { grid-column: 2; justify-self: start; }
+}
 /* The one action on this page. Its colours are tokens defined on bare :root and
    redefined in the dark block: no colour of its own, hence none that exists in
    one scheme only. */
@@ -427,6 +456,19 @@ code:not(pre code) {
 .bar-line { height: .42rem; border-radius: 3px; background: var(--line-soft); }
 .bar-line + .bar-line { margin-top: .38rem; }
 .bar-line.w70 { width: 70%; } .bar-line.w45 { width: 45%; } .bar-line.w85 { width: 85%; }
+/* A line of the page BELOW the annotated row. `.bar-line + .bar-line` cannot
+   reach it -- the row of elements sits between them -- so its gap is stated. */
+.bar-line.below { margin-top: 1rem; }
+/* A heading of the page, in the same grey shorthand: taller, shorter across,
+   the firmer of the two lines, and with a paragraph's worth of air under it.
+   Still the HOST's content and not ours -- what a page puts in its headings is
+   the business of whoever installs the tool. */
+/* Its air is its OWN margin and not the next bar's. A heading that is hidden
+   below 78rem must take its spacing with it, and `.bar-line.head + .bar-line`
+   would have left the gap behind: the adjacent-sibling combinator does not
+   care that the element it matched is display:none. */
+.bar-line.head { height: .62rem; width: 34%; background: var(--line); margin-bottom: .8rem; }
+.bar-line + .bar-line.head { margin-top: 1.4rem; }
 
 .pill {
     position: absolute; right: .55rem; bottom: .55rem;
@@ -480,6 +522,38 @@ code:not(pre code) {
     background: var(--accent); color: var(--on-accent);
     font-size: .62rem; font-weight: 650; line-height: 1.75;
     border-radius: 5px; padding: 0 .4rem; white-space: nowrap;
+}
+
+/* AND THE OTHER THING THE TOOL PUTS ON A PAGE, which is what an element that
+   ALREADY carries notes looks like: a small count badge on its top-left
+   corner, and nothing else. It is `.ap-marker` in the client -- an accent
+   pill, the number of notes on that element, a 2px border in the page's own
+   background so it reads as sitting above the element rather than in it, at
+   the corner minus 8px. Reproduced here, not invented here.
+
+   IT IS A SEPARATE PIECE FROM `.target` ON PURPOSE, because the tool never
+   draws both on the same element: the rectangle and the floating excerpt
+   follow the ONE element under the pointer, the badges sit on every element
+   that has been annotated already. A frame showing two rectangles at once
+   would be showing an interface state that cannot happen. */
+.spot {
+    position: relative; display: inline-block;
+    /* 1.3rem, and the number is the badge's: it hangs .5rem off its own left
+       corner, and the pointed element beside it wears a rectangle drawn 5px
+       outside ITS right edge. Less than this and the badge sits on that
+       rectangle, which is two pieces of the tool touching for no reason. */
+    margin: 1.9rem 0 0 1.3rem;
+    /* Same reason as .target's: the badge hangs half off the left corner and
+       must always have somewhere to hang inside .6rem of frame padding. */
+    max-width: calc(100% - .9rem);
+}
+.badge {
+    position: absolute; left: -.5rem; top: -.5rem;
+    min-width: 1.1rem; padding: 0 .28rem;
+    border: 2px solid var(--bg); border-radius: 999px;
+    background: var(--accent); color: var(--on-accent);
+    font-size: .58rem; font-weight: 700; line-height: 1.05rem; text-align: center;
+    box-shadow: var(--shadow);
 }
 
 /* -- Footer -------------------------------------------------------------- */
@@ -660,7 +734,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    interface and every pixel of it is legibility. A short sentence beside a
    large picture is the shape this section is, so the layout says it. */
 @media (min-width: 48rem) {
-    .use-steps > li { grid-template-columns: minmax(0, .62fr) minmax(0, 1fr); }
+    .use-steps > li, .see-more { grid-template-columns: minmax(0, .62fr) minmax(0, 1fr); }
 }
 
 /* A STATED WIDTH, ONCE THERE IS ENOUGH ROOM TO STATE ONE. A fraction is the
@@ -676,7 +750,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    hero and the install split into two columns as well -- one place where
    this page decides it is wide. */
 @media (min-width: 78rem) {
-    .use-steps > li { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
+    .use-steps > li, .see-more { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
 }
 .use-steps .cap {
     margin: 0; display: flex; align-items: baseline; gap: .6rem;
@@ -742,6 +816,45 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     .use-steps .frame { min-height: 11rem; }
 }
 
+/* -- WHAT ONLY GOES IN WHEN THERE IS ROOM FOR IT -------------------------
+
+   The two drawn frames were composed when their column was 490px wide. It is
+   918px now, and the same pieces in it left the page-crop three quarters empty
+   and the panel showing one note under a bar that says three. So both gained
+   content -- a second annotated element and the page line under it, the note
+   the reviewer actually wrote, and the other two cards the count promises.
+
+   IT IS ADDED WHERE THE WIDTH IS, AND THAT LINE IS 78rem, not the 48rem where
+   the two columns begin. These frames were RIGHT at 490px and they are right
+   at 420 and at 571, which is what 768 and 1024 give them: a page crop with
+   two lines and one button is a full picture at that size, and a panel showing
+   one thread is a full panel. It is the 78rem step -- where the sentence stops
+   growing at 21rem and everything above it goes to the frame, and where the
+   floor rises to 11rem for the same reason -- that hands them 918px and leaves
+   them looking half-drawn. So the extra pieces arrive with the extra pixels,
+   at the same line, and nowhere else. Two buttons side by side need 426px of
+   frame and would wrap at 768 anyway.
+
+   That is also what keeps 360, 390, 768 and 1024 rendering the pictures they
+   rendered before: the parts of a sentence that are new are inside a span of
+   their own, so a narrow screen reads the sentence it read yesterday, to the
+   character. Verified by comparing the images, not by reading this comment.
+
+   max-width and not the mirror min-width, so that above the line there is no
+   rule at all and each piece keeps its own display -- inline for a span inside
+   a sentence, block for a card. .99 rather than a whole number so 1248 itself
+   is on the wide side of the line, with the columns it belongs to. */
+@media (max-width: 77.99rem) {
+    .use-steps .roomy { display: none; }
+    /* AND THE GAP A HIDDEN BAR LEAVES BEHIND. `.bar-line + .bar-line` matches
+       on the DOM and not on what is painted, so the first bar still standing
+       inherited a 6px top margin from a heading that is not there -- and
+       every line of the page crop moved down by it on a phone. Where a piece
+       is added above the pieces that were already there, the first survivor
+       is a first child again. */
+    .use-steps .roomy + .bar-line { margin-top: 0; }
+}
+
 /* -- step 02: a crop of the command line, dark in both themes ------------- */
 
 /* The line in it is the line the figure below types out, character for
@@ -762,6 +875,29 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     padding: .5rem 0; color: var(--t-text);
 }
 .mt-input .ps { color: var(--t-dim); margin-right: .6ch; }
+
+/* THE ONE MOVING THING IN THE SECTION, and it is one character wide. A command
+   line that is being typed into has a cursor on it; without one the frame is a
+   photograph of a terminal, and the step it illustrates is the step where
+   something is happening.
+
+   steps(1) and not a fade: a terminal cursor is on or off, and an easing curve
+   would be a web animation wearing a terminal's clothes. 1.06s is the interval
+   the cursor of a VT-style terminal keeps.
+
+   REDUCED MOTION IS ALREADY ANSWERED, by `* { animation: none !important }`
+   further up -- and the answer is the right one rather than merely an absence:
+   with no animation the span keeps its static state, which is a solid block
+   sitting after the last character. The line still reads as a prompt being
+   typed into; it simply stops blinking. Nothing else in this section moves,
+   deliberately -- the three steps' arrival is a one-shot on load, not motion. */
+.mt-input .cur {
+    display: inline-block; width: 1ch; height: 1.05em;
+    vertical-align: -.18em; margin-left: .35ch;
+    background: var(--t-text);
+    animation: term-cursor 1.06s steps(1) infinite;
+}
+@keyframes term-cursor { 50% { opacity: 0; } }
 
 /* -- step 03: the note, answered ----------------------------------------- */
 
@@ -802,6 +938,36 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     font-size: .64rem; font-weight: 650;
 }
 .nt.reply { margin-left: .7rem; border-left: 2px solid var(--line-soft); }
+
+/* -- AND WHERE THE PANEL IS, once the frame is wide enough to say ---------
+
+   The panel is not a full-width block on anybody's screen: the client fixes it
+   to the right-hand edge, 360px across, with the page still visible beside it.
+   Drawn 918px wide it was a blow-up of one piece with nothing around it; drawn
+   at its own width, on the page it is open on, it is what a reviewer sees.
+
+   21.5rem is 344px, the 360 of `.ap-panel` less the 12px it insets from each
+   edge -- and the frame's own .6rem of padding is standing in for that inset,
+   which is why the number is the inner one.
+
+   Only from 78rem, with the rest of what these frames gained: below it the
+   panel has the frame to itself, exactly as it did before, and the page behind
+   it is not drawn at all. */
+@media (min-width: 78rem) {
+    .use-steps .frame.nt-frame {
+        display: flex; align-items: flex-start; gap: 1.4rem;
+    }
+    /* THE PANEL SHRINKS BEFORE IT LEAVES THE FRAME. `flex: 0 0 21.5rem` held
+       its width against everything, and at a 200% text size it had to: the
+       sentence column is 21rem of a bigger rem then, so the frame comes out
+       604px and a 688px panel hung out of a box with overflow:hidden. The
+       basis is what it should be at the reading size and the panel gives it
+       up when there is not enough, with the page beside it giving up the
+       larger share -- 8rem of basis against 21.5. Measured at 200%: 378px of
+       panel and 140px of page, both inside the frame. */
+    .nt-frame .pg { flex: 1 1 8rem; min-width: 0; }
+    .nt-frame .nt-panel { flex: 0 1 21.5rem; min-width: 0; }
+}
 
 /* One after another, once, on arrival. 160 ms apart and 6px of travel: enough
    to read as a sequence, too small to be a movement. The keyframe starts at
@@ -938,13 +1104,32 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <p class="cap"><span class="n">01</span> You let people annotate the page</p>
                     <p class="say">They click what is wrong and type a sentence. Nothing for them to install.</p>
                 </div>
+                <!-- The page in it is the page of the session on
+                     example-session.html: the same two buttons, and the same
+                     first note about the first of them. One picture of one
+                     defect, on this page and on that one.
+
+                     TWO ANNOTATED ELEMENTS AND NOT TWO POINTED ONES. The
+                     rectangle and the floating excerpt belong to the element
+                     under the pointer, and there is only ever one of those;
+                     the second button carries what the tool leaves on an
+                     element that already has a note, which is a count badge
+                     on its corner. See .spot above. -->
                 <div class="frame" aria-hidden="true">
+                    <div class="bar-line head roomy"></div>
                     <div class="bar-line w85"></div>
                     <div class="bar-line w45"></div>
+                    <div class="bar-line w70 roomy"></div>
+                    <div class="bar-line w85 roomy"></div>
                     <div class="target">
                         <span class="marker">Download the calibration table</span>
                         <span class="fake-cta">Download the calibration table</span>
+                    </div><div class="spot roomy">
+                        <span class="badge">1</span>
+                        <span class="fake-cta">Open the correction worksheet</span>
                     </div>
+                    <div class="bar-line w70 below roomy"></div>
+                    <div class="bar-line w45 roomy"></div>
                     <span class="pill"><span class="dot"></span>Annotate this page<span class="count">3 notes</span></span>
                 </div>
             </li>
@@ -959,7 +1144,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                      crop of. -->
                 <div class="frame term" aria-hidden="true">
                     <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
-                    <div class="mt-input"><span class="ps">&#x276F;</span> connect to the staging site and fix what the reviewers flagged</div>
+                    <div class="mt-input"><span class="ps">&#x276F;</span> connect to the staging site and fix what the reviewers flagged<span class="cur"></span></div>
                 </div>
             </li>
             <li>
@@ -967,18 +1152,72 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <p class="cap"><span class="n">03</span> It is done</p>
                     <p class="say">There is only the deploy left &mdash; and if your deploy is automatic, nothing at all.</p>
                 </div>
-                <div class="frame" aria-hidden="true">
+                <!-- THE COUNT AND THE LIST NOW AGREE. The bar said "3
+                     resolved" over a single note, which is the one thing a
+                     panel cannot show. The three are the three of the session
+                     on example-session.html, in its words: two buttons and the
+                     footnote under them, all resolved in 1.4.13.
+
+                     Every line here is a line the client draws -- the stamp is
+                     `note.resolved`, "Resolved on {date} by {by}"; the author
+                     and the date are the note header; "About:" is
+                     `note.about`. Nothing is added that the panel does not
+                     put on a card. -->
+                <div class="frame nt-frame" aria-hidden="true">
+                    <!-- The page the panel is open on. Bars, because the host
+                         page's own words are the host's business and drawing
+                         invented ones would be the only made-up thing in the
+                         picture; the panel beside them is drawn as the panel
+                         is. -->
+                    <div class="pg roomy">
+                        <div class="bar-line head"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w45"></div>
+                        <div class="bar-line head"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w45"></div>
+                        <div class="bar-line head"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w45"></div>
+                        <div class="bar-line head"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line head"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w85"></div>
+                    </div>
                     <div class="nt-panel">
                         <div class="nt-bar">Review notes<span class="nt-count">3 resolved</span></div>
                         <div class="nt-body">
                             <div class="nt done">
-                                <span class="nt-stamp">Resolved by Assistant</span>
-                                <p class="nt-who"><b>Camille</b></p>
+                                <span class="nt-stamp">Resolved<span class="roomy"> on Sep 1, 2026, 12:01 PM</span> by Assistant</span>
+                                <p class="nt-who"><b>Camille</b><span class="roomy"> &middot; Sep 1, 2026, 11:59 AM</span></p>
                                 <p class="nt-about">About: Download the calibration table</p>
+                                <p class="roomy">On my phone this button label breaks onto two lines. It should hold on one line down to 320px.</p>
                             </div>
                             <div class="nt reply">
-                                <p class="nt-who"><b>Assistant</b></p>
-                                <p>Measured before the change: the label needs 232px on one line and the button offers it 222px.</p>
+                                <p class="nt-who"><b>Assistant</b><span class="roomy"> &middot; Sep 1, 2026, 12:01 PM</span></p>
+                                <p>Measured before the change: the label needs 232px on one line and the button offers it 222px<span class="roomy"> at a 360px viewport, so it wraps at 369px and below</span>.</p>
+                            </div>
+                            <div class="nt done roomy">
+                                <span class="nt-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
+                                <p class="nt-who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
+                                <p class="nt-about">About: Open the correction worksheet</p>
+                            </div>
+                            <div class="nt done roomy">
+                                <span class="nt-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
+                                <p class="nt-who"><b>Camille</b> &middot; Sep 1, 2026, 12:00 PM</p>
+                                <p class="nt-about">About: Values recorded at the bench, plain text, comma separated.</p>
                             </div>
                         </div>
                     </div>
