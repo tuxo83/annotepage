@@ -172,3 +172,40 @@ imply the list is the limit, which would be a weaker claim than the truth.
 
 Never publish a platform with a "coming soon" label: it turns a strength into
 a visible gap.
+
+---
+
+## A browser extension, instead of a tag
+
+Considered, and worth doing -- but it is a second product, not a shortcut.
+
+**What it would buy.** The reviewer annotates a site WITHOUT anything being
+installed on it. No tag to paste, no access to the template, no deployment.
+That is the case the tag cannot serve at all: reviewing a site you do not
+control -- a supplier's, a client's, a competitor's. It is also how the paid
+tools in this space work, which says the demand is real.
+
+**What it changes, and it is not small.**
+
+- The tag makes annotation a property OF THE SITE: it is there for whoever
+  visits, the owner decided it, and the project is the site's. An extension
+  makes it a property of the READER: the notes follow the person, and the site
+  owner never knows. Those are two different products with one protocol.
+- Every reviewer then needs the extension AND the salt, where the tag needed
+  neither. The shortest path gets longer for a team, and shorter for a loner.
+- Page identity stops being obvious. The tag knows the site because it is in
+  it; an extension has to decide what counts as "the same page" across
+  environments -- staging and production, `localhost:3000` and `localhost:5173`.
+  That is the same question the localhost work raises, and it should be
+  answered once, for both.
+- Store review, on two stores, forever. For a personal project that is the real
+  recurring cost -- more than the code.
+
+**Where it does NOT change anything:** the server, the format, the encryption,
+and the MCP. The assistant reads the same notes from the same relay. That is
+the sign the protocol was cut in the right place.
+
+**If it is built**, build it second and say plainly on the site which of the
+two a reader wants: "you control the site" -> the tag; "you do not" -> the
+extension. Offering both with equal weight on the first screen would put a
+choice in front of someone who has not yet understood what the tool does.
