@@ -117,7 +117,6 @@ p  { margin: 0 0 1em; }
 p:last-child { margin-bottom: 0; }
 
 .wrap { width: 100%; max-width: 61rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
-.narrow { max-width: 46rem; }
 
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
@@ -155,10 +154,6 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; border-top: 1px solid var(--line-
 section:first-of-type { border-top: 0; }
 .hero { padding-top: clamp(1.6rem, 4vw, 2.6rem); }
 
-.eyebrow {
-    font-family: var(--mono); font-size: .75rem; letter-spacing: .09em;
-    text-transform: uppercase; color: var(--dim); margin: 0 0 .9rem;
-}
 .lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; }
 h2 + .lead, h2 + p { margin-top: .9rem; }
 /* The lead sits under a headline, not welded to it. */
@@ -250,8 +245,6 @@ h1 + .lead { margin-top: 1.15rem; }
     display: block;
     min-width: 0;
 }
-.snip.out pre code { color: var(--dim); }
-.snip.out pre code b { color: var(--text); font-weight: 600; }
 
 code:not(pre code) {
     font-family: var(--mono); font-size: .87em;
@@ -286,93 +279,20 @@ code:not(pre code) {
 .callout strong { color: var(--warn); }
 .callout p { font-size: .93rem; }
 
-.note-aside {
-    margin: 1.2rem 0;
-    border-left: 2px solid var(--line);
-    padding: .1rem 0 .1rem 1rem;
-    color: var(--dim);
-    font-size: .9rem;
-}
-.note-aside p + p { margin-top: .7rem; }
 
-/* -- The mock: what the reviewer actually sees --------------------------- */
+/* -- What each of the three steps is drawn out of ------------------------ */
 
-.mock {
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--bg-soft);
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    max-width: 34rem;
-}
-.mock-bar {
-    display: flex; align-items: center; gap: .6rem;
-    padding: .6rem .9rem;
-    border-bottom: 1px solid var(--line-soft);
-    background: var(--bg);
-}
-.mock-bar b { font-size: .85rem; font-weight: 650; }
-.mock-bar .x { margin-left: auto; color: var(--dim); font-size: .78rem; }
-.mock-body { padding: .9rem; display: grid; gap: .75rem; }
-
-.card {
-    background: var(--bg);
-    border: 1px solid var(--line-soft);
-    border-radius: 9px;
-    padding: .75rem .85rem;
-}
-.card.reply { margin-left: 1.1rem; border-left: 2px solid var(--line); }
-.card-meta {
-    font-size: .74rem; color: var(--dim);
-    display: flex; flex-wrap: wrap; gap: .1rem .55rem; margin-bottom: .35rem;
-}
-.card-meta b { color: var(--text); font-weight: 650; }
-.card-about {
-    font-size: .78rem; color: var(--dim); font-style: italic;
-    margin-bottom: .45rem; overflow-wrap: anywhere;
-}
-.card p { font-size: .88rem; margin: 0; }
-/* The tool puts this ABOVE the remark, not under it: a reader scanning the
-   history has to know a card is settled before reading what it says. */
-.stamp {
-    display: inline-block; margin: 0 0 .5rem;
-    background: var(--ok-soft); color: var(--ok);
-    border-radius: 1rem; padding: .1rem .6rem;
-    font-size: .73rem; font-weight: 650; line-height: 1.6;
-}
-.card-actions {
-    margin-top: .55rem; padding-top: .5rem; border-top: 1px dashed var(--line);
-    font-size: .74rem; color: var(--dim);
-}
-
-/* -- The three gestures -------------------------------------------------- */
-
-.gestures {
-    display: grid; gap: 1.1rem; margin-top: 2rem;
-    /* min(15rem, 100%) and not 15rem: a bare minmax() minimum is a FLOOR the
-       track cannot go under, so at a 200% text size 15rem became 480px and
-       pushed the page sideways on a 360px screen -- two-dimensional
-       scrolling, which is what WCAG 1.4.10 forbids. */
-    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
-}
-.gesture {
-    border: 1px solid var(--line-soft); border-radius: var(--radius);
-    background: var(--bg-soft); padding: 1rem;
-    display: flex; flex-direction: column; gap: .75rem;
-}
-.gesture h3 { font-size: .98rem; }
-.gesture p { font-size: .87rem; color: var(--dim); margin: 0; }
-.gesture .frame {
+/* The frame and the pieces inside it. The full three-gesture section lives on
+   how-it-works.html and uses the same drawing; here they are the opening, at a
+   smaller size, and the caption under each is one word. */
+.steps .frame {
     position: relative;
-    /* One height for the three, so the headings below them line up. Sized on
-       the tallest content (the form), measured, not guessed.
-
-       min-height and NOT height: a fixed height was measured at the default
-       text size only, and at a 200% text size the hint wraps to more lines --
-       353px of content in a 334px box, cut off with no scrollbar. The floor
-       still aligns the three whenever they sit side by side; below that they
-       are stacked in one column, where nothing has to line up with anything. */
-    min-height: 10.5rem;
+    /* min-height and NOT height: a fixed height was measured at the default
+       text size only, and at a 200% text size the content wraps to more lines
+       -- and was cut off with no scrollbar. The floor still aligns the three
+       whenever they sit side by side; below that they are stacked in one
+       column, where nothing has to line up with anything. */
+    min-height: 7.5rem;
     border: 1px solid var(--line-soft);
     border-radius: 8px;
     background: var(--bg);
@@ -410,9 +330,6 @@ code:not(pre code) {
     border-radius: 999px; padding: 0 .35rem; font-size: .68rem;
 }
 
-.hint {
-    font-size: .68rem; line-height: 1.45; color: var(--dim);
-}
 /* The rectangle is drawn AROUND the target, never on it -- which is also what
    the tool does: it never puts an outline on an element of the host page. */
 /* max-width, so the marker hanging .85rem off the right corner always has
@@ -455,117 +372,6 @@ code:not(pre code) {
     border-radius: 6px; padding: .2rem .6rem; font-size: .7rem; font-weight: 650;
 }
 
-/* -- Quick-start routes -------------------------------------------------- */
-
-/* One card here, and the grid is built for three. See the comment in the markup
-   for which three and why only one is rendered. auto-fit takes 1, 2 or 3
-   children with no change: a route is added by adding an <article>. */
-.paths {
-    display: grid; gap: 1rem; margin: 1.8rem 0 0;
-    /* min(17rem, 100%) and not 17rem: a bare minmax() minimum is a FLOOR the
-       track cannot go under -- see .gestures, same trap, same fix. */
-    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
-}
-.path {
-    display: flex; flex-direction: column; gap: .5rem;
-    border: 1px solid var(--line); border-radius: var(--radius);
-    background: var(--bg-soft); padding: 1.15rem 1.2rem;
-}
-.path-who {
-    margin: 0; font-family: var(--mono); font-size: .72rem; letter-spacing: .07em;
-    text-transform: uppercase; color: var(--dim);
-}
-.path h3 { font-size: 1.18rem; }
-.path > p { margin: 0; font-size: .93rem; color: var(--dim); }
-/* margin-top:auto pins the cost to the bottom, so two cards side by side line
-   their cost lines up whatever length the description above runs to. */
-.path .path-cost {
-    margin-top: auto; padding-top: .75rem; border-top: 1px solid var(--line);
-    font-size: .87rem; color: var(--text);
-}
-
-/* -- The terminal -------------------------------------------------------- */
-
-/* A picture that happens to be text: no script, nothing to play, nothing to
-   step through. It therefore reads the same with JavaScript off, can be
-   selected, searched and read aloud, and cannot half-run. */
-.term-fig { margin: 1.7rem 0; }
-.term {
-    border: 1px solid var(--line); border-radius: var(--radius);
-    background: var(--bg-code); overflow: hidden;
-}
-.term-bar {
-    display: flex; align-items: center; gap: .55rem;
-    padding: .45rem .85rem;
-    border-bottom: 1px solid var(--line-soft); background: var(--bg-soft);
-    min-height: 2.1rem;
-}
-.term-bar .lamp {
-    width: .5rem; height: .5rem; border-radius: 50%;
-    background: var(--line); flex: none;
-}
-.term-bar span:not(.lamp) {
-    font-family: var(--mono); font-size: .72rem; letter-spacing: .05em;
-    text-transform: uppercase; color: var(--dim);
-    min-width: 0; overflow-wrap: anywhere;
-}
-.term pre {
-    margin: 0; padding: 1rem;
-    overflow-x: auto;              /* the frame scrolls, never the page */
-    -webkit-overflow-scrolling: touch;
-}
-/* white-space: pre-wrap and NOT pre. Measured at 1440x900 with `pre`: the
-   frame was 910px and the content 1157, so 247px sat off-frame -- and at
-   390x844, 710px of 1066, which is 104 of the 155 characters of the reply
-   command. That line is the one thing on this page no neighbouring tool can
-   show; hiding two thirds of it behind a scrollbar nobody sees is not
-   "responsive", it is "it does not overflow". Wrapping changes no character:
-   a selection still yields the transcript. */
-.term pre code {
-    display: block; font-family: var(--mono); font-size: .78rem;
-    line-height: 1.62; white-space: pre-wrap; overflow-wrap: break-word;
-    color: var(--dim); min-width: 0;
-    /* A wrapped continuation is indented, so "> span:nth-of-type(1)" cannot be
-       misread as a new key line. `hanging each-line` means: flush after every
-       real newline, indented after every soft wrap. Where a browser does not
-       know the keywords the whole declaration is dropped and the block reads
-       as it did before -- nothing depends on it. */
-    text-indent: 2.2em hanging each-line;
-}
-/* The prompt and the command are the reader's eye path down the block. The
-   "$ " is written in the markup, not in a ::before: generated content is not
-   part of a selection, and half a transcript is worse than none. */
-.term .cmd { color: var(--text); font-weight: 600; }
-.term .cut { color: var(--dim); font-style: italic; }
-.term-fig figcaption {
-    margin-top: .75rem; font-size: .87rem; line-height: 1.55;
-    color: var(--dim); max-width: 44em;
-}
-
-/* -- Plain tables -------------------------------------------------------- */
-
-.tbl-wrap { overflow-x: auto; margin: 1.3rem 0; border: 1px solid var(--line-soft); border-radius: var(--radius); }
-table { border-collapse: collapse; width: 100%; min-width: 27rem; font-size: .88rem; }
-th, td { text-align: left; padding: .55rem .85rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
-tr:last-child td { border-bottom: 0; }
-th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); font-weight: 650; }
-td code { white-space: nowrap; }
-
-/* -- Facts / lists ------------------------------------------------------- */
-
-/* min(16rem, 100%): see .gestures -- the same floor, the same overflow. */
-.facts { display: grid; gap: 1.4rem 2rem; margin-top: 2rem; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); }
-.facts h3 { margin-bottom: .4rem; }
-.facts p { font-size: .92rem; color: var(--dim); }
-
-ul.plain { margin: 1rem 0; padding: 0; list-style: none; display: grid; gap: .6rem; }
-ul.plain li { padding-left: 1.15rem; position: relative; font-size: .95rem; }
-ul.plain li::before {
-    content: ""; position: absolute; left: 0; top: .62em;
-    width: .4rem; height: .4rem; border-radius: 50%; background: var(--line);
-}
-ul.plain li b { font-weight: 650; }
-
 /* -- Footer -------------------------------------------------------------- */
 
 footer { border-top: 1px solid var(--line-soft); padding: 2.5rem 0 3.5rem; }
@@ -574,9 +380,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 @media (max-width: 420px) {
     body { font-size: 16px; }
-    .snip pre code, .term pre code { font-size: .72rem; }
-    .snip pre, .term pre { padding: .8rem .75rem; }
-    .card.reply { margin-left: .5rem; }
+    .snip pre code { font-size: .72rem; }
+    .snip pre { padding: .8rem .75rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -615,6 +420,327 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             .callout { padding-bottom: 3.6rem; }
             body { padding-bottom: 4.5rem; }
         }
+
+/* == THE THREE STEPS, IN THE HERO ======================================== */
+
+/* They were a line of text -- "01 Open  02 Point  03 Write" -- and a line of
+   text is what a reader skips. Same three words, each now sitting under the
+   thing it names, drawn with the same pieces the tool draws on a real page.
+   The frames are smaller than the ones in the full section: this is the
+   opening, not the explanation. */
+.steps {
+    display: grid; gap: .9rem; margin: 1.8rem 0 0; padding: 0; list-style: none;
+    /* min(11rem, 100%): a bare minmax() minimum is a FLOOR the track cannot go
+       under -- a 200% text size turns a bare 17rem into 544px, which pushes a
+       360px page sideways. */
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+}
+.steps > li { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+.steps .cap {
+    margin: 0; display: flex; align-items: baseline; gap: .45rem;
+    font-size: .95rem; font-weight: 600;
+}
+.steps .cap .n {
+    font: 600 .75rem/1 var(--mono); color: var(--accent);
+}
+/* One after another, once, on arrival. 160 ms apart and 6px of travel: enough
+   to read as a sequence, too small to be a movement. The keyframe starts at
+   opacity 0 with fill-mode backwards, so that when the reduced-motion rule
+   above drops the animation entirely the three are simply there. */
+@keyframes step-in { from { opacity: 0; transform: translateY(6px); } }
+.steps > li { animation: step-in .45s ease-out backwards; }
+.steps > li:nth-child(1) { animation-delay: .10s; }
+.steps > li:nth-child(2) { animation-delay: .26s; }
+.steps > li:nth-child(3) { animation-delay: .42s; }
+
+/* == THE REPLAY ========================================================== */
+
+/* A recording of one session, rebuilt from the transcript of 1 September 2026.
+   Every line in the markup is captured output; the script decides only WHEN
+   each one appears, never WHAT it says.
+
+   WITH JAVASCRIPT OFF NOTHING IS HIDDEN. No rule here hides anything unless
+   the script has put data-play on the frame, which it does as its first act.
+   Without it the block is a static transcript beside a still of the page as it
+   ended up -- readable, selectable, searchable. That is the fallback, and it
+   is the same words. */
+
+.replay-fig { margin: 1.6rem 0 0; }
+.rp {
+    display: grid; gap: 1rem;
+    /* min(21rem, 100%): the floor again. Two panes on a wide screen, stacked
+       on a phone, and the terminal is first in the source so it is first when
+       they stack -- the words matter more than the picture. */
+    grid-template-columns: repeat(auto-fit, minmax(min(21rem, 100%), 1fr));
+    align-items: start;
+}
+
+/* -- left pane: the session ---------------------------------------------- */
+
+.rp-term {
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--bg-code); overflow: hidden; min-width: 0;
+}
+.rp-bar {
+    display: flex; align-items: center; gap: .55rem;
+    padding: .45rem .85rem; min-height: 2.1rem;
+    border-bottom: 1px solid var(--line-soft); background: var(--bg-soft);
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--dim);
+}
+.rp-bar .name { min-width: 0; overflow-wrap: anywhere; }
+/* The only thing on the frame that says "this is running". It exists while the
+   script is playing and not before: with JavaScript off there is nothing to be
+   working on. */
+.rp-state { display: none; margin-left: auto; align-items: center; gap: .4rem; flex: none; }
+.rp[data-play] .rp-state { display: inline-flex; }
+.rp-state .dot { width: .45rem; height: .45rem; border-radius: 50%; background: var(--ok); flex: none; }
+.rp[data-play]:not([data-done]) .rp-state .dot {
+    background: var(--accent); animation: rp-pulse 1.1s ease-in-out infinite;
+}
+@keyframes rp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+.rp-state .d { display: inline; }
+.rp-state .w { display: none; }
+.rp[data-play]:not([data-done]) .rp-state .d { display: none; }
+.rp[data-play]:not([data-done]) .rp-state .w { display: inline; }
+
+.rp-scroll { padding: .9rem; }
+/* A height only while it plays, so lines arriving push the page around no more
+   than a terminal window does: the pane scrolls, the document does not move.
+   Released at the end, and never present at all with JavaScript off. */
+.rp[data-play] .rp-scroll {
+    height: clamp(20rem, 56vh, 30rem);
+    /* No smooth scrolling, deliberately: a terminal jumps a line, it does not
+       glide, and an animated scroll makes every position this script reads a
+       moving target. */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.rp[data-play] .beat { display: none; }
+.rp[data-play] .beat.on { display: block; }
+
+/* The human's line, and the commands. Monospace, because that is where they
+   were typed. */
+.rp-ask {
+    margin: 0; font-family: var(--mono); font-size: .8rem; line-height: 1.6;
+    font-weight: 600; color: var(--text);
+    white-space: pre-wrap; overflow-wrap: break-word;
+}
+.rp-ask .ps { color: var(--accent); }
+.rp-run { margin: .8rem 0 0; }
+.rp-run:first-child { margin-top: 0; }
+/* These are <code> outside a <pre>, so the inline-code chip rule above would
+   put a border and a fill round every line of the transcript. A terminal has
+   neither. */
+.rp-cmd, .rp-out { background: none; border: 0; padding: 0; border-radius: 0; }
+.rp-cmd {
+    display: block; font-family: var(--mono); font-size: .78rem; line-height: 1.62;
+    font-weight: 600; color: var(--text);
+    white-space: pre-wrap; overflow-wrap: break-word;
+    text-indent: 2.2em hanging each-line;
+}
+.rp-out {
+    margin: .15rem 0 0; display: block;
+    font-family: var(--mono); font-size: .78rem; line-height: 1.62;
+    white-space: pre-wrap; overflow-wrap: break-word; color: var(--dim);
+    /* A wrapped continuation is indented, so a soft wrap cannot be misread as
+       a new key line. Same declaration, same reason, as the static terminal. */
+    text-indent: 2.2em hanging each-line;
+}
+/* Every drop leaves one of these. Nothing is reworded, reflowed or rounded;
+   lines are removed, and the marker says which. */
+.rp-out .cut { font-style: italic; }
+.rp-out .ver { color: var(--text); font-weight: 650; }
+/* Beat 3: the two excerpts that turn out to be one bug come up to full weight
+   while the third stays as it was. A colour, not a movement. */
+.rp[data-hl] .hl { color: var(--text); font-weight: 650; }
+
+/* What the assistant says, in the page's own type -- the reader is meant to
+   follow this without knowing what any of the commands are. */
+.rp-says {
+    margin: .85rem 0 0; padding: .1rem 0 .1rem .8rem;
+    border-left: 2px solid var(--accent);
+    font-size: .93rem; line-height: 1.5; color: var(--text);
+}
+.rp-says b { font-weight: 650; }
+
+.rp-caret {
+    display: none; width: .5rem; height: .95em; background: var(--accent);
+    vertical-align: -.15em; margin-top: .4rem;
+}
+.rp[data-play]:not([data-done]) .rp-caret {
+    display: inline-block; animation: rp-blink 1s steps(2, start) infinite;
+}
+@keyframes rp-blink { 50% { opacity: 0; } }
+
+/* -- right pane: the page under review ------------------------------------ */
+
+/* THIS PANE IS A PICTURE OF SOMEBODY ELSE'S PAGE, so it keeps its own light
+   surface in both themes. That is not an oversight in the theming: the greys
+   being measured are the subject -- rgb(154,164,173) then rgb(107,117,126) on
+   white -- and repainting them for a dark page would make the two ratios the
+   terminal quotes untrue of what is on screen. Defined here on bare :root and
+   deliberately NOT redefined in the dark block. */
+:root {
+    --shot-bg:    #ffffff;
+    --shot-soft:  #f5f6f8;
+    --shot-text:  #16181d;
+    --shot-dim:   #52565f;
+    --shot-line:  #d3d7de;
+    --shot-green: #0a6b3d;
+    --shot-ok-bg: #e6f4ea;
+    /* the two footnote greys, exactly as the measurement read them */
+    --shot-pale:  #9aa4ad;
+    --shot-fixed: #6b757e;
+}
+.rp-shot {
+    border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; min-width: 0;
+    background: var(--shot-bg); color: var(--shot-text);
+    font-size: .76rem; line-height: 1.5;
+}
+.rp-shot-bar {
+    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+    padding: .4rem .7rem; border-bottom: 1px solid var(--shot-line);
+    background: var(--shot-soft); color: var(--shot-dim);
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .04em;
+}
+.rp-shot-bar .ver { margin-left: auto; }
+.rp-shot-bar b { color: var(--shot-text); font-weight: 650; }
+.rp-shot-body { padding: .8rem .7rem; }
+.rp-shot h4 { margin: 0 0 .5rem; font-size: .84rem; font-weight: 650; }
+.rp-shot .bar-line { background: var(--shot-line); opacity: .55; }
+
+.rp-btns { display: flex; flex-wrap: wrap; gap: .5rem; margin: .7rem 0 0; }
+.gb {
+    display: inline-block; border-radius: 6px; text-align: center;
+    background: var(--shot-green); color: #ffffff;
+    font-size: .72rem; font-weight: 650; line-height: 1.35;
+}
+/* The two states are the measurement, drawn: 36px of horizontal padding and a
+   17px label, then 16px and 16px. Nothing else about them differs. */
+.gb-before .gb { padding: .5rem 1.5rem; max-width: 11.4rem; }
+.gb-after  .gb { padding: .5rem .7rem; }
+
+/* This line is painted at 2.53:1 for twelve seconds and then repainted at
+   4.7:1. The failing colour is the defect being measured -- the same reason a
+   report shows the broken screenshot -- and the pane is aria-hidden, so it is
+   never the only place a fact appears. Everything the page asks anyone to
+   read passes AA in both themes, measured. */
+.rp-fn { margin: .7rem 0 0; font-size: .68rem; color: var(--shot-fixed); transition: color .4s ease; }
+.rp[data-stage="before"] .rp-fn { color: var(--shot-pale); }
+
+/* the panel, as the reviewer left it and as she finds it again */
+.rp-panel { margin: .9rem 0 0; border: 1px solid var(--shot-line); border-radius: 8px; overflow: hidden; }
+.rp-panel-bar {
+    display: flex; align-items: center; gap: .4rem;
+    padding: .4rem .6rem; background: var(--shot-soft);
+    border-bottom: 1px solid var(--shot-line);
+    font-size: .7rem; font-weight: 650;
+}
+.rp-panel-bar .count {
+    margin-left: auto; background: var(--shot-bg); color: var(--shot-dim);
+    border: 1px solid var(--shot-line); border-radius: 999px;
+    padding: 0 .4rem; font-size: .64rem; font-weight: 600;
+}
+/* A crop, and it says so: the panel is taller than the frame and the bottom
+   card runs off the edge, the way a screenshot of a panel does. Nothing is
+   reworded to fit -- it is cut off, visibly.
+
+   The fade that marks the cut is 14px, not the bottom fifth of the panel. Over
+   a fifth it does not crop a line, it prints it faintly: the third note's two
+   lines measured 2.30:1 and 1.44:1 on rendered pixels, the palest text on a
+   page whose subject is a contrast fix. A crop cuts a line in half; it does
+   not publish it grey. */
+.rp-panel-body {
+    padding: .55rem; display: grid; gap: .5rem;
+    height: 11.5rem; overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent 100%);
+}
+.rp-card { border: 1px solid var(--shot-line); border-radius: 6px; padding: .45rem .5rem; }
+.rp-card .who { font-size: .66rem; color: var(--shot-dim); }
+.rp-card .who b { color: var(--shot-text); font-weight: 650; }
+.rp-card .about {
+    margin: .2rem 0; font-size: .64rem; color: var(--shot-dim);
+    border-left: 2px solid var(--shot-line); padding-left: .4rem;
+}
+.rp-card p { margin: .2rem 0 0; font-size: .68rem; }
+.rp-card.reply { margin-left: .8rem; border-left: 2px solid var(--shot-line); }
+.rp-stamp {
+    display: block; margin: -.45rem -.5rem .4rem; padding: .25rem .5rem;
+    background: var(--shot-ok-bg); color: var(--shot-green);
+    font-size: .64rem; font-weight: 650;
+}
+.rp-history { font-size: .68rem; color: var(--shot-green); font-weight: 650; }
+
+/* -- the two changes ------------------------------------------------------ */
+
+/* Two states of one thing, held in the same grid cell and cross-faded. The
+   frame keeps the height of the taller, so nothing below it moves when the
+   page under review changes.
+
+   Off the script, only the AFTER state is drawn. The static page therefore
+   shows how the session ended -- the resolved stamp and the measured reply --
+   which is the one frame worth having if nothing plays. */
+.xf > .st-b { display: none; }
+.rp[data-play] .xf { display: grid; }
+.rp[data-play] .xf > * { grid-area: 1 / 1; display: block; transition: opacity .22s ease; }
+
+/* They take turns, and that is the whole rule. Faded at the same time each
+   state is half-opaque in the middle of the swap, and both sets of words are
+   legible at once, one printed through the other -- measured at 3.75:1 and
+   1.47:1 over live text while it lasted, and it read as a printing fault.
+   So: whichever is LEAVING goes first, whichever is ARRIVING waits for it.
+   The delay is on the one going to 1, in both directions, so replaying runs
+   the swap backwards without either state lingering under the other. */
+.rp[data-play] .xf > .st-b { opacity: 1; transition-delay: .22s; }
+.rp[data-play] .xf > .st-a { opacity: 0; transition-delay: 0s; }
+.rp[data-play][data-stage="fixed"]    .xf-fix > .st-b,
+.rp[data-play][data-stage="resolved"] .xf-fix > .st-b { opacity: 0; transition-delay: 0s; }
+.rp[data-play][data-stage="fixed"]    .xf-fix > .st-a,
+.rp[data-play][data-stage="resolved"] .xf-fix > .st-a { opacity: 1; transition-delay: .22s; }
+.rp[data-play][data-stage="resolved"] .xf-done > .st-b { opacity: 0; transition-delay: 0s; }
+.rp[data-play][data-stage="resolved"] .xf-done > .st-a { opacity: 1; transition-delay: .22s; }
+
+/* -- under the frame ------------------------------------------------------ */
+
+.rp-foot {
+    display: flex; align-items: baseline; gap: .9rem 1.2rem; flex-wrap: wrap;
+    margin-top: .85rem;
+}
+.rp-again {
+    display: none; flex: none;
+    font: 600 .85rem/1 var(--sans); color: var(--text);
+    background: var(--bg-soft); border: 1px solid var(--control-line);
+    border-radius: 999px; padding: .5rem .95rem; cursor: pointer;
+}
+.rp-again:hover { border-color: var(--accent); color: var(--accent); }
+.rp[data-done] ~ .rp-foot .rp-again { display: inline-block; }
+.rp-foot p { margin: 0; font-size: .87rem; line-height: 1.55; color: var(--dim); max-width: 34em; }
+
+/* Stacked, the terminal is the whole screen and the page under review -- the
+   half that shows the fix landing -- is below the fold for the entire replay.
+   Measured at 390x844: with the pane at 56vh the reader watching the terminal
+   never has the two green buttons on screen at the same time. A shorter pane
+   scrolls a little more and keeps the loop in one viewport, which is the only
+   reason the two panes are side by side in the first place. */
+@media (max-width: 700px) {
+    .rp[data-play] .rp-scroll { height: clamp(15rem, 38vh, 22rem); }
+}
+
+@media (max-width: 420px) {
+    .rp-cmd, .rp-out { font-size: .72rem; }
+    .rp-ask { font-size: .74rem; }
+}
+
+/* A beat can arrive in more than one piece -- the command, then its output,
+   then the sentence about it. Same rule as the beats: hidden only while the
+   script is driving. */
+.rp[data-play] [data-step] { display: none; }
+.rp[data-play] [data-step].on { display: block; }
+
 </style>
 <script type="application/ld+json">
 {
@@ -637,6 +763,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     <div class="wrap">
         <a class="mark" href="/">annotepage</a>
         <nav>
+            <a href="#replay">Replay</a>
             <a href="#install">Install</a>
             <a href="#assistant">Assistant</a>
             <a href="how-it-works.html">How it works</a>
@@ -647,22 +774,21 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 <main>
 
-<!-- 1. WHAT IT DOES ==================================================== -->
+<!-- 1. WHAT IT DOES, AND WHAT THE THREE GESTURES ARE ==================== -->
 <section class="hero" id="top">
     <div class="wrap">
         <h1>Annotate a page. <br>The assistant answers in the thread.</h1>
 
         <p class="lead">
-            Someone reviewing a page writes what is wrong with it. An assistant reads
-            the note, fixes the code, <strong>replies saying what it measured</strong>,
-            and resolves it with the version the fix ships in.
+            Someone marks what is wrong. An assistant fixes it,
+            <strong>replies with what it measured</strong>, and stamps the version.
         </p>
 
         <!-- THE PREREQUISITE, IN BODY TYPE, ABOVE EVERYTHING ELSE.
              Three readers looking only at screenshots each found this fact late,
              as a pale link 1300px down, and each asked for it here. It is not a
              feature and must never be worded as one: it is what decides whether
-             the reader can finish at all. The day api.annotepage.com answers,
+             the reader can finish at all. The day the shared server answers,
              this paragraph is the one line to change. -->
         <p class="need">
             <b>You run the server.</b> One PHP directory on a host of your own &mdash;
@@ -675,82 +801,454 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <li>End-to-end encrypted <span>&middot; in the browser</span></li>
         </ul>
 
-
-        <div class="mock" style="margin-top: 1.6rem;">
-            <div class="mock-bar">
-                <b>Review notes</b>
-                <span class="x">Close</span>
-            </div>
-            <div class="mock-body">
-                <div class="card">
-                    <span class="stamp">Resolved on Sep 1, 2026, 10:35 AM by Assistant</span>
-                    <div class="card-meta"><b>Camille</b><span>Sep 1, 2026, 10:34 AM</span></div>
-                    <div class="card-about">About: Download the calibration table</div>
-                    <p>The label on this button breaks onto two lines on a 360px phone.
-                    It should hold on one line down to 320px.</p>
-                    <div class="card-actions">Reply &middot; Show on the page &middot; Reopen this remark</div>
+        <!-- The three gestures. They were one line of text and got skipped for
+             being one line of text. Same three words, each under the thing it
+             names, drawn with the pieces the tool draws on a real page. -->
+        <ol class="steps">
+            <li>
+                <div class="frame" aria-hidden="true">
+                    <div class="bar-line w70"></div>
+                    <div class="bar-line w85"></div>
+                    <div class="bar-line w45"></div>
+                    <span class="pill"><span class="dot"></span>Annotate this page<span class="count">3 notes</span></span>
                 </div>
-                <div class="card reply">
-                    <div class="card-meta"><b>Assistant</b><span>Sep 1, 2026, 10:35 AM</span></div>
-                    <p>Measured: the label needs 232px and the button offers 222px at 360px,
-                    so it wraps at 369px and below. Horizontal padding cut from 36px to 16px
-                    and the label to 16px; measured again, it holds on one line down to
-                    317px.</p>
+                <p class="cap"><span class="n">01</span> Open</p>
+            </li>
+            <li>
+                <div class="frame" aria-hidden="true">
+                    <div class="bar-line w85"></div>
+                    <div class="bar-line w45"></div>
+                    <div class="target">
+                        <span class="marker">Download the calibration table</span>
+                        <span class="fake-cta">Download the calibration table</span>
+                    </div>
                 </div>
-            </div>
-        </div>
+                <p class="cap"><span class="n">02</span> Point</p>
+            </li>
+            <li>
+                <div class="frame" aria-hidden="true">
+                    <div class="mini-form">
+                        <div class="lbl">About: Download the calibration table</div>
+                        <div class="fld tall">On my phone this button label breaks onto two lines.</div>
+                        <span class="send">Send</span>
+                    </div>
+                </div>
+                <p class="cap"><span class="n">03</span> Write</p>
+            </li>
+        </ol>
 
-        <p><a class="cta" href="#install">Put it on a page</a></p>
+        <p style="margin-top: 1.8rem;"><a class="cta" href="#install">Put it on a page</a></p>
 
         <p class="demo-hint">
-            <b>This page is running annotepage.</b> Open it, bottom right, and point at
-            anything &mdash; the note stays in this tab.
-        </p>
-
-        <p class="small dim" style="margin-top: 1rem; max-width: 34rem;">
-            That thread is real:
-            <a href="#assistant">the session below</a>, from the other side.
+            <b>This page is running annotepage.</b> Open it, bottom right.
         </p>
     </div>
 </section>
 
-<!-- 2. HOW YOU INSTALL IT ============================================== -->
+<!-- 2. THE REPLAY ====================================================== -->
+
+<!-- ONE SESSION, PLAYED BACK.
+
+     Every line in here was produced by a command on 1 September 2026 and is
+     reproduced character for character. Dropping whole lines is the only edit
+     allowed, and every drop leaves the marker that names what went. The
+     configuration already exists when this starts, so no salt is ever on
+     screen.
+
+     The script below decides WHEN a line appears and nothing else. With
+     JavaScript off it never runs, nothing is hidden, and this block is a
+     transcript beside a still of how the page ended up. -->
+<section id="replay">
+    <div class="wrap">
+        <h2>One session, start to finish</h2>
+
+        <figure class="replay-fig">
+            <div class="rp" id="rp">
+
+                <div class="rp-term">
+                    <div class="rp-bar">
+                        <span class="name">a real session &mdash; 1 September 2026</span>
+                        <span class="rp-state"><span class="dot"></span><span class="w">working</span><span class="d">done</span></span>
+                    </div>
+                    <div class="rp-scroll" id="rp-scroll">
+
+<div class="beat" data-beat="1">
+<p class="rp-ask"><span class="ps">&gt;</span> <span data-type>connect to the staging site and fix what the reviewers flagged</span></p>
+</div>
+
+<div class="beat" data-beat="2">
+<div class="rp-run">
+<code class="rp-cmd">$ <span data-type>annotepage open</span></code>
+<code class="rp-out" data-step><span class="cut">... 6 header lines ...</span>
+notes 3
+
+note 1
+page /guide
+<span class="hl">excerpt Download the calibration table</span>
+author Camille
+version 1.4.12
+status open
+text
+    On my phone this button label breaks onto two lines. It should hold on one line down to 320px.
+<span class="cut">... 6 more fields ...</span>
+
+note 2
+<span class="hl">excerpt Open the correction worksheet</span>
+<span class="cut">... note 2, same shape ...</span>
+
+note 3
+excerpt Values recorded at the bench, plain text, comma separated.
+<span class="cut">... note 3, same shape ...</span></code>
+</div>
+<p class="rp-says" data-step>Three notes, all on /guide, all from Camille, all against 1.4.12.</p>
+</div>
+
+<div class="beat" data-beat="3">
+<p class="rp-says">Two of these are the same bug: both green buttons wrap. Two buttons, two cards. The third is the grey line under the table.</p>
+</div>
+
+<div class="beat" data-beat="4">
+<div class="rp-run">
+<code class="rp-cmd">$ <span data-type>node ap3-measure.mjs</span></code>
+<code class="rp-out" data-step>--- "Download the calibration table"   padding 72px, font 17px ---
+viewport  360px  lines 2  label needs 232px  button offers 222px
+<span class="cut">... 7 more viewport rows ...</span>
+wraps at 369px and below; holds one line from 370px up
+
+--- "Open the correction worksheet"   padding 72px, font 17px ---
+viewport  360px  lines 2  label needs 235px  button offers 222px
+<span class="cut">... 7 more viewport rows ...</span>
+wraps at 373px and below; holds one line from 374px up
+
+--- "Values recorded at the bench, plain text, comma separated." ---
+<span class="cut">... the two colours it read ...</span>
+contrast ratio 2.53:1   (WCAG AA asks 4.5:1 for text this size)</code>
+</div>
+<p class="rp-says" data-step>Before: the first label needs 232px, its button offers 222px, and it wraps at 369px. The second wraps at 373px &mdash; its label is 3px wider.</p>
+<p class="rp-says" data-step>One rule, both buttons: 36px of padding, a 17px label. The grey line is another rule &mdash; 2.53 to 1, under the 4.5 asked for.</p>
+</div>
+
+<div class="beat" data-beat="5">
+<div class="rp-run">
+<code class="rp-cmd">$ sed -i 's/padding: 12px 36px; font-size: 17px;/padding: 12px 16px; font-size: 16px;/; s/p.footnote { font-size: 13px; color: #9aa4ad;/p.footnote { font-size: 13px; color: #6b757e;/; s/data-version="1.4.12"/data-version="1.4.13"/' public/guide.html</code>
+</div>
+<p class="rp-says" data-step>Two edits. The tag now says <b>1.4.13</b>.</p>
+</div>
+
+<div class="beat" data-beat="6">
+<div class="rp-run">
+<code class="rp-cmd">$ <span data-type>node ap3-measure.mjs</span></code>
+<code class="rp-out" data-step><span class="cut">... the headers, the two colours it read, and 16 viewport rows ...</span>
+wraps at 316px and below; holds one line from 317px up
+wraps at 319px and below; holds one line from 320px up
+contrast ratio 4.7:1   (WCAG AA asks 4.5:1 for text this size)</code>
+</div>
+<p class="rp-says" data-step>After: 317px and 320px, one line each. Contrast 4.7 to 1. Camille asked for 320px.</p>
+</div>
+
+<div class="beat" data-beat="7">
+<div class="rp-run">
+<code class="rp-cmd">$ annotepage reply 1 'Measured before the change: the label needs 232px on one line and the button offers it 222px at a 360px viewport, so it wraps at 369px and below. Cause: the single a.action rule gives both buttons 36px of horizontal padding and a 17px label. Cut to 16px of padding and a 16px label; measured again on the same page, this one holds a single line down to 317px.'</code>
+<code class="rp-out">Reply written in the thread of note 1, signed "Assistant".
+<span class="cut">... reply 2 and reply 3, measured too ...</span></code>
+</div>
+<div class="rp-run" data-step>
+<code class="rp-cmd">$ annotepage resolve 1 1.4.13</code>
+<code class="rp-out">Note 1 marked resolved by "Assistant", in version <span class="ver">1.4.13</span>.
+<span class="cut">... resolve 2 and 3, same answer ...</span></code>
+</div>
+<p class="rp-says" data-step>Replied in each thread with what I measured, and resolved all three in <b>1.4.13</b>.</p>
+</div>
+
+<div class="beat" data-beat="8">
+<p class="rp-says" data-step>Camille sees it on the page itself, without asking anybody.</p>
+</div>
+
+<span class="rp-caret" aria-hidden="true"></span>
+                    </div>
+                </div>
+
+                <!-- The page under review. A picture, and its words are the
+                     terminal's words, so it is not read out twice. -->
+                <div class="rp-shot" aria-hidden="true">
+                    <div class="rp-shot-bar">
+                        <span>staging &mdash; /guide</span>
+                        <span class="ver">version <b id="rp-ver">1.4.13</b></span>
+                    </div>
+                    <div class="rp-shot-body">
+                        <h4>Field Sensor Guide</h4>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+
+                        <div class="xf xf-fix">
+                            <div class="st-b rp-btns gb-before">
+                                <span class="gb">Download the calibration table</span>
+                                <span class="gb">Open the correction worksheet</span>
+                            </div>
+                            <div class="st-a rp-btns gb-after">
+                                <span class="gb">Download the calibration table</span>
+                                <span class="gb">Open the correction worksheet</span>
+                            </div>
+                        </div>
+
+                        <p class="rp-fn">Values recorded at the bench, plain text, comma separated.</p>
+
+                        <div class="rp-panel">
+                            <div class="rp-panel-bar">Review notes<span class="count">3 notes</span></div>
+                            <div class="xf xf-done">
+                                <div class="st-b rp-panel-body">
+                                    <div class="rp-card">
+                                        <p class="who"><b>Camille</b> &middot; Sep 1, 11:59 AM</p>
+                                        <p class="about">About: Download the calibration table</p>
+                                        <p>On my phone this button label breaks onto two lines. It should hold on one line down to 320px.</p>
+                                    </div>
+                                    <div class="rp-card">
+                                        <p class="who"><b>Camille</b> &middot; Sep 1, 11:59 AM</p>
+                                        <p class="about">About: Open the correction worksheet</p>
+                                    </div>
+                                    <div class="rp-card">
+                                        <p class="who"><b>Camille</b> &middot; Sep 1, 12:00 PM</p>
+                                        <p class="about">About: Values recorded at the bench, plain text, comma separated.</p>
+                                    </div>
+                                </div>
+                                <div class="st-a rp-panel-body">
+                                    <p class="rp-history">See the history (3 resolved)</p>
+                                    <div class="rp-card">
+                                        <span class="rp-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
+                                        <p class="who"><b>Camille</b> &middot; Sep 1, 11:59 AM</p>
+                                        <p class="about">About: Download the calibration table</p>
+                                    </div>
+                                    <div class="rp-card reply">
+                                        <p class="who"><b>Assistant</b> &middot; Sep 1, 12:01 PM</p>
+                                        <p>Measured before the change: the label needs 232px on one line and the button offers it 222px at a 360px viewport, so it wraps at 369px and below.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <figcaption class="rp-foot">
+                <button type="button" class="rp-again" id="rp-again">Watch again</button>
+                <p>Captured output, replayed. Every drop is marked.</p>
+            </figcaption>
+        </figure>
+
+        <!-- This script sits here, and not with the others at the foot of the
+             page, for one reason: its first act hides what the block above
+             shows. Run from the foot it would do that after the browser had
+             already painted the whole transcript, and a reader near the top of
+             the page would watch the session vanish before it started. -->
+<script>
+/* THE REPLAY.
+
+   This script decides WHEN a line of the block above appears. It never decides
+   what a line says: every one of them is in the markup, captured from the run
+   of 1 September 2026, and nothing here writes text into the terminal except
+   by retyping, character for character, what the markup already held.
+
+   Which is why the page is readable without it. The script's first act is to
+   put data-play on the frame; every rule that hides anything is written
+   against that attribute, so if this file never runs, nothing is hidden and
+   the block is a static transcript.
+
+   It plays once, when it comes into view, and stops. Beside text somebody is
+   trying to read, a loop is a distraction with no end. */
+(function () {
+    'use strict';
+
+    var rp     = document.getElementById('rp');
+    var scroll = document.getElementById('rp-scroll');
+    var again  = document.getElementById('rp-again');
+    var ver    = document.getElementById('rp-ver');
+    /* Half a replay is worse than none: if any piece has moved, leave the
+       static transcript exactly as it is. */
+    if (!rp || !scroll || !again || !ver) return;
+
+    /* What moves in this replay is a chain of timers revealing lines, and
+       `animation: none` cannot reach a timer -- the page carried the usual
+       prefers-reduced-motion block and the session still typed, scrolled and
+       blinked for 23.7 seconds, measured, identical to the normal run.
+
+       So when the reader has asked for no motion the script does not arm at
+       all. Nothing is hidden, nothing types, nothing scrolls: what is left is
+       the markup, which is the whole session standing still, beside the page
+       as it ended up. The same frame a reader without JavaScript gets, and it
+       says the same words. */
+    var quiet = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (quiet && quiet.matches) return;
+
+    var beats = {};
+    var list = rp.querySelectorAll('.beat');
+    for (var i = 0; i < list.length; i++) beats[list[i].getAttribute('data-beat')] = list[i];
+    if (!beats['1'] || !beats['8']) return;
+
+    /* The text to type is taken from the markup, once, and put back from
+       there. Nothing typed is written in this file. */
+    var typed = rp.querySelectorAll('[data-type]');
+    for (i = 0; i < typed.length; i++) typed[i].setAttribute('data-full', typed[i].textContent);
+
+    var timers = [];
+    var at = function (ms, fn) { timers.push(setTimeout(fn, ms)); };
+    var stop = function () {
+        for (var k = 0; k < timers.length; k++) clearTimeout(timers[k]);
+        timers = [];
+    };
+
+    /* The pane scrolls, the document does not: a line arriving must not move
+       the page under a reader's cursor. It never scrolls back. */
+    var toBottom = function () { scroll.scrollTop = scroll.scrollHeight; };
+
+    var part = function (beat, sel, n) {
+        var found = beats[beat].querySelectorAll(sel);
+        return found[n || 0] || null;
+    };
+    var show = function (el) { if (el) { el.classList.add('on'); toBottom(); } };
+
+    /* Retyping, character for character, out of data-full -- which was read
+       from the markup before anything was hidden, so nothing typed here is
+       written in this file.
+
+       This function did not exist, and reset() empties every [data-type] span
+       before the first beat. Four lines were therefore erased and never put
+       back: the human's ask, and three of the five commands, `annotepage open`
+       among them. The replay a visitor watched showed a bare `$` followed by
+       thirty lines of export. Output under a prompt with no command is the one
+       claim this page must never make, so a missing definition here is not a
+       cosmetic fault. */
+    var type = function (el) {
+        if (!el) return;
+        var full = el.getAttribute('data-full') || '';
+        var i = 0;
+        el.textContent = '';
+        var tick = function () {
+            i += 2;
+            el.textContent = full.slice(0, i);
+            toBottom();
+            if (i < full.length) timers.push(setTimeout(tick, 26));
+        };
+        tick();
+    };
+
+    /* Beat 3 says that two lines eight apart are one bug, and brightens both.
+       Running to the bottom every time would carry the first one off the lid
+       before the sentence about it arrives, so through that stretch the scroll
+       stops at the first of the two instead. It still only ever moves forward:
+       the position it already has is the floor. */
+    var showCapped = function (el, anchor) {
+        if (!el) return;
+        el.classList.add('on');
+        var want = scroll.scrollHeight - scroll.clientHeight;
+        if (anchor) {
+            var top = anchor.getBoundingClientRect().top
+                    - scroll.getBoundingClientRect().top + scroll.scrollTop;
+            want = Math.min(want, Math.max(0, top - 6));
+        }
+        scroll.scrollTop = Math.max(scroll.scrollTop, want);
+    };
+
+    var reset = function () {
+        stop();
+        for (var k = 0; k < list.length; k++) list[k].classList.remove('on');
+        var steps = rp.querySelectorAll('[data-step]');
+        for (k = 0; k < steps.length; k++) steps[k].classList.remove('on');
+        for (k = 0; k < typed.length; k++) typed[k].textContent = '';
+        rp.removeAttribute('data-hl');
+        rp.removeAttribute('data-done');
+        rp.setAttribute('data-play', '');
+        rp.setAttribute('data-stage', 'before');
+        ver.textContent = '1.4.12';
+        scroll.scrollTop = 0;
+    };
+
+    /* The beats, and where each one lands. Total 17.6 s.
+
+         1  the ask                     0.0 ->  1.8
+         2  what came in                1.8 ->  4.6
+         3  two of these are one bug    4.6 ->  6.6
+         4  measured, before            6.6 ->  9.6
+         5  the fix                     9.6 -> 11.4   the page changes
+         6  measured, after            11.4 -> 13.6
+         7  written back, and closed   13.6 -> 16.4
+         8  the reviewer's side        16.4 -> 17.6   the panel changes
+
+       It ran 23.6 s, measured. On a landing page that is a film, and a film
+       is something a visitor leaves. The beats are the same beats and no line
+       was dropped to get here -- the gaps between them were long enough to
+       read each sentence twice. */
+    var play = function () {
+        reset();
+
+        at(0, function () { show(beats['1']); type(part('1', '[data-type]')); });
+
+        at(1800,  function () { show(beats['2']); type(part('2', '[data-type]')); });
+        at(2500,  function () { showCapped(part('2', '[data-step]', 0), rp.querySelector('.hl')); });
+        at(3500,  function () { showCapped(part('2', '[data-step]', 1), rp.querySelector('.hl')); });
+
+        at(4600,  function () { showCapped(beats['3'], rp.querySelector('.hl')); });
+        at(4900,  function () { rp.setAttribute('data-hl', ''); });
+
+        at(6600,  function () { show(beats['4']); type(part('4', '[data-type]')); });
+        at(7300,  function () { show(part('4', '[data-step]', 0)); });
+        at(8300,  function () { show(part('4', '[data-step]', 1)); });
+        at(9000,  function () { show(part('4', '[data-step]', 2)); });
+
+        at(9600,  function () { show(beats['5']); });
+        at(10000, function () { rp.setAttribute('data-stage', 'fixed'); ver.textContent = '1.4.13'; });
+        at(10800, function () { show(part('5', '[data-step]', 0)); });
+
+        at(11400, function () { show(beats['6']); type(part('6', '[data-type]')); });
+        at(12100, function () { show(part('6', '[data-step]', 0)); });
+        at(12900, function () { show(part('6', '[data-step]', 1)); });
+
+        at(13600, function () { show(beats['7']); });
+        at(14400, function () { show(part('7', '[data-step]', 0)); });
+        at(15300, function () { show(part('7', '[data-step]', 1)); });
+
+        at(16400, function () { show(beats['8']); rp.setAttribute('data-stage', 'resolved'); });
+        at(17000, function () { show(part('8', '[data-step]', 0)); });
+
+        at(17600, function () { rp.setAttribute('data-done', ''); toBottom(); });
+    };
+
+    again.addEventListener('click', function () {
+        play();
+    });
+
+    /* Armed at once, played later. Arming is what collapses the transcript to
+       a terminal-sized pane, and it has to happen before the first paint --
+       otherwise the reader sees the whole session, then watches it disappear.
+       Only the clock waits. */
+    reset();
+
+    /* And the clock waits until the frame is actually on screen: a session
+       that played out while the reader was still in the hero never happened.
+       A margin rather than a ratio, because the frame is taller than a short
+       window and a ratio can then never be reached. */
+    var started = false;
+    var begin = function () { if (!started) { started = true; play(); } };
+
+    if (window.IntersectionObserver) {
+        var watch = new IntersectionObserver(function (entries) {
+            for (var k = 0; k < entries.length; k++) {
+                if (entries[k].isIntersecting) { watch.disconnect(); begin(); }
+            }
+        }, { rootMargin: '-15% 0px -15% 0px', threshold: 0 });
+        watch.observe(rp);
+    } else {
+        begin();
+    }
+}());
+</script>
+    </div>
+</section>
+
+<!-- 3. HOW YOU INSTALL IT ============================================== -->
 <section id="install">
     <div class="wrap">
         <h2>Put it on a page</h2>
-
-        <!-- ===================================================================
-             QUICK-START ROUTES.
-
-             THREE SLOTS EXIST HERE BY DESIGN, AND ONLY THE ONE THAT WORKS IS
-             RENDERED.
-
-               A. the script tag        <- below, and the only one that exists
-               B. a platform plugin     <- WordPress first. Does not exist.
-               C. a browser extension   <- Chrome, Chromium, Firefox. Does not
-                                           exist. See ROADMAP.md: it is a second
-                                           product, not a shortcut.
-
-             To fill a slot: drop another <article class="path"> into .paths and
-             change nothing else. The grid takes one, two or three children as it
-             stands.
-
-             DO NOT RENDER AN EMPTY SLOT, and above all do not label one "coming
-             soon". ROADMAP.md says it in as many words: a platform published with
-             a "coming soon" label turns a strength into a visible gap. One route
-             presented with confidence beats three where two are promises.
-             =================================================================== -->
-        <div class="paths">
-            <article class="path">
-                <p class="path-who">If you can edit the page</p>
-                <h3>Copy and paste a tag</h3>
-                <p>One script tag at the end of <code>&lt;body&gt;</code>: no framework,
-                no bundler, no build step, no dependencies.</p>
-                <p class="path-cost"><b>Two steps,</b> about a minute. Then a server has
-                to answer, and <a href="how-it-works.html#server">there is no public relay
-                yet</a>.</p>
-            </article>
-        </div>
 
         <div class="step">
             <div class="step-head">
@@ -759,9 +1257,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             </div>
             <div class="step-body">
                 <p>
-                    At the end of <code>&lt;body&gt;</code>, on the pages to annotate.
-                    The project id below was generated in your browser a moment ago and
-                    is already in it; only <code>data-server</code> is yours to fill in.
+                    At the end of <code>&lt;body&gt;</code>. The id below was made in your
+                    browser; only <code>data-server</code> is yours.
                 </p>
 
                 <div class="snip">
@@ -780,39 +1277,37 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
                 <p class="small dim">
                     The server is then told about the project in
-                    <a href="how-it-works.html#server">three lines of its
-                    configuration</a>. The salt is not one of them: it never reaches the
-                    server, in any form.
+                    <a href="how-it-works.html#server">three lines</a>. Not the salt.
                 </p>
             </div>
         </div>
+
         <div class="step">
             <div class="step-head">
                 <span class="step-num">02</span>
                 <h3>Save the salt that made it</h3>
             </div>
             <div class="step-body">
-                <p>
-                    Generated here, in your browser, and sent nowhere. This page
-                        fetches one thing, the annotepage script itself; the salt
-                        below has never left this tab and never will.lass="snip">
+                <p>Generated here, in your browser, and sent nowhere.</p>
+
+                <div class="snip">
                     <div class="snip-head">
-                        <span class="snip-name">your salt &mdash; save this before anything else</span>
+                        <span class="snip-name">your salt &mdash; save it now</span>
                         <button class="copy" type="button" data-copy="snip-salt">Copy</button>
                     </div>
 <pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
                 </div>
 
                 <p class="aside-line">
-                    Project id <code id="the-id">&mdash;</code>, derived from that salt.
-                    It is public, and the salt cannot be worked back from it.
+                    Project id <code id="the-id">&mdash;</code>, derived from it. Public; the
+                    salt cannot be worked back from it.
                     <button type="button" class="linkish" id="regenerate">Generate another</button>
                 </p>
 
                 <div class="callout">
                     <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow, no
-                    rotation. Put it where your team keeps its passwords, now &mdash;
-                    <a href="how-it-works.html#no-recovery">what that costs, in full</a>.</p>
+                    rotation. Keep it where your team keeps its passwords &mdash;
+                    <a href="how-it-works.html#no-recovery">what that costs</a>.</p>
                 </div>
             </div>
         </div>
@@ -820,13 +1315,12 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     </div>
 </section>
 
-<!-- 3. HOW AN AI USES IT =============================================== -->
+<!-- 4. THE ASSISTANT SIDE, FOR WHOEVER WANTS THE NAMES ================= -->
 <section id="assistant">
     <div class="wrap">
-        <h2>How an assistant uses it</h2>
+        <h2>The assistant side</h2>
         <p class="lead">
-            Collecting a remark is common; writing back into the thread, with a
-            measurement and a version, is not.
+            An MCP server and a command line, over the same notes.
         </p>
 
         <div class="snip">
@@ -838,64 +1332,24 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 claude mcp add annotepage -- annotepage-mcp</code></pre>
         </div>
 
-        <!-- A TERMINAL, IN PLAIN HTML AND CSS. No script, nothing to play, nothing
-             to step through: it is a picture that happens to be text, so it reads
-             identically with JavaScript off and can be selected and searched.
-             Every line is verbatim captured output. The only editing permitted is
-             dropping a WHOLE line, and every drop leaves the visible [...] marker
-             below. Do not reflow the element path, do not shorten the reply.
-             A long line WRAPS, in CSS, with a hanging indent; that changes no
-             character, and a selection of this block still yields the transcript
-             line for line. -->
-        <figure class="term-fig">
-            <div class="term">
-                <div class="term-bar">
-                    <span class="lamp" aria-hidden="true"></span>
-                    <span>a real session &mdash; 1 September 2026</span>
-                </div>
-<pre><code><span class="cmd">$ annotepage open</span>
-<span class="cut">[... 7 header lines: tool, format, version, project, encryption, export, notes ...]</span>
-note 1
-page /guide
-<span class="cut">[... 4 fields: page-index, mode, date, viewport ...]</span>
-element main:nth-of-type(1) &gt; div:nth-of-type(1) &gt; a:nth-of-type(1)
-excerpt Download the calibration table
-author Camille
-version 1.4.12
-environment staging
-status open
-text
-    The label on this button breaks onto two lines on a 360px phone. It should hold on one line down to 320px.
-<span class="cut">[... note 2, same shape ...]</span>
-
-<span class="cmd">$ annotepage reply 1 'Measured: the label needs 232px and the button offers 222px at 360px, so it wraps at 369px and below. Horizontal padding cut from 36px to 16px and the label to 16px; measured again, it holds on one line down to 317px.'</span>
-Reply written in the thread of note 1, signed "Assistant".
-
-<span class="cmd">$ annotepage resolve 1 1.4.13</span>
-Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">the commands above</span>
+                <button class="copy" type="button" data-copy="snip-cli">Copy</button>
             </div>
-            <figcaption>
-                Captured output, not a mock-up. Every drop is marked.
-            </figcaption>
-        </figure>
-
-        <p>
-            The remark arrives carrying the page, the element, the text on screen and
-            the version being served, so a fix needs no conversation. Resolving
-            states the version the fix ships in: until the site serves it, the note stays
-            in front of the reviewer.
-        </p>
+<pre id="snip-cli"><code>annotepage open
+annotepage reply &lt;id&gt; &lt;text&gt;
+annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
+        </div>
     </div>
 </section>
 
-<!-- 4. THE REST ======================================================== -->
+<!-- 5. THE REST ======================================================== -->
 <section id="more">
     <div class="wrap">
         <h2>The rest of it</h2>
         <p class="lead">
-            A second page carries the depth: the gestures in full, the encryption and
-            what the server still sees, what the tool refuses to do, and how to run
-            the server yourself.
+            Where the notes live, what the server still sees, and how to run it.
         </p>
         <p><a class="cta" href="how-it-works.html">Read how it works</a></p>
     </div>
@@ -913,8 +1367,8 @@ Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/ROADMAP.md">Roadmap</a></li>
         </ul>
         <p>
-            annotepage is free, MIT-licensed and open to contributions. It loads no
-            font, no script and no image from anywhere else: no outgoing request at all.
+            Free, MIT, and open to contributions. It loads no font, no script and no
+            image from anywhere else.
         </p>
     </div>
 </footer>
@@ -1096,6 +1550,8 @@ Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
     fresh();
 }());
 </script>
+
+
 
 <!-- ===================================================================
      THE PRODUCT, RUNNING ON ITS OWN PAGE.
