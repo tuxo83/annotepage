@@ -255,3 +255,47 @@ What is NOT covered, and should be, in this order:
 action names and configuration keys stay English, whatever the interface shows.
 That is the whole point of CONVENTIONS.md, and a localised wire format would
 make two installations unable to read each other.
+
+---
+
+## Updating the PHP server without going and doing it by hand
+
+Wanted. A server dropped on a host and forgotten is a server running the version
+it had the day it was dropped, and the person who put it there has no reason to
+think about it again.
+
+**The obvious design is the dangerous one.** A server that fetches its own new
+version and overwrites its own files is a server with permission to run whatever
+arrives on that channel. Compromise the release, the DNS, or the certificate
+chain, and every installation runs the attacker's PHP -- on the machine holding
+everyone's notes. For a tool whose whole claim is that the server cannot read
+what it stores, handing it the power to rewrite itself is the one change that
+could make that claim worthless overnight.
+
+**Three levels, and only the first two are cheap:**
+
+1. **Say it, write nothing.** `?action=diagnostic` already prints the running
+   version. It can also fetch the latest published version and print both, and
+   the tool can say so where the operator will see it. No write, no new
+   permission, no new attack surface. This alone fixes the real problem, which
+   is not that updating is hard but that nobody knows they should.
+
+2. **A one-command update run FROM the operator's machine.** A small script that
+   downloads the release, verifies it, and uploads the files over the existing
+   channel -- the operator stays in the loop and the server never writes its own
+   code. This is what most PHP tools that survived a decade ended up doing.
+
+3. **Self-updating, signed.** The server verifies a detached signature against a
+   public key shipped in the release before it applies anything. That is the
+   only form of self-update that is defensible, and it brings key management,
+   key rotation, and what happens when the key is lost -- a project of its own,
+   for a tool with one maintainer.
+
+**Recommendation: do 1 now, 2 when someone asks, and 3 never unless the project
+grows a team.** Level 1 costs an hour and removes most of the harm; the harm is
+not the difficulty of updating, it is not knowing.
+
+Whatever is built, the update must never touch `internal/config-local.php` --
+it holds the declared projects, the origins and the paths to the credentials --
+and must be safe to run on a database it did not create. The lazy column
+catch-up already makes the second true.
