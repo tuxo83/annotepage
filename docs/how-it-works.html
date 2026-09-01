@@ -3,26 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>annotepage &mdash; annotate a page, an AI closes the loop</title>
-<meta name="description" content="Annotate any web page. An AI reads the notes, fixes, replies with what it measured, and stamps the version. Open source, self-hostable, encrypted.">
+<title>How annotepage works &mdash; encryption, limits, server</title>
+<meta name="description" content="The depth behind annotepage: the three gestures, the encryption, what the server can still see, what the tool deliberately does not do, the supply chain, and running the server yourself.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-<link rel="canonical" href="https://annotepage.com/">
-<meta property="og:type"        content="website">
+<link rel="canonical" href="https://annotepage.com/how-it-works.html">
+<meta property="og:type"        content="article">
 <meta property="og:site_name"   content="annotepage">
-<meta property="og:url"         content="https://annotepage.com/">
-<meta property="og:title"       content="Annotate a page. The assistant answers in the thread.">
-<meta property="og:description" content="Annotate any web page. An AI reads the notes, fixes, replies with what it measured, and stamps the version. Open source, self-hostable, encrypted.">
-<meta property="og:image"       content="https://annotepage.com/share.png">
-<meta property="og:image:width"  content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt"   content="annotepage: a reviewer clicks what is wrong, an AI fixes it, replies with what it measured, and stamps the version.">
-<meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="Annotate a page. The assistant answers in the thread.">
-<meta name="twitter:description" content="Annotate any web page. An AI reads the notes, fixes, replies with what it measured, and stamps the version. Open source, self-hostable, encrypted.">
-<meta name="twitter:image"       content="https://annotepage.com/share.png">
-
+<meta property="og:url"         content="https://annotepage.com/how-it-works.html">
+<meta property="og:title"       content="How annotepage works">
+<meta property="og:description" content="The encryption, what the server can still see, what the tool deliberately does not do, the supply chain, and running the server yourself.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
 /* ---------------------------------------------------------------------------
@@ -607,41 +598,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             font: 600 .75rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
             color: var(--accent);
         }
-
-        /* THE DEMO CARD. A plain, real piece of page -- not a picture of one --
-           so the annotepage button beside it has something honest to point at. */
-        .demo {
-            border: 1px solid var(--line); border-radius: var(--radius);
-            background: var(--bg-soft); padding: 1.3rem 1.4rem; margin-top: 1.8rem;
-            max-width: 24rem;
-        }
-        .demo h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
-        .demo .price { font-size: 1.9rem; font-weight: 700; letter-spacing: -.02em; }
-        .demo .price span { font-size: .95rem; font-weight: 400; color: var(--dim); }
-        .demo .year { margin-top: .5rem; font-size: .92rem; color: var(--dim); }
-        .demo .save {
-            display: inline-block; margin-left: .4rem; padding: .12rem .5rem;
-            border-radius: 999px; font-size: .8rem; font-weight: 600;
-            background: var(--ok-soft); color: var(--ok);
-        }
-        .demo-hint { margin-top: .9rem; font-size: .95rem; color: var(--dim); max-width: 30rem; }
-        .demo-hint b { color: var(--text); }
 </style>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "annotepage",
-  "url": "https://annotepage.com/",
-  "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Any",
-  "license": "https://opensource.org/licenses/MIT",
-  "isAccessibleForFree": true,
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "description": "Annotate any web page. An AI reads the notes, fixes, replies with what it measured, and stamps the version. Open source, self-hostable, encrypted.",
-  "codeRepository": "https://github.com/tuxo83/annotepage"
-}
-</script>
 </head>
 <body>
 
@@ -649,9 +606,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     <div class="wrap">
         <a class="mark" href="/">annotepage</a>
         <nav>
-            <a href="#install">Install</a>
+            <a href="/">Landing</a>
+            <a href="#annotate">Annotate</a>
             <a href="#assistant">Assistant</a>
-            <a href="how-it-works.html">How it works</a>
+            <a href="#server">Server</a>
+            <a href="#data">Data</a>
             <a href="https://github.com/tuxo83/annotepage">Source</a>
         </nav>
     </div>
@@ -659,188 +618,167 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 <main>
 
-<!-- 1. WHAT IT DOES ==================================================== -->
 <section class="hero" id="top">
-    <div class="wrap">
-        <p class="eyebrow">Review notes on a web page</p>
-        <h1>Annotate a page. <br>The assistant answers in the thread.</h1>
+    <div class="wrap narrow">
+        <p class="eyebrow">The whole of it</p>
+        <h1>How it works</h1>
         <p class="lead">
-            Someone reviewing a staging site clicks what they see &mdash; a heading, a
-            button, a price &mdash; and writes what is wrong. An assistant reads the
-            notes, fixes the code, <strong>replies saying what it measured</strong>, and
-            marks the remark resolved with the version the fix ships in.
-        </p>
-
-        <ul class="claims">
-            <li>Open source <span>&middot; MIT</span></li>
-            <li>Self-hostable</li>
-            <li>End-to-end encrypted <span>&middot; in the browser</span></li>
-        </ul>
-
-        <ul class="gestures-brief">
-            <li><span class="n">01</span> <b>Open</b> one button on the page</li>
-            <li><span class="n">02</span> <b>Point</b> at what is wrong</li>
-            <li><span class="n">03</span> <b>Write</b> the remark</li>
-        </ul>
-
-        <p><a class="cta" href="#install">Put it on a page</a></p>
-
-        <div class="demo">
-            <h3>Team</h3>
-            <div class="price">$9 <span>per user, per month</span></div>
-            <div class="year">or $90 billed yearly <span class="save">Save 20%</span></div>
-        </div>
-
-        <p class="demo-hint">
-            <b>This page is running annotepage.</b> Open it, bottom right, and tell
-            that badge what is wrong with it. Your note goes nowhere: no server, and
-            a reload forgets it.
-        </p>
-
-        <div class="mock" style="margin-top: 2.4rem;">
-            <div class="mock-bar">
-                <b>Review notes</b>
-                <span class="x">Close</span>
-            </div>
-            <div class="mock-body">
-                <div class="card">
-                    <span class="stamp">Resolved on Sep 1, 2026, 9:02 AM by Assistant</span>
-                    <div class="card-meta"><b>Camille</b><span>Sep 1, 2026, 9:02 AM</span></div>
-                    <div class="card-about">About: Save 20%</div>
-                    <p>The yearly toggle says &ldquo;Save 20%&rdquo;, but Team is $9 a month
-                    and $90 a year. That is not 20%.</p>
-                    <div class="card-actions">Reply &middot; Show on the page &middot; Reopen this remark</div>
-                </div>
-                <div class="card reply">
-                    <div class="card-meta"><b>Assistant</b><span>Sep 1, 2026, 9:02 AM</span></div>
-                    <p>Measured: 12 x $9 = $108 a year against $90 billed yearly, so 16.7%,
-                    not 20%. Business is the same. The badge now reads Save 17%.</p>
-                </div>
-            </div>
-        </div>
-
-        <p class="small dim" style="margin-top: 1rem; max-width: 34rem;">
-            That thread is real: it is
-            <a href="#assistant">the session below</a>, seen from the other side.
+            What the three gestures are, what the encryption does and does not cover, what
+            the server can still see, what the tool deliberately refuses to do, where the
+            client comes from, and how to run the server yourself. The
+            <a href="/">landing page</a> is the short version.
         </p>
     </div>
 </section>
 
-<!-- 2. HOW YOU INSTALL IT ============================================== -->
-<section id="install">
+<!-- HOW YOU ANNOTATE =================================================== -->
+<section id="annotate">
     <div class="wrap">
-        <h2>Put it on a page</h2>
+        <h2>Three gestures</h2>
+        <p class="lead">
+            At rest the tool is one button, bottom right. It adds a single element at the
+            end of <code>&lt;body&gt;</code> and keeps everything inside it: no class, no
+            attribute and no style lands on an element of your page.
+        </p>
 
-        <!-- ===================================================================
-             QUICK-START ROUTES.
+        <div class="gestures">
 
-             THREE SLOTS EXIST HERE BY DESIGN, AND ONLY THE ONE THAT WORKS IS
-             RENDERED.
+            <div class="gesture">
+                <div class="frame" aria-hidden="true">
+                    <div class="bar-line w70"></div>
+                    <div class="bar-line w85"></div>
+                    <div class="bar-line w45"></div>
+                    <span class="pill"><span class="dot"></span>Annotate this page<span class="count">2 notes</span></span>
+                </div>
+                <h3>Open</h3>
+                <p>One button, and a count of the notes anchored on this page &mdash;
+                history included, not a to-do list. It is the tool's only trace at
+                rest.</p>
+            </div>
 
-               A. the script tag        <- below, and the only one that exists
-               B. a platform plugin     <- WordPress first. Does not exist.
-               C. a browser extension   <- Chrome, Chromium, Firefox. Does not
-                                           exist. See ROADMAP.md: it is a second
-                                           product, not a shortcut.
+            <div class="gesture">
+                <div class="frame" aria-hidden="true">
+                    <div class="hint">Click an element of the page to write a remark
+                    about it.<br>Press Escape to stop.</div>
+                    <div class="target">
+                        <span class="marker">Save 20%</span>
+                        <span class="fake-cta">Save 20%</span>
+                    </div>
+                </div>
+                <h3>Point</h3>
+                <p>Click what you see. The tool draws its own rectangle around it and
+                shows you the text it is about to quote &mdash; it never puts an outline
+                on your element.</p>
+            </div>
 
-             To fill a slot: drop another <article class="path"> into .paths and
-             change nothing else. The grid takes one, two or three children as it
-             stands.
+            <div class="gesture">
+                <div class="frame" aria-hidden="true">
+                    <div class="mini-form">
+                        <div class="lbl">About: Save 20%</div>
+                        <div class="lbl">You are writing as Camille.</div>
+                        <div class="fld tall">The yearly toggle says &ldquo;Save 20%&rdquo;,
+                        but Team is $9 a month and $90 a year.</div>
+                        <span class="send">Send</span>
+                    </div>
+                </div>
+                <h3>Write</h3>
+                <p>Your name is remembered for next time. The remark is sealed in the
+                browser, then pinned to that element for everybody.</p>
+            </div>
 
-             DO NOT RENDER AN EMPTY SLOT, and above all do not label one "coming
-             soon". ROADMAP.md says it in as many words: a platform published with
-             a "coming soon" label turns a strength into a visible gap. One route
-             presented with confidence beats three where two are promises.
-             =================================================================== -->
-        <div class="paths">
-            <article class="path">
-                <p class="path-who">If you can edit the page</p>
-                <h3>Copy and paste a tag</h3>
-                <p>One script tag at the end of <code>&lt;body&gt;</code>. No framework,
-                no bundler, no build step: one file, no dependencies.</p>
-                <p class="path-cost"><b>Two steps here,</b> about a minute. Then a server
-                has to answer, and <a href="how-it-works.html#server">there is no public
-                relay yet</a>.</p>
-            </article>
         </div>
 
-        <div class="step">
-            <div class="step-head">
-                <span class="step-num">01</span>
-                <h3>Take the salt, and save it</h3>
-            </div>
-            <div class="step-body">
-                <p>
-                    Generated here, in your browser. This page makes no network
-                    request, so this value has never existed anywhere else.
-                </p>
-
-                <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">your salt &mdash; save this before anything else</span>
-                        <button class="copy" type="button" data-copy="snip-salt">Copy</button>
-                    </div>
-<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s own setup screen does the same thing.</code></pre>
-                </div>
-
-                <p class="aside-line">
-                    Project id <code id="the-id">&mdash;</code>, derived from that salt.
-                    It is public, and the salt cannot be worked back from it.
-                    <button type="button" class="linkish" id="regenerate">Generate another</button>
-                </p>
-
-                <div class="callout">
-                    <p><strong>Salt lost = notes lost.</strong> Nobody can give it back to
-                    you: no recovery, no escrow, and no rotation. Put it where your team
-                    keeps its passwords, now &mdash;
-                    <a href="how-it-works.html#no-recovery">what that costs, in full</a>.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="step">
-            <div class="step-head">
-                <span class="step-num">02</span>
-                <h3>Paste the tag it gives you</h3>
-            </div>
-            <div class="step-body">
-                <p>
-                    At the end of <code>&lt;body&gt;</code>, on the pages to annotate. The
-                    project id is already filled in.
-                </p>
-
-                <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">the finished tag</span>
-                        <button class="copy" type="button" data-copy="snip-tag">Copy</button>
-                    </div>
-<pre id="snip-tag"><code>&lt;script src="https://annotepage.com/annotepage-client-2.0.1.js"
-        integrity="sha384-VBUfe2CFvh85WRBCH1/uKse1O2wauw3at7B9gGC2fC8Y/sG03p9bZABq3MyUDbKE"
-        crossorigin="anonymous"
-        data-server="https://your-server.example.com/annotepage/api.php"
-        data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
-        data-version="1.4.13"
-        defer&gt;&lt;/script&gt;</code></pre>
-                </div>
-
-                <p class="small dim">
-                    The server is then told about the project in
-                    <a href="how-it-works.html#server">three lines of its
-                    configuration</a>. The salt is not one of them: the server receives it
-                    in no form whatsoever.
-                </p>
-            </div>
+        <div class="note-aside">
+            <p>Once in place the tool no longer keeps quiet. Every failure is shown, with
+            the message the server wrote, and <strong>the text typed stays in the
+            form</strong>. A remark believed saved and not saved is worse than no tool at
+            all.</p>
         </div>
     </div>
 </section>
 
-<!-- 3. HOW AN AI USES IT =============================================== -->
+<!-- HOW AN AI USES IT ================================================== -->
 <section id="assistant">
     <div class="wrap">
         <h2>How an assistant uses it</h2>
         <p class="lead">
-            Collecting a remark is common; writing back into the thread, with a
-            measurement and a version, is not.
+            This is the part no neighbouring tool does. Collecting a remark is common;
+            writing back into the thread, with a measurement and a version, is not.
+            Below is a real session, captured against a running server, a real browser
+            and the published package.
+        </p>
+
+        <!-- A TERMINAL, IN PLAIN HTML AND CSS. No script, nothing to play, nothing
+             to step through: it is a picture that happens to be text, so it reads
+             identically with JavaScript off and can be selected and searched.
+             Every line is verbatim captured output. The only editing permitted is
+             dropping a WHOLE line, and every drop leaves the visible [...] marker.
+             Do not reflow the element path, do not shorten the reply. A long line
+             WRAPS, in CSS, with a hanging indent; that changes no character, and a
+             selection of this block still yields the transcript line for line. -->
+        <figure class="term-fig">
+            <div class="term">
+                <div class="term-bar">
+                    <span class="lamp" aria-hidden="true"></span>
+                    <span>a real session &mdash; 1 September 2026</span>
+                </div>
+<pre><code><span class="cmd">$ annotepage open</span>
+<span class="cut">[... 7 header lines: tool, format, version, project, encryption, export, notes ...]</span>
+note 1
+page /pricing
+page-index okKG0TYI5LJQbftXDJqBGw
+element main:nth-of-type(1) &gt; p:nth-of-type(1) &gt; span:nth-of-type(1)
+excerpt Save 20%
+mode encrypted
+author Camille
+date 2026-09-01T07:02:33+00:00
+version 1.4.12
+environment staging
+viewport 1280x800
+status open
+text
+    The yearly toggle says "Save 20%", but Team is $9 a month and $90 a year. That is not 20%.
+
+<span class="cut">[... note 2, same shape ...]</span>
+
+<span class="cmd">$ annotepage reply 1 'Measured: 12 x $9 = $108 a year against $90 billed yearly, so 16.7%, not 20%. Business is the same. The badge now reads Save 17%.'</span>
+Reply written in the thread of note 1, signed "Assistant".
+
+<span class="cmd">$ annotepage resolve 1 1.4.13</span>
+Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
+            </div>
+            <figcaption>
+                Captured output, not a mock-up, and the note is here with every field it
+                carries. The header of the export is seven lines a machine wants and a
+                reader does not; that and the second note are the only things dropped, and
+                each drop is marked. Nothing else is cut, shortened or reflowed &mdash; a
+                long line wraps where the frame ends rather than hiding past it.
+            </figcaption>
+        </figure>
+
+        <ul class="plain">
+            <li><b>The remark arrives already usable.</b> It carries the page, the
+            element, the text that was on screen, the author, the version being served
+            and the viewport it was written at. That is what makes a fix possible without
+            a conversation.</li>
+            <li><b>The answer is a measurement.</b> &ldquo;12 x $9 = $108 a year
+            against $90 billed yearly, so 16.7%, not 20%.&rdquo; The arithmetic was run
+            before the reply was written, and the page really changed:
+            <code>Save 20%</code> became <code>Save 17%</code>. &ldquo;Done&rdquo; would
+            have been worth nothing to the person who wrote the remark.</li>
+            <li><b>Resolving states a version.</b> <code>1.4.13</code>, and that is the
+            point. The client compares it with the version the site declares it is
+            serving: newer than the site, and the note stays under the reviewer's eyes,
+            because the defect is still on screen.</li>
+            <li><b>The reviewer sees all of it</b>, on the element they clicked &mdash;
+            that is <a href="/">the panel on the landing page</a>, which is the same
+            thread from the other side.</li>
+        </ul>
+
+        <p class="small dim">
+            One fact per line, <code>key value</code>, two-space steps for replies.
+            <code>element</code> is a structural path and never a class or an id: a class
+            is renamed by the next rebuild, and the position is what survives it.
         </p>
 
         <div class="snip">
@@ -852,67 +790,298 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 claude mcp add annotepage -- annotepage-mcp</code></pre>
         </div>
 
-        <!-- A TERMINAL, IN PLAIN HTML AND CSS. No script, nothing to play, nothing
-             to step through: it is a picture that happens to be text, so it reads
-             identically with JavaScript off and can be selected and searched.
-             Every line is verbatim captured output. The only editing permitted is
-             dropping a WHOLE line, and every drop leaves the visible [...] marker
-             below. Do not reflow the element path, do not shorten the reply.
-             A long line WRAPS, in CSS, with a hanging indent; that changes no
-             character, and a selection of this block still yields the transcript
-             line for line. -->
-        <figure class="term-fig">
-            <div class="term">
-                <div class="term-bar">
-                    <span class="lamp" aria-hidden="true"></span>
-                    <span>a real session &mdash; 1 September 2026</span>
-                </div>
-<pre><code><span class="cmd">$ annotepage open</span>
-<span class="cut">[... 7 header lines: tool, format, version, project, encryption, export, notes ...]</span>
-note 1
-page /pricing
-<span class="cut">[... 4 fields: page-index, mode, date, viewport ...]</span>
-element main:nth-of-type(1) &gt; p:nth-of-type(1) &gt; span:nth-of-type(1)
-excerpt Save 20%
-author Camille
-version 1.4.12
-environment staging
-status open
-text
-    The yearly toggle says "Save 20%", but Team is $9 a month and $90 a year. That is not 20%.
+        <p class="small dim">
+            The same package installs the <code>annotepage</code> command used above, for
+            a script, a CI job, or an assistant with no MCP client. Node 18 or later, no
+            dependencies. Its configuration file holds the project salt, so it is the only
+            place the plaintext comes back: <code>chmod 600</code>, never committed. Set
+            <code>"read_only": true</code> when plugging an assistant onto a review you do
+            not know yet &mdash; it cuts every write.
+        </p>
 
-<span class="cmd">$ annotepage reply 1 'Measured: 12 x $9 = $108 a year against $90 billed yearly, so 16.7%, not 20%. Business is the same. The badge now reads Save 17%.'</span>
-Reply written in the thread of note 1, signed "Assistant".
+        <h3 style="margin-top:2.6rem;">The seven tools an assistant gets</h3>
+        <div class="tbl-wrap">
+            <table>
+                <thead>
+                    <tr><th scope="col">Tool</th><th scope="col">What it does</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>annotepage_open_notes</code></td><td>the remarks still open, optionally for one page</td></tr>
+                    <tr><td><code>annotepage_read_note</code></td><td>one note with its replies</td></tr>
+                    <tr><td><code>annotepage_reply</code></td><td>answer in the thread</td></tr>
+                    <tr><td><code>annotepage_mark_resolved</code></td><td>resolve, stating the version the fix ships in</td></tr>
+                    <tr><td><code>annotepage_reopen</code></td><td>put a note back, when the fix was incomplete</td></tr>
+                    <tr><td><code>annotepage_export</code></td><td>the whole review as text</td></tr>
+                    <tr><td><code>annotepage_projects</code></td><td>the projects this configuration knows</td></tr>
+                </tbody>
+            </table>
+        </div>
 
-<span class="cmd">$ annotepage resolve 1 1.4.13</span>
-Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
+        <div class="note-aside">
+            <p>The package <strong>never creates a note</strong>. A note is pinned to an
+            element of a page; an assistant has no browser and no element to point at, so
+            what it manufactured would be undisplayable where it counts. The thread of an
+            existing note is the place provided for it to speak. Nothing is ever erased:
+            resolving and reopening are the only two state changes, and reopening records
+            no reason.</p>
+
+            <p>Every write is <strong>signed</strong> with the name in the configuration.
+            A thread where everybody signs and one voice does not is a thread you doubt
+            entirely.</p>
+        </div>
+
+        <h3 style="margin-top:2.6rem;">Or use nothing at all</h3>
+        <p class="small dim" style="margin-top:.6rem;">
+            In <em>plain</em> mode &mdash; self-hosted only &mdash; the server serves the
+            same document, and any assistant that can fetch a URL reads the whole review
+            with no integration whatsoever.
+        </p>
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">plain mode, no package</span>
+                <button class="copy" type="button" data-copy="snip-curl">Copy</button>
             </div>
-            <figcaption>
-                Captured output, not a mock-up. Every drop is marked; nothing else is
-                cut or reflowed.
-            </figcaption>
-        </figure>
-
-        <p>
-            The remark arrives carrying the page, the element, the text on screen and
-            the version being served, so a fix needs no conversation back. Resolving
-            states the version the fix ships in: until the site serves it, the note stays
-            under the reviewer&rsquo;s eyes.
+<pre id="snip-curl"><code>curl 'https://staging.example.com/notes/api.php?action=text&amp;project=&lt;id&gt;'</code></pre>
+        </div>
+        <p class="small dim">
+            In <strong>encrypted</strong> mode that same address returns only the
+            structure &mdash; note numbers, page indexes, dates, status &mdash; because
+            the server has neither the paths, nor the names, nor the texts. A reader
+            therefore knows, with no special-case code, that it is missing the salt.
+            <code>annotepage text</code> is the step that fills it in, and it emits the
+            same grammar: a tool reading the export cannot tell which of the two
+            produced it.
         </p>
     </div>
 </section>
 
-<!-- 4. THE REST ======================================================== -->
-<section id="more">
+<!-- THE LONG ROAD ====================================================== -->
+<section id="server">
     <div class="wrap">
-        <h2>The rest of it</h2>
+        <p class="eyebrow">The long road</p>
+        <h2>Run the server yourself</h2>
         <p class="lead">
-            A second page carries the depth: the three gestures in full, the encryption and what the server can
-            still see through it, what the tool deliberately does not do &mdash; no
-            accounts, no moderation, no notifications, no deletion except by age &mdash;
-            the supply chain, and how to run the server yourself.
+            The tag on the landing page assumes a server that already answers. There is no
+            public relay yet, so today that server is something you put somewhere. It is
+            one PHP codebase and a database, with no daemon and nothing to keep running
+            &mdash; but it is an afternoon, once, not a paste.
         </p>
-        <p><a class="cta" href="how-it-works.html">Read how it works</a></p>
+
+        <h3 style="margin-top:2.6rem;">Declare the project on the server</h3>
+        <p class="small dim" style="margin-top:.6rem;">
+            Three facts, in the server's local configuration: the id, the origins allowed
+            to consume it, and the mode. The salt is not among them &mdash; the server
+            receives it in no form whatsoever, and the tool provides no channel for it.
+        </p>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">internal/config-local.php</span>
+                <button class="copy" type="button" data-copy="snip-server">Copy</button>
+            </div>
+<pre id="snip-server"><code>'projects' =&gt; array(
+    'your-project-id' =&gt; array(
+        'origins' =&gt; array('https://staging.example.com',
+                           'https://www.example.com'),
+        'mode'    =&gt; 'encrypted',
+    ),
+),</code></pre>
+        </div>
+
+        <p class="small">
+            Each reviewer then pastes the salt once. The tool checks that it really
+            derives the project id the page declares, then remembers it in that browser,
+            for that origin.
+        </p>
+
+        <h3 style="margin-top:2.6rem;">The choices the configuration makes</h3>
+
+        <ul class="plain">
+            <li><b>Where it goes.</b> On the site itself, under a path such as
+            <code>/notes/</code>, or on one machine serving several sites. Drop the
+            web root in place, start from <code>config-local.example.php</code>, and
+            point <code>data-server</code> at <code>api.php</code>.</li>
+
+            <li><b>Self-hosted, or relay.</b>
+            <code>'deployment' =&gt; 'self-hosted'</code> is for notes that live beside the
+            site under review, on the same machine and behind the same access
+            restriction. <code>'relay'</code> is the other shape: one server, several
+            sites that are not its own. The choice changes what the server accepts, not
+            what the client does.</li>
+
+            <li><b><code>open_registration</code></b> &mdash; off by default, and a relay
+            only. It serves a project id <em>nobody declared</em>, so a team can paste the
+            tag and start writing without anyone touching the server configuration. Such a
+            project is always encrypted: plain mode is refused there, not offered. And it
+            declares no origins, so it has no domain lock. That is the coin it pays in,
+            and it is stated here rather than discovered.</li>
+
+            <li><b><code>data-mode="plain"</code></b> is acceptable self-hosted only,
+            where encryption protects nothing: the notes sit in the same database, on the
+            same machine, behind the same restriction as the site under review. A shared
+            relay refuses it with a 400, and shows its message.</li>
+
+            <li><b>Without a local configuration file the server answers nothing at
+            all.</b> That is the safe default, not a failure to explain.</li>
+        </ul>
+
+        <p class="small">
+            The whole procedure &mdash; requirements, database, origins, expiry, the
+            diagnostic screen that tells you what the server thinks of your setup &mdash;
+            is in
+            <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">server/INSTALL.md</a>.
+        </p>
+    </div>
+</section>
+
+<!-- THE REST =========================================================== -->
+<section id="data">
+    <div class="wrap">
+        <h2>Where the notes live, and who can read them</h2>
+        <p class="lead">
+            You choose the server: the site itself, or a separate machine hosting several
+            projects. Either way the notes are encrypted in the browser by default, and
+            whoever runs the server &mdash; including you &mdash; cannot read the review.
+        </p>
+
+        <div class="callout" id="no-recovery">
+            <p><strong>Salt lost = notes lost.</strong> The salt is the only secret of the
+            project. It never leaves the browser, the server receives it in no form
+            whatsoever, and nobody can give it back to you &mdash; no recovery, no
+            security question, no escrow. There is no rotation either: a leaked salt means
+            starting a fresh project and abandoning the notes already written. This is the
+            price of the sentence above, and it is not negotiable away.</p>
+        </div>
+
+        <div class="facts">
+            <div>
+                <h3>One secret, three keys</h3>
+                <p>HKDF-SHA-256 derives everything from the 256-bit salt: the public
+                project id (22 characters), the AES-256-GCM key, and an HMAC key for the
+                page index. One secret to manage, and it never leaves the browser.</p>
+            </div>
+            <div>
+                <h3>Grouped without being read</h3>
+                <p>The server groups pages by a <em>blind index</em>: the first 16 bytes
+                of an HMAC of the path, which it cannot invert. It nests replies, dates
+                writes and sorts open from resolved without opening anything.</p>
+            </div>
+            <div>
+                <h3>Everything observed, sealed</h3>
+                <p>Not just the text. Encrypting the remark alone would hand over the
+                site's tree, its wording and the list of its reviewers &mdash; and a
+                staging site is precisely what has not been published yet.</p>
+            </div>
+            <div>
+                <h3>The domain is not in the key</h3>
+                <p>The day staging becomes production, the notes stay readable. Each
+                reviewer pastes the salt once more on the new domain; the notes
+                themselves do not move.</p>
+            </div>
+        </div>
+
+        <div class="note-aside">
+            <p>What goes out is an <strong>AES-256-GCM envelope</strong>: the text, but
+            also the page, the selector, the excerpt, the name, the version, the
+            environment and the viewport. What comes back is pinned to the element again
+            by its selector and its fingerprint &mdash; and when the element has really
+            changed, the note is listed as an orphan rather than pinned to the wrong
+            thing.</p>
+        </div>
+
+        <h3 style="margin-top:2.8rem;">What the server sees anyway</h3>
+        <p class="small dim" style="margin-top:.6rem; max-width:44em;">
+            Encrypting the fields is not invisibility. An operator must be able to read
+            this without feeling betrayed, and you must know it before choosing where to
+            put the server.
+        </p>
+        <ul class="plain">
+            <li>The <b>number of projects</b>, and of notes in each.</li>
+            <li>The <b>number of distinct pages</b> annotated, and the notes per page: a
+            page that collects forty remarks is visible.</li>
+            <li>The <b>time of every write</b>, hence the rhythm of the review and the
+            date of the last note.</li>
+            <li>The <b>shape of the threads</b>, and the fix rate and delay, through the
+            resolution dates.</li>
+            <li>The <b>approximate length of every remark</b>: the size of the envelope
+            gives it away to within a few bytes. It is not masked.</li>
+            <li>The <b>IP address and user agent</b> of every reviewer, like any HTTP
+            server.</li>
+            <li>On a shared server, the <b>domain of the site under review</b>, through
+            the <code>Origin</code> header the domain lock has to read. The promise is not
+            &ldquo;it does not know which site you are reviewing&rdquo;; it is &ldquo;it
+            can read neither your paths, nor your names, nor your remarks&rdquo;.</li>
+        </ul>
+
+        <div class="callout">
+            <p><strong>The domain lock is an anti-abuse measure, not an XSS defence.</strong>
+            It stops another site consuming a project id found in the source of a page. An
+            XSS runs <em>inside</em> the target page, so with the legitimate origin: it
+            goes through the lock without effort, and it reaches
+            <code>localStorage</code> anyway &mdash; hence the salt. The XSS defence is
+            elsewhere: the tool assigns text through <code>textContent</code> and never
+            parses it as markup, and a check in <code>npm run check</code> enforces it.</p>
+        </div>
+
+        <h3 style="margin-top:2.8rem;">What it deliberately does not do</h3>
+        <p class="small dim" style="margin-top:.6rem; max-width:44em;">
+            These are choices. Saying them is more useful than discovering them later.
+        </p>
+        <ul class="plain">
+            <li><b>No accounts, no login.</b> The name typed in is a convenience, not an
+            identity. The project id is a bearer token: whoever has it can read and write
+            &mdash; and in encrypted mode, what they read is useless without the salt.</li>
+            <li><b>No moderation, and nobody can delete.</b> A note that is
+              posted stays; the only state it can change is resolved, and that can
+              be taken back. A remark one can erase is a remark one can no longer
+              contradict. The single exception is age: a server may be set to expire
+              whole threads once their last message passes a given number of days
+              &mdash; a public relay needs a ceiling on what it stores. Nobody
+              chooses which, and a server that does it says so in the header of
+              every export.</li>
+            <li><b>No way to annotate a site you cannot edit.</b> The tag has to be in
+            the page, so the tool is a property of the site and not of the reader.</li>
+            <li><b>No notifications.</b> Nobody is told that a note has arrived.</li>
+            <li><b>No salt rotation,</b> and no channel for handing the salt to the second
+            reviewer.</li>
+            <li><b>No overview across pages.</b> Open a page, or read the export.</li>
+            <li><b>No screenshots</b> attached to a note &mdash; weighed, and not settled:
+            the reasons are written down in the roadmap.</li>
+        </ul>
+
+        <h3 style="margin-top:2.8rem;">Where the client comes from, and what it needs</h3>
+
+        <div class="note-aside" id="supply-chain">
+            <p><strong><code>integrity</code> is not decorative.</strong> Once the
+            client comes from a CDN, the real risk of this architecture is the
+            supply chain: a file swapped at the CDN's host runs in your page,
+            with access to <code>localStorage</code> &mdash; hence to the salt.
+            The digest makes that swap useless, and
+            <code>crossorigin="anonymous"</code> goes with it: without it the
+            browser does not check the digest of a cross-origin resource.</p>
+
+            <p>The digest in the tag on the landing page is the one for
+            <strong>2.0.1</strong>, the version that filename names. Every version has its
+            own, printed by the build and listed in <code>dist/HASHES.txt</code> inside
+            the package. Never copy a digest from a page documenting another version: the
+            browser will refuse the file, and that is exactly its job.</p>
+
+            <p><strong>Do not add <code>type="module"</code>.</strong> A module
+            script has no <code>document.currentScript</code>: the client could
+            no longer read its own attributes, and would stand down in silence.</p>
+        </div>
+
+        <div class="note-aside">
+            <p><strong>What it requires, and nothing else:</strong> a recent browser in a
+            <em>secure context</em> &mdash; <code>https</code>, or
+            <code>localhost</code>. Without one the browser does not provide WebCrypto,
+            and the tool can neither encrypt nor even compute the page index; it says so
+            on screen rather than pretending. And a reachable annotepage server.</p>
+        </div>
+
+        <p style="margin-top:2.2rem;">
+            <a class="cta" href="/">Back to the landing page</a>
+        </p>
     </div>
 </section>
 
@@ -921,15 +1090,23 @@ Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
 <footer>
     <div class="wrap">
         <ul class="foot-links">
-            <li><a href="how-it-works.html">How it works</a></li>
+            <li><a href="/">Landing page</a></li>
             <li><a href="https://github.com/tuxo83/annotepage">Source</a></li>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md">Format &amp; security model</a></li>
+            <li><a href="https://github.com/tuxo83/annotepage/blob/main/client/README.md">Client</a></li>
+            <li><a href="https://github.com/tuxo83/annotepage/blob/main/mcp/README.md">MCP &amp; CLI</a></li>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">Server install</a></li>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/ROADMAP.md">Roadmap</a></li>
         </ul>
         <p>
-            annotepage is MIT-licensed. It loads no font, no script and no image from
-            anywhere else: no outgoing request at all.
+            annotepage is MIT-licensed. Two packages on npm:
+            <code>annotepage-client</code> and <code>annotepage-mcp</code>.
+            <code>FORMAT.md</code> is the reference; where any other document disagrees
+            with it, it is right.
+        </p>
+        <p style="margin-top:.8rem;">
+            This page loads no font, no script and no image from anywhere else. It makes
+            no outgoing request at all.
         </p>
     </div>
 </footer>
@@ -1024,162 +1201,5 @@ Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
 </script>
 
 
-<script>
-(function () {
-    'use strict';
-
-    /* THE SALT IS GENERATED HERE, IN THE READER'S BROWSER, AND GOES NOWHERE.
-       This page issues no network request at all -- that is checked -- so
-       there is no path by which the value below could reach us, or anyone.
-       It is the same computation the client's own setup screen performs; it
-       happens here so that a reader can obtain a project before installing
-       anything, instead of having to stand up a server first in order to be
-       handed a salt. */
-
-    var out    = document.getElementById('the-salt');
-    var idOut  = document.getElementById('the-id');
-    var tagOut = document.getElementById('tag-id');
-    var again  = document.getElementById('regenerate');
-    /* Every target is required. A missing one means the markup moved, and a
-       page that shows a salt while the tag still carries the example id hands
-       out a project the server will refuse: it must stop, not half-run. */
-    if (!out || !idOut || !tagOut) return;
-
-    /* Without a secure context there is no WebCrypto, and a salt drawn from
-       Math.random would be guessable -- which is worse than no salt at all,
-       because it would look like one. We say so instead. */
-    if (!window.crypto || !window.crypto.subtle || !window.crypto.getRandomValues) {
-        out.textContent = 'This browser gives no WebCrypto here. '
-            + 'Open this page over https, or use the client\u2019s setup screen.';
-        if (again) again.hidden = true;
-        return;
-    }
-
-    /* ---- BEGIN derivation: must agree with mcp/src/crypto.mjs.
-            tools/check-landing-derivation.mjs runs this against it. ---- */
-    var HKDF_SALT_STRING = 'annotepage/1';
-
-    function b64url(bytes) {
-        var s = '';
-        for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    }
-
-    function projectIdFromSalt(saltBytes) {
-        var enc = new TextEncoder();
-        return window.crypto.subtle
-            .importKey('raw', saltBytes, 'HKDF', false, ['deriveBits'])
-            .then(function (master) {
-                return window.crypto.subtle.deriveBits({
-                    name: 'HKDF',
-                    hash: 'SHA-256',
-                    /* HKDF's "salt" is NOT our salt: ours is the input keying
-                       material. Swapping the two yields a system that works and
-                       whose ids disagree with every other implementation. */
-                    salt: enc.encode(HKDF_SALT_STRING),
-                    info: enc.encode('id')
-                }, master, 256);
-            })
-            .then(function (bits) {
-                /* 16 bytes, not 32: this value is copied by hand into a tag and
-                   a configuration file. 22 characters can be; 43 cannot. */
-                return b64url(new Uint8Array(bits).subarray(0, 16));
-            });
-    }
-    /* ---- END derivation ---- */
-
-    function fresh() {
-        var salt = new Uint8Array(32);
-        window.crypto.getRandomValues(salt);
-        var text = b64url(salt);
-        return projectIdFromSalt(salt).then(function (id) {
-            out.textContent    = text;
-            idOut.textContent  = id;
-            tagOut.textContent = id;
-        });
-    }
-
-    if (again) {
-        again.addEventListener('click', function () {
-            fresh().then(function () { out.focus && out.focus(); });
-        });
-    }
-    fresh();
-}());
-</script>
-
-<!-- ===================================================================
-     THE PRODUCT, RUNNING ON ITS OWN PAGE.
-
-     This is not an illustration and not a copy: it is
-     annotepage-client-2.0.1.js, the file the tag above tells you to load,
-     switched on. The page is therefore its own smoke test -- if this stops
-     working, the product is broken and we want to find out here.
-
-     Two things make it work with no server:
-
-     1. A DEMO SALT, public and fixed. Publishing a salt is normally the worst
-        thing one can do; here it is harmless, because nothing is transmitted.
-        It is deposited before the client loads, otherwise the client opens its
-        blocking "the salt of this project is needed" screen -- correctly.
-
-     2. A STAND-IN FOR THE SERVER. fetch is wrapped, and any call carrying
-        /DEMO/ is answered from an array in this tab. Every other request goes
-        through untouched. The encryption, the anchoring and the panel are the
-        real ones: only the transport is local.
-     =================================================================== -->
-<script>
-(function () {
-    'use strict';
-    var PROJECT = 'Xt8fTaJo1culOstdfwmWkQ';
-    var SALT    = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
-    try { localStorage.setItem('annotepage/salt/' + PROJECT, SALT); } catch (e) { return; }
-
-    var rows = [], next = 1, real = window.fetch;
-    window.fetch = function (url) {
-        var u = String(url && url.url ? url.url : url);
-        if (u.indexOf('/DEMO/') === -1) return real.apply(this, arguments);
-
-        var q = new URLSearchParams((u.split('?')[1] || ''));
-        var body = new URLSearchParams((arguments[1] && arguments[1].body) || '');
-        var out;
-
-        if (q.get('action') === 'add') {
-            var r = {
-                id: next++, project: body.get('project'), page_index: body.get('index'),
-                format: 2, mode: body.get('mode') || 'encrypted',
-                reply_to: body.get('reply_to') ? +body.get('reply_to') : null,
-                created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-                resolved_at: null, resolved_by: '', resolved_version: '',
-                payload: body.get('payload') || '', resolution_payload: '',
-                page: '', selector: '', fingerprint: '', excerpt: '',
-                author: '', text: '', version: '', environment: '', viewport: ''
-            };
-            rows.push(r);
-            out = { ok: true, project: r.project, note: r };
-        } else if (q.get('action') === 'resolve') {
-            var id = +body.get('id');
-            rows.forEach(function (r) {
-                if (r.id !== id) return;
-                var on = body.get('resolved') !== 'no';
-                r.resolved_at = on ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null;
-                r.resolution_payload = on ? (body.get('resolution_payload') || '') : '';
-            });
-            out = { ok: true, project: PROJECT, note: rows.filter(function (r) { return r.id === id; })[0] };
-        } else {
-            var idx = q.get('index');
-            out = { ok: true, active: true, project: q.get('project'), index: idx,
-                    notes: rows.filter(function (r) { return r.page_index === idx; }) };
-        }
-        return Promise.resolve(new Response(JSON.stringify(out),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }));
-    };
-}());
-</script>
-<script src="/annotepage-client-2.0.1.js"
-        data-server="/DEMO/api.php"
-        data-project="Xt8fTaJo1culOstdfwmWkQ"
-        defer></script>
 </body>
 </html>
