@@ -2,3 +2,8 @@
 # projects. It is DROPPED IN on each server, never versioned -- the template to
 # copy from is.
 webroot/internal/config-local.php
+
+# The updater's staging, backups and state. It appears only on a server that
+# has been given permission to rewrite itself, and it is per-server: nothing in
+# there describes the project.
+webroot/.update/

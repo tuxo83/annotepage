@@ -174,6 +174,7 @@ require __DIR__ . '/internal/input.php';
 require __DIR__ . '/internal/rate-limit.php';
 require __DIR__ . '/internal/store.php';
 require __DIR__ . '/internal/text-export.php';
+require __DIR__ . '/internal/update.php';
 
 // --- 3. Response helpers --------------------------------------------------
 
@@ -339,6 +340,22 @@ function ap_write_diagnostic($config, $version, $configError)
     foreach ($extensions as $extension) {
         ap_diag_line('php.extension.' . $extension,
             extension_loaded($extension) ? 'present' : 'MISSING');
+    }
+    echo "\n";
+
+    // --- Versions, and the way out -----------------------------------------
+    // LEVEL 1, and it is here rather than further down on purpose: this block
+    // is written even when the configuration failed to load, because "which
+    // version runs here, which one is published, and can this host reach the
+    // outside at all" are the questions one asks precisely when nothing else
+    // answers. It writes nothing and needs no permission on anything.
+    //
+    // It DOES make one outbound request, deliberately: the published version
+    // cannot be known without one. That happens only when a human asks for
+    // this page, never on a visitor's note.
+    foreach (ap_update_diagnostic_lines(
+                 $configError === null ? $config : ap_config_defaults()) as $line) {
+        ap_diag_line($line[0], $line[1]);
     }
     echo "\n";
 
@@ -623,6 +640,21 @@ $store = new ApStore($config);
 // the note just written is never a candidate -- the cutoff is days in the past.
 if ($write && !empty($config['max_note_age_days']) && mt_rand(1, 50) === 1) {
     $store->expireOlderThan($config['max_note_age_days']);
+}
+
+// SELF-UPDATE, opportunistically, and OFF unless somebody wrote the key. Same
+// idiom as the sweep above -- there is no scheduled task on this hosting -- with
+// three differences, each of which is the point:
+//
+//   - no die roll. The gate is a DATE, at most one check a day; rolling a die
+//     on top of it would mean a server with forty writes a day never checks;
+//   - nothing happens HERE. This only registers a shutdown function, so every
+//     byte of network happens AFTER api.php has answered. A visitor who wrote a
+//     note must never wait on a fetch to GitHub, and on an interface that cannot
+//     guarantee that, the deferred half declines to run at all and says so;
+//   - on writes only, like the sweep, and for the same reason.
+if ($write) {
+    ap_update_schedule($config);
 }
 
 switch ($action) {

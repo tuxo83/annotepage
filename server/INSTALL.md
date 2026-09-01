@@ -156,6 +156,94 @@ outage. The diagnostic does say so.
 
 ---
 
+## Letting the server update itself
+
+Optional, **off**, and it stays off until you write the key. Nothing below adds
+a step for anyone who does not want it: an installation that ignores this
+section behaves exactly as it always has.
+
+### What ships with the release
+
+`webroot/MANIFEST` lists every shipped file with its SHA-256. It is the
+integrity check — there is no archive to extract, because shared hosting often
+has neither the zip nor the phar extension. It also verifies an installation by
+hand, with a command your host already has:
+
+```
+cd webroot && sha256sum -c MANIFEST
+```
+
+### The way that costs nothing: from a shell or from cron
+
+```
+php webroot/internal/update.php
+```
+
+It reads the running version, asks the repository for the published one, and
+**stops there if they match** — which is what most runs do. Otherwise it fetches
+the manifest over HTTPS with certificate verification on, downloads only the
+files whose hash differs, verifies each one **after** it has landed on disk, and
+only then moves the current files aside into
+`webroot/.update/previous-<version>-<date>/` and moves the new ones in. One bad
+hash abandons the whole update and changes nothing. To undo an upgrade, move
+that directory's files back.
+
+Typing the command is the consent, so this works whether or not the key below is
+set — and the code directory then has to be writable **by you**, not by the web
+server. If you have a shell, this is the path to use, and you can stop reading
+here.
+
+### The way that costs something: `auto_update`
+
+```php
+'auto_update' => true,
+```
+
+in `internal/config-local.php`. The check then happens on its own, at most once
+a day, never on a read, and only after the response has been handed to the
+visitor — a note being saved never waits on a network fetch. On a PHP interface
+that cannot guarantee that hand-off (anything other than php-fpm or LiteSpeed)
+the deferred half declines to run and says so in `?action=diagnostic`; use the
+cron line above instead.
+
+**What it costs, and it is not nothing.** The code directory has to be writable
+by the user PHP runs as. From that moment any bug anywhere on that account that
+can write a file — in this code, in a neighbouring application, in a plugin
+nobody remembers installing — stops being a defacement and becomes permanent
+code execution. That was WordPress's largest attack surface for a decade, and it
+has nothing to do with where the update comes from. Turning the key back off
+does not undo it: the permission stays until somebody takes it away.
+
+**What it never touches**: `internal/config-local.php`, which holds your
+projects, origins and credential paths and is not in the manifest at all; and
+`internal/store.php` when it differs from the one we shipped, because this file
+tells you that you may replace it and restoring ours would take your database
+with it. Files we no longer ship are left in place, never deleted.
+
+**A host with no way out** — no curl, and `allow_url_fopen` off — cannot use any
+of this. It is told so in one sentence rather than failing blank.
+
+### What the diagnostic says, on every installation
+
+`?action=diagnostic` reports the running version, the published one, and whether
+outbound HTTPS works at all, on **every** installation including those that will
+never turn the key on. That part writes nothing and needs no permission:
+
+```
+update.running_version    2.0.0
+update.auto_update        off -- this server never rewrites itself from a web request
+update.transport          allow_url_fopen + openssl
+update.code_writable      no -- ... is read-only to the PHP user (the safe state)
+update.https_outbound     yes -- certificate verified
+update.published_version  2.0.1 -- NEWER than what runs here
+```
+
+It is the one place that makes one deliberate outbound request, because the
+published version cannot be known without one, and only when a human asks for
+the page.
+
+---
+
 ## Taking over an "in-context notes" 1.2.0 database
 
 **No note is lost, ever, and there is nothing to export or reimport.** A table
@@ -512,6 +600,9 @@ saved and which is not is worse than no tool at all.
 ```
 INSTALL.md                    this file — never published
 webroot/                      THE ONLY part served by the web server
+  MANIFEST                    SHA-256 of every shipped file. The integrity check
+                              of an update, and `sha256sum -c MANIFEST` verifies
+                              an installation with nothing of ours involved
   VERSION                     version of the TOOL (SemVer), independent of the
                               version of the site hosting it. It is INSIDE the
                               served part, and not at the root of the directory,
@@ -525,6 +616,9 @@ webroot/                      THE ONLY part served by the web server
   internal/store.php          THE ONLY place that talks to the database
   internal/text-export.php    the format of reading from a distance
   internal/errors.php         a blank screen is never an answer
+  internal/update.php         fetching a newer version and putting it in place;
+                              off unless `auto_update` is set, and runnable on
+                              its own from a shell or from cron
 ```
 
 Everything under `internal/` refuses to run without a constant set only by

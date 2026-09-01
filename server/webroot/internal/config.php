@@ -97,6 +97,56 @@ function ap_config_defaults()
         // not happen. It is not an option here, it is a refusal.
         'open_registration' => false,
 
+        // SELF-UPDATE -- may this server fetch a newer version of its own code
+        // from the project's repository and put it in place, on its own, from
+        // a web request? Off, and it stays off until somebody writes this key.
+        //
+        // WHAT TURNING IT ON COSTS, and it is not nothing:
+        //
+        //   - the code directory (webroot/ and internal/) must be WRITABLE BY
+        //     THE USER PHP RUNS AS. That permission is the price, and it is
+        //     paid whether or not an update ever arrives;
+        //   - from that moment, any bug ANYWHERE ON THAT ACCOUNT that can
+        //     write a file -- in this code, in a neighbouring application, in
+        //     a plugin nobody remembers installing -- stops being a defacement
+        //     and becomes permanent code execution. That was WordPress's
+        //     largest attack surface for a decade, and it has nothing to do
+        //     with where the update comes from;
+        //   - it is not undone by turning this key back off. The permission
+        //     stays until somebody takes it away.
+        //
+        // WHY IT IS OFFERED ANYWAY. A server nobody updates is a server that
+        // keeps a fixed bug forever, and the hosting this tool targets has no
+        // shell and no scheduled task. The trust anchor is the repository over
+        // HTTPS with certificate verification on: whoever hijacks this
+        // machine's DNS still cannot present a valid certificate for the
+        // update host, so a DNS compromise alone does not reach the update.
+        // Every downloaded file is checked against a SHA-256 published in the
+        // manifest, and one mismatch abandons the whole update.
+        //
+        // WHAT IT NEVER TOUCHES: this file, and a store.php that differs from
+        // the one we shipped -- INSTALL.md says the store may be replaced, and
+        // restoring ours would take somebody's database with it.
+        //
+        // THE OTHER WAY, AND THE BETTER ONE. `php internal/update.php` does
+        // exactly the same thing from a shell or from cron, with the code
+        // directory writable by YOU and not by the web server. If you have a
+        // shell, use that and leave this key alone.
+        //
+        // With this off, not one byte goes out on a visitor's request.
+        // ?action=diagnostic still reports the running and the published
+        // version, because that costs no permission and it is the part every
+        // installation wants.
+        'auto_update' => false,
+
+        // Where an update is fetched from. HTTPS ONLY -- there is no flag to
+        // relax that, and any code path that disabled certificate verification
+        // would be the bug, not the workaround. It is configurable so that a
+        // fork, or a mirror inside a network with no way out to GitHub, can be
+        // pointed at; it is not meant to be changed otherwise.
+        'update_source' =>
+            'https://raw.githubusercontent.com/tuxo83/annotepage/main/server/webroot/',
+
         // THE STORE'S CONFIGURATION SPACE (internal/store.php), which it alone
         // interprets. This file does not know what a "host" is: it carries
         // keys and resolves values, that is all. Whoever replaces store.php
@@ -261,6 +311,7 @@ function ap_config()
 
     $config['active'] = !empty($config['active']);
     $config['open_registration'] = !empty($config['open_registration']);
+    $config['auto_update'] = !empty($config['auto_update']);
     $config['local_config'] = $local;
     $config['local_config_present'] = is_file($local);
 

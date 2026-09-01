@@ -308,3 +308,33 @@ feature is unavailable on that host.
 version against the latest published one costs an hour, writes nothing, and
 fixes the real problem: not that updating is hard, but that nobody knows they
 should.
+
+---
+
+## The floating pill covers text, on every site
+
+Found by three readers judging screenshots, unanimously, and it is a defect of
+the PRODUCT and not of our page: at 390px the "Annotate this page" pill sits over
+whatever is at the bottom right of the viewport. On annotepage.com it landed on
+the last line of the lost-salt warning -- the one sentence in the whole page
+about permanent, unrecoverable loss -- and on the primary button.
+
+It does that on every site that installs the tool, and the site owner cannot see
+it happening: the pill is in a shadow root, it is positioned against the
+viewport, and nothing in the page's own CSS reaches it.
+
+The page-side patch is reserved padding, which we added, and which every site
+would have to discover and add for itself. That is not a fix, it is a workaround
+we happen to know about.
+
+Worth doing properly, cheapest first:
+
+- **let it be moved.** A `data-corner` attribute -- bottom-right by default,
+  bottom-left, top-right -- costs almost nothing and solves most cases;
+- **let it be dismissed** for the session, and remember it. A reviewer who has
+  finished reading should be able to put it away;
+- **have it step aside.** Fade or shrink while the pointer is near it, so text
+  underneath can be read without moving anything.
+
+Until then, INSTALL.md should say the corner is occupied, so a site owner puts
+nothing important there.
