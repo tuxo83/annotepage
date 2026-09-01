@@ -260,42 +260,51 @@ make two installations unable to read each other.
 
 ## Updating the PHP server without going and doing it by hand
 
-Wanted. A server dropped on a host and forgotten is a server running the version
-it had the day it was dropped, and the person who put it there has no reason to
-think about it again.
+**Decided by the owner: opt-in, and the update pulls its script from GitHub.**
+The reasoning holds where it matters. Fetching over HTTPS moves the trust anchor
+to GitHub and the certificate authorities: an attacker who hijacks the server's
+DNS still cannot present a valid certificate for github.com, so a DNS
+compromise alone does not reach the update. What is left is a GitHub account
+compromise, which two-factor authentication already answers.
 
-**The obvious design is the dangerous one.** A server that fetches its own new
-version and overwrites its own files is a server with permission to run whatever
-arrives on that channel. Compromise the release, the DNS, or the certificate
-chain, and every installation runs the attacker's PHP -- on the machine holding
-everyone's notes. For a tool whose whole claim is that the server cannot read
-what it stores, handing it the power to rewrite itself is the one change that
-could make that claim worthless overnight.
+**The refinement, because the channel is not the only danger.** For a server to
+rewrite itself FROM AN HTTP REQUEST, its own code directory must be writable by
+the web server's user. From that moment any file-writing bug anywhere else --
+in this code or in anything sharing the account -- becomes permanent code
+execution. That was WordPress's largest attack surface for a decade and it has
+nothing to do with where the update came from.
 
-**Three levels, and only the first two are cheap:**
+So: **opt-in, from GitHub, but run from the COMMAND LINE, not from a web
+request.**
 
-1. **Say it, write nothing.** `?action=diagnostic` already prints the running
-   version. It can also fetch the latest published version and print both, and
-   the tool can say so where the operator will see it. No write, no new
-   permission, no new attack surface. This alone fixes the real problem, which
-   is not that updating is hard but that nobody knows they should.
+    php tools/update.php          # by hand, or from cron
 
-2. **A one-command update run FROM the operator's machine.** A small script that
-   downloads the release, verifies it, and uploads the files over the existing
-   channel -- the operator stays in the loop and the server never writes its own
-   code. This is what most PHP tools that survived a decade ended up doing.
+The web-facing code never needs write permission on itself, which is the
+property worth keeping. It stays automatic -- a cron line is set once -- and the
+opt-in is real: a server that has not been given that line does nothing, ever.
 
-3. **Self-updating, signed.** The server verifies a detached signature against a
-   public key shipped in the release before it applies anything. That is the
-   only form of self-update that is defensible, and it brings key management,
-   key rotation, and what happens when the key is lost -- a project of its own,
-   for a tool with one maintainer.
+**What it must do, in this order:**
 
-**Recommendation: do 1 now, 2 when someone asks, and 3 never unless the project
-grows a team.** Level 1 costs an hour and removes most of the harm; the harm is
-not the difficulty of updating, it is not knowing.
+1. read the running version and the latest published one, and stop if they
+   match. Most runs must do nothing and say so;
+2. fetch the release over HTTPS with certificate verification ON. Explicitly:
+   any attempt to disable peer verification is the bug, not the workaround;
+3. **verify a checksum published separately from the archive.** Cheap, and it
+   catches a truncated download as well as a swapped one;
+4. never touch `internal/config-local.php`, which holds the declared projects,
+   the origins and the paths to the credentials. Nor the store, if it was
+   replaced;
+5. keep the previous version next to the new one, so a failed upgrade is undone
+   by renaming a directory rather than by re-uploading everything from a hotel
+   wifi.
 
-Whatever is built, the update must never touch `internal/config-local.php` --
-it holds the declared projects, the origins and the paths to the credentials --
-and must be safe to run on a database it did not create. The lazy column
-catch-up already makes the second true.
+**Practical constraint to check before writing any of it:** shared PHP hosting
+often disables `allow_url_fopen` and does not ship curl. The script must detect
+that and say so plainly rather than fail with a blank page -- and the diagnostic
+should report whether outbound HTTPS works at all, since without it this whole
+feature is unavailable on that host.
+
+**Level 1 first, whatever happens.** The diagnostic reporting the running
+version against the latest published one costs an hour, writes nothing, and
+fixes the real problem: not that updating is hard, but that nobody knows they
+should.
