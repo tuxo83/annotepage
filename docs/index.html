@@ -12,14 +12,14 @@
 <meta property="og:type"        content="website">
 <meta property="og:site_name"   content="annotepage">
 <meta property="og:url"         content="https://annotepage.com/">
-<meta property="og:title"       content="Annotate a page. The assistant answers in the thread.">
+<meta property="og:title"       content="Annotate a page. Your assistant answers in the thread.">
 <meta property="og:description" content="Annotate any web page. An AI reads the notes, fixes, replies with what it measured, and stamps the version. Open source, self-hostable, encrypted.">
 <meta property="og:image"       content="https://annotepage.com/share.png">
 <meta property="og:image:width"  content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt"   content="annotepage: a reviewer clicks what is wrong, an AI fixes it, replies with what it measured, and stamps the version.">
 <meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="Annotate a page. The assistant answers in the thread.">
+<meta name="twitter:title"       content="Annotate a page. Your assistant answers in the thread.">
 <meta name="twitter:description" content="Annotate any web page. An AI reads the notes, fixes, replies with what it measured, and stamps the version. Open source, self-hostable, encrypted.">
 <meta name="twitter:image"       content="https://annotepage.com/share.png">
 
@@ -55,6 +55,14 @@
        REDEFINED in the dark block -- like every other colour on this page. */
     --ok-soft:   #e6f4ea;
     --shadow:    0 1px 2px rgba(16, 18, 24, .06), 0 8px 28px rgba(16, 18, 24, .07);
+    /* Heavier than --shadow, and it is not a second opinion about the same
+       thing: --shadow lifts a pill a millimetre off the page it floats on,
+       this one has to make a flat rectangle read as a PHOTOGRAPH of another
+       screen. The near layer draws the edge, the far one is offset down and
+       pulled in with a negative spread so the picture sits ON the page
+       rather than glowing around it. */
+    --shot-shadow: 0 2px 4px rgba(16, 18, 24, .08),
+                   0 18px 40px -12px rgba(16, 18, 24, .28);
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
             "DejaVu Sans Mono", monospace;
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
@@ -81,6 +89,12 @@
         --ok:        #5fd39a;
         --ok-soft:   #17291f;   /* --ok on it: 8.21:1 measured (5.81:1 light) */
         --shadow:    0 1px 2px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .45);
+        /* A shadow on a dark ground carries almost nothing; what separates
+           the picture from the page there is the mat and the border. This
+           still deepens the seam under it, and is the darkest ink available
+           rather than a tint of the ground, which would lighten it. */
+        --shot-shadow: 0 2px 4px rgba(0, 0, 0, .55),
+                       0 18px 40px -12px rgba(0, 0, 0, .8);
     }
 }
 
@@ -149,17 +163,22 @@ main .wrap > * { max-width: var(--measure); }
 /* The picture, and there is one left on this page. It is looked at rather
    than read, and it was being starved by a limit meant for sentences.
 
-   IT DOES NOT WANT ALL THE ROOM EITHER. The three steps' frames are small
-   drawings, and at the full 85rem they became 645px boxes with a thumbnail's
-   worth of content adrift in each, and the sentence beside them sat half a
-   screen from the picture it belongs to. 62rem is where the pair still reads
-   as a pair: 467px of words and 490px of picture at 1440, both up on the 428
-   and 449 they had at 61rem, and neither stretched.
+   IT TAKES THE WHOLE CONTAINER, and it did not before. The cap was 62rem
+   against a wrap of 85rem, which made the three steps the NARROWEST block on
+   a page whose every other section spans: 992px of section with 304px of
+   empty beside it at 1440, measured, and inside it a 490px frame trying to
+   pass for a screenshot.
+
+   The cap was written when the two columns split the room evenly, and evenly
+   is what kept the frames small -- half of a wider section is still half.
+   They do not split it any more: the sentence keeps a narrow column hard
+   left and the picture takes everything else (see .use-steps below). So the
+   room this cap was withholding goes to the only thing that wanted it.
 
    (The replay was the other one, and it wanted every pixel: its terminal is
    the pane this column was widened for in the first place. It is on
    example-session.html now, and so is the rule that let it span.) */
-main .wrap > .use-steps { max-width: 62rem; }
+main .wrap > .use-steps { max-width: none; }
 /* A wrapper that only exists to lay two columns out is not a thing the measure
    has an opinion about: it spans, and what it HOLDS is capped instead, one
    level deeper -- see main .split-col > * below. */
@@ -168,8 +187,8 @@ main .wrap > .split { max-width: none; }
 /* The headline is the one piece of prose with its own measure, because it is
    set in 3.1rem and 44 of them is only 14em of it. The line break is written
    into the markup, so the browser is only ever fitting the longer half --
-   "The assistant answers in the thread.", 897px measured -- and at 704 it
-   broke into three lines. 58rem is 928px: past the 897 it needs, and past the
+   "Your assistant answers in the thread.", 884px measured -- and at 704 it
+   broke into three lines. 58rem is 928px: past the 884 it needs, and past the
    912 the headline was proven in before this page widened, so the two lines
    the <br> asks for survive a wider font than the one measured here.
 
@@ -202,13 +221,6 @@ main .split-col > .snip { max-width: 48rem; }
    1345 up; below that the column really is too narrow and they wrap, which is
    a wrap and not a defect. */
 main .split-col > .claims { max-width: none; }
-        /* Three rows, one subject each: WHERE it runs, WHAT it is, and HOW it
-           behaves with people. One row made a reader compare a hosting choice
-           with a licence. "Many reviewers at once" is not a slogan -- store.php
-           states it: several reviewers annotate at the same time, with no lock
-           and no conflict, and everyone sees everyone's notes. */
-        .claims-next { margin-top: .5rem; }
-
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
 .vh {
@@ -255,6 +267,24 @@ h1 + .lead { margin-top: 1.15rem; }
 /* -- The three claims ---------------------------------------------------- */
 
 .claims { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.6rem 0 0; padding: 0; list-style: none; }
+
+/* Three rows, one subject each: WHERE it runs, WHAT it is, and HOW it behaves
+   with people. One row made a reader compare a hosting choice with a licence.
+   "Multiple reviewers at once" is not a slogan -- store.php states it: several
+   reviewers annotate at the same time, with no lock and no conflict, and
+   everyone sees everyone's notes.
+
+   AND THE THREE ROWS ARE ONE BLOCK, WHICH THE SPACING DID NOT SAY. This rule
+   lived fifty lines above .claims, where an equally specific selector later
+   in the file quietly beat it: every row took the 1.6rem meant for the first,
+   so 26px separated two rows while 8px separated two chips inside one. Above
+   three to one, which reads as three lists that happen to be adjacent. It is
+   now next to the rule it has to beat, and it beats it by coming after.
+
+   13px between rows against 26px above the first: the rows belong to each
+   other, and the block belongs to the paragraph above it. That difference is
+   the whole of what the spacing has to say here. */
+.claims-next { margin-top: .8rem; }
 .claims li {
     font-size: .82rem; font-weight: 600; letter-spacing: .01em;
     /* 1.2rem: see .pill. At one line (33px tall, measured) the browser clamps
@@ -596,19 +626,57 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    Stacked, one per row, and never side by side. Three frames in a row at this
    size are three thumbnails; one per row they are three things, and the eye
    goes down them in order -- which is the order they happen in. */
+/* THE AIR BETWEEN THE THREE, and it is what separates three steps from one
+   block of page. It was 4vw capped at 2.8rem: 45px at 1440, against frames
+   136 to 221px tall, so the three ran together and the eye had to find the
+   boundaries. 6vw capped at 5.5rem is 88px there, and the mat below eats
+   14 of it at each end -- 60px of real daylight between two pictures where
+   there were 45.
+
+   The 1.8rem floor is untouched, and it is what a phone gets: 6vw does not
+   reach it until 480px, so 360 and 390 keep the spacing they had. */
 .use-steps {
-    display: grid; gap: clamp(1.8rem, 4vw, 2.8rem);
+    display: grid; gap: clamp(1.8rem, 6vw, 5.5rem);
     margin: 2rem 0 0; padding: 0; list-style: none;
 }
+/* The gap between the words and the picture. 3.4vw rather than 3vw so that
+   the mat the frame paints around itself (below) is not pressed against the
+   last word of the sentence: at 768 the ring alone takes 13 of the 23px there
+   used to be. The .9rem floor is untouched and 3.4vw does not reach it
+   until 424px, so this is another rule a phone never sees. */
 .use-steps > li {
-    display: grid; gap: clamp(.9rem, 3vw, 2.2rem);
+    display: grid; gap: clamp(.9rem, 3.4vw, 2.6rem);
     grid-template-columns: minmax(0, 1fr);
     align-items: center;
 }
 /* Words left, picture right, and only once there is room for both to keep
-   their own measure. Below that they stack, words first. */
+   their own measure. Below that they stack, words first.
+
+   AND THE TWO ARE NOT THE SAME SIZE, DELIBERATELY. They were 1fr and 1.05fr,
+   which is what a caption and a capture get when nobody decides between
+   them: two middling boxes, 467px of words beside 490px of picture at 1440.
+   But the words are one heading and ONE sentence, written to stay one
+   sentence, and they do not want 467px; the frame is a picture of an
+   interface and every pixel of it is legibility. A short sentence beside a
+   large picture is the shape this section is, so the layout says it. */
 @media (min-width: 48rem) {
-    .use-steps > li { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
+    .use-steps > li { grid-template-columns: minmax(0, .62fr) minmax(0, 1fr); }
+}
+
+/* A STATED WIDTH, ONCE THERE IS ENOUGH ROOM TO STATE ONE. A fraction is the
+   right answer while the row is still tight -- it takes the squeeze off the
+   picture and puts it on the words, which is the priority here. Past this
+   point it would do the opposite and hand the sentence the growth, so the
+   sentence stops growing: 21rem holds the longest of the three headings,
+   "You ask your assistant to read them and fix what needs fixing", in three lines at
+   its full size, and everything above 21rem goes to the frame. Measured at
+   1440: 336px of words, 925px of picture, against 467 and 490 before.
+
+   78rem and not a number of its own, because it is the width at which the
+   hero and the install split into two columns as well -- one place where
+   this page decides it is wide. */
+@media (min-width: 78rem) {
+    .use-steps > li { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
 }
 .use-steps .cap {
     margin: 0; display: flex; align-items: baseline; gap: .6rem;
@@ -621,6 +689,58 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 }
 .use-steps .say { margin: .55rem 0 0; color: var(--dim); font-size: .95rem; max-width: 30em; }
 .use-steps .frame { min-height: 8.5rem; }
+
+/* -- AND THEY HAVE TO READ AS SCREENSHOTS --------------------------------
+
+   What is in these three frames is real interface -- the floating pill, the
+   marker over the element, the command line, the answered note -- but drawn
+   on the page's own ground, inside the page's own softest line, they read as
+   page furniture: no weight, no edge, nothing saying "this is a picture of
+   something". Three things fix that, and NOT browser chrome and NOT an
+   invented window title: those would add a fake interface on top of a real
+   one, and the real one is what has to be looked at.
+
+   The edge is --line, the line this page uses where a boundary must be seen
+   rather than felt; --line-soft is for boundaries that should disappear, and
+   this one disappeared.
+
+   The mat is a ring of --bg-soft painted by the FIRST shadow layer, not by a
+   wrapper element. The frame is the grid cell itself, and a mat made of
+   markup would mean a new div around each of three frames whose contents are
+   not ours to touch. A spread-only shadow is a ring, it costs no layout, and
+   -- unlike a border or an outline -- it cannot push anything off the side of
+   the page: spread is ink, and ink is not scrollable overflow.
+
+   The drop shadow is the layer after it, so it falls from the MAT'S edge and
+   not from the frame's: later layers paint behind earlier ones, so the ring
+   covers its near half and what is left is a picture lying on a mount.
+
+   BELOW 48rem NONE OF IT APPLIES, at the same line the two columns collapse.
+   Stacked, the frame is the full width of a phone with 14px of page either
+   side: a mat there is two grey stripes down the screen edges, and a drop
+   shadow has nowhere to fall. That line is also what keeps 360 and 390
+   rendering to the pixels they rendered before this rule existed -- checked
+   by comparing the images, not by reading the media query. */
+@media (min-width: 48rem) {
+    .use-steps .frame {
+        border-color: var(--line);
+        box-shadow: 0 0 0 .85rem var(--bg-soft), var(--shot-shadow);
+    }
+}
+
+/* A TALLER FLOOR ONCE THE FRAME IS WIDE, so that a picture is not a
+   letterbox. At 918px across, the 8.5rem two of them keep is a 6.8:1 strip
+   and reads as a banner, not as a capture of a screen. 11rem brings those
+   two to 5.2:1. The answered-note frame stands 204px on its own content and
+   a floor beneath it changes nothing -- which is why this is a floor and not
+   a height: nothing is stretched, and no frame gains empty ground under
+   content that has stopped.
+
+   It sits after the 8.5rem above and not with the columns further up, where
+   an equally specific selector earlier in the file loses to it. */
+@media (min-width: 78rem) {
+    .use-steps .frame { min-height: 11rem; }
+}
 
 /* -- step 02: a crop of the command line, dark in both themes ------------- */
 
@@ -755,10 +875,18 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <!-- 1. WHAT IT IS ====================================================== -->
 <section class="hero" id="top">
     <div class="wrap">
-            <h1>Annotate a page. <br>The assistant answers in the thread.</h1>
+            <h1>Annotate a page. <br>Your assistant answers in the thread.</h1>
 
+            <!-- "Yours", and not "an assistant" again. The headline now says
+                 whose it is, and an indefinite article one line under it hands
+                 the reader back the idea it was written to remove: that there
+                 is an assistant here, supplied with the tool. There is not --
+                 there is an MCP server, and the assistant is the reader's own,
+                 on the reader's machine, under the reader's configuration.
+                 One word carries it, and it also spares the paragraph the
+                 second "assistant" in two lines. -->
             <p class="lead">
-                Someone marks what is wrong. An assistant fixes it,
+                Someone marks what is wrong. Yours fixes it,
                 <strong>replies with what it measured</strong>, and stamps the version.
             </p>
 
@@ -822,7 +950,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             </li>
             <li>
                 <div>
-                    <p class="cap"><span class="n">02</span> You ask the AI to read them and fix what needs fixing</p>
+                    <p class="cap"><span class="n">02</span> You ask your assistant to read them and fix what needs fixing</p>
                     <p class="say">One sentence. It reads every note, fixes, and answers each one in its thread.</p>
                 </div>
                 <!-- The line in this frame is the line the reader is about to
