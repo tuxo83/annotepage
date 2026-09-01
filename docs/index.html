@@ -202,6 +202,10 @@ main .split-col > .snip { max-width: 48rem; }
    1345 up; below that the column really is too narrow and they wrap, which is
    a wrap and not a defect. */
 main .split-col > .claims { max-width: none; }
+        /* Two rows, because the first two chips answer WHERE it runs and
+           the others WHAT it is. One row made a reader compare a hosting
+           choice with a licence. */
+        .claims-next { margin-top: .5rem; }
 
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
@@ -547,7 +551,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    it has less and takes three; that is a wrap, not a defect. */
 @media (min-width: 78rem) {
     .split { display: grid; gap: 3rem; align-items: start; }
-    .hero-split    { grid-template-columns: minmax(0, 1fr) minmax(0, 21rem); align-items: center; }
     .install-split { grid-template-columns: minmax(0, 1fr) minmax(0, 47rem); }
 
     /* On the grid the ROW is the rhythm, and the margins inside it are not:
@@ -766,12 +769,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <!-- 1. WHAT IT IS ====================================================== -->
 <section class="hero" id="top">
     <div class="wrap">
-    <!-- TWO COLUMNS, AND THE SOURCE ORDER IS THE STACKED ORDER. Nothing is
-         reordered by CSS here: what a phone reads top to bottom is what is
-         written top to bottom, and the second column simply falls under the
-         first when the grid is off. -->
-    <div class="split hero-split">
-        <div class="split-col">
             <h1>Annotate a page. <br>The assistant answers in the thread.</h1>
 
             <p class="lead">
@@ -787,29 +784,15 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <ul class="claims">
                 <li>Public server, free <span>&middot; nothing to install</span></li>
                 <li>Or self-hosted</li>
+            </ul>
+
+            <ul class="claims claims-next">
                 <li>Free <span>&middot; MIT</span></li>
                 <li>Open source</li>
                 <li>End-to-end encrypted <span>&middot; in the browser</span></li>
             </ul>
 
             <p style="margin-top: 1.6rem;"><a class="cta" href="#use">See how you use it</a></p>
-        </div>
-
-        <!-- The corner of a page, with the button in it. Drawn from the pieces
-             the tool draws, at rest: no count, because the real pill is a few
-             hundred pixels from here and carries the real one. -->
-        <div class="split-col hero-demo">
-            <div class="frame" aria-hidden="true">
-                <div class="bar-line w70"></div>
-                <div class="bar-line w85"></div>
-                <div class="bar-line w45"></div>
-                <span class="pill"><span class="dot"></span>Annotate this page</span>
-            </div>
-            <p class="demo-hint">
-                <b>This page is running annotepage.</b> Open it, bottom right.
-            </p>
-        </div>
-    </div>
     </div>
 </section>
 
