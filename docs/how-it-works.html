@@ -51,6 +51,8 @@
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
             Arial, "Noto Sans", sans-serif;
     --radius: 10px;
+    /* THE READING MEASURE, and it is not the page's width -- see .wrap. */
+    --measure: 44rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -107,8 +109,48 @@ h3 { font-size: 1.05rem; font-weight: 650; }
 p  { margin: 0 0 1em; }
 p:last-child { margin-bottom: 0; }
 
-.wrap { width: 100%; max-width: 61rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
-.narrow { max-width: 46rem; }
+/* TWO WIDTHS, AND THEY ARE DELIBERATELY NOT THE SAME NUMBER. The page column
+   is what a PICTURE gets; the measure is what a SENTENCE gets, and it is much
+   narrower. One number served both until now, and it had to be the sentence's:
+   61rem, which left this page using 68% of a 1440 window and 51% of a 1920 one
+   and gave the transcript below a frame 910px wide for 1157px of command.
+
+   Separated, the limit is moved rather than removed: paragraphs keep the
+   measure they already had, to the pixel, and the three grids and the
+   transcript take the room that used to be margin. The .narrow class is gone
+   with it -- it capped the hero's WRAP at 46rem, so the h1 was centred in a
+   narrow box while every h2 below started at the column's left edge, and at
+   85rem that mismatch would have been 312px of indent on the first heading
+   a reader sees. The measure does its job now, and does it in line. */
+.wrap { width: 100%; max-width: 85rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
+
+/* THE MEASURE ITSELF. rem and not em on purpose: in em each block would take
+   its own font size as the unit, and a heading, a paragraph and a caption
+   would each stop at a different place. In rem they share one right edge,
+   which is what makes a left-aligned column read as a column. At body size the
+   two are the same number, so no line of prose changes width.
+
+   It is hung on what the wrap HOLDS rather than on `p`, because `p` here also
+   means the second line of a card, which is already sized by its card. What is
+   a picture opts out just below; what is read keeps the measure. Every heading
+   on this page is under the measure on its own, so none needs an exception --
+   checked, the widest is 41rem. */
+main .wrap > * { max-width: var(--measure); }
+
+/* The pictures. Two card grids that were being folded onto fewer rows than
+   they have cards, and the transcript, which is the block this page exists
+   for: the reply command is 155 characters and the frame could not hold half
+   of it. It wraps rather than scrolls, so the width was going into extra
+   lines, not into a scrollbar -- which is why nothing looked broken. */
+main .wrap > .gestures,
+main .wrap > .facts,
+main .wrap > .term-fig { max-width: none; }
+
+/* Code keeps its own measure, set by the longest line shipped rather than by
+   comfort. The snippets here are all under 44 columns, so this is a ceiling
+   they never reach; it is stated anyway so that a longer one added later does
+   not silently start scrolling sideways. */
+main .wrap > .snip { max-width: 48rem; }
 
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
@@ -619,7 +661,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <main>
 
 <section class="hero" id="top">
-    <div class="wrap narrow">
+    <div class="wrap">
         <p class="eyebrow">The whole of it</p>
         <h1>How it works</h1>
         <p class="lead">
