@@ -247,6 +247,46 @@ open. It exposes names and internal remarks: it has no business on an open site.
 
 ---
 
+## Trying it locally
+
+The common case, and it was undocumented. Everything below was measured against
+the shipped server, not reasoned about.
+
+**It works with no configuration at all.** `localhost` is a secure context, so
+WebCrypto is there. On a relay with `open_registration`, your project is
+undeclared, there is no origin list to match, and the write is accepted. There
+is nothing to declare and nobody to ask.
+
+**Do not put a `localhost` origin in `projects` on a shared relay.** Measured:
+`origins => array('http://localhost:3000')` admits a write from every machine on
+earth that sends that header -- the string is the same everywhere -- and three
+of them running the write budget down locked the real team out with
+`429 Too many writes on this project` for the length of the window. If you want
+the lock, declare only real domains, and use a SECOND project, with its own
+salt, for local work.
+
+**Your local notes and your staging notes are the same notes.** The page index
+is `HMAC(index_key, path)` -- the path alone, no scheme, no host, no port
+(section 4 of FORMAT.md). Measured: a note written on
+`http://localhost:9001/pricing` was read and decrypted on
+`http://localhost:9002/pricing`, and the same holds for
+`https://staging.example.com/pricing`. That is the same property that lets a
+note survive a site going from staging to production, and it cannot be removed
+without removing that. Nothing in a note records where it was written, so you
+cannot sort them out afterwards. Decide which behaviour you want BEFORE handing
+the salt out.
+
+**Every developer who pulls the repository gets a blocking screen** asking for
+the salt, on every page, until somebody gives it to them. If that is not what
+you want in a dev build, `data-domains` makes the tag silent instead -- measured
+at zero requests and zero DOM nodes when the current host is not listed.
+
+**The failure you will actually hit is not localhost.** It is the LAN address
+you use to test on a phone -- your machine's address on the local network, port
+included. That is NOT a secure context, `crypto.subtle` is absent, and the tool says so on screen rather than failing
+obscurely. Use an https tunnel, or forward the port so the phone sees
+`localhost`.
+
 ## Running a public relay
 
 A relay that serves projects nobody declared, so that a tag copied from a web

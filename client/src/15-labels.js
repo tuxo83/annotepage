@@ -114,6 +114,12 @@ ns.defaultLabels = {
     'note.resolved': 'Resolved on {date} by {by}',
     'note.resolved_pending': 'Resolved, waiting to be deployed',
     'note.resolved_version': 'Fix shipped in version {version}',
+    'setup.localhost': 'You are on a local machine, so three of the values above '
+        + 'need care. The origins line names an origin every developer shares -- '
+        + 'never put it in a relay configuration others use. The tag points at '
+        + 'this host, which will not exist once the site moves. And a note '
+        + 'written here lands on any page with the same path, staging and '
+        + 'production included: the index is the path alone.',
 
     /* -- Failures. They are shown, they are never kept quiet ----------- */
     'error.title': 'Your remark has NOT been saved',

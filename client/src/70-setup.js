@@ -110,6 +110,23 @@ const tagToPaste = (id) => {
     return t;
 };
 
+/* Is this page served from a local development machine?
+
+   It matters because the setup screen is about to hand over three things that
+   are all WRONG when it is: an `origins` line naming an origin every developer
+   on earth shares, a tag whose src points at a host that will not exist
+   tomorrow, and a project whose notes will land on staging and production too
+   -- the page index is the PATH ALONE (FORMAT.md section 4), so nothing about
+   where a note was written is recorded anywhere.
+
+   `*.localhost` is included: it resolves to the loopback by RFC 6761 and dev
+   servers hand it out for subdomains. */
+const isLocalHost = () => {
+    const h = location.hostname;
+    return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1'
+        || /\.localhost$/.test(h);
+};
+
 const serverConfig = (id) =>
     'project ' + id + '\n'
     + '  origins  ' + location.origin + '\n'
@@ -208,6 +225,14 @@ const openSetupScreen = () => {
             copyBlock(screen.body, T('setup.project'), derived.id);
             copyBlock(screen.body, T('setup.tag'), tagToPaste(derived.id));
             copyBlock(screen.body, T('setup.server'), serverConfig(derived.id));
+
+            /* Only on a local machine, and only here. Not a runtime badge: a
+               permanent notice on every page load of every developer's app is
+               noise, and localhost is not an error. It is said once, at the
+               moment the three wrong values are handed over. */
+            if (isLocalHost()) {
+                screen.body.appendChild(create('p', 'ap-help', T('setup.localhost')));
+            }
 
             const actions = create('div', 'ap-actions');
             const proceed = create('button', 'ap-primary', T('setup.continue'));

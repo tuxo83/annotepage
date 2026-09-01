@@ -50,6 +50,7 @@
   "note.resolved": "Corrigée le {date} par {by}",
   "note.resolved_pending": "Corrigée, en attente de déploiement",
   "note.resolved_version": "Correctif livre en version {version}",
+  "setup.localhost": "Vous etes sur une machine locale : trois des valeurs ci-dessus demandent attention. La ligne origins nomme une origine que tous les developpeurs partagent -- ne la mettez jamais dans la configuration d'un relais utilise par d'autres. La balise pointe vers cet hote, qui n'existera plus quand le site bougera. Et une note ecrite ici apparaitra sur toute page de meme chemin, preproduction et production comprises : l'index est le chemin seul.",
   "error.title": "Votre remarque n’a PAS été enregistrée",
   "error.title_read": "Les notes n’ont pas pu être relues",
   "error.title_resolution": "L’état de la remarque n’a PAS été changé",
