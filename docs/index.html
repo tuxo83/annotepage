@@ -252,19 +252,15 @@ code:not(pre code) {
     border-radius: 5px; padding: .08em .32em;
 }
 
-/* -- Steps --------------------------------------------------------------- */
+/* -- Inside the install section ------------------------------------------
 
-.step { margin: 2.4rem 0 0; }
-.step:first-of-type { margin-top: 1.8rem; }
-.step-head { display: flex; align-items: baseline; gap: .7rem; }
-.step-num {
-    flex: none;
-    font-family: var(--mono); font-size: .78rem; font-weight: 700;
-    color: var(--accent);
-}
-.step-head h3 { font-size: 1.08rem; min-width: 0; }
-.step-body { margin-top: .55rem; }
-.step-body > p { color: var(--dim); }
+   Two subheadings, and deliberately no numbers on them. The section adds ONE
+   thing; numbering the salt and the assistant would say it adds three, and
+   would put a third set of counted steps on a page whose whole revision was
+   about having only one. */
+
+#install h3 { margin: 2.6rem 0 .35rem; }
+#install h3 + .small { margin: 0 0 .2rem; }
 
 /* -- Callout ------------------------------------------------------------- */
 
@@ -283,9 +279,9 @@ code:not(pre code) {
 /* -- What each of the three steps is drawn out of ------------------------ */
 
 /* The frame and the pieces inside it. The full three-gesture section lives on
-   how-it-works.html and uses the same drawing; here they are the opening, at a
-   smaller size, and the caption under each is one word. */
-.steps .frame {
+   how-it-works.html and uses the same drawing; here it draws the three steps of
+   "How you use it", one frame each. */
+.use-steps .frame {
     position: relative;
     /* min-height and NOT height: a fixed height was measured at the default
        text size only, and at a 200% text size the content wraps to more lines
@@ -358,20 +354,6 @@ code:not(pre code) {
     border-radius: 5px; padding: 0 .4rem; white-space: nowrap;
 }
 
-.mini-form { display: grid; gap: .3rem; }
-.mini-form .lbl { font-size: .66rem; color: var(--dim); }
-.mini-form .fld {
-    border: 1px solid var(--line); border-radius: 6px;
-    padding: .28rem .4rem; font-size: .7rem; color: var(--dim);
-    background: var(--bg-soft);
-}
-.mini-form .fld { overflow: hidden; }
-.mini-form .fld.tall { min-height: 2.6rem; }
-.mini-form .send {
-    justify-self: start; background: var(--accent); color: var(--on-accent);
-    border-radius: 6px; padding: .2rem .6rem; font-size: .7rem; font-weight: 650;
-}
-
 /* -- Footer -------------------------------------------------------------- */
 
 footer { border-top: 1px solid var(--line-soft); padding: 2.5rem 0 3.5rem; }
@@ -421,37 +403,118 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             body { padding-bottom: 4.5rem; }
         }
 
-/* == THE THREE STEPS, IN THE HERO ======================================== */
+/* == THE THREE STEPS OF "HOW YOU USE IT" ================================= */
 
-/* They were a line of text -- "01 Open  02 Point  03 Write" -- and a line of
-   text is what a reader skips. Same three words, each now sitting under the
-   thing it names, drawn with the same pieces the tool draws on a real page.
-   The frames are smaller than the ones in the full section: this is the
-   opening, not the explanation. */
-.steps {
-    display: grid; gap: .9rem; margin: 1.8rem 0 0; padding: 0; list-style: none;
-    /* min(11rem, 100%): a bare minmax() minimum is a FLOOR the track cannot go
-       under -- a 200% text size turns a bare 17rem into 544px, which pushes a
-       360px page sideways. */
-    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+/* THE ONLY SET OF STEPS ON THE PAGE. There were two, and they competed: the
+   reviewer's three gestures in the hero, and Annotate -> Fix -> Deploy under
+   the figure. Both are gone. These three are what the READER does, which is
+   the question a visitor arrives with, and they are looked at rather than
+   read: one line of words and one small frame drawn from the tool's own
+   pieces.
+
+   Stacked, one per row, and never side by side. Three frames in a row at this
+   size are three thumbnails; one per row they are three things, and the eye
+   goes down them in order -- which is the order they happen in. */
+.use-steps {
+    display: grid; gap: clamp(1.8rem, 4vw, 2.8rem);
+    margin: 2rem 0 0; padding: 0; list-style: none;
 }
-.steps > li { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
-.steps .cap {
-    margin: 0; display: flex; align-items: baseline; gap: .45rem;
-    font-size: .95rem; font-weight: 600;
+.use-steps > li {
+    display: grid; gap: clamp(.9rem, 3vw, 2.2rem);
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
 }
-.steps .cap .n {
-    font: 600 .75rem/1 var(--mono); color: var(--accent);
+/* Words left, picture right, and only once there is room for both to keep
+   their own measure. Below that they stack, words first. */
+@media (min-width: 48rem) {
+    .use-steps > li { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
 }
+.use-steps .cap {
+    margin: 0; display: flex; align-items: baseline; gap: .6rem;
+    font-size: clamp(1.06rem, 2.5vw, 1.24rem); font-weight: 650;
+    line-height: 1.3; letter-spacing: -0.01em;
+    transition: color .3s ease;
+}
+.use-steps .cap .n {
+    position: relative; flex: none;
+    font: 650 .78rem/1 var(--mono); color: var(--accent);
+}
+.use-steps .say { margin: .55rem 0 0; color: var(--dim); font-size: .95rem; max-width: 30em; }
+.use-steps .frame { min-height: 8.5rem; }
+
+/* -- step 02: a crop of the command line, dark in both themes ------------- */
+
+/* The line in it is the line the figure below types out, character for
+   character. The two rules around the input and the indicator above it are
+   the two pieces of chrome the tool actually draws; nothing else is in here. */
+.use-steps .frame.term {
+    background: var(--t-ground); border-color: var(--t-border);
+    color: var(--t-text);
+    font-family: var(--mono); font-size: .74rem; line-height: 1.55;
+    padding: .85rem .8rem;
+    display: flex; flex-direction: column; justify-content: center; gap: .5rem;
+}
+.mt-work { margin: 0; color: var(--t-claude); }
+.mt-work .g { display: inline-block; width: 2ch; }
+.mt-input {
+    border-top: 1px solid var(--t-border);
+    border-bottom: 1px solid var(--t-border);
+    padding: .5rem 0; color: var(--t-text);
+}
+.mt-input .ps { color: var(--t-dim); margin-right: .6ch; }
+
+/* -- step 03: the note, answered ----------------------------------------- */
+
+/* The reviewer's panel as she finds it again, in the page's own colours --
+   unlike the figure below, whose right-hand pane is a screenshot and is
+   therefore painted light in both themes on purpose. This is a drawing, not a
+   capture, so it follows the theme like everything else around it. */
+.nt-panel {
+    border: 1px solid var(--line-soft); border-radius: 8px;
+    overflow: hidden; background: var(--bg);
+}
+.nt-bar {
+    display: flex; align-items: center; gap: .4rem;
+    padding: .35rem .6rem; background: var(--bg-soft);
+    border-bottom: 1px solid var(--line-soft);
+    font-size: .7rem; font-weight: 650;
+}
+/* --ok on --ok-soft: 5.81:1 light, 8.21:1 dark, both measured. */
+.nt-count {
+    margin-left: auto; background: var(--ok-soft); color: var(--ok);
+    border-radius: 999px; padding: 0 .45rem; font-size: .64rem; font-weight: 650;
+}
+.nt-body { padding: .5rem; display: grid; gap: .45rem; }
+.nt {
+    border: 1px solid var(--line-soft); border-left: 3px solid var(--ok);
+    border-radius: 6px; padding: .42rem .5rem;
+}
+.nt p { margin: .2rem 0 0; font-size: .68rem; }
+.nt p.nt-who { margin: 0; font-size: .66rem; color: var(--dim); }
+.nt p.nt-who b { color: var(--text); font-weight: 650; }
+.nt p.nt-about {
+    margin: .2rem 0 0; font-size: .64rem; color: var(--dim);
+    border-left: 2px solid var(--line-soft); padding-left: .4rem;
+}
+.nt-stamp {
+    display: block; margin: -.42rem -.5rem .35rem; padding: .22rem .5rem;
+    background: var(--ok-soft); color: var(--ok);
+    font-size: .64rem; font-weight: 650;
+}
+.nt.reply { margin-left: .7rem; border-left: 2px solid var(--line-soft); }
+
 /* One after another, once, on arrival. 160 ms apart and 6px of travel: enough
    to read as a sequence, too small to be a movement. The keyframe starts at
    opacity 0 with fill-mode backwards, so that when the reduced-motion rule
    above drops the animation entirely the three are simply there. */
 @keyframes step-in { from { opacity: 0; transform: translateY(6px); } }
-.steps > li { animation: step-in .45s ease-out backwards; }
-.steps > li:nth-child(1) { animation-delay: .10s; }
-.steps > li:nth-child(2) { animation-delay: .26s; }
-.steps > li:nth-child(3) { animation-delay: .42s; }
+.use-steps > li { animation: step-in .45s ease-out backwards; }
+.use-steps > li:nth-child(1) { animation-delay: .10s; }
+.use-steps > li:nth-child(2) { animation-delay: .26s; }
+.use-steps > li:nth-child(3) { animation-delay: .42s; }
+
+/* The one line between the steps and the figure, saying what the figure is of. */
+.fig-lead { margin: clamp(2.2rem, 5vw, 3rem) 0 0; color: var(--dim); }
 
 /* == THE REPLAY ========================================================== */
 
@@ -751,8 +814,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    the caption says the figure is shortened, and a bracket in the middle of a
    terminal says only that somebody edited the reel. */
 .rp-out .trunc { color: var(--t-dim); }
-/* Between passes. The session plays three times, because the diagram under it
-   says the same thing and a figure that states a loop should behave like one --
+/* Between passes. The session plays three times, because the steps above it
+   say the same thing and a figure that states a loop should behave like one --
    but a reader arriving in the middle of the second pass must not spend it
    trying to reconcile two sessions that are the same session. So the restart is
    a beat of its own: the pane empties, the picture goes back to 1.4.12 with the
@@ -849,6 +912,14 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     display: none; min-height: 1.4em;
     margin: .5rem .8rem .2rem; color: var(--t-dim);
 }
+/* U+273B, and it is one of the twelve the indicator above actually draws --
+   which matters, because this line REPLACES that indicator in the same cell.
+   It used to be U+2733, which is in no frame of it. That glyph also never
+   reaches its own colour: eight spokes thinner than a device pixel at 13.5px,
+   so its peak rendered ink measured rgb(125,74,57) against the terminal's
+   rgb(26,26,26) -- 2.41:1 -- and at 12px on a phone it painted nothing at all,
+   1.00:1, an empty cell. U+273B lands its full rgb(215,119,87) at both sizes:
+   5.52:1, measured on the pixels, not on the token. */
 .rp-worked .g { display: inline-block; width: 2ch; color: var(--t-claude); }
 .rp[data-play][data-worked] .rp-worked { display: block; }
 .rp[data-play][data-worked] .rp-work { display: none; }
@@ -1084,143 +1155,45 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    is, and what it is not. Its own line, and quieter than the caption. */
 .rp-foot .disc { display: block; margin-top: .25rem; font-size: .8rem; }
 
-/* -- the same statement, in three words -----------------------------------
-
-   The replay above is the detail. This is what a reader who skims takes away:
-   three verbs, an arrow between them, and a return arrow closing the circle.
-   It is a diagram and not a list -- the arrow is what carries the meaning,
-   that something travels, and the return is what says the reviewer gets an
-   answer back rather than the remark disappearing into a tracker. That is the
-   project's whole differentiator, and here it is drawn rather than claimed.
-
-   Three verbs, same grammatical category. `Deploy` is the third on purpose:
-   `Fix` alone stops one step short of the correction this figure exists to
-   make -- the AI changes a repository, and a deployment is what puts the
-   result online. The dim line under a word names who acts. `Deploy` has none,
-   because nobody types it: it is what happens once the push lands.
-
-   Drawn in CSS: two borders and a rotated corner. No image, no SVG file, no
-   dependency, like everything else here. It takes --control-line, which the
-   page already carries and which measures 3.90:1 on the light ground and
-   4.00:1 on the dark -- past the 3:1 WCAG 1.4.11 asks of a graphic that means
-   something. */
-/* Sized to its own content and centred, not stretched across the measure: a
-   return arrow as wide as the page reads as a rule under a heading, not as an
-   arrow going back. */
-.loop { width: fit-content; max-width: 100%; margin: 1.9rem auto .4rem; }
-.loop-row {
-    display: flex; align-items: flex-start; justify-content: center;
-    gap: .75rem;
-}
-/* nowrap on both rows: the box is sized to its content, and a flex child that
-   is allowed to wrap reports a min-content width of one syllable, which broke
-   `Annotate` across two lines. One word and two words never need to wrap. */
-.loop-step { text-align: center; }
-.loop-step b, .loop-step i { white-space: nowrap; }
-.loop-step b { display: block; font: 600 1.02rem/1.25 var(--sans); color: var(--text); }
-/* The rule under a word is drawn whether or not it is lit, transparent until
-   it is. Reserving it means the diagram is laid out identically with the
-   script and without it, and lighting a step never nudges the row. */
-.loop-step b::after {
-    content: ""; display: block; height: 2px; margin-top: .2rem;
-    border-radius: 2px; background: transparent;
-    transition: background .3s ease;
-}
-.loop-step i {
-    display: block; margin-top: .12rem;
-    font: 400 .76rem/1.3 var(--sans); font-style: normal; color: var(--dim);
-}
-/* The arrow between two steps: a rule, and a corner turned 45 degrees for the
-   head. It sits on the line of the words above the actor label, not halfway
-   down the pair. */
-.loop-arrow {
-    flex: 0 1 3.2rem; min-width: 1.6rem; height: 1px;
-    margin-top: .62rem; background: var(--control-line);
-    position: relative;
-}
-.loop-arrow::after {
-    content: ""; position: absolute; right: 0; top: 50%;
-    width: .34rem; height: .34rem;
-    border-top: 1px solid var(--control-line);
-    border-right: 1px solid var(--control-line);
-    transform: translate(1px, -50%) rotate(45deg);
-}
-/* And the return: a shallow U under the row, from the last step back to the
-   first, with its head pointing up into `Annotate`. Thin, and quiet -- it is
-   one more line, not a second diagram. */
-.loop-back {
-    display: block; height: .8rem; margin: .5rem 2.4rem 0;
-    border: 1px solid var(--control-line); border-top: 0;
-    border-radius: 0 0 10px 10px;
-    position: relative;
-}
-.loop-back::after {
-    content: ""; position: absolute; left: 0; top: 0;
-    width: .34rem; height: .34rem;
-    border-top: 1px solid var(--control-line);
-    border-left: 1px solid var(--control-line);
-    transform: translate(-50%, -1px) rotate(45deg);
-}
-
-/* -- AND THE FLOW SAYS WHERE THE SESSION HAS GOT TO -----------------------
+/* -- AND THE FIGURE SAYS WHICH STEP IT IS PASSING THROUGH -----------------
 
    The owner asked for this, and it is what turns a list of commands into one
    movement: the step the replay is passing through is lit, and it moves under
    the reader's eye instead of waiting to be pieced together at the end.
 
-   The attribute sits on the SECTION and not on the frame, because the diagram
-   is a sibling of the figure rather than a child of it. Nothing is hidden and
-   nothing is dimmed: with the script off there is no attribute, the rules
-   below never match, and the three words sit exactly as they always did.
+   It survived the cut because the steps did not have to move for it to work.
+   They sit directly above the figure, in the same section, so the attribute
+   the script writes on that section reaches them with nothing bent out of
+   shape. The three-verb diagram this used to light is gone; the steps it
+   lights now are the ones the reader has just read.
 
-   --accent measures 8.05:1 on the light ground and 8.32:1 on the dark, and
-   the 2px rule under the word is a graphic that means something -- past the
-   3:1 of WCAG 1.4.11 either way. */
-#replay[data-now="annotate"] .loop-annotate b,
-#replay[data-now="back"]     .loop-annotate b,
-#replay[data-now="fix"]      .loop-fix b,
-#replay[data-now="deploy"]   .loop-deploy b { color: var(--accent); }
-#replay[data-now="annotate"] .loop-annotate b::after,
-#replay[data-now="back"]     .loop-annotate b::after,
-#replay[data-now="fix"]      .loop-fix b::after,
-#replay[data-now="deploy"]   .loop-deploy b::after { background: var(--accent); }
-/* The return is the step too: when the three notes come back answered, the
-   arrow that closes the circle is what is happening. */
-#replay[data-now="back"] .loop-back,
-#replay[data-now="back"] .loop-back::after { border-color: var(--accent); }
+   Nothing is hidden and nothing is dimmed: with the script off there is no
+   attribute, the rules below never match, and the three steps sit exactly as
+   they always did. The 2px rule under a number is drawn out of flow, so
+   lighting a step never nudges a pixel of the layout.
 
-/* At phone width the three stack and the arrows turn downward; the return
-   runs up the left-hand side rather than being dropped, because the loop is
-   the point of the figure. Nothing shrinks: the words keep their size and the
-   column keeps its air. */
-@media (max-width: 32rem) {
-    .loop { display: grid; grid-template-columns: 1.5rem minmax(0, auto); }
-    .loop-row {
-        grid-column: 2; grid-row: 1;
-        flex-direction: column; align-items: flex-start; gap: .45rem;
-    }
-    .loop-step { text-align: left; }
-    .loop-arrow {
-        /* min-width from the wide rule would win over this width and paint the
-           arrow as a block. */
-        flex: none; width: 1px; min-width: 0; height: 1.15rem;
-        margin: 0 0 0 .55rem;
-    }
-    .loop-arrow::after {
-        right: auto; left: 50%; top: auto; bottom: 0;
-        transform: translate(-50%, 1px) rotate(135deg);
-    }
-    .loop-back {
-        grid-column: 1; grid-row: 1; height: auto;
-        margin: .7rem .35rem .9rem 0;
-        border: 1px solid var(--control-line); border-right: 0;
-        border-radius: 10px 0 0 10px;
-    }
-    .loop-back::after {
-        left: auto; right: 0; top: 0;
-        transform: translate(50%, -1px) rotate(45deg);
-    }
+   Measured on the rendered pixels of THIS page, not carried over: a lit
+   caption reads 6.97:1 on the light ground and 9.05:1 on the dark, and the
+   rule under the number is a graphic that means something -- past the 3:1 of
+   WCAG 1.4.11 either way. (The figure this replaces claimed 8.05 and 8.32 for
+   the same colour on the same ground. One of the two numbers was wrong, and
+   the way to find out was to measure again rather than to copy the comment.) */
+.use-steps .cap .n::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -.4rem;
+    height: 2px; border-radius: 2px; background: transparent;
+    transition: background .3s ease;
 }
+/* "back" -- the answer arriving on the reviewer's page -- lights the third
+   step and not the first: on this page step three IS the answer coming back,
+   where on the old diagram it was a return arrow to the start. */
+#use[data-now="annotate"] .use-steps > li:nth-child(1) .cap,
+#use[data-now="fix"]      .use-steps > li:nth-child(2) .cap,
+#use[data-now="deploy"]   .use-steps > li:nth-child(3) .cap,
+#use[data-now="back"]     .use-steps > li:nth-child(3) .cap { color: var(--accent); }
+#use[data-now="annotate"] .use-steps > li:nth-child(1) .cap .n::after,
+#use[data-now="fix"]      .use-steps > li:nth-child(2) .cap .n::after,
+#use[data-now="deploy"]   .use-steps > li:nth-child(3) .cap .n::after,
+#use[data-now="back"]     .use-steps > li:nth-child(3) .cap .n::after { background: var(--accent); }
 
 /* Stacked, the terminal is the whole screen and the page under review -- the
    half that shows the fix landing -- is below the fold for the entire replay.
@@ -1255,9 +1228,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     <div class="wrap">
         <a class="mark" href="/">annotepage</a>
         <nav>
-            <a href="#replay">Replay</a>
+            <a href="#use">Use</a>
             <a href="#install">Install</a>
-            <a href="#assistant">Assistant</a>
             <a href="how-it-works.html">How it works</a>
             <a href="https://github.com/tuxo83/annotepage">Source</a>
         </nav>
@@ -1266,7 +1238,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 <main>
 
-<!-- 1. WHAT IT DOES, AND WHAT THE THREE GESTURES ARE ==================== -->
+<!-- 1. WHAT IT IS ====================================================== -->
 <section class="hero" id="top">
     <div class="wrap">
         <h1>Annotate a page. <br>The assistant answers in the thread.</h1>
@@ -1293,43 +1265,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <li>End-to-end encrypted <span>&middot; in the browser</span></li>
         </ul>
 
-        <!-- The three gestures. They were one line of text and got skipped for
-             being one line of text. Same three words, each under the thing it
-             names, drawn with the pieces the tool draws on a real page. -->
-        <ol class="steps">
-            <li>
-                <div class="frame" aria-hidden="true">
-                    <div class="bar-line w70"></div>
-                    <div class="bar-line w85"></div>
-                    <div class="bar-line w45"></div>
-                    <span class="pill"><span class="dot"></span>Annotate this page<span class="count">3 notes</span></span>
-                </div>
-                <p class="cap"><span class="n">01</span> Open</p>
-            </li>
-            <li>
-                <div class="frame" aria-hidden="true">
-                    <div class="bar-line w85"></div>
-                    <div class="bar-line w45"></div>
-                    <div class="target">
-                        <span class="marker">Download the calibration table</span>
-                        <span class="fake-cta">Download the calibration table</span>
-                    </div>
-                </div>
-                <p class="cap"><span class="n">02</span> Point</p>
-            </li>
-            <li>
-                <div class="frame" aria-hidden="true">
-                    <div class="mini-form">
-                        <div class="lbl">About: Download the calibration table</div>
-                        <div class="fld tall">On my phone this button label breaks onto two lines.</div>
-                        <span class="send">Send</span>
-                    </div>
-                </div>
-                <p class="cap"><span class="n">03</span> Write</p>
-            </li>
-        </ol>
-
-        <p style="margin-top: 1.8rem;"><a class="cta" href="#install">Put it on a page</a></p>
+        <p style="margin-top: 1.6rem;"><a class="cta" href="#use">See how you use it</a></p>
 
         <p class="demo-hint">
             <b>This page is running annotepage.</b> Open it, bottom right.
@@ -1337,7 +1273,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     </div>
 </section>
 
-<!-- 2. THE REPLAY ====================================================== -->
+<!-- 2. HOW YOU USE IT ================================================== -->
 
 <!-- ONE SESSION, PLAYED BACK.
 
@@ -1366,9 +1302,78 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
      be to hold every one of them at once. With JavaScript off it never runs,
      nothing is hidden, and this block is the whole session standing still
      beside a still of how the page ended up. -->
-<section id="replay">
+<section id="use">
     <div class="wrap">
-        <h2>One session, start to finish</h2>
+        <h2>How you use it</h2>
+
+        <!-- THE THREE STEPS, AND THERE IS NOW ONLY ONE SET OF THEM.
+
+             The page carried two: "01 Open / 02 Point / 03 Write" in the hero,
+             which described the reviewer's hand, and "Annotate -> Fix -> Deploy"
+             under the figure, which described the loop. Both were three steps,
+             both sat above the fold of the same reader, and neither was the
+             thing a visitor actually wants to know: what THEY do. These three
+             are that, and the other two sets are gone rather than merged.
+
+             Each one is looked at, not read: a small frame drawn with the
+             pieces the tool draws on a real page -- the floating pill, the
+             marker over the element, the command line, the answered note. The
+             sentence under a frame is one line and must stay one line. -->
+        <ol class="use-steps">
+            <li>
+                <div>
+                    <p class="cap"><span class="n">01</span> You let people annotate the page</p>
+                    <p class="say">They click what is wrong and type a sentence. Nothing for them to install.</p>
+                </div>
+                <div class="frame" aria-hidden="true">
+                    <div class="bar-line w85"></div>
+                    <div class="bar-line w45"></div>
+                    <div class="target">
+                        <span class="marker">Download the calibration table</span>
+                        <span class="fake-cta">Download the calibration table</span>
+                    </div>
+                    <span class="pill"><span class="dot"></span>Annotate this page<span class="count">3 notes</span></span>
+                </div>
+            </li>
+            <li>
+                <div>
+                    <p class="cap"><span class="n">02</span> You ask the AI to read them and fix what needs fixing</p>
+                    <p class="say">One sentence. It reads every note, fixes, and answers each one in its thread.</p>
+                </div>
+                <!-- The line in this frame is the line the reader is about to
+                     watch being typed in the figure below, character for
+                     character. Dark in both themes, like the terminal it is a
+                     crop of. -->
+                <div class="frame term" aria-hidden="true">
+                    <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
+                    <div class="mt-input"><span class="ps">&#x276F;</span> connect to the staging site and fix what the reviewers flagged</div>
+                </div>
+            </li>
+            <li>
+                <div>
+                    <p class="cap"><span class="n">03</span> It is done</p>
+                    <p class="say">There is only the deploy left &mdash; and if your deploy is automatic, nothing at all.</p>
+                </div>
+                <div class="frame" aria-hidden="true">
+                    <div class="nt-panel">
+                        <div class="nt-bar">Review notes<span class="nt-count">3 resolved</span></div>
+                        <div class="nt-body">
+                            <div class="nt done">
+                                <span class="nt-stamp">Resolved by Assistant</span>
+                                <p class="nt-who"><b>Camille</b></p>
+                                <p class="nt-about">About: Download the calibration table</p>
+                            </div>
+                            <div class="nt reply">
+                                <p class="nt-who"><b>Assistant</b></p>
+                                <p>Measured before the change: the label needs 232px on one line and the button offers it 222px.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        </ol>
+
+        <p class="fig-lead">Steps 2 and 3, as they really ran.</p>
 
         <figure class="replay-fig">
             <div class="rp" id="rp">
@@ -1433,7 +1438,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                          by the script from its own elapsed time, so it can
                          never disagree with the clock the reader just
                          watched. -->
-                    <div class="rp-worked" id="rp-worked" aria-hidden="true"><span class="g">&#x2733;</span>Worked for <span id="rp-worked-n">0s</span></div>
+                    <div class="rp-worked" id="rp-worked" aria-hidden="true"><span class="g">&#x273B;</span>Worked for <span id="rp-worked-n">0s</span></div>
 
                     <!-- Two rules, no verticals and no corners, drawn as
                          borders. The line is typed in here and, once sent,
@@ -1504,27 +1509,14 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <button type="button" class="rp-again" id="rp-again">Watch again</button>
                 <p>
                     <span class="what">Example &mdash; a Claude Code session.</span>
-                    Captured output, replayed. Steps are left out, results are collapsed
-                    the way the interface collapses them, and a long command is cut off
-                    rather than reworded.
+                    Captured output, replayed. Steps and sentences are left out, results
+                    are collapsed the way the interface collapses them, and a long command
+                    is cut off rather than reworded. Nothing is rewritten.
                     <span class="disc">Terminal styling only. Not affiliated with, or endorsed by, any vendor.</span>
                 </p>
             </figcaption>
         </figure>
 
-        <!-- Three verbs and a circle. Read out as one sentence rather than as
-             six fragments, because a screen reader given six fragments has to
-             rebuild the arrows itself, and the arrows are the content. -->
-        <div class="loop" role="img" aria-label="Annotate, by a reviewer. Fix, by the AI. Deploy. And the answer comes back to the reviewer.">
-            <div class="loop-row" aria-hidden="true">
-                <span class="loop-step loop-annotate"><b>Annotate</b><i>a reviewer</i></span>
-                <span class="loop-arrow"></span>
-                <span class="loop-step loop-fix"><b>Fix</b><i>the AI</i></span>
-                <span class="loop-arrow"></span>
-                <span class="loop-step loop-deploy"><b>Deploy</b></span>
-            </div>
-            <span class="loop-back" aria-hidden="true"></span>
-        </div>
         <!-- This script sits here, and not with the others at the foot of the
              page, for one reason: its first act hides what the block above
              shows. Run from the foot it would do that after the browser had
@@ -1548,8 +1540,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    It plays three times, when it comes into view, and stops -- with a held
    reset between passes so a reader arriving late knows it is the same session
    again. Beside text somebody is trying to read, a loop with no end is a
-   distraction; the diagram under the figure says the work goes round, so the
-   figure earns two more passes and not an endless one. */
+   distraction; the three steps above it already say the work goes round, so
+   the figure earns two more passes and not an endless one. */
 (function () {
     'use strict';
 
@@ -1564,7 +1556,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     var ver   = document.getElementById('rp-ver');
     var wkd   = document.getElementById('rp-worked-n');
     var rest  = document.getElementById('rp-restart');
-    var sect  = document.getElementById('replay');
+    var sect  = document.getElementById('use');
     var count = document.getElementById('rp-count');
     var reply = document.getElementById('rp-reply');
     var cards = [null,
@@ -1674,7 +1666,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        first note, and it is the frame worth screenshotting. */
     var seen = function (n) { cards[n].classList.add('seen'); };
     var done = function (n) { cards[n].classList.add('done'); };
-    /* And where the three-word diagram under the figure has got to. */
+    /* And which of the three steps above the figure is lit. */
     var now  = function (w) { sect.setAttribute('data-now', w); };
 
     /* ------------------------------------------------------------------
@@ -1741,12 +1733,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
            only thing anybody noticed was that something had flickered. */
         [8760,  function () { ver.textContent = '1.4.13'; }],
         [9020,  function () { rp.setAttribute('data-stage', 'fixed'); }],
-        /* AND THE DIAGRAM UNDER THE FIGURE TURNS HERE, not on the third stamp.
-           This line is the terminal saying the answer went back to the person
-           who wrote the remark; the stamps that follow are that answer arriving
-           on her page. Lighting "Deploy" over the top of them left the diagram
-           a beat behind the two things it is describing, which is worse than
-           no diagram. */
+        /* AND THE THIRD STEP LIGHTS HERE, not on the third stamp. This line is
+           the terminal saying the answer went back to the person who wrote the
+           remark; the stamps that follow are that answer arriving on her page.
+           Lighting it over the top of them left the highlight a beat behind the
+           two things it is describing, which is worse than no highlight. */
         [9520,  function () { show('s7'); now('back'); }],
         /* The turn ends here, and the last two seconds belong to the page under
            review. What the turn leaves is not nothing: the indicator is
@@ -1997,83 +1988,72 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     </div>
 </section>
 
-<!-- 3. HOW YOU INSTALL IT ============================================== -->
+<!-- 3. HOW YOU INSTALL IT ==============================================
+
+     ONE THING IS ADDED, and the section has to look like one thing. It used to
+     be "01 Paste this tag" and "02 Save the salt", which made the install a
+     third set of numbered steps on a page that already had two -- and made the
+     salt look like a second thing to install. It is not: it is what the tag was
+     made from, and it is kept, not installed.
+
+     The tag now points at the public CDN copy of the published package, with
+     the digest of the file that CDN actually serves. The self-hosted copy at
+     /annotepage-client-2.0.1.js stays where it is: this page's own live demo
+     loads it same-origin, and moving it would break the demo, not the tag. -->
 <section id="install">
     <div class="wrap">
-        <h2>Put it on a page</h2>
+        <h2>How you install it</h2>
 
-        <div class="step">
-            <div class="step-head">
-                <span class="step-num">01</span>
-                <h3>Paste this tag</h3>
+        <p class="lead">
+            One tag at the end of <code>&lt;body&gt;</code>. Nothing to build, nothing
+            to import, no account. Everyone who opens the page can annotate it.
+        </p>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">the finished tag</span>
+                <button class="copy" type="button" data-copy="snip-tag">Copy</button>
             </div>
-            <div class="step-body">
-                <p>
-                    At the end of <code>&lt;body&gt;</code>. The id below was made in your
-                    browser; only <code>data-server</code> is yours.
-                </p>
-
-                <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">the finished tag</span>
-                        <button class="copy" type="button" data-copy="snip-tag">Copy</button>
-                    </div>
-<pre id="snip-tag"><code>&lt;script src="https://annotepage.com/annotepage-client-2.0.1.js"
+<pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.1/dist/annotepage.js"
         integrity="sha384-VBUfe2CFvh85WRBCH1/uKse1O2wauw3at7B9gGC2fC8Y/sG03p9bZABq3MyUDbKE"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
         data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
         data-version="1.4.13"
         defer&gt;&lt;/script&gt;</code></pre>
-                </div>
-
-                <p class="small dim">
-                    The server is then told about the project in
-                    <a href="how-it-works.html#server">three lines</a>. Not the salt.
-                </p>
-            </div>
         </div>
 
-        <div class="step">
-            <div class="step-head">
-                <span class="step-num">02</span>
-                <h3>Save the salt that made it</h3>
-            </div>
-            <div class="step-body">
-                <p>Generated here, in your browser, and sent nowhere.</p>
-
-                <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">your salt &mdash; save it now</span>
-                        <button class="copy" type="button" data-copy="snip-salt">Copy</button>
-                    </div>
-<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
-                </div>
-
-                <p class="aside-line">
-                    Project id <code id="the-id">&mdash;</code>, derived from it. Public; the
-                    salt cannot be worked back from it.
-                    <button type="button" class="linkish" id="regenerate">Generate another</button>
-                </p>
-
-                <div class="callout">
-                    <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow, no
-                    rotation. Keep it where your team keeps its passwords &mdash;
-                    <a href="how-it-works.html#no-recovery">what that costs</a>.</p>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</section>
-
-<!-- 4. THE ASSISTANT SIDE, FOR WHOEVER WANTS THE NAMES ================= -->
-<section id="assistant">
-    <div class="wrap">
-        <h2>The assistant side</h2>
-        <p class="lead">
-            An MCP server and a command line, over the same notes.
+        <p class="small dim">
+            Only <code>data-server</code> is yours &mdash; your PHP directory, told about
+            the project in <a href="how-it-works.html#server">three lines</a>. The id was
+            derived in your browser from the salt below.
         </p>
+
+        <h3>The salt that made it</h3>
+        <p class="small dim">Generated here, in your browser, and sent nowhere.</p>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">your salt &mdash; save it now</span>
+                <button class="copy" type="button" data-copy="snip-salt">Copy</button>
+            </div>
+<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
+        </div>
+
+        <p class="aside-line">
+            Project id <code id="the-id">&mdash;</code>, derived from it. Public; the
+            salt cannot be worked back from it.
+            <button type="button" class="linkish" id="regenerate">Generate another</button>
+        </p>
+
+        <div class="callout">
+            <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow, no
+            rotation. Keep it where your team keeps its passwords &mdash;
+            <a href="how-it-works.html#no-recovery">what that costs</a>.</p>
+        </div>
+
+        <h3>And on the assistant side</h3>
+        <p class="small dim">An MCP server and a command line, over the same notes.</p>
 
         <div class="snip">
             <div class="snip-head">
@@ -2093,17 +2073,11 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
 annotepage reply &lt;id&gt; &lt;text&gt;
 annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
         </div>
-    </div>
-</section>
 
-<!-- 5. THE REST ======================================================== -->
-<section id="more">
-    <div class="wrap">
-        <h2>The rest of it</h2>
-        <p class="lead">
-            Where the notes live, what the server still sees, and how to run it.
+        <p class="small dim">
+            Where the notes live, what the server still sees, and how to run it:
+            <a href="how-it-works.html">read how it works</a>.
         </p>
-        <p><a class="cta" href="how-it-works.html">Read how it works</a></p>
     </div>
 </section>
 
@@ -2309,9 +2283,11 @@ annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
      THE PRODUCT, RUNNING ON ITS OWN PAGE.
 
      This is not an illustration and not a copy: it is
-     annotepage-client-2.0.1.js, the file the tag above tells you to load,
-     switched on. The page is therefore its own smoke test -- if this stops
-     working, the product is broken and we want to find out here.
+     annotepage-client-2.0.1.js, byte for byte the file the tag above loads
+     from the CDN, switched on. It is served from this origin and not from the
+     CDN because the demo needs it same-origin. The page is therefore its own
+     smoke test -- if this stops working, the product is broken and we want to
+     find out here.
 
      Two things make it work with no server:
 
