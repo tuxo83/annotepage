@@ -486,8 +486,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
    Measured on rendered pixels against the #1a1a1a ground. The figures cannot
    differ between page themes, because nothing painted on this ground depends
-   on one: white text 17.40:1, dim #999 6.11:1, success #4eba65 7.07:1, warning
-   #ffc107 10.68:1, the identifier tint #a4cbfa 10.36:1, the tool bullet
+   on one: white text 17.40:1, dim #999 6.11:1, success #4eba65 7.07:1,
+   the identifier tint #a4cbfa 10.36:1, the tool bullet
    #5297f8 5.92:1, the spinner accent #d77757 5.52:1, its shimmer #eb9f7f
    8.12:1. Every one of them past AA -- and the exception this file used to
    carry, the spinner at 3.15:1 on the white ground, is gone with the white
@@ -508,7 +508,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     --t-dim:     #999999;
     --t-subtle:  #505050;
     --t-ok:      #4eba65;
-    --t-warn:    #ffc107;
     --t-userbg:  #373737;
     /* Not in the binary's table: measured off a real session instead, on the
        lossless capture rather than the lossy one. The bullet in front of a
@@ -523,10 +522,15 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 .replay-fig { margin: 1.6rem 0 0; }
 .rp {
     display: grid; gap: 1rem;
-    /* min(21rem, 100%): the floor again. Two panes on a wide screen, stacked
-       on a phone, and the terminal is first in the source so it is first when
-       they stack -- the words matter more than the picture. */
-    grid-template-columns: repeat(auto-fit, minmax(min(21rem, 100%), 1fr));
+    /* min(27rem, 100%): the floor, and it was raised. At 21rem the two panes
+       split from 750px up, which gave the terminal a 350px column -- 41
+       characters, where the capture was made in 79. Every second line wrapped,
+       and a session that now has to FIT its pane without scrolling grew by half
+       again. Stacked, the same terminal is 100 characters wide and nothing
+       wraps at all. So the split waits for 27rem a side, and below it the panes
+       stack: a wide short terminal beats a narrow tall one.
+       The terminal is first in the source, so it is first when they stack. */
+    grid-template-columns: repeat(auto-fit, minmax(min(27rem, 100%), 1fr));
     align-items: start;
 }
 /* The two panes take equal shares, and that is not a default: giving the
@@ -538,21 +542,18 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 /* -- and where there is room, the figure takes it -------------------------
 
-   The 78ch ceiling below was never reached. Measured on the built page in
-   the 61rem measure: the pane holds 51.6 columns, and the four rows the
-   whole capture rests on are 62, 64, 65, 66 and 68 characters --
-   `viewport  360px  lines 2  label needs 232px  button offers 222px`,
-   `--- "Values recorded at the bench, plain text, comma separated." ---`.
-   Every one of them broke in two, and a measurement table whose columns do
-   not line up is the frame that says "web page" out loud. No terminal a
+   In the 61rem text measure the terminal pane holds 51.6 columns. The longest
+   row the session still rests on is 68 characters -- the sentence naming the
+   two buttons -- so every one of them broke in two, and a session whose every
+   sentence wraps reads as a wall however few lines it has. No terminal a
    developer opens is 51 columns wide.
 
    So past 74rem the figure leaves the text measure and takes 70rem. The
-   terminal gets 1.6 of the 2.6 shares -- 80 columns, four past the widest
-   line -- and the picture keeps 424px, past the 407px below which the two
-   green buttons stack. Below 74rem nothing changes: the panes go back to
-   equal shares and the terminal wraps, which is what a narrow terminal
-   does. */
+   terminal gets 1.6 of the 2.6 shares -- 79 columns, wide enough that only the
+   two commands the session cannot shorten are cut off -- and the picture keeps
+   424px, past the 407px below which the two green buttons stack. Below 74rem
+   nothing changes: the panes go back to equal shares and the terminal wraps,
+   which is what a narrow terminal does. */
 @media (min-width: 75rem) {
     .replay-fig {
         width: min(71rem, calc(100vw - 4rem));
@@ -573,16 +574,26 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        more margin -- the third remark stops being cropped off the bottom
        edge. The crop itself stays: the panel is still taller than the frame,
        it still runs off, and it still says so with the 14px fade. */
+}
+
+/* Wherever the two panes ARE side by side -- from 59rem up, the width at which
+   the grid above stops stacking -- the picture takes the terminal's height and
+   the slack goes to the review panel. It is the one place in the figure where
+   more room buys more of the review rather than more margin: the third remark
+   stops being cropped off the bottom edge. The crop itself stays.
+
+   Scoped to the playing frame on purpose. With the script off the terminal is
+   the whole session at once, and the picture keeps its own height. */
+@media (min-width: 59rem) {
     .rp[data-play] { align-items: stretch; }
     .rp[data-play] .rp-shot { display: flex; flex-direction: column; }
     .rp[data-play] .rp-shot-body { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
     .rp[data-play] .rp-panel { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-    .rp[data-play] .xf-done { flex: 1 1 auto; min-height: 11.5rem; }
-    .rp[data-play] .xf-done > .rp-panel-body { height: 100%; }
-    /* Scoped to the playing frame on purpose. With the script off the terminal
-       is the whole transcript at once -- 1672px of it -- and matching the
-       picture to that would hang a 1300px column of white beside the notes.
-       Off the script the picture keeps its own height, as it always did. */
+    /* flex-basis 0, not auto: the panel is what ABSORBS the difference between
+       the two panes, so it must be able to give as well as take. On auto its
+       base size is its own content -- four cards -- and the picture then set
+       the height of the whole figure and the crop stopped cropping. */
+    .rp[data-play] .rp-panel-body { flex: 1 1 0; height: auto; min-height: 9rem; }
 }
 
 /* -- left pane: the session ---------------------------------------------- */
@@ -615,27 +626,33 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        clipped and the script moves it, one jump at a time, forward only. */
     overflow: hidden;
 }
-/* A terminal fills from the bottom. Until the session has produced enough
-   lines to reach the top of the pane they sit just above the prompt, where a
-   real one puts them -- not stranded at the top of an empty box with the
-   input two hundred pixels below. The spacer takes the slack; once the lines
-   overflow, the auto margin resolves to zero and the pane clips at the top
-   and scrolls forward, as before. */
+/* THE SESSION FILLS THE PANE FROM THE TOP, and this was the other way round
+   until the pane stopped scrolling.
+
+   While the session scrolled, holding the lines against the bottom of the pane
+   was right: that is where a terminal that has been running a while keeps
+   them. Now that the pane is exactly as tall as the finished session, the same
+   rule spends the first six seconds with the arrived lines pinned to the floor
+   and four hundred pixels of empty black above them -- and the first thing
+   three readers said about the figure was that they took that black rectangle
+   for an embed that had failed to load.
+
+   Top down, the first line lands where the eye already is, the pane fills as
+   the session runs, and the gap that shrinks is the one directly above the
+   prompt, which is the gap a session actually closes. */
 .rp[data-play] .rp-flow {
-    /* Measured at 1440x900 before this was cut: 528px of pane, and for the
-       first 2.7s -- while the line is being typed -- 528px of it is empty
-       white beside a picture that is already full. A terminal you have just
-       opened does look like that, but a FIGURE of one, held next to a
-       populated pane, reads as a layout that failed rather than a session
-       about to start. The finished session is 1482px of output either way,
-       so the height buys nothing but the size of that opening hole: shorter
-       pane, smaller hole, a few more forward jumps. A terminal scrolling
-       when output arrives is the least suspicious thing it does. */
-    height: clamp(20rem, 48vh, 26rem);
+    /* THE SESSION FITS, AND NOTHING HERE EVER SCROLLS. A log sliding past
+       faster than it can be read is the visual signature of work, and this
+       figure is arguing that there is none.
+
+       The number below is a fallback for the instant before the script runs.
+       The height that survives is written by the script, which lays the
+       finished session out once and measures it -- so it is right at every
+       width, in every font fallback, and it cannot drift when a line above is
+       edited. A guessed height would only have to be guessed again. */
+    height: 24rem;
     display: flex; flex-direction: column;
 }
-.rp-slack { display: none; }
-.rp[data-play] .rp-slack { display: block; margin-top: auto; }
 .rp[data-play] .rp-flow > * { flex: none; }
 
 /* Every line of the session sits inside this width, and wraps inside it. */
@@ -653,7 +670,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    The glyph is U+276F, not the ASCII `>`: the older builds draw `>`, the
    current ones draw the chevron, and this figure follows the current ones. */
 .rp-user {
-    margin: 0 0 .55rem; color: var(--t-text);
+    margin: 0 0 .4rem; color: var(--t-text);
     white-space: pre-wrap; overflow-wrap: break-word;
     padding-left: 2ch; text-indent: -2ch;
 }
@@ -674,8 +691,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 /* The assistant's own words, and its tool calls: the round bullet at column
    1, the text from column 3, wrapped continuations lined up under it. */
-.rp-say, .rp-tool, .rp-drop {
-    position: relative; margin: 0 0 .55rem; padding-left: 2ch;
+.rp-say, .rp-tool {
+    position: relative; margin: 0 0 .4rem; padding-left: 2ch;
     white-space: pre-wrap; overflow-wrap: break-word; color: var(--t-text);
 }
 .rp-say::before, .rp-tool::before {
@@ -689,7 +706,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 .rp-say::before { color: var(--t-text); }
 .rp-tool::before { color: var(--t-tool); }
 .rp-tool b { font-weight: 700; }
-.rp-tool { overflow-wrap: anywhere; }
+/* A TOOL CALL IS ONE ROW, ALWAYS, and it is cut off with an ellipsis rather
+   than wrapped -- which is what the interface does with a command longer than
+   the window, and what a terminal has always done with a line it cannot fit.
+
+   It matters more than it looks. The commit message is 91 characters and the
+   deployment's command 76; wrapped, the first ran to three rows on a phone and
+   the second to three more, and six rows of broken shell is the single most
+   intimidating thing a figure like this can show somebody who does not write
+   any. Cut to one row each, they read as what they are: two commands. */
+.rp-tool { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* An identifier quoted inside a sentence is tinted where the rest of the
    sentence is not -- paths, symbols, flags, and here the version a fix ships
    in, which is the only identifier this session's prose contains. */
@@ -699,28 +725,32 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    from column 5 -- dim, because it is the machine talking and not the
    assistant. It arrives whole. Nothing here is ever typed out. */
 .rp-out {
-    position: relative; margin: -.35rem 0 .8rem; padding-left: 5ch;
+    position: relative; margin: -.3rem 0 .55rem; padding-left: 5ch;
     color: var(--t-dim);
     white-space: pre-wrap; overflow-wrap: break-word;
 }
 .rp-out::before { content: "\23BF"; position: absolute; left: 2ch; top: 0; }
 
-/* TWO KINDS OF MARK, and they must not be confused with one another.
+/* ONE KIND OF MARK, and it is the interface's own.
 
-   Inside a tool result, the interface has its own truncation line and it looks
-   like this: `\u2026 +11 lines (ctrl+o to expand)`, dim, under the output it
-   cut. Where this figure drops lines from a result, it uses that form and the
+   THE REAL INTERFACE COLLAPSES TOOL OUTPUT BY DEFAULT: it prints the call, and
+   under it one dim line reading `\u2026 +N lines (ctrl+o to expand)`. The figure
+   used to expand everything, which was both unfaithful and the single thing
+   that made it look like work. So it collapses, like the real one, and the
    count is the real one -- every number on screen is the exact number of lines
-   removed from the capture, and material4/ records the arithmetic.
+   the capture holds and this figure does not show. material4/ records the
+   arithmetic.
 
-   Where the figure drops something that is NOT a tool result -- an assistant
-   sentence, a whole tool call and its answer -- the interface has no form for
-   it, because the interface never does it. Those are bracketed and italic, and
-   they say `figure`, so nobody can read one as something the terminal
-   printed. */
+   THREE results carry a line out of the collapse, and each is the one line of
+   its own capture that decides something: the measurement, because a
+   measurement being taken is the project's whole argument; the commit's
+   `3 insertions(+), 3 deletions(-)`, which is the arithmetic of the two edits
+   the line above claims and the reader's only way to check them; and the
+   deployment's `Reported success!`, which is the moment the fix stops being
+   local. Everything else collapses. Whole steps are dropped without a mark:
+   the caption says the figure is shortened, and a bracket in the middle of a
+   terminal says only that somebody edited the reel. */
 .rp-out .trunc { color: var(--t-dim); }
-.rp-drop { color: var(--t-dim); font-style: italic; }
-.rp-drop::before { content: none; }
 /* Between passes. The session plays three times, because the diagram under it
    says the same thing and a figure that states a loop should behave like one --
    but a reader arriving in the middle of the second pass must not spend it
@@ -738,10 +768,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 /* The version a fix ships in, and the word "resolved": the interface's own
    success ink. Two words, and they are the argument. */
 .rp-out .ok { color: var(--t-ok); }
-/* Beat 3: the two excerpts that turn out to be one bug come up from dim to
-   full ink while the third stays as it was. A colour, not a movement. */
-.rp[data-hl] .rp-out .hl { color: var(--t-text); }
-
 /* -- the working indicator ------------------------------------------------
 
    This is the part a still frame cannot show: the assistant thinking. One
@@ -751,14 +777,17 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
    It is aria-hidden: it carries no fact, and read aloud it would be noise
    between the sentences that do carry them. */
-/* Two lines of room, kept whether or not anything is in them. The phrase
-   grows at ten seconds -- "thinking" becomes "still thinking" -- and on a
-   narrow pane that wraps; reserving the second line means the input box below
-   never moves, neither when the phrase grows nor when the turn ends. A status
-   line that shoves the prompt about is a tell. */
+/* One line of room, kept whether or not anything is in it, so the input box
+   below never moves when the turn ends.
+
+   WHAT IS NOT IN IT: the elapsed clock and the token count the interface
+   prints beside the verb. Both are real and both were dropped, because a
+   number climbing while nothing else moves is the figure saying "this is
+   taking effort". What the turn cost is said once, at the end, and in the
+   past tense. */
 .rp-work {
-    visibility: hidden; min-height: 2.7em;
-    margin: .55rem .8rem .25rem; color: var(--t-claude);
+    visibility: hidden; min-height: 1.4em;
+    margin: .5rem .8rem .2rem; color: var(--t-claude);
 }
 .rp[data-play][data-working] .rp-work { visibility: visible; }
 /* The frame cell is always two columns wide, whatever glyph is in it. That
@@ -769,8 +798,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    at a time. A gradient would be smoother and therefore wrong: the real one
    can only address whole character cells. */
 .rp-verb .lit { color: var(--t-shimmer); }
-.rp-paren { color: var(--t-dim); }
-.rp-paren .think { color: var(--t-warn); }
 
 /* -- the input box --------------------------------------------------------
    Two full-width rules and nothing else: no verticals, no corners. Drawn as
@@ -813,9 +840,18 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 /* Hidden until a turn has actually ended -- which, with the script off, never
    happens. A static transcript that says `Worked for 0s` is a line no session
    ever printed, and the number is the script's to write, not the markup's. */
-.rp-worked { display: none; margin: .55rem .8rem .25rem; color: var(--t-dim); }
+/* IN PLACE. The two lines share one row: the indicator goes when the line
+   that replaces it arrives, and the row they sit in is the same height either
+   way. They used to be stacked, and the figure grew by a line at the exact
+   moment it was supposed to be settling -- the caption jumped, and it was the
+   last thing anybody saw. */
+.rp-worked {
+    display: none; min-height: 1.4em;
+    margin: .5rem .8rem .2rem; color: var(--t-dim);
+}
 .rp-worked .g { display: inline-block; width: 2ch; color: var(--t-claude); }
 .rp[data-play][data-worked] .rp-worked { display: block; }
+.rp[data-play][data-worked] .rp-work { display: none; }
 
 /* Typing, one character at a time, without the line ever moving.
 
@@ -922,6 +958,12 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     border: 1px solid var(--shot-line); border-radius: 999px;
     padding: 0 .4rem; font-size: .64rem; font-weight: 600;
 }
+/* And what it reads once the three are answered. 6.86:1 on the tint,
+   measured. */
+.rp-panel-bar .count.ok {
+    background: var(--shot-ok-bg); color: var(--shot-green);
+    border-color: var(--shot-ok-bg);
+}
 /* A crop, and it says so: the panel is taller than the frame and the bottom
    card runs off the edge, the way a screenshot of a panel does. Nothing is
    reworded to fit -- it is cut off, visibly.
@@ -938,7 +980,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        three remarks were being pulled into three tall boxes with holes in
        them. Notes stack from the top of a panel; they do not fill it. */
     padding: .55rem; display: grid; gap: .5rem; align-content: start;
-    height: 11.5rem; overflow: hidden;
+    height: 13rem; overflow: hidden;
     -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent 100%);
             mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent 100%);
 }
@@ -951,22 +993,49 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 }
 .rp-card p { margin: .2rem 0 0; font-size: .68rem; }
 .rp-card.reply { margin-left: .8rem; border-left: 2px solid var(--shot-line); }
+
+/* -- AND THIS PANE IS WHERE THE FIGURE LIVES ------------------------------
+
+   The charge the last three readers all made first was that the terminal is
+   the only thing moving and the reviewer's page sits frozen beside it. So the
+   panel is the thing that moves, and it moves four times: the three cards
+   fill, one at a time, as they are read; the buttons close onto one line and
+   the version tag turns over when the deployment lands; the three stamps
+   arrive one after another; the reply appears under the first note.
+
+   None of it hides anything. With the script off, `seen` and `done` are on
+   every card in the markup, the stamps show and the reply is there -- the
+   static picture is the page as the reviewer found it again. */
+/* Read, then answered. The fill alone was too quiet to see at a glance, so
+   the left edge carries it: a card the assistant has read takes a grey rule,
+   a card it has answered takes a green one and the stamp above it. Three
+   states, and the middle one is the one the figure used not to have. */
+.rp-card { border-left-width: 3px; }
+.rp-card.seen { background: var(--shot-soft); border-left-color: var(--shot-dim); }
+.rp-card.done { border-left-color: var(--shot-green); }
+.rp[data-play] .rp-card { transition: background .3s ease; }
+.rp[data-play] .rp-card:not(.done) .rp-stamp { display: none; }
+.rp[data-play] .rp-card.reply:not(.on) { display: none; }
 .rp-stamp {
     display: block; margin: -.45rem -.5rem .4rem; padding: .25rem .5rem;
     background: var(--shot-ok-bg); color: var(--shot-green);
     font-size: .64rem; font-weight: 650;
 }
-.rp-history { font-size: .68rem; color: var(--shot-green); font-weight: 650; }
 
 /* -- the two changes ------------------------------------------------------ */
 
-/* Two states of one thing, held in the same grid cell and cross-faded. The
-   frame keeps the height of the taller, so nothing below it moves when the
-   page under review changes.
+/* The two green buttons, before and after, held in the same grid cell and
+   cross-faded. The frame keeps the height of the taller, so nothing below it
+   moves when the page under review changes.
+
+   The panel below used to be cross-faded the same way, whole: three open notes
+   became a history link in one cut, and every reader missed it. It is not a
+   crossfade any more -- the cards are the same cards throughout and they are
+   stamped one at a time, which is what somebody watching can actually follow.
 
    Off the script, only the AFTER state is drawn. The static page therefore
-   shows how the session ended -- the resolved stamp and the measured reply --
-   which is the one frame worth having if nothing plays. */
+   shows how the session ended, which is the one frame worth having if nothing
+   plays. */
 .xf > .st-b { display: none; }
 .rp[data-play] .xf { display: grid; }
 /* Both states share the cell; neither may lose its own layout doing it.
@@ -979,7 +1048,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    overridden, which is all this rule was ever for. */
 .rp[data-play] .xf > * { grid-area: 1 / 1; transition: opacity .22s ease; }
 .rp[data-play] .xf > .rp-btns { display: flex; }
-.rp[data-play] .xf > .rp-panel-body { display: grid; }
 
 /* They take turns, and that is the whole rule. Faded at the same time each
    state is half-opaque in the middle of the swap, and both sets of words are
@@ -990,12 +1058,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    the swap backwards without either state lingering under the other. */
 .rp[data-play] .xf > .st-b { opacity: 1; transition-delay: .22s; }
 .rp[data-play] .xf > .st-a { opacity: 0; transition-delay: 0s; }
-.rp[data-play][data-stage="fixed"]    .xf-fix > .st-b,
-.rp[data-play][data-stage="resolved"] .xf-fix > .st-b { opacity: 0; transition-delay: 0s; }
-.rp[data-play][data-stage="fixed"]    .xf-fix > .st-a,
-.rp[data-play][data-stage="resolved"] .xf-fix > .st-a { opacity: 1; transition-delay: .22s; }
-.rp[data-play][data-stage="resolved"] .xf-done > .st-b { opacity: 0; transition-delay: 0s; }
-.rp[data-play][data-stage="resolved"] .xf-done > .st-a { opacity: 1; transition-delay: .22s; }
+.rp[data-play][data-stage="fixed"] .xf-fix > .st-b { opacity: 0; transition-delay: 0s; }
+.rp[data-play][data-stage="fixed"] .xf-fix > .st-a { opacity: 1; transition-delay: .22s; }
 
 /* -- under the frame ------------------------------------------------------ */
 
@@ -1031,10 +1095,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
    Three verbs, same grammatical category. `Deploy` is the third on purpose:
    `Fix` alone stops one step short of the correction this figure exists to
-   make -- the assistant changes a repository, and a deployment is what puts
-   the result online. The dim line under a word names who acts. `Deploy` has
-   none, because it would say `the assistant` twice and a repeated word is not
-   a distinction.
+   make -- the AI changes a repository, and a deployment is what puts the
+   result online. The dim line under a word names who acts. `Deploy` has none,
+   because nobody types it: it is what happens once the push lands.
 
    Drawn in CSS: two borders and a rotated corner. No image, no SVG file, no
    dependency, like everything else here. It takes --control-line, which the
@@ -1055,6 +1118,14 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 .loop-step { text-align: center; }
 .loop-step b, .loop-step i { white-space: nowrap; }
 .loop-step b { display: block; font: 600 1.02rem/1.25 var(--sans); color: var(--text); }
+/* The rule under a word is drawn whether or not it is lit, transparent until
+   it is. Reserving it means the diagram is laid out identically with the
+   script and without it, and lighting a step never nudges the row. */
+.loop-step b::after {
+    content: ""; display: block; height: 2px; margin-top: .2rem;
+    border-radius: 2px; background: transparent;
+    transition: background .3s ease;
+}
 .loop-step i {
     display: block; margin-top: .12rem;
     font: 400 .76rem/1.3 var(--sans); font-style: normal; color: var(--dim);
@@ -1090,6 +1161,33 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     border-left: 1px solid var(--control-line);
     transform: translate(-50%, -1px) rotate(45deg);
 }
+
+/* -- AND THE FLOW SAYS WHERE THE SESSION HAS GOT TO -----------------------
+
+   The owner asked for this, and it is what turns a list of commands into one
+   movement: the step the replay is passing through is lit, and it moves under
+   the reader's eye instead of waiting to be pieced together at the end.
+
+   The attribute sits on the SECTION and not on the frame, because the diagram
+   is a sibling of the figure rather than a child of it. Nothing is hidden and
+   nothing is dimmed: with the script off there is no attribute, the rules
+   below never match, and the three words sit exactly as they always did.
+
+   --accent measures 8.05:1 on the light ground and 8.32:1 on the dark, and
+   the 2px rule under the word is a graphic that means something -- past the
+   3:1 of WCAG 1.4.11 either way. */
+#replay[data-now="annotate"] .loop-annotate b,
+#replay[data-now="back"]     .loop-annotate b,
+#replay[data-now="fix"]      .loop-fix b,
+#replay[data-now="deploy"]   .loop-deploy b { color: var(--accent); }
+#replay[data-now="annotate"] .loop-annotate b::after,
+#replay[data-now="back"]     .loop-annotate b::after,
+#replay[data-now="fix"]      .loop-fix b::after,
+#replay[data-now="deploy"]   .loop-deploy b::after { background: var(--accent); }
+/* The return is the step too: when the three notes come back answered, the
+   arrow that closes the circle is what is happening. */
+#replay[data-now="back"] .loop-back,
+#replay[data-now="back"] .loop-back::after { border-color: var(--accent); }
 
 /* At phone width the three stack and the arrows turn downward; the return
    runs up the left-hand side rather than being dropped, because the loop is
@@ -1132,7 +1230,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    reason the two panes are side by side in the first place. */
 @media (max-width: 700px) {
     .rp-term { font-size: 12px; }
-    .rp[data-play] .rp-flow { height: clamp(16rem, 42vh, 24rem); }
+    .rp[data-play] .rp-flow { height: 28rem; }
 }
 
 </style>
@@ -1243,15 +1341,31 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 <!-- ONE SESSION, PLAYED BACK.
 
-     Every line in here was produced by a command on 1 September 2026 and is
-     reproduced character for character. Dropping whole lines is the only edit
-     allowed, and every drop leaves the marker that names what went. The
-     configuration already exists when this starts, so no salt is ever on
-     screen.
+     Every line in here comes from the run of 1 September 2026 and is reproduced
+     word for word: the commands and their results from material3/transcript.txt
+     and the six captures in material4/, the assistant's three sentences from
+     material3/conversation.md, which records what it said in that run and cites
+     the transcript line behind every figure in it. Dropping is the only edit
+     allowed, and a dropped RESULT leaves the interface's own collapse line
+     carrying the exact number of rows behind it. Whole steps are dropped as
+     well, and so are whole sentences of a spoken line, from the middle of it as
+     well as from the end -- what stays keeps its words and its order. The figure shows
+     less than happened, never other than what happened, and the caption says
+     so. The configuration already exists when this starts, so no salt is ever
+     on screen.
 
-     The script below decides WHEN a line appears and nothing else. With
-     JavaScript off it never runs, nothing is hidden, and this block is a
-     transcript beside a still of how the page ended up. -->
+     TWO SENTENCES ON THIS FIGURE WERE ONCE WRITTEN RATHER THAN QUOTED, and it
+     took a line-by-line diff against the captures to find them: "the same bug"
+     had become "of these are the same bug", and a whole clause -- "the tag now
+     says 1.4.13" -- had never been said by anything. Both read perfectly well,
+     which is exactly why they lasted. Diff this block against the captures
+     before shipping any edit to it; do not read it and judge that it sounds
+     right.
+
+     The script below decides WHEN a line appears, and how tall a pane has to
+     be to hold every one of them at once. With JavaScript off it never runs,
+     nothing is hidden, and this block is the whole session standing still
+     beside a still of how the page ended up. -->
 <section id="replay">
     <div class="wrap">
         <h2>One session, start to finish</h2>
@@ -1274,84 +1388,33 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                      carrying anybody's name. -->
                 <div class="rp-term">
                     <div class="rp-flow" id="rp-flow">
-<div class="rp-slack" aria-hidden="true"></div>
 <p class="rp-restart" id="rp-restart">[figure: replaying the same session]</p>
 
 <p class="rp-user" data-step="ask" id="rp-ask"><span class="ps" aria-hidden="true">&#x276F;</span> <span class="band" id="rp-asktext">connect to the staging site and fix what the reviewers flagged</span></p>
 
 <code class="rp-tool" data-step="t1"><b>Bash</b>(annotepage open)</code>
-<code class="rp-out" data-step="o1">notes 3
+<code class="rp-out" data-step="o1"><span class="trunc">&#x2026; +52 lines (ctrl+o to expand)</span></code>
 
-note 1
-<span class="hl">excerpt Download the calibration table</span>
-author Camille
-version 1.4.12
-text
-    On my phone this button label breaks onto two lines. It should hold on one line down to 320px.
+<p class="rp-say" data-step="s2">Two are the same bug. The third is a different one: the grey footnote under the table.</p>
 
-note 2
-<span class="hl">excerpt Open the correction worksheet</span>
-
-note 3
-excerpt Values recorded at the bench, plain text, comma separated.
-<span class="trunc">&#x2026; +38 lines (ctrl+o to expand)</span></code>
-
-<p class="rp-drop" data-step="d1">[figure: one assistant line dropped]</p>
-
-<p class="rp-say" data-step="s2">Two of these are the same bug. Both green buttons wrap, in two different cards. The third is the grey line under the table.</p>
-
-<code class="rp-tool" data-step="t2"><b>Bash</b>(node ap3-measure.mjs)</code>
-<code class="rp-out" data-step="o2">--- "Download the calibration table"   padding 72px, font 17px ---
-viewport  360px  lines 2  label needs 232px  button offers 222px
-wraps at 369px and below; holds one line from 370px up
-
---- "Values recorded at the bench, plain text, comma separated." ---
-text rgb(154, 164, 173) on rgb(255, 255, 255), 13px
-contrast ratio 2.53:1   (WCAG AA asks 4.5:1 for text this size)
-<span class="trunc">&#x2026; +18 lines (ctrl+o to expand)</span></code>
-
-<p class="rp-say" data-step="s3">Before: the first label needs 232px, its button offers 222px, and it wraps at 369px. The second wraps at 373px &mdash; its label is 3px wider.</p>
-
-<p class="rp-say" data-step="s4">One rule, both buttons: 36px of padding, a 17px label. The grey line is another rule &mdash; 2.53 to 1, under the 4.5 asked for.</p>
-
-<code class="rp-tool" data-step="t3"><b>Bash</b>(sed -i 's/padding: 12px 36px; font-size: 17px;/padding: 12px 16px; font-size: 16px;/; s/p.footnote { font-size: 13px; color: #9aa4ad;/p.footnote { font-size: 13px; color: #6b757e;/; s/data-version="1.4.12"/data-version="1.4.13"/' public/guide.html)</code>
-
-<p class="rp-say" data-step="s5">Two edits. The tag now says <span class="id">1.4.13</span>.</p>
+<p class="rp-say" data-step="s5">Two edits. Padding 36px to 16px and the label 17px to 16px, once, for both buttons.</p>
 
 <code class="rp-tool" data-step="t4"><b>Bash</b>(node ap3-measure.mjs)</code>
 <code class="rp-out" data-step="o4">wraps at 316px and below; holds one line from 317px up
-wraps at 319px and below; holds one line from 320px up
-contrast ratio 4.7:1   (WCAG AA asks 4.5:1 for text this size)
-<span class="trunc">&#x2026; +22 lines (ctrl+o to expand)</span></code>
-
-<p class="rp-say" data-step="s6">After: 317px and 320px, one line each. Contrast 4.7 to 1. Camille asked for 320px.</p>
+<span class="trunc">&#x2026; +24 lines (ctrl+o to expand)</span></code>
 
 <code class="rp-tool" data-step="t7"><b>Bash</b>(git commit -a -m 'guide: hold both action labels on one line, footnote to AA, 1.4.13')</code>
-<code class="rp-out" data-step="o7">[main eda3673] guide: hold both action labels on one line, footnote to AA, 1.4.13
- 1 file changed, 3 insertions(+), 3 deletions(-)</code>
+<code class="rp-out" data-step="o7"> 1 file changed, 3 insertions(+), 3 deletions(-)
+<span class="trunc">&#x2026; +1 line (ctrl+o to expand)</span></code>
 
 <code class="rp-tool" data-step="t8"><b>Bash</b>(git push origin main)</code>
-<code class="rp-out" data-step="o8">Enumerating objects: 7, done.
-   d85f7dc..eda3673  main -&gt; main
-<span class="trunc">&#x2026; +6 lines (ctrl+o to expand)</span></code>
+<code class="rp-out" data-step="o8"><span class="trunc">&#x2026; +8 lines (ctrl+o to expand)</span></code>
 
 <code class="rp-tool" data-step="t9"><b>Bash</b>(gh api repos/{owner}/{repo}/actions/jobs/99870014804/logs | cut -c30-)</code>
-<code class="rp-out" data-step="o9">Fetching artifact metadata for "github-pages" in this workflow run
-Getting Pages deployment status...
-<span class="ok">Reported success!</span>
-<span class="trunc">&#x2026; +53 lines (ctrl+o to expand)</span></code>
-
-<code class="rp-tool" data-step="t5"><b>Bash</b>(annotepage reply 1 'Measured before the change: the label needs 232px on one line and the button offers it 222px at a 360px viewport, so it wraps at 369px and below. Cause: the single a.action rule gives both buttons 36px of horizontal padding and a 17px label. Cut to 16px of padding and a 16px label; measured again on the same page, this one holds a single line down to 317px.')</code>
-<code class="rp-out" data-step="o5">Reply written in the thread of note 1, signed "Assistant".</code>
-<p class="rp-drop" data-step="dr5">[figure: replies 2 and 3 dropped, each measured the same way]</p>
-
-<code class="rp-tool" data-step="t6"><b>Bash</b>(annotepage resolve 1 1.4.13)</code>
-<code class="rp-out" data-step="o6">Note 1 marked <span class="ok">resolved</span> by "Assistant", in version <span class="ok">1.4.13</span>.</code>
-<p class="rp-drop" data-step="dr6">[figure: resolves 2 and 3 dropped, same answer]</p>
+<code class="rp-out" data-step="o9"><span class="ok">Reported success!</span>
+<span class="trunc">&#x2026; +55 lines (ctrl+o to expand)</span></code>
 
 <p class="rp-say" data-step="s7">Replied in each thread with what I measured, and resolved all three in <span class="id">1.4.13</span>.</p>
-
-<p class="rp-say" data-step="s8">Camille sees it on the page itself, without asking anybody.</p>
 
                     </div>
 
@@ -1361,7 +1424,7 @@ Getting Pages deployment status...
                          nothing -- so it is hidden from a screen reader, which
                          would otherwise read a counter aloud between the
                          sentences that do carry facts. -->
-                    <div class="rp-work" id="rp-work" aria-hidden="true"><span class="rp-frame" id="rp-frame">&#x00B7;</span><span class="rp-verb" id="rp-verb"></span><span class="rp-paren" id="rp-paren"></span></div>
+                    <div class="rp-work" id="rp-work" aria-hidden="true"><span class="rp-frame" id="rp-frame">&#x00B7;</span><span class="rp-verb" id="rp-verb"></span></div>
 
                     <!-- And what the turn leaves when it ends. A real session
                          does not simply drop the indicator: it replaces it,
@@ -1408,34 +1471,27 @@ Getting Pages deployment status...
                         <p class="rp-fn">Values recorded at the bench, plain text, comma separated.</p>
 
                         <div class="rp-panel">
-                            <div class="rp-panel-bar">Review notes<span class="count">3 notes</span></div>
-                            <div class="xf xf-done">
-                                <div class="st-b rp-panel-body">
-                                    <div class="rp-card">
-                                        <p class="who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
-                                        <p class="about">About: Download the calibration table</p>
-                                        <p>On my phone this button label breaks onto two lines. It should hold on one line down to 320px.</p>
-                                    </div>
-                                    <div class="rp-card">
-                                        <p class="who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
-                                        <p class="about">About: Open the correction worksheet</p>
-                                    </div>
-                                    <div class="rp-card">
-                                        <p class="who"><b>Camille</b> &middot; Sep 1, 2026, 12:00 PM</p>
-                                        <p class="about">About: Values recorded at the bench, plain text, comma separated.</p>
-                                    </div>
+                            <div class="rp-panel-bar">Review notes<span class="count ok" id="rp-count">3 resolved</span></div>
+                            <div class="rp-panel-body">
+                                <div class="rp-card seen done" data-note="1">
+                                    <span class="rp-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
+                                    <p class="who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
+                                    <p class="about">About: Download the calibration table</p>
+                                    <p>On my phone this button label breaks onto two lines. It should hold on one line down to 320px.</p>
                                 </div>
-                                <div class="st-a rp-panel-body">
-                                    <p class="rp-history">See the history (3 resolved)</p>
-                                    <div class="rp-card">
-                                        <span class="rp-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
-                                        <p class="who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
-                                        <p class="about">About: Download the calibration table</p>
-                                    </div>
-                                    <div class="rp-card reply">
-                                        <p class="who"><b>Assistant</b> &middot; Sep 1, 2026, 12:01 PM</p>
-                                        <p>Measured before the change: the label needs 232px on one line and the button offers it 222px at a 360px viewport, so it wraps at 369px and below.</p>
-                                    </div>
+                                <div class="rp-card reply" id="rp-reply">
+                                    <p class="who"><b>Assistant</b> &middot; Sep 1, 2026, 12:01 PM</p>
+                                    <p>Measured before the change: the label needs 232px on one line and the button offers it 222px at a 360px viewport, so it wraps at 369px and below.</p>
+                                </div>
+                                <div class="rp-card seen done" data-note="2">
+                                    <span class="rp-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
+                                    <p class="who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
+                                    <p class="about">About: Open the correction worksheet</p>
+                                </div>
+                                <div class="rp-card seen done" data-note="3">
+                                    <span class="rp-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
+                                    <p class="who"><b>Camille</b> &middot; Sep 1, 2026, 12:00 PM</p>
+                                    <p class="about">About: Values recorded at the bench, plain text, comma separated.</p>
                                 </div>
                             </div>
                         </div>
@@ -1448,7 +1504,9 @@ Getting Pages deployment status...
                 <button type="button" class="rp-again" id="rp-again">Watch again</button>
                 <p>
                     <span class="what">Example &mdash; a Claude Code session.</span>
-                    Captured output, replayed. Drops made for this figure are bracketed.
+                    Captured output, replayed. Steps are left out, results are collapsed
+                    the way the interface collapses them, and a long command is cut off
+                    rather than reworded.
                     <span class="disc">Terminal styling only. Not affiliated with, or endorsed by, any vendor.</span>
                 </p>
             </figcaption>
@@ -1457,13 +1515,13 @@ Getting Pages deployment status...
         <!-- Three verbs and a circle. Read out as one sentence rather than as
              six fragments, because a screen reader given six fragments has to
              rebuild the arrows itself, and the arrows are the content. -->
-        <div class="loop" role="img" aria-label="Annotate, by a reviewer. Fix, by the assistant. Deploy. And the answer comes back to the reviewer.">
+        <div class="loop" role="img" aria-label="Annotate, by a reviewer. Fix, by the AI. Deploy. And the answer comes back to the reviewer.">
             <div class="loop-row" aria-hidden="true">
-                <span class="loop-step"><b>Annotate</b><i>a reviewer</i></span>
+                <span class="loop-step loop-annotate"><b>Annotate</b><i>a reviewer</i></span>
                 <span class="loop-arrow"></span>
-                <span class="loop-step"><b>Fix</b><i>the assistant</i></span>
+                <span class="loop-step loop-fix"><b>Fix</b><i>the AI</i></span>
                 <span class="loop-arrow"></span>
-                <span class="loop-step"><b>Deploy</b></span>
+                <span class="loop-step loop-deploy"><b>Deploy</b></span>
             </div>
             <span class="loop-back" aria-hidden="true"></span>
         </div>
@@ -1475,11 +1533,12 @@ Getting Pages deployment status...
 <script>
 /* THE REPLAY.
 
-   This script decides WHEN a line of the block above appears, and how the
-   working indicator moves. It never decides what a line says: every one of
-   them is in the markup, captured from the run of 1 September 2026, and the
-   only text this file writes is the indicator's own -- a verb, a clock and a
-   token count, which are interface chrome and carry no fact.
+   This script decides WHEN a line of the block above appears, how tall the
+   pane holding them has to be, and how the working indicator moves. It never
+   decides what a line says: every one of them is in the markup, captured from
+   the run of 1 September 2026. The only text this file writes is the verb in
+   the indicator and the seconds in "Worked for", which are interface chrome
+   and carry no fact.
 
    Which is why the page is readable without it. The script's first act is to
    put data-play on the frame; every rule that hides anything is written
@@ -1501,19 +1560,26 @@ Getting Pages deployment status...
     var work  = document.getElementById('rp-work');
     var glyph = document.getElementById('rp-frame');
     var verb  = document.getElementById('rp-verb');
-    var paren = document.getElementById('rp-paren');
     var again = document.getElementById('rp-again');
     var ver   = document.getElementById('rp-ver');
     var wkd   = document.getElementById('rp-worked-n');
     var rest  = document.getElementById('rp-restart');
+    var sect  = document.getElementById('replay');
+    var count = document.getElementById('rp-count');
+    var reply = document.getElementById('rp-reply');
+    var cards = [null,
+                 document.querySelector('.rp-card[data-note="1"]'),
+                 document.querySelector('.rp-card[data-note="2"]'),
+                 document.querySelector('.rp-card[data-note="3"]')];
     /* Half a replay is worse than none: if any piece has moved, leave the
        static session exactly as it is. */
-    if (!rp || !flow || !ask || !box || !work || !glyph || !verb || !paren || !again || !ver || !wkd || !rest) return;
+    if (!rp || !flow || !ask || !box || !work || !glyph || !verb || !again || !ver || !wkd || !rest) return;
+    if (!sect || !count || !reply || !cards[1] || !cards[2] || !cards[3]) return;
 
     var steps = {};
     var all = flow.querySelectorAll('[data-step]');
     for (var i = 0; i < all.length; i++) steps[all[i].getAttribute('data-step')] = all[i];
-    if (!steps.ask || !steps.s8) return;
+    if (!steps.ask || !steps.s7) return;
 
     /* ------------------------------------------------------------------
        The interface's own vocabulary. Twelve frames, a palindrome, in a cell
@@ -1533,11 +1599,11 @@ Getting Pages deployment status...
                  'Herding', 'Marinating', 'Musing', 'Noodling', 'Percolating',
                  'Pondering', 'Puzzling'];
     var VERB = VERBS[14];   /* Pondering -- nine cells, the shimmer has room */
-    /* The phrase escalates with the wait. This turn runs 17.9 s, so only the
-       first two rungs are ever reached; the rest are what the interface does
-       and are kept so the ladder is not half a ladder. */
-    var THINK = [[45000, 'almost done thinking'], [30000, 'thinking some more'],
-                 [20000, 'thinking more'], [10000, 'still thinking'], [0, 'thinking']];
+    /* WHAT THE INDICATOR NO LONGER SAYS. The interface writes a clock, a token
+       count and an escalating phrase beside the verb -- `(12s . 1.1k tokens .
+       still thinking)`. All of it is real and all of it is dropped: a counter
+       climbing beside a page that is not moving yet is the figure announcing
+       how hard this was. The turn says what it cost once, when it is over. */
 
     /* ------------------------------------------------------------------
        The line the human typed. Read from the markup, split into cells, and
@@ -1571,7 +1637,7 @@ Getting Pages deployment status...
        middle -- then the whole shape scaled to the budget the timeline gives
        it. Scaling keeps the unevenness, which is the part that reads as a
        person, and drops the absolute rate, which nobody can judge. */
-    var TYPE_AT = 140, TYPE_MS = 2150;
+    var TYPE_AT = 120, TYPE_MS = 1180;
     var marks = [];
     var plan = function () {
         var d = [], k, prev, ms, sum = 0;
@@ -1594,37 +1660,39 @@ Getting Pages deployment status...
        Where the pane sits. It is clipped, not scrollable: the script moves it
        forward, a jump at a time, and never back.
        ------------------------------------------------------------------ */
+    /* The whole session fits the pane, so this never has anything to do. It
+       stays as insurance: if a fallback font ever wraps a line the measurement
+       did not expect, the newest line is the one that survives rather than the
+       oldest. */
     var toBottom = function () { flow.scrollTop = flow.scrollHeight; };
-    /* The sentence that says two remarks are one bug brightens two lines that
-       sit eight apart. Running to the bottom would carry the first of them
-       off the lid before the sentence about it arrives, so through that
-       stretch the pane stops at the first instead. Forward only: the position
-       it already has is the floor. */
-    var showCapped = function (el, anchor) {
-        if (!el) return;
-        el.classList.add('on');
-        var want = flow.scrollHeight - flow.clientHeight;
-        if (anchor) {
-            var top = anchor.getBoundingClientRect().top
-                    - flow.getBoundingClientRect().top + flow.scrollTop;
-            want = Math.min(want, Math.max(0, top - 6));
-        }
-        flow.scrollTop = Math.max(flow.scrollTop, want);
-    };
     var show = function (name) {
         var el = steps[name];
         if (el) { el.classList.add('on'); toBottom(); }
     };
-    var hl = function () { return flow.querySelector('.hl'); };
+    /* The reviewer's pane. `seen` is a note the assistant has read, `done` is a
+       note it has answered; the reply is the last thing to arrive, under the
+       first note, and it is the frame worth screenshotting. */
+    var seen = function (n) { cards[n].classList.add('seen'); };
+    var done = function (n) { cards[n].classList.add('done'); };
+    /* And where the three-word diagram under the figure has got to. */
+    var now  = function (w) { sect.setAttribute('data-now', w); };
 
     /* ------------------------------------------------------------------
-       The turn, and what lands when. One user line, one turn, and the working
-       indicator holds from the moment the line is sent to the moment the last
-       note is closed -- because that is one turn, not eight.
+       The turn, and what lands when.
+
+       ONE user line, one turn. The terminal is finished at 10.4 s and says so;
+       everything after that belongs to the reviewer's page, which is where the
+       figure is supposed to end. Twelve seconds of play, then four of holding
+       the finished state -- the frame the whole thing exists to reach -- then a
+       held reset.
+
+       The picture moves five times: the three notes fill as they are read, the
+       version turns over, the buttons close onto one line, the three stamps
+       land one after another, the reply arrives. The terminal moves nine.
 
        No time here is round: 2.0 / 5.0 / 7.5 land like slides.
        ------------------------------------------------------------------ */
-    var SENT = 2340, TURN_END = 20230, DONE = 20780;
+    var SENT = 1420, TURN_END = 10420, PLAY_END = 12080, DONE = 16080;
     var CUES = [
         [SENT,  function () {
             rp.removeAttribute('data-idle');
@@ -1635,48 +1703,53 @@ Getting Pages deployment status...
             cells = [];
             show('ask');
             rp.setAttribute('data-working', '');
+            now('fix');
         }],
-        /* 750 ms of nothing but the indicator: between the line going in and
-           the first thing coming out there is always a pause, and never the
-           same one twice. */
-        [3090,  function () { show('t1'); }],
-        [3640,  function () { showCapped(steps.o1, null); }],
-        [4530,  function () { showCapped(steps.d1, hl()); }],
-        [4870,  function () { showCapped(steps.s2, hl()); rp.setAttribute('data-hl', ''); }],
-        [6480,  function () { show('t2'); }],
-        [7020,  function () { show('o2'); }],
-        [7880,  function () { show('s3'); }],
-        [8660,  function () { show('s4'); }],
-        [9430,  function () { show('t3'); }],
-        [10040, function () { show('s5'); }],
-        [10720, function () { show('t4'); }],
-        [11210, function () { show('o4'); }],
-        [11930, function () { show('s6'); }],
+        /* Half a second of nothing but the indicator: between the line going in
+           and the first thing coming out there is always a pause. */
+        [1900,  function () { show('t1'); }],
+        [2260,  function () { show('o1'); }],
+        /* AND THE REVIEWER'S PANE IS ALIVE FROM HERE. One note at a time, a
+           third of a second apart, so the eye follows the reading instead of
+           discovering afterwards that it happened. */
+        [2440,  function () { seen(1); }],
+        [2740,  function () { seen(2); }],
+        [3040,  function () { seen(3); }],
+        [3380,  function () { show('s2'); }],
+        [4260,  function () { show('s5'); }],
+        [4820,  function () { show('t4'); }],
+        /* THE ONE RESULT THIS FIGURE EXPANDS. A measurement was taken, and
+           that is the project's whole argument; everything else collapses to
+           the line the interface itself prints. */
+        [5240,  function () { show('o4'); }],
         /* THE THREE BEATS THE FIGURE USED TO LIE BY LEAVING OUT. The edit above
            changed a working copy and nothing else. It becomes a commit, the
            commit is pushed, and a deployment puts the result online -- and only
            then does anything change on the right. */
-        [12710, function () { show('t7'); }],
-        [13150, function () { show('o7'); }],
-        [13760, function () { show('t8'); }],
-        [14190, function () { show('o8'); }],
-        [14810, function () { show('t9'); }],
-        [15370, function () { show('o9'); }],
+        [6020,  function () { show('t7'); }],
+        [6440,  function () { show('o7'); }],
+        [6960,  function () { show('t8'); now('deploy'); }],
+        [7360,  function () { show('o8'); }],
+        [7900,  function () { show('t9'); }],
+        [8320,  function () { show('o9'); }],
         /* AFTER "Reported success!", never after the edit. The gap between the
-           two is the whole correction: for four and a half seconds the fix
-           exists in a commit and the site still serves 1.4.12, and the picture
-           says so. */
-        [16090, function () { rp.setAttribute('data-stage', 'fixed'); ver.textContent = '1.4.13'; }],
-        [16540, function () { show('t5'); }],
-        [17020, function () { show('o5'); }],
-        [17390, function () { show('dr5'); }],
-        [17830, function () { show('t6'); }],
-        [18240, function () { show('o6'); }],
-        [18580, function () { show('dr6'); }],
-        [19030, function () { show('s7'); }],
-        [19430, function () { rp.setAttribute('data-stage', 'resolved'); }],
-        [19830, function () { show('s8'); }],
-        /* The turn ends, and what it leaves is not nothing: the indicator is
+           two is the whole correction: for four seconds the fix exists in a
+           commit and the site still serves 1.4.12, and the picture says so.
+
+           Two beats, not one. The version turns over, and a quarter of a second
+           later the two labels close onto a single line -- read as one cut, the
+           only thing anybody noticed was that something had flickered. */
+        [8760,  function () { ver.textContent = '1.4.13'; }],
+        [9020,  function () { rp.setAttribute('data-stage', 'fixed'); }],
+        /* AND THE DIAGRAM UNDER THE FIGURE TURNS HERE, not on the third stamp.
+           This line is the terminal saying the answer went back to the person
+           who wrote the remark; the stamps that follow are that answer arriving
+           on her page. Lighting "Deploy" over the top of them left the diagram
+           a beat behind the two things it is describing, which is worse than
+           no diagram. */
+        [9520,  function () { show('s7'); now('back'); }],
+        /* The turn ends here, and the last two seconds belong to the page under
+           review. What the turn leaves is not nothing: the indicator is
            replaced in place by the time it took. Whole seconds, floored, from
            this timeline's own numbers -- change a cue above and the line
            follows. */
@@ -1686,13 +1759,24 @@ Getting Pages deployment status...
             rp.setAttribute('data-worked', '');
             toBottom();
         }],
+        /* Three stamps, four tenths apart, with the terminal already quiet.
+           This is the answer arriving where the reviewer left the remark, and
+           it is the last thing that moves. */
+        [10800, function () { done(1); }],
+        [11200, function () { done(2); }],
+        [11600, function () { done(3); count.textContent = '3 resolved';
+                              count.classList.add('ok'); }],
+        [PLAY_END, function () { reply.classList.add('on'); }],
+        /* And then it is held. Four seconds of the finished page, no motion at
+           all: long enough to read the stamp, the reply and the count, which is
+           the payoff of the whole figure and used to go past in a blink. */
         [DONE,  function () { if (cycle + 1 >= CYCLES) rp.setAttribute('data-done', ''); toBottom(); }]
     ];
 
     /* ------------------------------------------------------------------
        The indicator itself.
        ------------------------------------------------------------------ */
-    var verbCells = [], lastGlyph = '', lastLit = -99, lastParen = '';
+    var verbCells = [], lastGlyph = '', lastLit = -99;
     var setVerb = function (word) {
         verb.textContent = '';
         verbCells = [];
@@ -1704,10 +1788,6 @@ Getting Pages deployment status...
             verbCells.push(s);
         }
         lastLit = -99;
-    };
-    var thinking = function (e) {
-        for (var k = 0; k < THINK.length; k++) if (e >= THINK[k][0]) return THINK[k][1];
-        return THINK[THINK.length - 1][1];
     };
     var paint = function (e) {
         /* The frame ticks every 100 ms on a two-second cosine: the glyph
@@ -1730,32 +1810,6 @@ Getting Pages deployment status...
             lastLit = lit;
         }
 
-        /* Whole seconds, never tenths: tenths read as a stopwatch. The token
-           count is what has been streamed, near enough. Past sixteen seconds
-           the interface drops the count and leaves the clock alone; this turn
-           ends at 17.9 s, so that branch is the ladder's top rung and not a
-           thing anyone will see here. */
-        var secs = Math.floor(q / 1000);
-        var tok = Math.floor(q * 0.084);
-        var join = ' \u00B7 ';
-        var head = secs > 16
-            ? ' (' + secs + 's'
-            : ' (' + secs + 's' + join + '\u2193 '
-              + (tok < 1000 ? tok : (Math.round(tok / 100) / 10).toFixed(1) + 'k')
-              + ' tokens' + join;
-        var phrase = secs > 16 ? '' : thinking(e);
-        if (head + phrase !== lastParen) {
-            paren.textContent = '';
-            paren.appendChild(document.createTextNode(head));
-            if (phrase) {
-                var th = document.createElement('span');
-                th.className = 'think';
-                th.textContent = phrase;
-                paren.appendChild(th);
-            }
-            paren.appendChild(document.createTextNode(')'));
-            lastParen = head + phrase;
-        }
     };
 
     /* ------------------------------------------------------------------
@@ -1766,22 +1820,72 @@ Getting Pages deployment status...
     /* Three passes, and a second and a half of held reset between them. */
     var CYCLES = 3, GAP = 1500, cycle = 0, armed = false;
 
+    /* The reviewer's page, wound back. It is written once and called from both
+       places that wind it back -- the reset before a pass and the held reset
+       between two -- because a picture that is half in the past is the one
+       thing worse than a picture that never changed. */
+    var picture = function (after) {
+        for (var k = 1; k <= 3; k++) {
+            cards[k].classList.toggle('seen', after);
+            cards[k].classList.toggle('done', after);
+        }
+        reply.classList.toggle('on', after);
+        count.textContent = after ? '3 resolved' : '3 notes';
+        count.classList.toggle('ok', after);
+        ver.textContent = after ? '1.4.13' : '1.4.12';
+        rp.setAttribute('data-stage', after ? 'fixed' : 'before');
+        now(after ? 'back' : 'annotate');
+    };
+
+    /* THE PANE IS AS TALL AS THE SESSION, AND NOT A LINE TALLER.
+
+       Every line of the session is laid out at this width, once, and the pane
+       is fixed to what that measured. Nothing then scrolls, at any width, in
+       any font fallback, and the figure never changes height while it plays --
+       the two defects the last reading of it found first.
+
+       A number written into the stylesheet would have to be a guess at how a
+       fallback monospace wraps a 91-character command, and it would go stale
+       the day a line above is edited. This cannot. */
+    var sizeFlow = function () {
+        var k, was = [];
+        /* What is already on screen goes back on screen. Measuring is not an
+           event in the session: a reader who turns the phone sideways halfway
+           through must find the same session, laid out again -- not an empty
+           pane. */
+        for (k = 0; k < all.length; k++) {
+            was[k] = all[k].classList.contains('on');
+            all[k].classList.add('on');
+        }
+        flow.style.height = 'auto';
+        var h = Math.ceil(flow.scrollHeight);
+        flow.style.height = h + 'px';
+        for (k = 0; k < all.length; k++) if (!was[k]) all[k].classList.remove('on');
+    };
+
     var reset = function () {
         if (raf) cancelAnimationFrame(raf);
         raf = 0; cue = 0; typed = 0;
-        lastGlyph = ''; lastLit = -99; lastParen = '';
+        lastGlyph = ''; lastLit = -99;
         for (var k = 0; k < all.length; k++) all[k].classList.remove('on');
-        rp.removeAttribute('data-hl');
+        picture(false);
         rp.removeAttribute('data-done');
         rp.removeAttribute('data-working');
         rp.removeAttribute('data-worked');
         rp.removeAttribute('data-restart');
         rp.setAttribute('data-play', '');
         rp.setAttribute('data-idle', '');
-        rp.setAttribute('data-stage', 'before');
-        ver.textContent = '1.4.12';
+        sizeFlow();
         flow.scrollTop = 0;
         buildCells();
+        /* AND THE INPUT BOX KEEPS THE HEIGHT OF THE LINE IT IS ABOUT TO HOLD.
+           On a phone the question wraps to two rows, and sending it dropped the
+           box back to one -- sixteen pixels, taken out of the middle of the
+           figure at the exact moment the reader's eye arrived. The line is
+           already laid out in full here, so its height is known before a
+           character of it is visible. */
+        box.style.minHeight = '';
+        box.style.minHeight = box.offsetHeight + 'px';
         cells[0].className = 'ch cur';
         setVerb(VERB);
         plan();
@@ -1809,12 +1913,10 @@ Getting Pages deployment status...
         if (!armed) {
             armed = true;
             for (var k = 0; k < all.length; k++) all[k].classList.remove('on');
-            rp.removeAttribute('data-hl');
             rp.removeAttribute('data-working');
             rp.removeAttribute('data-worked');
             rp.setAttribute('data-restart', '');
-            rp.setAttribute('data-stage', 'before');
-            ver.textContent = '1.4.12';
+            picture(false);
             flow.scrollTop = 0;
         }
         if (t < DONE + GAP) { raf = requestAnimationFrame(tick); return; }
@@ -1830,6 +1932,25 @@ Getting Pages deployment status...
     };
 
     again.addEventListener('click', function () { cycle = 0; play(); });
+
+    /* A resize rewraps every line, so the pane is measured again. Only the
+       height moves; the session keeps its place on the clock. */
+    var settle = 0;
+    window.addEventListener('resize', function () {
+        if (!rp.hasAttribute('data-play')) return;
+        if (settle) clearTimeout(settle);
+        settle = setTimeout(function () {
+            sizeFlow();
+            /* The question wraps differently at the new width, so the box it is
+               still being typed into is measured again. Once it has been sent
+               there is nothing left to measure and the reserved height stands. */
+            if (cells.length) {
+                box.style.minHeight = '';
+                box.style.minHeight = box.offsetHeight + 'px';
+            }
+            toBottom();
+        }, 200);
+    });
 
     /* What moves in this replay is a timeline revealing lines, and
        `animation: none` cannot reach a timeline -- the page carried the usual
