@@ -63,7 +63,7 @@ annotepage open --page /pricing     # ...on one page
 annotepage note 12                  # one note and its thread
 annotepage reply 12 "Reproduced. The label wraps below 380px."
 annotepage resolve 12 1.4.13
-annotepage reopen 12 "Still there on Safari 17."
+annotepage reply 12 "Still there on Safari 17." && annotepage reopen 12
 annotepage text                     # the whole review, as text
 annotepage projects
 annotepage diagnostic               # what the server thinks of your setup
@@ -105,17 +105,32 @@ curl 'https://staging.example.com/notes/api.php?action=text&project=<id>'
 ```
 tool annotepage
 format 2
-notes 3
+version 2.0.0
+project 7Qb1kZ3xNvA9dLpEqKf2Zt
+encryption no
+export 2026-09-01T07:04:52+00:00
+notes 1
 
-note 12 / page / element / excerpt
-  page /pricing
-  element button.cta
-  excerpt Start free trial
-  author Camille
-  date 2026-08-30T14:02:11+00:00
-  status open
-    The label wraps below 380px and the button grows a second line.
+note 4
+page /trial
+page-index JiJMsFqgbCAyO1tq0MNcmw
+element main:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(2) > a:nth-of-type(1)
+excerpt Choose Team
+author Camille
+date 2026-09-01T07:04:41+00:00
+version 1.4.13
+environment staging
+viewport 1280x800
+status open
+text
+    "Choose Team" wraps onto two lines below 380px and the button grows a second row.
 ```
+
+That is a real export, copied from a real server, not an illustration. Note
+what `element` is: the element's POSITION in the page, as an `nth-of-type`
+path. The readable form -- `a.cta` -- is recorded but never exported, so do not
+expect a class or an id here. `excerpt` is what carries the human meaning: the
+text that was on screen.
 
 One fact per line, `key value`, two-space steps for replies. The same grammar
 comes out of this package in encrypted mode, decrypted on the way. A reader

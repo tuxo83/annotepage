@@ -175,6 +175,19 @@ const main = async () => {
         return 0;
     }
 
+    /* Refused BEFORE the first network call. Reopening records no author and no
+       reason -- that is deliberate -- so a reason handed on the command line
+       would be accepted and thrown away. Losing silently what somebody took the
+       trouble to write is worse than refusing it, and refusing it after a round
+       trip would make the user wait to be told no. */
+    if (command === 'reopen' && positional[2] !== undefined) {
+        throw new UsageError(
+            'Reopening records no reason, so this one would be dropped.\n'
+            + 'Write it in the thread first, where it is kept and signed:\n'
+            + '  annotepage reply ' + positional[1] + ' "' + String(positional[2]).slice(0, 50) + '"\n'
+            + '  annotepage reopen ' + positional[1]);
+    }
+
     const state = await retrieve(project);
 
     switch (command) {
