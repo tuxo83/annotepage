@@ -6,9 +6,15 @@
    reason to inspect. The notes are already unreadable by the time anyone looks,
    and the only symptom is a reader that quietly skips rows.
 
-   Package versions are checked too, for a duller reason: the two packages are
-   released together from one tag, and a mismatch means one of them silently
-   does not publish. */
+   PACKAGE VERSIONS ARE NO LONGER REQUIRED TO MATCH. They were, back when a
+   single tag released both and a mismatch meant one of them silently did not
+   publish. Publishing is now driven by each package's own declared version, so
+   they are MEANT to diverge: fixing the client alone bumps the client alone.
+   This is not a check being relaxed to make something pass -- it is a rule
+   whose reason stopped existing.
+
+   What still has to agree is the protocol number, and that is the whole point
+   of this file. */
 
 import { readFileSync } from 'node:fs';
 
@@ -19,10 +25,10 @@ const one = (label, text, re) => {
     return m[1];
 };
 
-const found = {
-    'client package':  JSON.parse(read('client/package.json')).version,
-    'mcp package':     JSON.parse(read('mcp/package.json')).version,
-    'server VERSION':  read('server/webroot/VERSION').trim(),
+const versions = {
+    'client package': JSON.parse(read('client/package.json')).version,
+    'mcp package':    JSON.parse(read('mcp/package.json')).version,
+    'server VERSION': read('server/webroot/VERSION').trim(),
 };
 
 const formats = {
@@ -41,7 +47,19 @@ const agree = (what, map) => {
     bad++;
 };
 
-agree('package version', found);
+/* Shown, never compared. Three lines that say what is where beat a rule that
+   fires on a state which is now normal. */
+console.log('versions: ' + Object.entries(versions)
+    .map(([k, v]) => `${k.replace(' package', '').replace(' VERSION', '')} ${v}`)
+    .join(', '));
+
+for (const [label, value] of Object.entries(versions)) {
+    if (!/^\d+\.\d+\.\d+$/.test(value)) {
+        console.error(`${label} is "${value}", which is not x.y.z`);
+        bad++;
+    }
+}
+
 agree('protocol format', formats);
 
 process.exit(bad ? 1 : 0);

@@ -31,8 +31,24 @@ const expected = 'sha384-' + createHash('sha384')
 const files = execSync('git ls-files --cached --others --exclude-standard', { encoding: 'utf8' })
     .split('\n').filter(Boolean);
 
+/* client/dist/HASHES.txt is a HISTORY -- one line per version, older ones kept
+   on purpose so a digest found in an old page can still be identified. Only its
+   first line describes the bundle that exists now. Sweeping the whole file would
+   flag every past release and block every future one. */
+const HISTORY = 'client/dist/HASHES.txt';
+if (existsSync(HISTORY)) {
+    const written = (readFileSync(HISTORY, 'utf8').split('\n')[0] || '')
+        .match(/sha384-[A-Za-z0-9+/=]+/)?.[0];
+    if (written !== expected) {
+        console.error(`${HISTORY}:1  says ${String(written).slice(0, 24)}...`);
+        console.error('Its first line must describe the bundle as it is now. Rebuild.');
+        process.exit(1);
+    }
+}
+
 let wrong = 0, found = 0;
 for (const file of files) {
+    if (file === HISTORY) continue;
     let text;
     try { text = readFileSync(file, 'utf8'); } catch { continue; }
     for (const m of text.matchAll(/sha384-[A-Za-z0-9+/=]+/g)) {
@@ -52,13 +68,29 @@ for (const file of files) {
    script would be refused by every browser. Compare the bytes, not the name. */
 const served = files.filter(f => /^docs\/annotepage-client-[\d.]+\.js$/.test(f));
 for (const copy of served) {
+    /* Tracked but gone from disk: exactly what a release looks like halfway
+       through, once the previous version's file is removed and before the commit.
+       Not an error -- it is simply not being served any more. */
+    if (!existsSync(copy)) continue;
     if (!readFileSync(copy).equals(readFileSync(BUNDLE))) {
         console.error(`${copy} differs from ${BUNDLE}.`);
         console.error('It is the file the site actually serves. Copy the built bundle over it.');
         wrong++;
     }
 }
-if (!served.length) {
+const declared = JSON.parse(readFileSync('client/package.json', 'utf8')).version;
+const wanted = `docs/annotepage-client-${declared}.js`;
+if (!existsSync(wanted)) {
+    console.error(`${wanted} is missing -- the site links to the DECLARED version.`);
+    console.error('A release that bumped package.json and forgot the served copy');
+    console.error('would otherwise pass this check.');
+    wrong++;
+} else if (!readFileSync(wanted).equals(readFileSync(BUNDLE))) {
+    console.error(`${wanted} differs from ${BUNDLE}.`);
+    wrong++;
+}
+
+if (!served.filter(existsSync).length) {
     console.error(`no docs/annotepage-client-<version>.js found -- the site links to one.`);
     wrong++;
 }
@@ -69,4 +101,4 @@ if (wrong) {
     console.error('Rebuild the client, then copy the digest it prints.');
     process.exit(1);
 }
-console.log(`sri: ${found} digest(s) and ${served.length} served copy, all matching ${BUNDLE}`);
+console.log(`sri: ${found} digest(s) and ${served.filter(existsSync).length} served copy, all matching ${BUNDLE}`);
