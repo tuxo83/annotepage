@@ -35,9 +35,17 @@ const MANIFEST = `${ROOT}/MANIFEST`;
                      the paths to the credentials, and it is dropped in per
                      server. The updater must never touch it, and the surest
                      way to guarantee that is for it to be unable to name it.
+   install.php       the updater downloads every listed file whose hash differs
+                     from the one on disk, and a file that is ABSENT differs.
+                     Listing the installer would therefore RESURRECT it on
+                     every server whose operator had deleted it -- putting a
+                     writable, reachable installer back on a live site, which
+                     is the exact thing install.php's own last screen tells
+                     them to prevent. It ships in the release directory; it is
+                     not part of what the updater maintains.
    .update/          the updater's own staging, backup and state directory. It
                      appears only on a server that has run an update.  */
-const SKIP_FILES = new Set(['MANIFEST', 'config-local.php']);
+const SKIP_FILES = new Set(['MANIFEST', 'config-local.php', 'install.php']);
 
 /* Directories whose name starts with a dot are skipped; FILES whose name
    starts with a dot are not. `.htaccess` is shipped and its absence would be

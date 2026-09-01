@@ -21,6 +21,12 @@ One MySQL database, one user with the usual rights. **No schema to create**: the
 server builds its tables on the first call and adds anything missing on later
 ones. Nothing to migrate, ever.
 
+MySQL and not the SQLite default, and `config-local.php` says so with
+`storage => 'mysql'`. SQLite locks the whole file for each write; a relay takes
+concurrent writes from people who have never heard of each other. On a single
+site under review the default is the right one and there is no database to
+create at all.
+
 ## HTTPS is not optional
 
 The client needs a secure context to reach WebCrypto, so it will not encrypt --

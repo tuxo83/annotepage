@@ -8,6 +8,12 @@
  * It only needs to contain what differs from config.php's defaults -- the other
  * keys keep their default values.
  *
+ * YOU PROBABLY DO NOT NEED THIS FILE. `install.php` writes one, having chosen a
+ * storage location the web server does not serve and PROVED it by asking for
+ * that file's own URL over HTTP. Copy this one by hand when you want something
+ * the installer does not ask about -- a relay, several projects, credentials
+ * read from outside the web root.
+ *
  * TWO FORMS FOR EVERY DATABASE CREDENTIAL
  *
  *   'user' => 'mysite'                        the value in the clear
@@ -109,6 +115,30 @@ return array(
         // ),
     ),
 
+    // WHICH STORE ANSWERS.
+    //
+    //   'sqlite'  internal/store-sqlite.php: ONE FILE, nothing to create. This
+    //             is the default and what install.php writes. Its only key is
+    //             `database.file`, the absolute path of that file;
+    //   'mysql'   internal/store.php: a database server and its credentials,
+    //             below. The right answer for a busy relay -- SQLite locks the
+    //             whole file for each write.
+    //
+    // Left out entirely, it is deduced: `database.name` set means MySQL, so an
+    // installation configured before this key existed keeps its database.
+    'storage' => 'mysql',
+
+    // THE SQLITE ROUTE, and it is two lines:
+    //
+    //   'storage'  => 'sqlite',
+    //   'database' => array('file' => '/path/to/somewhere/notes.sqlite'),
+    //
+    // PUT THAT FILE OUTSIDE THE WEB ROOT. A SQLite file inside it can be
+    // FETCHED OVER HTTP; an .htaccess denying it does nothing under nginx, and
+    // plenty of cheap hosting is nginx. The store writes an .htaccess and an
+    // index.php next to the file wherever it lands, but those are a fallback,
+    // not the plan. install.php picks the location and then proves it.
+
     'database' => array(
 
         // Host and port: in the clear, they are not secrets.
@@ -151,6 +181,14 @@ return array(
     // Maximum number of notes per project; 0 = no limit. Erases nothing and
     // expires nothing: refuses the write beyond, and says so.
     // 'max_notes_per_project' => 5000,
+
+    // WHERE A BARE VISIT GOES. Empty: a visit to this directory with no path
+    // gets a 404, and api.php is unaffected either way. An absolute http(s)
+    // URL sends such a visit there with a 302 -- what a public relay wants, so
+    // that somebody landing on the bare host reaches a page explaining what
+    // the thing is instead of nothing. It NEVER applies to api.php, to an
+    // action, or to the diagnostic.
+    // 'forward_root_to' => 'https://annotepage.com',
 
     // Behind a trusted proxy THAT REWRITES IT ON EVERY REQUEST. With no proxy,
     // leave this key out: a header the client writes itself would make rate

@@ -3,6 +3,79 @@
 annotepage's PHP server. It saves the notes, groups them by project and by page,
 and returns them — in JSON to the client, in plain text to an assistant.
 
+---
+
+## Installing it: upload, open one page, paste one line
+
+1. **Copy `webroot/`** onto your server, anywhere under the web root, under
+   whatever name you like — over FTP, over SFTP, through the host's file
+   manager. Copy `webroot/` only: the rest of this directory has no business
+   online.
+
+2. **Open `https://<site>/<where-you-put-it>/install.php`** in a browser. One
+   page, one form, one button. It asks two things — the storage and whether the
+   server may update itself — and both already carry the answer that works. It
+   needs no JavaScript.
+
+3. **Paste the line it prints** into the tag on the pages you want to annotate:
+
+   ```
+   data-server="https://<site>/<where-you-put-it>/api.php"
+   ```
+
+Then **delete `install.php`**. The last screen offers to delete it for you and
+says whether it managed.
+
+There is no database to create, no `config-local.php` to write by hand, and
+nothing to install on your machine.
+
+### What the installer does while you wait
+
+- **reports what this PHP offers** — the version really served, `pdo_sqlite`,
+  `pdo_mysql`, `mbstring`, `json`, whether the directory is writable, and
+  whether the server can reach the outside over HTTPS. Each line says what it
+  means, not just whether it is there;
+- **creates the database as a file**, SQLite, one file, nothing to provision.
+  `pdo_sqlite` is compiled into PHP on nearly every host, which is the whole
+  reason it is the default. If it is missing here, the page says so in one
+  sentence and MySQL is one radio button away;
+- **puts that file where the web server does not serve it** — outside the
+  document root when it can find a writable directory there, otherwise inside,
+  in a directory with an unguessable name carrying its own `.htaccess` and an
+  `index.php` that exits;
+- **proves it**, and this is the part that matters. It asks the web server for
+  that file's own URL over HTTP and reads the status code. Anything other than
+  a refusal and it deletes what it created, writes no configuration, and tells
+  you what came back. It does not reason about protection, because reasoning is
+  exactly what fails here: an `.htaccess` denying the file does nothing under
+  nginx, and plenty of cheap hosting is nginx;
+- **writes `internal/config-local.php`**, with a comment saying it was
+  generated, when, and by what. It never overwrites an existing one. If one is
+  there, the form is not even shown.
+
+### One thing is still yours to do
+
+The generated configuration declares **no project**, and it cannot: a project
+id descends from a salt the browser generates and the server never receives.
+Add the tag to a page, open it, and the client's setup screen hands you the id
+and the block to paste under `projects`. Until then `?action=list` answers
+`active: false` and the panel stays quiet — which is the correct behaviour for
+a server nobody has told anything to yet.
+
+### If the installer refuses to finish
+
+It refuses for exactly three reasons, and each one names itself on screen:
+
+- **it could not request its own address.** Then it cannot prove anything, and
+  a check that could not run must never be read as a check that passed. A
+  single-worker development server deadlocks here; a real host does not;
+- **the data file came back over HTTP.** The database would be downloadable.
+  Nothing was configured and the file it had just created is gone;
+- **it could not write `internal/config-local.php`.** Grant write permission on
+  `internal/` to the user PHP runs as, install, then take it away again.
+
+---
+
 **One code, two places to drop it.** That is the point to understand before
 anything else:
 
@@ -14,9 +87,10 @@ anything else:
 | `Origin` header | optional | required on writes |
 | backfill of a 1.2.0 database | available | refused |
 
-There are not two implementations: it is the same table, the same query, the
-same file. The configuration declares `deployment`, and that value changes only
-the three lines of the table above.
+There are not two implementations: it is the same table and the same query. The
+configuration declares `deployment`, and that value changes only the three
+lines of the table above. Which STORAGE holds that table is a separate choice
+(`storage`), and it is the next section but one.
 
 The server is **not** an npm package. It gets copied.
 
@@ -24,12 +98,14 @@ The server is **not** an npm package. It gets copied.
 
 ## What it requires, and nothing more
 
-- Apache (or any server that runs PHP);
-- **PHP 7.4 or newer**, with `pdo_mysql` and `json`;
-- **a MySQL database** and a user that can write to it.
+- Apache, nginx, or any server that runs PHP;
+- **PHP 7.4 or newer**, with `json` and `mbstring`;
+- **one of two storage extensions**: `pdo_sqlite`, which is compiled into PHP
+  on nearly every host and needs nothing else, or `pdo_mysql` with a database
+  and a user that can write to it.
 
 No dependency to install, no build step, no package, nothing to compile. Copy a
-directory, drop in a file, add a tag.
+directory, open one page, add a tag.
 
 ---
 
@@ -49,7 +125,44 @@ annotated page — and it is what you write into the configuration.
 
 ---
 
-## Dropping it onto a site, in three moves
+## Where the notes actually live
+
+**SQLite, by default: one file.** `internal/store-sqlite.php`. The installer
+picks its path, creates it, and writes that path into `database.file`. There is
+nothing to provision and nothing to back up but that one file.
+
+**The file must not be downloadable, and that is the whole difficulty.** A
+SQLite file inside the web root can be fetched over HTTP. An `.htaccess`
+denying it does nothing under nginx. The notes are encrypted, so the damage is
+bounded — but page indexes, timestamps and volumes leak, and in plain mode
+everything leaks. So, in this order:
+
+1. **outside the document root**, when the installer finds a writable directory
+   there. No URL maps to it and there is nothing to defeat;
+2. **inside**, in a directory whose name is sixteen random hex characters,
+   carrying its own `.htaccess` and an `index.php` that exits.
+
+Whichever it is, `install.php` **requests that file's URL over HTTP** and
+refuses to finish on anything but a refusal. `?action=diagnostic` reports the
+path and answers `storage.inside_document_root` on every later call, so a
+server configuration that changes afterwards is visible.
+
+Writing `database.file` by hand works too, and then it is your job to put it
+somewhere no URL reaches. The store writes the two guard files next to whatever
+path it is given; they are a fallback, not the plan.
+
+**A busy relay wants MySQL instead.** SQLite locks the whole file for each
+write. For a review team that is invisible; for a public relay taking writes
+from strangers it is not, and that is what the section below is for.
+
+---
+
+## Installing it by hand, and the MySQL route
+
+Everything `install.php` does can be done with a text editor, and this is what
+it writes. Use this when you want something the installer does not ask about: a
+relay, several projects, credentials read from outside the web root, or MySQL
+with a database you already have.
 
 ### 1. Copy `webroot/`
 
@@ -69,8 +182,7 @@ Starting from `internal/config-local.example.php`. **Without it, the tool is
 INACTIVE**: the safe default is silence, not a connection attempted at random. A
 directory copied in by mistake therefore does strictly nothing.
 
-Three things to write in it, and only one is new compared with the original
-tool:
+Four things to write in it:
 
 ```php
 'deployment' => 'self-hosted',      // or 'relay'
@@ -83,8 +195,26 @@ tool:
     ),
 ),
 
+'storage'  => 'sqlite',
+'database' => array('file' => '/path/outside/the/web/root/notes.sqlite'),
+```
+
+**The MySQL route** is the same file with the other two lines:
+
+```php
+'storage'  => 'mysql',
 'database' => array( /* host, port, name, user, password */ ),
 ```
+
+Create the database and a user that can write to it; there is **no schema to
+create**. The server builds its tables on the first call and adds anything
+missing on later ones — see *Updating the server where it has already run*
+below, which has not changed.
+
+`storage` may be left out entirely, and it is then deduced: a `database.name`
+means MySQL. That is what keeps every installation configured before this key
+existed pointing at its own database — flipping such a server to an empty
+SQLite file on an update would read as three months of review erased.
 
 The **project id** (`7Qb1kZ...`) is the one the client's setup screen shows after
 generating the salt. Copy it: the server does not compute it, it recognises it.
@@ -215,10 +345,13 @@ has nothing to do with where the update comes from. Turning the key back off
 does not undo it: the permission stays until somebody takes it away.
 
 **What it never touches**: `internal/config-local.php`, which holds your
-projects, origins and credential paths and is not in the manifest at all; and
-`internal/store.php` when it differs from the one we shipped, because this file
-tells you that you may replace it and restoring ours would take your database
-with it. Files we no longer ship are left in place, never deleted.
+projects, origins and credential paths and is not in the manifest at all;
+`install.php`, which is not in the manifest either, so that deleting it is
+final rather than undone at the next update; and either store —
+`internal/store.php` or `internal/store-sqlite.php` — when it differs from the
+one we shipped, because this file tells you that you may replace the store and
+restoring ours would take your database with it. Files we no longer ship are
+left in place, never deleted.
 
 **A host with no way out** — no curl, and `allow_url_fopen` off — cannot use any
 of this. It is told so in one sentence rather than failing blank.
@@ -386,6 +519,7 @@ hosts one team's notes.
 'deployment'        => 'relay',
 'open_registration' => true,
 'projects'          => array(),   // stays empty; nothing is declared
+'storage'           => 'mysql',   // not the SQLite default: see below
 ```
 
 ### What it opens
@@ -423,6 +557,11 @@ A cap on notes per project is the one that decides how much a single abuser
 can cost you, since they cannot be told apart from a legitimate project.
 `internal/config.php` is the reference for every key and its default.
 
+**And use MySQL here**, not the SQLite default. SQLite locks the whole file for
+each write; a relay takes concurrent writes from people who have never heard of
+each other. `server/relay/config-local.php` is the ready-made configuration and
+it declares `storage => 'mysql'` for that reason.
+
 ### What it refuses, and will keep refusing
 
 Plain mode. A public relay storing plaintext would hand its operator every
@@ -454,6 +593,41 @@ config.open_registration   yes -- any project id is served, no origin lock
 
 A relay that is open without saying so is a trap for whoever operates it. The
 line is always printed.
+
+## Where a bare visit goes
+
+```php
+'forward_root_to' => 'https://annotepage.com',
+```
+
+Empty by default, and nothing redirects until somebody types a URL. It sends a
+visit to **the directory itself**, and to **install.php once the configuration
+exists**, to that address with a **302**.
+
+It is for a public relay: somebody who reaches the bare host has usually just
+read a project id in the source of a page and wants to know what the thing is,
+and a blank page answers nothing. It is the operator's decision, on the
+operator's server; nothing ships with a destination.
+
+Three rules, each of which is the reason it is safe rather than surprising:
+
+- **it never touches `api.php`** — not an action, not the diagnostic, not a
+  call from a client. A redirect on an API endpoint breaks every caller, and a
+  browser that follows it silently turns that into an afternoon;
+- **302, not 301.** A permanent redirect is cached by browsers and would
+  outlive the operator changing their mind;
+- **it is validated** before it reaches a `Location` header: absolute `http` or
+  `https` only, no control character. A relative path, a `javascript:` scheme
+  or an embedded newline is refused — the value is typed by hand, which is
+  exactly the input one is tempted to trust, and an unvalidated string in that
+  header is a header injection. A refused value redirects nothing and shows as
+  `REFUSED` in `?action=diagnostic`.
+
+`install.php?stay=1` — any query string, in fact — shows the page instead of
+redirecting, so the "delete this file" button stays reachable on a server that
+forwards.
+
+---
 
 ## The domain lock
 
@@ -609,17 +783,34 @@ webroot/                      THE ONLY part served by the web server
                               so that the diagnostic can read it online: a second
                               file at the root would end up diverging from it
   api.php                     single HTTP entry point
+  install.php                 the installer. NOT in the manifest, deliberately:
+                              a listed file is a file the updater restores, and
+                              an installer that comes back after being deleted
+                              is the opposite of what it asks you to do
+  index.php                   what a bare visit to the directory gets — a 404,
+                              or `forward_root_to` when the operator set one.
+                              Without it the answer would be a directory listing
   internal/config.php         defaults + merge of the local file
   internal/origins.php        declared projects, domain lock, sharing
   internal/input.php          bounds and cleanup of everything from the web
   internal/rate-limit.php     rate limiting and size caps
-  internal/store.php          THE ONLY place that talks to the database
+  internal/store-sqlite.php   THE DEFAULT STORE: one file, no database server
+  internal/store.php          the MySQL store. Same contract, method for method
   internal/text-export.php    the format of reading from a distance
   internal/errors.php         a blank screen is never an answer
   internal/update.php         fetching a newer version and putting it in place;
                               off unless `auto_update` is set, and runnable on
                               its own from a shell or from cron
 ```
+
+Exactly ONE store is loaded per request, chosen by `storage`. Both declare the
+same class, so nothing downstream — the entry point, the export, the diagnostic
+— knows which is answering. `storage` names a FILE, not an engine: a store of
+your own dropped over `internal/store.php` is selected by `'storage' =>
+'mysql'` and one dropped over `internal/store-sqlite.php` by `'sqlite'`,
+whatever it actually talks to. That is the property that made a second store
+possible at all, and it is why the header of `internal/store.php` states the
+contract as a contract.
 
 Everything under `internal/` refuses to run without a constant set only by
 `api.php`, and answers 404 if called directly. The `.htaccess` in there only

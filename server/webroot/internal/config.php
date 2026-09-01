@@ -147,10 +147,43 @@ function ap_config_defaults()
         'update_source' =>
             'https://raw.githubusercontent.com/tuxo83/annotepage/main/server/webroot/',
 
-        // THE STORE'S CONFIGURATION SPACE (internal/store.php), which it alone
-        // interprets. This file does not know what a "host" is: it carries
-        // keys and resolves values, that is all. Whoever replaces store.php
-        // also replaces the meaning of this sub-array.
+        // WHICH STORE ANSWERS -- `sqlite`, `mysql`, or left empty.
+        //
+        //   sqlite  internal/store-sqlite.php. ONE FILE, nothing to create.
+        //           pdo_sqlite is compiled into PHP on nearly every host, so
+        //           this is what makes "upload it and open install.php" true;
+        //   mysql   internal/store.php. A database server, its credentials,
+        //           and everything that follows. Fully supported, and the
+        //           right answer for a busy relay: SQLite locks the whole file
+        //           for a write.
+        //
+        // LEFT EMPTY, WHICH IS THE DEFAULT, IT IS DEDUCED -- and the deduction
+        // exists for one case only: an installation configured before this key
+        // existed. Such a file always names a `database.name`, because the
+        // MySQL store cannot open without one. So:
+        //
+        //   database.name set    -> mysql. An existing installation keeps its
+        //                           database. Flipping it to SQLite on an
+        //                           update would show an empty panel and read
+        //                           as three months of review erased;
+        //   database.name unset  -> sqlite.
+        //
+        // install.php writes this key explicitly, so a fresh installation
+        // never depends on the deduction. Read it in ?action=diagnostic under
+        // `config.storage`.
+        //
+        // IT CHOOSES A FILE, NOT AN ENGINE. INSTALL.md says the store may be
+        // replaced; a replacement dropped over `internal/store.php` is
+        // selected by 'mysql' and one dropped over `internal/store-sqlite.php`
+        // by 'sqlite', whatever it actually talks to. Nothing here inspects
+        // what is inside those files, which is the point of the contract in
+        // store.php's header.
+        'storage' => '',
+
+        // THE STORE'S CONFIGURATION SPACE, which the store alone interprets.
+        // This file does not know what a "host" is: it carries keys and
+        // resolves values, that is all. Whoever replaces the store also
+        // replaces the meaning of this sub-array.
         //
         // EVERY value accepts two forms:
         //   - a string, the value in the clear;
@@ -158,7 +191,12 @@ function ap_config_defaults()
         //     dropped OUTSIDE the web root.
         // The second form is the only generic way to read a secret without
         // writing it into a file served by the web server.
+        //
+        // `file` is the SQLite store's only key: the absolute path of the
+        // database file. install.php picks it, creates it, and PROVES over
+        // HTTP that no URL serves it. The other five are the MySQL store's.
         'database' => array(
+            'file'     => null,
             'host'     => '127.0.0.1',
             'port'     => 3306,
             'name'     => null,
@@ -254,6 +292,30 @@ function ap_config_defaults()
         // limiting bypassable in one line. Only fill it in if a trusted proxy
         // rewrites it on every request.
         'client_ip_header' => null,
+
+        // WHERE A BARE VISIT GOES -- empty, and nothing redirects until
+        // somebody types a URL here.
+        //
+        // What it is for: a public relay whose host somebody reaches with no
+        // path gets a blank page or a 404, and the visitor learns nothing.
+        // Pointing it at the project that explains what the thing is turns
+        // that dead end into an answer. It is the OPERATOR's decision, on the
+        // OPERATOR's server; nothing here ships with a destination.
+        //
+        // WHERE IT APPLIES, and the list is short on purpose: the directory
+        // itself (index.php) and install.php once the configuration exists.
+        // NEVER api.php, never an action, never the diagnostic -- a redirect
+        // on an API endpoint breaks every caller, and the failure would be
+        // baffling to diagnose from a browser that followed it silently.
+        //
+        // 302 and not 301: a permanent redirect is cached by browsers and
+        // would outlive the operator changing their mind.
+        //
+        // It is VALIDATED before it reaches a Location header -- absolute
+        // http(s) only, no control character. A value written by whoever
+        // installs is exactly the input one is tempted to trust, and an
+        // unvalidated string in that header is a header injection.
+        'forward_root_to' => '',
     );
 }
 
@@ -349,6 +411,87 @@ function ap_is_self_hosted(array $config)
 function ap_open_registration(array $config)
 {
     return !empty($config['open_registration']) && !ap_is_self_hosted($config);
+}
+
+/**
+ * WHICH STORE ANSWERS: 'sqlite' or 'mysql'. See the `storage` key above for
+ * the deduction and, above all, for why it deduces `mysql` rather than the
+ * default when a `database.name` is present.
+ *
+ * An unknown value is a FAILURE and never a silent fallback, for the same
+ * reason `deployment` is: falling back would open a different, empty storage
+ * while the operator believed they were pointing at their own.
+ */
+function ap_store_kind(array $config)
+{
+    $declared = isset($config['storage'])
+        ? strtolower(trim((string) $config['storage'])) : '';
+
+    if ($declared === 'sqlite' || $declared === 'mysql') {
+        return $declared;
+    }
+    if ($declared !== '') {
+        throw new ApFailure(
+            "Invalid configuration: `storage` is `"
+            . substr(preg_replace('/[^\x20-\x7E]/', '', $declared), 0, 30) . "`.\n"
+            . "The only two accepted values are `sqlite` and `mysql`.",
+            500);
+    }
+
+    $db = isset($config['database']) && is_array($config['database'])
+        ? $config['database'] : array();
+    return empty($db['name']) ? 'sqlite' : 'mysql';
+}
+
+/** The file that defines ApStore for this configuration. */
+function ap_store_file(array $config)
+{
+    return __DIR__ . (ap_store_kind($config) === 'mysql'
+        ? '/store.php' : '/store-sqlite.php');
+}
+
+/**
+ * Loads the store the configuration asks for.
+ *
+ * The two files both declare `class ApStore`, which is the point: everything
+ * downstream -- api.php, the text export, the diagnostic -- names one class and
+ * knows nothing about what is behind it. It also means exactly one of them may
+ * ever be loaded in a request, so this is the only place that decides.
+ */
+function ap_require_store(array $config)
+{
+    require_once ap_store_file($config);
+}
+
+/**
+ * The validated redirect for a bare visit, or null.
+ *
+ * NEVER THROWS, and that is the choice: a mistyped URL here must not take the
+ * server down. It is refused, logged, and reported by ?action=diagnostic. The
+ * cost of the other behaviour -- a whole installation returning 500 because
+ * somebody left a trailing space in a courtesy redirect -- is not payable.
+ *
+ * What passes: an absolute http:// or https:// URL with a host. What does not:
+ * a relative path, any other scheme (`javascript:` first among them), and
+ * anything carrying a control character -- a newline in a Location header is a
+ * header injection, and this value is typed by hand.
+ */
+function ap_forward_root_to(array $config)
+{
+    $url = isset($config['forward_root_to'])
+        ? trim((string) $config['forward_root_to']) : '';
+    if ($url === '') {
+        return null;
+    }
+    if (preg_match('/[\x00-\x1F\x7F]/', $url)) {
+        ap_log('forward_root_to refused: it contains a control character');
+        return null;
+    }
+    if (!preg_match('#^https?://[^\s/?\#]+#i', $url)) {
+        ap_log('forward_root_to refused: it is not an absolute http(s) URL');
+        return null;
+    }
+    return $url;
 }
 
 /**

@@ -18,6 +18,9 @@
  *                              cycle with room to spare
  *   max_notes_per_project      the only thing bounding what one abuser costs,
  *                              since an abuser cannot be told from a project
+ *   forward_root_to            somebody who reaches the bare host of a relay
+ *                              should land on the page explaining what the
+ *                              thing is, not on nothing
  *
  * Plain mode is refused here whatever a caller asks: a public relay storing
  * plaintext would hand its operator every path, every label and every remark of
@@ -48,6 +51,19 @@ return array(
     'rate_writes_per_project' => 300,
     'rate_exports_per_ip'     => 20,
 
+    // WHERE A BARE VISIT GOES. Only the directory itself and install.php --
+    // never api.php, never an action, never the diagnostic: a redirect on an
+    // API endpoint breaks every caller. 302 and not 301, so changing our mind
+    // is not cached into somebody's browser for a year.
+    //
+    // Someone who reaches this host with no path has usually just read a
+    // project id in the source of a page and wants to know what it is. A blank
+    // page answers nothing.
+    'forward_root_to' => 'https://annotepage.com',
+
+    // MySQL, and not the SQLite default: a relay takes concurrent writes from
+    // strangers, and SQLite locks the whole file for each one.
+    'storage'  => 'mysql',
     'database' => array(
         'host' => '127.0.0.1',
         'port' => 3306,
