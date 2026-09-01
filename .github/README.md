@@ -15,37 +15,49 @@ order: `tools/end-to-end.mjs`, `tests/end-to-end.mjs`, then the same name under
 `npm run end-to-end`. None of this existed when the file was written: the first
 of those paths to be created will be run without changing anything here.
 
-## `workflows/publish.yml` — on a tag
+## `workflows/publish.yml` — on a push to main
 
-The convention, and it is the only trigger:
+There is no tag and no release command. Push, and the packages catch up.
 
-    client-v<version>   ->  annotepage-client   (directory client/)
-    mcp-v<version>      ->  annotepage-mcp      (directory mcp/)
+    node tools/release.mjs client 2.0.1
+    npm run check
+    git commit -am "Release client 2.0.1" && git push
 
-    git tag client-v2.0.0 && git push origin client-v2.0.0
+On every push to main, each package is looked at in turn: the workflow reads the
+version its `package.json` declares and asks the registry whether that version
+is online. Already there -- which is the case on almost every push -- and it
+publishes nothing and comes out green. Not there, and it builds, tests, and
+publishes that one.
+
+`package.json` is therefore the single source of truth for the version. There is
+no tag to keep in step with it, so there is nothing for the two to disagree
+about.
 
 Trusted publishing through OIDC: **no token is stored**, neither in the
-repository secrets nor anywhere else. The job exchanges an OIDC token good for
-a few minutes against a right to publish.
+repository secrets nor anywhere else. The job exchanges an OIDC token good for a
+few minutes against a right to publish.
 
-If the version in the tag is already online, the job says so and comes out
-green without publishing anything: republishing would fail, and a routine
-failure ends up unread.
+### Why not tags
 
-### What has to be done before the first tag
+Two packages live here. A bare `v2.0.1` tag would not say which one moves, and a
+convention of two prefixes is one more thing to remember correctly at the moment
+one is least careful. The safety is not the tag anyway -- it is the question put
+to the registry before anything goes out.
 
-1. **On npmjs.com, for each of the two packages**: Settings > Trusted
-   Publisher > GitHub Actions, organisation `tuxo83`, repository `annotepage`,
-   workflow file `publish.yml` — the exact name, extension included. Renaming
-   that file breaks publication; the refusal reads "unable to authenticate" and
+### What had to be done once
+
+1. **The very first publication of each name was done by hand.** A package that
+   has never been published has no settings page on which to declare a trusted
+   publisher, so the automation cannot bootstrap itself. Done on 1 September
+   2026 for both, at 2.0.0.
+2. **On npmjs.com, for each package**: Settings > Trusted publishing > GitHub
+   Actions, organisation `tuxo83`, repository `annotepage`, workflow filename
+   `publish.yml` -- the exact name, extension included. Renaming that file
+   breaks publication, and the refusal reads "unable to authenticate", which
    does not name the cause.
-2. **In each `package.json`**: the UNSCOPED name (`annotepage-client`,
-   `annotepage-mcp`) and a `repository` field naming this repository — npm
-   refuses a trusted publication if either is missing. The job checks both
-   before attempting anything, so that the refusal is readable.
-3. **A package never published** has no settings page on which to declare its
-   trusted publisher: the very first release of each name is done by hand, the
-   automation takes over afterwards. To be confirmed when the time comes.
+3. **In each `package.json`**: the UNSCOPED name and a `repository` field naming
+   this repository. npm refuses a trusted publication without them. The job
+   checks both before attempting anything, so the refusal is readable.
 
 Provenance is not asked for with a flag: for a public repository published
 through OIDC, npm generates it on its own. `--provenance` would only repeat it.

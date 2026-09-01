@@ -1,5 +1,5 @@
-/* Prepares a release. It does NOT publish and it does NOT tag: pushing a tag
-   is the deliberate act that puts something online, and it stays a human's.
+/* Prepares a release. It does not publish: pushing to main does, and that stays
+   a deliberate act.
 
    What it does is the part nobody can do reliably by hand. Bumping the client
    touches ten files, the built bundle, the copy the website serves under a
@@ -101,6 +101,7 @@ if (pkg === 'client') {
 
 console.log('\nNow, and only if the checks pass:\n');
 console.log('  npm run check');
-console.log(`  git commit -am "Release ${pkg} ${version}"`);
-console.log(`  git tag ${pkg}-v${version} && git push origin main ${pkg}-v${version}`);
-console.log('\nThe tag is what publishes. Nothing here has done so.');
+console.log(`  git commit -am "Release ${pkg} ${version}" && git push`);
+console.log('\nThe push publishes: the workflow asks the registry whether this');
+console.log('version is online, and publishes the one that is not. Nothing here');
+console.log('has gone out.');

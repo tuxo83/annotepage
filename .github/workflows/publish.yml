@@ -1,31 +1,42 @@
 # ============================================================================
-# publish.yml — releasing the two npm packages, with no token at all.
+# publish.yml -- releasing the two npm packages, with no token at all.
 #
-# TAG CONVENTION (it is the only trigger, and it names the package)
+# HOW A RELEASE HAPPENS: push to main. That is the whole procedure.
 #
-#     client-v<version>   ->  annotepage-client   (directory client/)
-#     mcp-v<version>      ->  annotepage-mcp      (directory mcp/)
+#     node tools/release.mjs client 2.0.1
+#     npm run check
+#     git commit -am "Release client 2.0.1" && git push
 #
-#     git tag client-v2.0.0 && git push origin client-v2.0.0
+# On every push to main this workflow looks at each package's declared version
+# and asks the registry whether it is already online. If it is -- which is the
+# case on almost every push -- it publishes nothing and comes out green. If it
+# is not, it builds, tests, and publishes that one.
 #
-# Two packages live in this repository: a bare "v2.0.0" tag would not say
-# which one to release, and publishing both on every tag would republish an
-# already-online version for certain — that is, a failure every time only one
-# of the two moves.
+# WHY VERSION-DRIVEN AND NOT TAG-DRIVEN. Two packages live in this repository,
+# so a bare "v2.0.1" tag would not say which one moves, and a scheme of two tag
+# prefixes is one more thing to remember correctly at the exact moment one is
+# least careful. package.json already carries the version; making it the single
+# source of truth removes the possibility of the two disagreeing.
 #
-# BEFORE THE FIRST USE, on the npmjs.com side, for EACH of the two packages:
-# Settings > Trusted Publisher > GitHub Actions, with the name of this file
-# written exactly — "publish.yml". Renaming it breaks publication, and the
-# refusal reads "unable to authenticate", which explains nothing.
+# The safety is not the tag, it is the question put to the registry: a version
+# already online is never republished, and every check below runs before
+# anything goes out.
+#
+# BEFORE THE FIRST AUTOMATIC RUN, on npmjs.com, for EACH of the two packages:
+# Settings > Trusted publishing > GitHub Actions, with tuxo83 / annotepage /
+# publish.yml, filename exactly. Without it the OIDC exchange is refused, and
+# the refusal reads "unable to authenticate", which explains nothing.
 # ============================================================================
 
 name: publish
 
 on:
   push:
-    tags:
-      - 'client-v*'
-      - 'mcp-v*'
+    branches:
+      - main
+  # Kept so a release can be forced by hand when the registry was unreachable
+  # at the time of the push.
+  workflow_dispatch:
 
 # The only "secret" in this chain is that OIDC token, generated on demand,
 # valid for a few minutes, tied to this repository and to this file. Nothing is
@@ -37,11 +48,23 @@ permissions:
 # Two tags pushed one after the other must not cross in the registry; and we do
 # not cancel a publication in flight, it cannot be replayed.
 concurrency:
-  group: publish-${{ github.ref_name }}
+  group: publish-${{ matrix.package }}
   cancel-in-progress: false
 
 jobs:
   publish:
+    strategy:
+      # Never fail-fast: if the client cannot go out, that is no reason for the
+      # mcp to stay behind. They are two packages, not two halves of one.
+      fail-fast: false
+      matrix:
+        include:
+          - package: annotepage-client
+            directory: client
+          - package: annotepage-mcp
+            directory: mcp
+
+    name: ${{ matrix.package }}
     # GitHub-hosted runner: trusted publishing refuses self-hosted runners, it
     # would not know who it is talking to.
     runs-on: ubuntu-latest
@@ -74,29 +97,25 @@ jobs:
           at_least "${node_v}" 22.14.0 || { echo "::error::node ${node_v}: trusted publishing requires 22.14.0 at least"; exit 1; }
           at_least "${npm_v}" 11.5.1  || { echo "::error::npm ${npm_v}: trusted publishing requires 11.5.1 at least"; exit 1; }
 
-      - name: Read the tag, and decide whether there is anything to publish
+      - name: Read the manifest, and decide whether there is anything to publish
         id: target
         run: |
           set -eu
-          tag="${GITHUB_REF_NAME}"
-          case "${tag}" in
-            client-v*) directory=client; name=annotepage-client; version="${tag#client-v}" ;;
-            mcp-v*)    directory=mcp;    name=annotepage-mcp;    version="${tag#mcp-v}" ;;
-            *) echo "::error::tag \"${tag}\" is outside the convention: client-v<version> or mcp-v<version>"; exit 1 ;;
-          esac
-
+          directory="${{ matrix.directory }}"
+          name="${{ matrix.package }}"
           manifest="${directory}/package.json"
           [ -f "${manifest}" ] || { echo "::error::${manifest} is missing"; exit 1; }
 
-          # The tag announces a version; the manifest declares one. If the two
-          # differ, the tag was put on the wrong commit, and what would go
-          # online is not what you think you are rereading.
+          # The manifest is the single source of truth for the version. What it
+          # declares is what goes online, and what is online is what it declares.
           declared_name="$(node -p "require('./${manifest}').name")"
-          declared_version="$(node -p "require('./${manifest}').version")"
+          version="$(node -p "require('./${manifest}').version")"
           [ "${declared_name}" = "${name}" ] \
-            || { echo "::error::${manifest} is called \"${declared_name}\"; the tag announces \"${name}\". The packages are UNSCOPED."; exit 1; }
-          [ "${declared_version}" = "${version}" ] \
-            || { echo "::error::${manifest} declares ${declared_version}; the tag announces ${version}"; exit 1; }
+            || { echo "::error::${manifest} is called \"${declared_name}\"; this job publishes \"${name}\". The packages are UNSCOPED."; exit 1; }
+          case "${version}" in
+            [0-9]*.[0-9]*.[0-9]*) : ;;
+            *) echo "::error::${manifest} declares \"${version}\", which is not x.y.z"; exit 1 ;;
+          esac
 
           # npm refuses a trusted publication whose repository.url does not
           # name exactly this repository. The refusal itself arrives at publish
@@ -107,9 +126,10 @@ jobs:
             *) echo "::error::${manifest} must carry a repository field naming ${GITHUB_REPOSITORY} (found: \"${repository}\")"; exit 1 ;;
           esac
 
-          # Republishing an already-online version fails the job. A routine
-          # failure ends up unread, and the day it says something true nobody
-          # looks at it: we skip, we write it down, and we come out green.
+          # THE ONLY THING THAT DECIDES. Almost every push to main changes no
+          # version, and the right outcome then is silence and a green tick: a
+          # job that failed on every ordinary commit would be switched off
+          # within a week, and would be off on the day it mattered.
           status=0
           output="$(npm view "${name}@${version}" version 2>&1)" || status=$?
           if [ "${status}" -eq 0 ] && [ -n "${output}" ]; then
@@ -117,6 +137,7 @@ jobs:
             echo "::notice::${name}@${version} is already online: nothing to publish"
           elif [ "${status}" -eq 0 ] || printf '%s' "${output}" | grep -q 'E404'; then
             publish=yes
+            echo "::notice::${name}@${version} is not online: publishing"
           else
             # Neither "published" nor "unknown": the registry did not answer.
             # We do not guess, or we would attempt a double publication.
