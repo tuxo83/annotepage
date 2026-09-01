@@ -7,3 +7,7 @@ webroot/internal/config-local.php
 # has been given permission to rewrite itself, and it is per-server: nothing in
 # there describes the project.
 webroot/.update/
+
+# The SQLite database and its guards, when the installer had nowhere better
+# than the served directory to put them. Per-server, and it holds the notes.
+webroot/ap-data-*/

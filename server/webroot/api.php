@@ -172,7 +172,11 @@ require __DIR__ . '/internal/config.php';
 require __DIR__ . '/internal/origins.php';
 require __DIR__ . '/internal/input.php';
 require __DIR__ . '/internal/rate-limit.php';
-require __DIR__ . '/internal/store.php';
+// THE STORE IS NOT REQUIRED HERE. There are two of them -- store-sqlite.php
+// and store.php -- they both declare `class ApStore`, and which one answers is
+// a configuration question. It is loaded a few dozen lines below, once the
+// configuration has been read, by ap_require_store(). Everything between here
+// and there names no storage at all.
 require __DIR__ . '/internal/text-export.php';
 require __DIR__ . '/internal/update.php';
 
@@ -383,6 +387,29 @@ function ap_write_diagnostic($config, $version, $configError)
     ap_diag_line('config.loading', 'SUCCEEDED');
     ap_diag_line('config.active', ap_yes_no($config['active']));
     ap_diag_line('config.deployment', $config['deployment']);
+    // WHICH STORE IS ANSWERING. Two are shipped and either may be in service:
+    // reading it here is the only way, from a distance, to be sure which file
+    // holds the notes.
+    try {
+        $kind = ap_store_kind($config);
+        ap_diag_line('config.storage', $kind
+            . (empty($config['storage'])
+                ? ' -- deduced: `storage` is not declared'
+                : ' -- declared'));
+    } catch (ApFailure $e) {
+        ap_diag_line('config.storage', 'INVALID');
+    }
+    // The redirect for a bare visit. Printed whatever its state, including
+    // `refused`: a value typed and silently ignored is the one an operator
+    // spends an afternoon on.
+    $forward = isset($config['forward_root_to'])
+        ? trim((string) $config['forward_root_to']) : '';
+    ap_diag_line('config.forward_root_to',
+        $forward === ''
+            ? 'none -- a bare visit gets a 404, api.php is unaffected either way'
+            : (ap_forward_root_to($config) === null
+                ? 'REFUSED -- not an absolute http(s) URL, so nothing redirects'
+                : $forward . ' -- 302 from the directory and from install.php only'));
     ap_diag_line('config.open_registration',
         ap_open_registration($config) ? 'yes -- any project id is served, no origin lock' : 'no');
     ap_diag_line('config.max_note_age_days',
@@ -514,6 +541,26 @@ try {
     ap_log('local configuration unreadable : ' . $e->getMessage());
     $configError = "The file internal/config-local.php contains a PHP syntax error.\n"
         . "The detail is in the server's PHP error log.";
+}
+
+// THE STORE, chosen by the configuration and loaded here -- see
+// ap_require_store() in internal/config.php. It has to be loaded before the
+// diagnostic, which asks the store what extensions it needs and what state it
+// is in without knowing what kind of storage it is talking to.
+//
+// A configuration that failed to load falls back on the DEFAULTS rather than
+// on nothing: the defaults name no database, so the SQLite store answers, the
+// diagnostic keeps working, and it is the diagnostic that says why the
+// configuration failed. A `storage` value that is not one of the two is folded
+// into the same report instead of taking the page down -- that error is
+// precisely the one you come to this page to read.
+try {
+    ap_require_store($configError === null ? $config : ap_config_defaults());
+} catch (ApFailure $e) {
+    if ($configError === null) {
+        $configError = $e->getMessage();
+    }
+    ap_require_store(ap_config_defaults());
 }
 
 // The diagnostic ALWAYS answers: it is precisely what one questions when

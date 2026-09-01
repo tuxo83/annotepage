@@ -43,13 +43,18 @@
  *      staged ones in. A failed upgrade is undone by putting that directory
  *      back, not by re-uploading from a hotel wifi.
  *
- * TWO FILES ARE NEVER TOUCHED:
+ * THREE THINGS ARE NEVER TOUCHED:
  *   - `config-local.php`, which holds the declared projects, the origins and
  *     the paths to the credentials. It is not in the manifest, so this code
  *     cannot even name it, and it is refused a second time below;
- *   - `store.php` WHEN IT DIFFERS from the one we shipped. INSTALL.md tells
- *     people they may replace it; an update that silently restored ours would
- *     take their database with it.
+ *   - `install.php`, for the same reason and a sharper one: it is not in the
+ *     manifest either, and an ABSENT file differs from a listed hash, so
+ *     listing it would put a writable installer back on every server whose
+ *     operator deleted it;
+ *   - either STORE -- `store.php` or `store-sqlite.php` -- WHEN IT DIFFERS
+ *     from the one we shipped. INSTALL.md tells people they may replace the
+ *     store; an update that silently restored ours would take their database
+ *     with it.
  *
  * TWO WAYS IN, one code:
  *   - from the command line, `php internal/update.php`, by hand or from cron.
@@ -570,12 +575,13 @@ function ap_update_run(array $config)
         if ($current === $hash) {
             continue;
         }
-        if ($path === 'internal/store.php') {
-            // INSTALL.md says the store may be replaced. If the one on disk is
-            // not the one we shipped, it is somebody's, and restoring ours
-            // would take their database with it. When there is no local
-            // manifest we cannot tell -- and then we also do not touch it,
-            // because the wrong guess here is unrecoverable.
+        if ($path === 'internal/store.php' || $path === 'internal/store-sqlite.php') {
+            // INSTALL.md says the store may be replaced, and BOTH shipped
+            // stores are stores. If the one on disk is not the one we shipped,
+            // it is somebody's, and restoring ours would take their database
+            // with it. When there is no local manifest we cannot tell -- and
+            // then we also do not touch it, because the wrong guess here is
+            // unrecoverable.
             if ($local === null || !isset($local[$path])) {
                 $kept[] = $path . ' (kept: no local manifest, so we cannot tell '
                     . 'ours from a replacement)';
