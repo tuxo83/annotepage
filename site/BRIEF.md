@@ -55,6 +55,31 @@ an empty alt text, a link that 404s.
 Say the words. "Free" and "open source" belong in the opening, in few words, not
 left to a licence badge to imply.
 
+## Naming another tool, and the line not to cross
+
+The replay shows an assistant working. It is presented as **an example of a
+session with Claude Code**, and that framing is deliberate: it is factually what
+it is, and it claims nothing.
+
+What is allowed, because it is simply true: saying the tool is an MCP server and
+a command line, that it works with Claude Code, and showing a session that
+really happened.
+
+What is not:
+
+- **no logo, no wordmark, no brand colour** belonging to anybody else. The
+  terminal reproduces the STYLE of a terminal, which nobody owns;
+- **nothing implying endorsement, partnership or affiliation.** Not in a
+  sentence, not by placement, not by a badge that looks like a certification;
+- **no suggestion that this is anybody else's product**, or that they have
+  reviewed it, or that they know it exists;
+- the figure carries a caption saying what it is -- an example session -- so a
+  reader who lands on it mid-scroll cannot take it for something official.
+
+The same holds for any other tool named later: name it factually as something
+this works with, and stop there. A free project with one maintainer has nothing
+to gain from borrowing somebody's credibility, and everything to lose.
+
 ## What must not be done
 
 No bullet-list "features" page. No comparison with the competitors. No
