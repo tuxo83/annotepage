@@ -51,6 +51,9 @@
     --on-accent: #ffffff;
     --warn:      #7a4200;
     --ok:        #0a6b3d;
+    /* The fill behind a resolved stamp. Defined here, on bare :root, and only
+       REDEFINED in the dark block -- like every other colour on this page. */
+    --ok-soft:   #e6f4ea;
     --shadow:    0 1px 2px rgba(16, 18, 24, .06), 0 8px 28px rgba(16, 18, 24, .07);
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
             "DejaVu Sans Mono", monospace;
@@ -74,6 +77,7 @@
         --on-accent: #0f1115;
         --warn:      #f2c17a;
         --ok:        #5fd39a;
+        --ok-soft:   #17291f;   /* --ok on it: 8.21:1 measured (5.81:1 light) */
         --shadow:    0 1px 2px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .45);
     }
 }
@@ -322,16 +326,22 @@ code:not(pre code) {
 }
 .card-meta b { color: var(--text); font-weight: 650; }
 .card-about {
-    font-size: .74rem; color: var(--dim); font-family: var(--mono);
+    font-size: .78rem; color: var(--dim); font-style: italic;
     margin-bottom: .45rem; overflow-wrap: anywhere;
 }
 .card p { font-size: .88rem; margin: 0; }
+/* The tool puts this ABOVE the remark, not under it: a reader scanning the
+   history has to know a card is settled before reading what it says. */
 .stamp {
-    display: flex; flex-wrap: wrap; gap: .15rem .5rem; align-items: baseline;
-    margin-top: .6rem; padding-top: .55rem; border-top: 1px dashed var(--line);
-    font-size: .76rem; color: var(--ok);
+    display: inline-block; margin: 0 0 .5rem;
+    background: var(--ok-soft); color: var(--ok);
+    border-radius: 1rem; padding: .1rem .6rem;
+    font-size: .73rem; font-weight: 650; line-height: 1.6;
 }
-.stamp .v { font-family: var(--mono); color: var(--dim); }
+.card-actions {
+    margin-top: .55rem; padding-top: .5rem; border-top: 1px dashed var(--line);
+    font-size: .74rem; color: var(--dim);
+}
 
 /* -- The three gestures -------------------------------------------------- */
 
@@ -380,7 +390,9 @@ code:not(pre code) {
        came out 41px past the frame, which clips -- "3 notes" read "3 no".
        Wrapping makes the min-content the widest single item instead. */
     display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap;
-    background: var(--accent); color: var(--on-accent);
+    /* At rest the real button is a light pill with one accent dot, not a slab
+       of accent: it sits on somebody else's page and must not shout. */
+    background: var(--bg); color: var(--text); border: 1px solid var(--line);
     /* 1rem and not 999px: the browser clamps the radius to half the height,
        so at one line (28px tall, measured) this is still a true pill, while a
        999px radius turns a three-line box into an ellipse once the text is
@@ -390,9 +402,9 @@ code:not(pre code) {
     box-shadow: var(--shadow);
     max-width: calc(100% - 1.1rem);
 }
-.pill .dot { width: .42rem; height: .42rem; border-radius: 50%; background: var(--on-accent); flex: none; }
+.pill .dot { width: .42rem; height: .42rem; border-radius: 50%; background: var(--accent); flex: none; }
 .pill .count {
-    background: var(--on-accent); color: var(--accent);
+    background: var(--bg-soft); color: var(--dim);
     border-radius: 999px; padding: 0 .35rem; font-size: .68rem;
 }
 
@@ -418,11 +430,13 @@ code:not(pre code) {
     padding: .3rem .6rem; font-size: .74rem; line-height: 1.3; color: var(--text);
     background: var(--bg-soft);
 }
+/* Above the element, never on it: the tool floats the text it is about to
+   quote, so the reviewer sees what the note will say it is about. */
 .marker {
-    position: absolute; right: -.85rem; top: -.9rem;
+    position: absolute; left: -.3rem; bottom: calc(100% + .45rem);
     background: var(--accent); color: var(--on-accent);
-    font-size: .62rem; font-weight: 700; line-height: 1.5;
-    border-radius: 999px; padding: 0 .4rem;
+    font-size: .62rem; font-weight: 650; line-height: 1.75;
+    border-radius: 5px; padding: 0 .4rem; white-space: nowrap;
 }
 
 .mini-form { display: grid; gap: .3rem; }
@@ -432,10 +446,98 @@ code:not(pre code) {
     padding: .28rem .4rem; font-size: .7rem; color: var(--dim);
     background: var(--bg-soft);
 }
-.mini-form .fld.tall { height: 2.2rem; }
+.mini-form .fld { overflow: hidden; }
+.mini-form .fld.tall { min-height: 2.6rem; }
 .mini-form .send {
     justify-self: start; background: var(--accent); color: var(--on-accent);
     border-radius: 6px; padding: .2rem .6rem; font-size: .7rem; font-weight: 650;
+}
+
+/* -- Quick-start routes -------------------------------------------------- */
+
+/* One card here, and the grid is built for three. See the comment in the markup
+   for which three and why only one is rendered. auto-fit takes 1, 2 or 3
+   children with no change: a route is added by adding an <article>. */
+.paths {
+    display: grid; gap: 1rem; margin: 1.8rem 0 0;
+    /* min(17rem, 100%) and not 17rem: a bare minmax() minimum is a FLOOR the
+       track cannot go under -- see .gestures, same trap, same fix. */
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+}
+.path {
+    display: flex; flex-direction: column; gap: .5rem;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--bg-soft); padding: 1.15rem 1.2rem;
+}
+.path-who {
+    margin: 0; font-family: var(--mono); font-size: .72rem; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--dim);
+}
+.path h3 { font-size: 1.18rem; }
+.path > p { margin: 0; font-size: .93rem; color: var(--dim); }
+/* margin-top:auto pins the cost to the bottom, so two cards side by side line
+   their cost lines up whatever length the description above runs to. */
+.path .path-cost {
+    margin-top: auto; padding-top: .75rem; border-top: 1px solid var(--line);
+    font-size: .87rem; color: var(--text);
+}
+
+/* -- The terminal -------------------------------------------------------- */
+
+/* A picture that happens to be text: no script, nothing to play, nothing to
+   step through. It therefore reads the same with JavaScript off, can be
+   selected, searched and read aloud, and cannot half-run. */
+.term-fig { margin: 1.7rem 0; }
+.term {
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--bg-code); overflow: hidden;
+}
+.term-bar {
+    display: flex; align-items: center; gap: .55rem;
+    padding: .45rem .85rem;
+    border-bottom: 1px solid var(--line-soft); background: var(--bg-soft);
+    min-height: 2.1rem;
+}
+.term-bar .lamp {
+    width: .5rem; height: .5rem; border-radius: 50%;
+    background: var(--line); flex: none;
+}
+.term-bar span:not(.lamp) {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--dim);
+    min-width: 0; overflow-wrap: anywhere;
+}
+.term pre {
+    margin: 0; padding: 1rem;
+    overflow-x: auto;              /* the frame scrolls, never the page */
+    -webkit-overflow-scrolling: touch;
+}
+/* white-space: pre-wrap and NOT pre. Measured at 1440x900 with `pre`: the
+   frame was 910px and the content 1157, so 247px sat off-frame -- and at
+   390x844, 710px of 1066, which is 104 of the 155 characters of the reply
+   command. That line is the one thing on this page no neighbouring tool can
+   show; hiding two thirds of it behind a scrollbar nobody sees is not
+   "responsive", it is "it does not overflow". Wrapping changes no character:
+   a selection still yields the transcript. */
+.term pre code {
+    display: block; font-family: var(--mono); font-size: .78rem;
+    line-height: 1.62; white-space: pre-wrap; overflow-wrap: break-word;
+    color: var(--dim); min-width: 0;
+    /* A wrapped continuation is indented, so "> span:nth-of-type(1)" cannot be
+       misread as a new key line. `hanging each-line` means: flush after every
+       real newline, indented after every soft wrap. Where a browser does not
+       know the keywords the whole declaration is dropped and the block reads
+       as it did before -- nothing depends on it. */
+    text-indent: 2.2em hanging each-line;
+}
+/* The prompt and the command are the reader's eye path down the block. The
+   "$ " is written in the markup, not in a ::before: generated content is not
+   part of a selection, and half a transcript is worse than none. */
+.term .cmd { color: var(--text); font-weight: 600; }
+.term .cut { color: var(--dim); font-style: italic; }
+.term-fig figcaption {
+    margin-top: .75rem; font-size: .87rem; line-height: 1.55;
+    color: var(--dim); max-width: 44em;
 }
 
 /* -- Plain tables -------------------------------------------------------- */
@@ -470,8 +572,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 @media (max-width: 420px) {
     body { font-size: 16px; }
-    .snip pre code { font-size: .72rem; }
-    .snip pre { padding: .8rem .75rem; }
+    .snip pre code, .term pre code { font-size: .72rem; }
+    .snip pre, .term pre { padding: .8rem .75rem; }
     .card.reply { margin-left: .5rem; }
 }
 
@@ -487,6 +589,22 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             text-decoration: underline; text-underline-offset: 2px;
         }
         .linkish:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+        /* The three gestures, said in one line each, in the hero. The full
+           section stays where it is: raising it whole pushed the first copyable
+           block from 1602px to 3421px at phone width -- measured -- which is a
+           high price for something that can be said in nine words. */
+        .gestures-brief {
+            display: flex; flex-wrap: wrap; gap: .5rem 1.4rem;
+            margin: 1.6rem 0 0; padding: 0; list-style: none;
+            font-size: .95rem; color: var(--dim);
+        }
+        .gestures-brief li { display: flex; align-items: baseline; gap: .45rem; }
+        .gestures-brief b { color: var(--text); font-weight: 600; }
+        .gestures-brief .n {
+            font: 600 .75rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+            color: var(--accent);
+        }
 </style>
 <script type="application/ld+json">
 {
@@ -513,6 +631,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <a href="#install">Install</a>
             <a href="#annotate">Annotate</a>
             <a href="#assistant">Assistant</a>
+            <a href="#server">Server</a>
             <a href="#data">Data</a>
             <a href="https://github.com/tuxo83/annotepage">Source</a>
         </nav>
@@ -522,13 +641,13 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <main>
 
 <!-- 1. WHAT IT DOES ==================================================== -->
-<section class="hero">
+<section class="hero" id="top">
     <div class="wrap">
         <p class="eyebrow">Review notes on a web page</p>
         <h1>Annotate a page. <br>The assistant answers in the thread.</h1>
         <p class="lead">
             Someone reviewing a staging site clicks what they see &mdash; a heading, a
-            button, an image &mdash; and writes what is wrong. An assistant reads the
+            button, a price &mdash; and writes what is wrong. An assistant reads the
             notes, fixes the code, <strong>replies saying what it measured</strong>, and
             marks the remark resolved with the version the fix ships in.
         </p>
@@ -539,7 +658,13 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <li>End-to-end encrypted <span>&middot; in the browser</span></li>
         </ul>
 
-        <p><a class="cta" href="#install">Put it on a site</a></p>
+        <ul class="gestures-brief">
+            <li><span class="n">01</span> <b>Open</b> one button on the page</li>
+            <li><span class="n">02</span> <b>Point</b> at what is wrong</li>
+            <li><span class="n">03</span> <b>Write</b> the remark</li>
+        </ul>
+
+        <p><a class="cta" href="#install">Put it on a page</a></p>
 
         <div class="mock" style="margin-top: 2.4rem;">
             <div class="mock-bar">
@@ -548,27 +673,27 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             </div>
             <div class="mock-body">
                 <div class="card">
-                    <div class="card-meta"><b>Camille</b><span>30 Aug 2026, 14:02</span></div>
-                    <div class="card-about">About: Start free trial</div>
-                    <p>The label wraps below 380px and the button grows a second line.</p>
-                    <div class="stamp">
-                        <span>Resolved on 30 Aug 2026, 16:20 by Assistant</span>
-                        <span class="v">Fix shipped in version 1.4.13</span>
-                    </div>
+                    <span class="stamp">Resolved on Sep 1, 2026, 9:02 AM by Assistant</span>
+                    <div class="card-meta"><b>Camille</b><span>Sep 1, 2026, 9:02 AM</span></div>
+                    <div class="card-about">About: Save 20%</div>
+                    <p>The yearly toggle says &ldquo;Save 20%&rdquo;, but Team is $9 a month
+                    and $90 a year. That is not 20%.</p>
+                    <div class="card-actions">Reply &middot; Show on the page &middot; Reopen this remark</div>
                 </div>
                 <div class="card reply">
-                    <div class="card-meta"><b>Assistant</b><span>30 Aug 2026, 16:18</span></div>
-                    <p>Measured at 360px: the label wrapped at 372px and the button
-                    grew to two lines. The call to action now uses a fluid font-size
-                    and the label is one word shorter; it holds down to 320px.</p>
+                    <div class="card-meta"><b>Assistant</b><span>Sep 1, 2026, 9:02 AM</span></div>
+                    <p>Measured: 12 x $9 = $108 a year against $90 billed yearly, so 16.7%,
+                    not 20%. Business is the same. The badge now reads Save 17%.</p>
                 </div>
             </div>
         </div>
 
         <p class="small dim" style="margin-top: 1rem; max-width: 34rem;">
-            The reviewer sees what became of what they wrote, on the page where they
-            wrote it. Nothing is deleted: a resolved remark moves into the history and
-            can be reopened.
+            The reviewer sees what became of what they wrote, on the page where they wrote
+            it. That thread is real: it is
+            <a href="#assistant">the session further down</a>, seen from the other side.
+            Nothing is deleted &mdash; a resolved remark moves into the history and can be
+            reopened.
         </p>
     </div>
 </section>
@@ -576,23 +701,55 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <!-- 2. HOW YOU INSTALL IT ============================================== -->
 <section id="install">
     <div class="wrap">
-        <h2>Put it on a site</h2>
-        <p class="lead">
-            One script tag at the end of <code>&lt;body&gt;</code>. No framework, no
-            bundler, no separate stylesheet. One file, no dependencies.
-        </p>
+        <h2>Put it on a page</h2>
+
+        <!-- ===================================================================
+             QUICK-START ROUTES.
+
+             THREE SLOTS EXIST HERE BY DESIGN, AND ONLY THE ONE THAT WORKS IS
+             RENDERED.
+
+               A. the script tag        <- below, and the only one that exists
+               B. a platform plugin     <- WordPress first. Does not exist.
+               C. a browser extension   <- Chrome, Chromium, Firefox. Does not
+                                           exist. See ROADMAP.md: it is a second
+                                           product, not a shortcut.
+
+             To fill a slot: drop another <article class="path"> into .paths and
+             change nothing else. The grid takes one, two or three children as it
+             stands, and the steps below stay where they are -- a new route brings
+             its own steps in its own section.
+
+             DO NOT RENDER AN EMPTY SLOT, and above all do not label one "coming
+             soon". ROADMAP.md says it in as many words: a platform published with
+             a "coming soon" label turns a strength into a visible gap. One route
+             presented with confidence beats three where two are promises.
+             =================================================================== -->
+        <div class="paths">
+            <article class="path">
+                <p class="path-who">If you can edit the page</p>
+                <h3>Copy and paste a tag</h3>
+                <p>One script tag at the end of <code>&lt;body&gt;</code>. No framework,
+                no bundler, no build step, no separate stylesheet &mdash; one file with
+                no dependencies. It is a script tag, so it works on anything that lets
+                you add one, whatever builds or serves the pages.</p>
+                <p class="path-cost"><b>Three steps.</b> Two happen in this browser and
+                take about a minute. The third needs an annotepage server that answers,
+                and <a href="#server">there is no public relay yet</a>: that one is an
+                afternoon, once, for the whole team.</p>
+            </article>
+        </div>
 
         <div class="step">
             <div class="step-head">
                 <span class="step-num">01</span>
-                <h3>Generate the salt, once</h3>
+                <h3>Take the salt, and save it</h3>
             </div>
             <div class="step-body">
                 <p>
-                    Here, now, in your browser. This page makes no network request &mdash;
-                    not one, and you can check &mdash; so the salt below has never
-                    existed anywhere else and never will. That is the whole property:
-                    the server must never see it.
+                    Generated here, in your browser. This page makes no network request
+                    &mdash; not one, and you can check &mdash; so this value has never
+                    existed anywhere else and never will.
                 </p>
 
                 <div class="snip">
@@ -610,15 +767,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <button type="button" class="linkish" id="regenerate">Generate another</button>
                 </p>
 
-                <div class="callout">
-                    <p><strong>Salt lost = notes lost.</strong> The salt is the only
-                    secret of the project. It never leaves the browser, the server
-                    receives it in no form whatsoever, and nobody can give it back to
-                    you &mdash; no recovery, no security question, no escrow. Put it
-                    where your team keeps its passwords <em>before</em> continuing.
-                    There is no salt rotation either: a leaked salt means starting a
-                    fresh project and abandoning the notes already written.</p>
-                </div>
+                <p class="small">
+                    Put it where your team keeps its passwords, now. Nobody can give it
+                    back to you and there is no rotation &mdash;
+                    <a href="#no-recovery">what that costs, in full</a>.
+                </p>
             </div>
         </div>
 
@@ -630,8 +783,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <div class="step-body">
                 <p>
                     At the end of <code>&lt;body&gt;</code>, on the pages to annotate.
-                    The project id is public; it is derived from the salt and is 22
-                    characters.
+                    The project id is already filled in below.
                 </p>
 
                 <div class="snip">
@@ -644,17 +796,17 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
         data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
+        data-version="1.4.13"
         defer&gt;&lt;/script&gt;</code></pre>
                 </div>
 
                 <p class="small dim">
-                    Two attributes are optional and left out above.
                     <code>data-version</code> tells the client which version the site is
-                    serving; <code>data-environment</code> labels what a note was written
-                    against. <code>data-version</code> is what makes a resolved note
-                    disappear from the reviewer's screen once the fix is deployed
-                    &mdash; without it, every fix is taken as not deployed and the note
-                    stays.
+                    serving. It is what makes a resolved note disappear from the
+                    reviewer's screen once the fix is deployed &mdash; without it, every
+                    fix is taken as not deployed and the note stays.
+                    <code>data-environment</code> is the other optional attribute: it
+                    labels what a note was written against.
                 </p>
 
                 <p class="small dim">
@@ -663,25 +815,20 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <a href="#supply-chain">why that matters, and what else the tag
                     implies</a>.
                 </p>
-
-                <p class="small dim">
-                    It is one script tag, so it goes on any site where a script tag can
-                    be added, whatever builds or serves the pages.
-                </p>
             </div>
         </div>
 
         <div class="step">
             <div class="step-head">
                 <span class="step-num">03</span>
-                <h3>Declare the project on the server, hand out the salt</h3>
+                <h3>Declare the project on the server</h3>
             </div>
             <div class="step-body">
                 <p>
-                    The server is one PHP codebase. Drop it on the site itself, or on one
-                    machine that serves several sites. It receives the project id and the
-                    list of origins allowed to consume it &mdash; never the salt, which
-                    travels out of band: the tool provides no channel for it.
+                    Three facts, in the server's local configuration: the id, the origins
+                    allowed to consume it, and the mode. The salt is not among them
+                    &mdash; the server receives it in no form whatsoever, and the tool
+                    provides no channel for it.
                 </p>
 
                 <div class="snip">
@@ -689,10 +836,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         <span class="snip-name">internal/config-local.php</span>
                         <button class="copy" type="button" data-copy="snip-server">Copy</button>
                     </div>
-<pre id="snip-server"><code>'deployment' =&gt; 'self-hosted',      // or 'relay'
-
-'projects' =&gt; array(
-    '7Qb1kZ3xNvA9dLpEqKf2Zt' =&gt; array(
+<pre id="snip-server"><code>'projects' =&gt; array(
+    '<span id="cfg-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>' =&gt; array(
         'origins' =&gt; array('https://staging.example.com',
                            'https://www.example.com'),
         'mode'    =&gt; 'encrypted',
@@ -701,18 +846,14 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 </div>
 
                 <p class="small">
-                    Those three facts &mdash; the id, the origins, the mode &mdash; are
-                    exactly what the setup screen dictates to you at step 01. The rest of
-                    that file is the database and the defaults; start from
-                    <code>config-local.example.php</code>. Without the file the server
-                    answers nothing at all, which is the safe default.
+                    Each reviewer then pastes the salt once. The tool checks that it
+                    really derives the project id the page declares, then remembers it in
+                    that browser, for that origin.
                 </p>
 
                 <p class="small">
-                    Each reviewer pastes the salt once. The tool checks that it really
-                    derives the project id the page declares, then remembers it in that
-                    browser, for that origin. See
-                    <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">server/INSTALL.md</a>.
+                    Getting a server to answer at all is the longer road, and it has
+                    <a href="#server">its own section below</a>.
                 </p>
             </div>
         </div>
@@ -736,34 +877,36 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <div class="bar-line w70"></div>
                     <div class="bar-line w85"></div>
                     <div class="bar-line w45"></div>
-                    <span class="pill"><span class="dot"></span>Annotate this page<span class="count">3 notes</span></span>
+                    <span class="pill"><span class="dot"></span>Annotate this page<span class="count">2 notes</span></span>
                 </div>
                 <h3>Open</h3>
-                <p>One button, and a count of the notes already on this page. It is the
-                tool's only trace when it is at rest.</p>
+                <p>One button, and a count of the notes anchored on this page &mdash;
+                history included, not a to-do list. It is the tool's only trace at
+                rest.</p>
             </div>
 
             <div class="gesture">
                 <div class="frame" aria-hidden="true">
                     <div class="hint">Click an element of the page to write a remark
-                    about it.</div>
+                    about it.<br>Press Escape to stop.</div>
                     <div class="target">
-                        <span class="fake-cta">Start free trial</span>
-                        <span class="marker">1</span>
+                        <span class="marker">Save 20%</span>
+                        <span class="fake-cta">Save 20%</span>
                     </div>
                 </div>
                 <h3>Point</h3>
-                <p>Click what you see. The tool draws its own rectangle around it &mdash;
-                it never puts an outline on your element. Escape stops.</p>
+                <p>Click what you see. The tool draws its own rectangle around it and
+                shows you the text it is about to quote &mdash; it never puts an outline
+                on your element.</p>
             </div>
 
             <div class="gesture">
                 <div class="frame" aria-hidden="true">
                     <div class="mini-form">
-                        <div class="lbl">About: Start free trial</div>
-                        <div class="lbl">Your name</div>
-                        <div class="fld">Camille</div>
-                        <div class="fld tall">What you noticed</div>
+                        <div class="lbl">About: Save 20%</div>
+                        <div class="lbl">You are writing as Camille.</div>
+                        <div class="fld tall">The yearly toggle says &ldquo;Save 20%&rdquo;,
+                        but Team is $9 a month and $90 a year.</div>
                         <span class="send">Send</span>
                     </div>
                 </div>
@@ -788,8 +931,81 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     <div class="wrap">
         <h2>How an assistant uses it</h2>
         <p class="lead">
-            Two commands to plug one in. Then it reads the review, replies in the thread,
-            and stamps the fix with the version it ships in.
+            This is the part no neighbouring tool does. Collecting a remark is common;
+            writing back into the thread, with a measurement and a version, is not.
+            Below is a real session, captured against a running server, a real browser
+            and the published package.
+        </p>
+
+        <!-- A TERMINAL, IN PLAIN HTML AND CSS. No script, nothing to play, nothing
+             to step through: it is a picture that happens to be text, so it reads
+             identically with JavaScript off and can be selected and searched.
+             Every line is verbatim captured output. The only editing permitted is
+             dropping a WHOLE line, and every drop leaves the visible [...] marker
+             below. Do not reflow the element path, do not shorten the reply.
+             A long line WRAPS, in CSS, with a hanging indent; that changes no
+             character, and a selection of this block still yields the transcript
+             line for line -- checked at 1440 and at 390, 770 characters both. -->
+        <figure class="term-fig">
+            <div class="term">
+                <div class="term-bar">
+                    <span class="lamp" aria-hidden="true"></span>
+                    <span>a real session &mdash; 1 September 2026</span>
+                </div>
+<pre><code><span class="cmd">$ annotepage open</span>
+<span class="cut">[... 7 header lines: tool, format, version, project, encryption, export, notes ...]</span>
+note 1
+page /pricing
+page-index okKG0TYI5LJQbftXDJqBGw
+element main:nth-of-type(1) &gt; p:nth-of-type(1) &gt; span:nth-of-type(1)
+excerpt Save 20%
+mode encrypted
+author Camille
+date 2026-09-01T07:02:33+00:00
+version 1.4.12
+environment staging
+viewport 1280x800
+status open
+text
+    The yearly toggle says "Save 20%", but Team is $9 a month and $90 a year. That is not 20%.
+
+<span class="cmd">$ annotepage reply 1 'Measured: 12 x $9 = $108 a year against $90 billed yearly, so 16.7%, not 20%. Business is the same. The badge now reads Save 17%.'</span>
+Reply written in the thread of note 1, signed "Assistant".
+
+<span class="cmd">$ annotepage resolve 1 1.4.13</span>
+Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
+            </div>
+            <figcaption>
+                Captured output, not a mock-up. The header of the export is seven lines a
+                machine wants and a reader does not; it is the only thing dropped, and the
+                drop is marked. Nothing else is cut, shortened or reflowed &mdash; a long
+                line wraps where the frame ends rather than hiding past it.
+            </figcaption>
+        </figure>
+
+        <ul class="plain">
+            <li><b>The remark arrives already usable.</b> It carries the page, the
+            element, the text that was on screen, the author, the version being served
+            and the viewport it was written at. That is what makes a fix possible without
+            a conversation.</li>
+            <li><b>The answer is a measurement.</b> &ldquo;12 x $9 = $108 a year
+            against $90 billed yearly, so 16.7%, not 20%.&rdquo; The arithmetic was run
+            before the reply was written, and the page really changed:
+            <code>Save 20%</code> became <code>Save 17%</code>. &ldquo;Done&rdquo; would
+            have been worth nothing to the person who wrote the remark.</li>
+            <li><b>Resolving states a version.</b> <code>1.4.13</code>, and that is the
+            point. The client compares it with the version the site declares it is
+            serving: newer than the site, and the note stays under the reviewer's eyes,
+            because the defect is still on screen.</li>
+            <li><b>The reviewer sees all of it</b>, on the element they clicked &mdash;
+            that is <a href="#top">the panel at the top of this page</a>, which is the same
+            thread from the other side.</li>
+        </ul>
+
+        <p class="small dim">
+            One fact per line, <code>key value</code>, two-space steps for replies.
+            <code>element</code> is a structural path and never a class or an id: a class
+            is renamed by the next rebuild, and the position is what survives it.
         </p>
 
         <div class="snip">
@@ -802,130 +1018,13 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
         </div>
 
         <p class="small dim">
-            The same package installs an <code>annotepage</code> command, for a script, a
-            CI job, or an assistant with no MCP client. Node 18 or later, no
-            dependencies.
+            The same package installs the <code>annotepage</code> command used above, for
+            a script, a CI job, or an assistant with no MCP client. Node 18 or later, no
+            dependencies. Its configuration file holds the project salt, so it is the only
+            place the plaintext comes back: <code>chmod 600</code>, never committed. Set
+            <code>"read_only": true</code> when plugging an assistant onto a review you do
+            not know yet &mdash; it cuts every write.
         </p>
-
-        <div class="step">
-            <div class="step-head">
-                <span class="step-num">01</span>
-                <h3>Read what is still open</h3>
-            </div>
-            <div class="step-body">
-                <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">command</span>
-                        <button class="copy" type="button" data-copy="snip-open">Copy</button>
-                    </div>
-<pre id="snip-open"><code>annotepage open --page /pricing</code></pre>
-                </div>
-
-                <div class="snip out">
-                    <div class="snip-head">
-                        <span class="snip-name">what it returns</span>
-                        <button class="copy" type="button" data-copy="snip-open-out">Copy</button>
-                    </div>
-<pre id="snip-open-out"><code>tool annotepage
-format 2
-version 2.0.0
-project 7Qb1kZ3xNvA9dLpEqKf2Zt
-encryption yes
-export 2026-09-01T09:14:22+00:00
-notes 1
-
-<b>note 12</b>
-page /pricing
-page-index 9dLpEqKf2Zt8ArC1vXbQ3s
-element button.cta
-excerpt Start free trial
-mode encrypted
-author Camille
-date 2026-08-30T14:02:11+00:00
-version 1.4.12
-environment staging
-viewport 360x780
-status open
-text
-    The label wraps below 380px and the button grows a second line.</code></pre>
-                </div>
-
-                <p class="small dim">
-                    One fact per line, <code>key value</code>, two-space steps for
-                    replies. The remark arrives with the page, the element, the excerpt,
-                    the version, the environment and the viewport it was written at
-                    &mdash; enough to reproduce it without asking anyone.
-                </p>
-            </div>
-        </div>
-
-        <div class="step">
-            <div class="step-head">
-                <span class="step-num">02</span>
-                <h3>Answer in the thread, then stamp the fix</h3>
-            </div>
-            <div class="step-body">
-                <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">command</span>
-                        <button class="copy" type="button" data-copy="snip-loop">Copy</button>
-                    </div>
-<pre id="snip-loop"><code>annotepage reply 12 "Measured at 360px: the label wrapped at 372px and the button grew to
-two lines. The call to action now uses a fluid font-size and the label
-is one word shorter; it holds down to 320px."
-
-annotepage resolve 12 1.4.13</code></pre>
-                </div>
-
-                <div class="snip out">
-                    <div class="snip-head">
-                        <span class="snip-name">annotepage note 12</span>
-                        <button class="copy" type="button" data-copy="snip-loop-out">Copy</button>
-                    </div>
-<pre id="snip-loop-out"><code>tool annotepage
-format 2
-version 2.0.0
-project 7Qb1kZ3xNvA9dLpEqKf2Zt
-encryption yes
-export 2026-09-01T09:31:05+00:00
-notes 2
-
-<b>note 12</b>
-page /pricing
-page-index 9dLpEqKf2Zt8ArC1vXbQ3s
-element button.cta
-excerpt Start free trial
-mode encrypted
-author Camille
-date 2026-08-30T14:02:11+00:00
-version 1.4.12
-environment staging
-viewport 360x780
-<b>resolved 2026-08-30T16:20:09+00:00 by Assistant in 1.4.13</b>
-text
-    The label wraps below 380px and the button grows a second line.
-
-  <b>reply 14</b>
-  to note 12
-  mode encrypted
-  author Assistant
-  date 2026-08-30T16:18:52+00:00
-  status open
-  text
-      Measured at 360px: the label wrapped at 372px and the button grew to
-      two lines. The call to action now uses a fluid font-size and the label
-      is one word shorter; it holds down to 320px.</code></pre>
-                </div>
-
-                <p class="small dim">
-                    That thread is what the reviewer sees at the top of this page, on the
-                    element they clicked. The version is the point: the client compares
-                    <code>1.4.13</code> with the version the site declares it is serving.
-                    Newer than the site, and the note stays under the reviewer's eyes,
-                    because the defect is still on screen.
-                </p>
-            </div>
-        </div>
 
         <h3 style="margin-top:2.6rem;">The seven tools an assistant gets</h3>
         <div class="tbl-wrap">
@@ -950,7 +1049,8 @@ text
             element of a page; an assistant has no browser and no element to point at, so
             what it manufactured would be undisplayable where it counts. The thread of an
             existing note is the place provided for it to speak. Nothing is ever erased:
-            resolving and reopening are the only two state changes.</p>
+            resolving and reopening are the only two state changes, and reopening records
+            no reason.</p>
 
             <p>Every write is <strong>signed</strong> with the name in the configuration.
             A thread where everybody signs and one voice does not is a thread you doubt
@@ -982,7 +1082,57 @@ text
     </div>
 </section>
 
-<!-- 5. THE REST ======================================================== -->
+<!-- 5. THE LONG ROAD =================================================== -->
+<section id="server">
+    <div class="wrap">
+        <p class="eyebrow">The long road</p>
+        <h2>Run the server yourself</h2>
+        <p class="lead">
+            Everything above assumes a server that already answers. There is no public
+            relay yet, so today that server is something you put somewhere. It is one PHP
+            codebase and a database, with no daemon and nothing to keep running &mdash;
+            but it is an afternoon, once, not a paste.
+        </p>
+
+        <ul class="plain">
+            <li><b>Where it goes.</b> On the site itself, under a path such as
+            <code>/notes/</code>, or on one machine serving several sites. Drop the
+            web root in place, start from <code>config-local.example.php</code>, and
+            point <code>data-server</code> at <code>api.php</code>.</li>
+
+            <li><b>Self-hosted, or relay.</b>
+            <code>'deployment' =&gt; 'self-hosted'</code> is for notes that live beside the
+            site under review, on the same machine and behind the same access
+            restriction. <code>'relay'</code> is the other shape: one server, several
+            sites that are not its own. The choice changes what the server accepts, not
+            what the client does.</li>
+
+            <li><b><code>open_registration</code></b> &mdash; off by default, and a relay
+            only. It serves a project id <em>nobody declared</em>, so a team can paste the
+            tag and start writing without anyone touching the server configuration. Such a
+            project is always encrypted: plain mode is refused there, not offered. And it
+            declares no origins, so it has no domain lock. That is the coin it pays in,
+            and it is stated here rather than discovered.</li>
+
+            <li><b><code>data-mode="plain"</code></b> is acceptable self-hosted only,
+            where encryption protects nothing: the notes sit in the same database, on the
+            same machine, behind the same restriction as the site under review. A shared
+            relay refuses it with a 400, and shows its message.</li>
+
+            <li><b>Without a local configuration file the server answers nothing at
+            all.</b> That is the safe default, not a failure to explain.</li>
+        </ul>
+
+        <p class="small">
+            The whole procedure &mdash; requirements, database, origins, expiry, the
+            diagnostic screen that tells you what the server thinks of your setup &mdash;
+            is in
+            <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">server/INSTALL.md</a>.
+        </p>
+    </div>
+</section>
+
+<!-- 6. THE REST ======================================================== -->
 <section id="data">
     <div class="wrap">
         <h2>Where the notes live, and who can read them</h2>
@@ -991,6 +1141,15 @@ text
             projects. Either way the notes are encrypted in the browser by default, and
             whoever runs the server &mdash; including you &mdash; cannot read the review.
         </p>
+
+        <div class="callout" id="no-recovery">
+            <p><strong>Salt lost = notes lost.</strong> The salt is the only secret of the
+            project. It never leaves the browser, the server receives it in no form
+            whatsoever, and nobody can give it back to you &mdash; no recovery, no
+            security question, no escrow. There is no rotation either: a leaked salt means
+            starting a fresh project and abandoning the notes already written. This is the
+            price of the sentence above, and it is not negotiable away.</p>
+        </div>
 
         <div class="facts">
             <div>
@@ -1026,9 +1185,6 @@ text
             by its selector and its fingerprint &mdash; and when the element has really
             changed, the note is listed as an orphan rather than pinned to the wrong
             thing.</p>
-
-            <p>The <code>annotepage</code> command holds the project salt, so it is the
-            only place the plaintext comes back.</p>
         </div>
 
         <h3 style="margin-top:2.8rem;">What the server sees anyway</h3>
@@ -1081,6 +1237,8 @@ text
               &mdash; a public relay needs a ceiling on what it stores. Nobody
               chooses which, and a server that does it says so in the header of
               every export.</li>
+            <li><b>No way to annotate a site you cannot edit.</b> The tag has to be in
+            the page, so the tool is a property of the site and not of the reader.</li>
             <li><b>No notifications.</b> Nobody is told that a note has arrived.</li>
             <li><b>No salt rotation,</b> and no channel for handing the salt to the second
             reviewer.</li>
@@ -1100,23 +1258,15 @@ text
             <code>crossorigin="anonymous"</code> goes with it: without it the
             browser does not check the digest of a cross-origin resource.</p>
 
-            <p>The digest on the tag is the one for <strong>2.0.0</strong>. Every
-            version has its own, printed by the build and listed in
-            <code>dist/HASHES.txt</code> inside the package. Never copy a digest
-            from a page documenting another version: the browser will refuse the
+            <p>The digest on the tag above is the one for <strong>2.0.1</strong>, the
+            version that filename names. Every version has its own, printed by the build
+            and listed in <code>dist/HASHES.txt</code> inside the package. Never copy a
+            digest from a page documenting another version: the browser will refuse the
             file, and that is exactly its job.</p>
 
             <p><strong>Do not add <code>type="module"</code>.</strong> A module
             script has no <code>document.currentScript</code>: the client could
             no longer read its own attributes, and would stand down in silence.</p>
-
-            <p><code>data-version</code> earns its place. When a note is marked
-            resolved, the tool compares the version of the fix with the one the
-            site declares it is serving, to tell &ldquo;resolved and
-            online&rdquo; &mdash; which folds into the history &mdash; from
-            &ldquo;resolved, not deployed yet&rdquo;, which stays in front of the
-            reviewer, because the defect is still on screen. Missing or
-            unreadable version: the fix is taken as not deployed.</p>
         </div>
 
         <div class="note-aside">
@@ -1126,20 +1276,6 @@ text
             and the tool can neither encrypt nor even compute the page index; it says so
             on screen rather than pretending. And a reachable annotepage server.</p>
         </div>
-
-        <h3 style="margin-top:2.8rem;">The options</h3>
-
-        <p class="small dim" style="margin-top:.6rem;">
-            Set <code>"read_only": true</code> in the assistant's configuration when
-            plugging it onto a review you do not know yet: it cuts every write.
-        </p>
-
-        <p class="small dim">
-            <code>data-mode="plain"</code> exists, and is only acceptable when self-hosted,
-            where encryption protects nothing: the notes sit in the same database, on the
-            same machine, behind the same access restriction as the site under review. A
-            shared relay refuses it with a 400, and shows its message.
-        </p>
     </div>
 </section>
 
@@ -1273,8 +1409,12 @@ text
     var out    = document.getElementById('the-salt');
     var idOut  = document.getElementById('the-id');
     var tagOut = document.getElementById('tag-id');
+    /* The configuration snippet of step 03 names the same project as the tag of
+       step 02. Two ids that differ is a server refusing every write, and the
+       reader has copied both from this page. */
+    var cfgOut = document.getElementById('cfg-id');
     var again  = document.getElementById('regenerate');
-    if (!out || !idOut || !tagOut) return;
+    if (!out || !idOut || !tagOut || !cfgOut) return;
 
     /* Without a secure context there is no WebCrypto, and a salt drawn from
        Math.random would be guessable -- which is worse than no salt at all,
@@ -1324,9 +1464,10 @@ text
         window.crypto.getRandomValues(salt);
         var text = b64url(salt);
         return projectIdFromSalt(salt).then(function (id) {
-            out.textContent   = text;
-            idOut.textContent = id;
+            out.textContent    = text;
+            idOut.textContent  = id;
             tagOut.textContent = id;
+            cfgOut.textContent = id;
         });
     }
 
