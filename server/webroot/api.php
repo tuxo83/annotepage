@@ -368,6 +368,10 @@ function ap_write_diagnostic($config, $version, $configError)
     ap_diag_line('config.deployment', $config['deployment']);
     ap_diag_line('config.open_registration',
         ap_open_registration($config) ? 'yes -- any project id is served, no origin lock' : 'no');
+    ap_diag_line('config.max_note_age_days',
+        empty($config['max_note_age_days'])
+            ? '0 -- nothing expires'
+            : ((int) $config['max_note_age_days']) . ' -- threads older than this are removed');
     ap_diag_line('config.max_text_length', $config['max_text_length']);
     ap_diag_line('config.max_author_length', $config['max_author_length']);
     ap_diag_line('config.max_payload_length', $config['max_payload_length']);
@@ -605,6 +609,22 @@ ap_apply_origin_lock($config, $id, $project, $write);
 $config['backfill_project'] = ap_backfill_project($config);
 $store = new ApStore($config);
 
+// RETENTION, opportunistically. There is no scheduled task on the hosting this
+// tool targets -- the counter cleanup in store.php already works this way, and
+// says why. One write in fifty pays for the sweep: nothing on a quiet server,
+// often on a busy one, which is where it matters.
+//
+// ON WRITES ONLY. Reads are the common path and they grow nothing; making every
+// `list` roll a die would spend latency where there is no problem to solve.
+//
+// BEFORE the write, and it cannot cost a note: expireOlderThan swallows its own
+// database errors and returns 0, because a relay that refused a remark over its
+// own housekeeping would be worse than one that grows. Running before also means
+// the note just written is never a candidate -- the cutoff is days in the past.
+if ($write && !empty($config['max_note_age_days']) && mt_rand(1, 50) === 1) {
+    $store->expireOlderThan($config['max_note_age_days']);
+}
+
 switch ($action) {
 
     case 'list':
@@ -710,7 +730,8 @@ switch ($action) {
         $breakdown = $store->modeBreakdown($id);
         $notes = $store->all($id);
         ap_begin_text();
-        ap_write_text_export(ap_version(), $id, $breakdown, $total, $notes);
+        ap_write_text_export(ap_version(), $id, $breakdown, $total, $notes,
+            isset($config['max_note_age_days']) ? (int) $config['max_note_age_days'] : 0);
         break;
 
     case 'backfill':

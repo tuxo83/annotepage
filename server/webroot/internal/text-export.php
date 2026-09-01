@@ -104,8 +104,13 @@ if (!defined('AP_INTERNAL')) {
  * @param array       $breakdown array('plain' => int, 'encrypted' => int)
  * @param int         $total     total number of notes, replies included
  * @param Traversable $notes     ordered notes: each parent followed by its own
+ * @param int         $retention days a thread is kept, 0 when nothing expires.
+ *                               Passed in rather than read from a global: this
+ *                               file has no configuration in scope, and an
+ *                               undefined variable read through empty() would
+ *                               have silently printed nothing, forever.
  */
-function ap_write_text_export($version, $project, array $breakdown, $total, $notes)
+function ap_write_text_export($version, $project, array $breakdown, $total, $notes, $retention = 0)
 {
     echo "tool annotepage\n";
     echo "format " . AP_FORMAT . "\n";
@@ -117,6 +122,14 @@ function ap_write_text_export($version, $project, array $breakdown, $total, $not
     echo "project " . ap_safe_value($project) . "\n";
     echo "encryption " . ap_encryption_word($breakdown) . "\n";
     echo "export " . gmdate('Y-m-d\TH:i:sP') . "\n";
+    // RETENTION, when the server has one. FORMAT.md section 5.2 allows adding a
+    // header line and never changing one, so an old reader ignores this and
+    // keeps working. It is here because a reader -- a person or an assistant --
+    // has to know that what is missing may have expired rather than never been
+    // written. A server that quietly forgets is a server nobody can trust twice.
+    if ((int) $retention > 0) {
+        echo "retention " . ((int) $retention) . " days\n";
+    }
     echo "notes " . $total . "\n";
     echo "\n";
 

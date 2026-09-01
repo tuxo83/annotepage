@@ -178,6 +178,26 @@ function ap_config_defaults()
         // write beyond, and says so.
         'max_notes_per_project' => 0,
 
+        // RETENTION -- how many days a thread is kept. 0 keeps everything, and
+        // that is the default: on a server holding one team's notes, a remark
+        // that vanishes on its own is a remark nobody can answer any more.
+        //
+        // A PUBLIC RELAY IS THE OTHER CASE. It stores for strangers, it cannot
+        // read what it stores, and nobody will ever come and tidy up. Without a
+        // ceiling it only grows. Ninety days is a review cycle with room to
+        // spare.
+        //
+        // WHAT IT REMOVES: whole threads whose LAST message is older than this.
+        // A thread, so that a reply is never cut off its remark; dated by its
+        // last message, so that a live discussion is never cut short.
+        //
+        // NOBODY CHOOSES WHICH. There is still no moderation and no takedown --
+        // that is the point of saying age and only age. But "nothing is ever
+        // deleted" stops being true on a server where this is set, so the
+        // diagnostic and the export header both announce it. Do not set it
+        // quietly.
+        'max_note_age_days' => 0,
+
         // Header carrying the client address when a proxy sits in front (for
         // example 'HTTP_X_FORWARDED_FOR'). NULL BY DEFAULT, and that default is
         // the point: a header the client can write itself would make rate

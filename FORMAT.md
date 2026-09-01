@@ -520,7 +520,10 @@ export 2026-08-31T09:14:22+00:00
 notes 128
 ```
 
-`encryption` is `yes`, `no` or `mixed`. `mixed` is the normal case of an
+`encryption` is `yes`, `no` or `mixed`. A `retention <n> days` line appears when
+the server expires threads by age; it is absent when nothing expires, and an
+older reader ignores a key it does not know. It is there because a reader has
+to be able to tell a note that was never written from one that has expired. `mixed` is the normal case of an
 installation that changed its mind: it is said, it is not hidden.
 
 ### 5.3 Two producers, one grammar

@@ -45,10 +45,28 @@ for (const file of files) {
     }
 }
 
+/* The site serves the client itself, from docs/, under a versioned filename.
+   That copy is what visitors actually load -- so if it drifts from the built
+   bundle, every digest in the repository still agrees with the bundle and
+   disagrees with the file being served. The page would look right and the
+   script would be refused by every browser. Compare the bytes, not the name. */
+const served = files.filter(f => /^docs\/annotepage-client-[\d.]+\.js$/.test(f));
+for (const copy of served) {
+    if (!readFileSync(copy).equals(readFileSync(BUNDLE))) {
+        console.error(`${copy} differs from ${BUNDLE}.`);
+        console.error('It is the file the site actually serves. Copy the built bundle over it.');
+        wrong++;
+    }
+}
+if (!served.length) {
+    console.error(`no docs/annotepage-client-<version>.js found -- the site links to one.`);
+    wrong++;
+}
+
 if (wrong) {
     console.error(`\nexpected ${expected}`);
     console.error(`${wrong} of ${found} digests do not match ${BUNDLE}.`);
     console.error('Rebuild the client, then copy the digest it prints.');
     process.exit(1);
 }
-console.log(`sri: ${found} digest(s), all matching ${BUNDLE}`);
+console.log(`sri: ${found} digest(s) and ${served.length} served copy, all matching ${BUNDLE}`);

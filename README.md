@@ -18,7 +18,7 @@ off to a tracker and the trail ends there.
 One tag, at the end of `<body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.0/dist/annotepage.js"
+<script src="https://annotepage.com/annotepage-client-2.0.0.js"
         integrity="sha384-A5Wrzv2mtFVnn8Mt0xC7BglTbxbb75unG3CNt5YHUNQ6X5QcwfFPI0OWtANjN2V/"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
@@ -70,9 +70,17 @@ here rather than in a footnote because it is the one thing that will hurt.
 
 ## What it deliberately does not do
 
-No accounts, no login. No moderation. No deletion -- a resolved note moves to
-the history and stays. No notifications. Saying so is more useful than
-discovering it later.
+No accounts, no login. No moderation. No notifications. A resolved note moves
+to the history and stays -- nobody can delete a remark, which is the point: a
+remark one can erase is a remark one can no longer contradict.
+
+The one exception is age, and only a server that is configured for it: a relay
+open to strangers can set `max_note_age_days`, and then whole threads expire
+once their last message passes that age. Nobody chooses which. A server that
+does this says so in its diagnostic and in the header of every export, so a
+reader can tell a note that expired from one that was never written.
+
+Saying all of this is more useful than discovering it later.
 
 The domain lock in the server configuration is an **anti-abuse** measure: it
 stops a stranger writing into your project. It is not an XSS defence. The XSS

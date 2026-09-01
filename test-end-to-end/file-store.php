@@ -355,6 +355,46 @@ class ApStore
         return $this->note($id, $note['project']);
     }
 
+    /**
+     * Same contract as the shipped store: expire whole threads whose LAST
+     * message is older than $days, dated by that last message. Written here in
+     * PHP arrays rather than SQL, and it must reach the same verdict -- a test
+     * store that expires differently would prove the wrong thing.
+     */
+    public function expireOlderThan($days)
+    {
+        $days = (int) $days;
+        if ($days <= 0) {
+            return 0;
+        }
+        $cutoff = gmdate('Y-m-d H:i:s', time() - ($days * 86400));
+
+        return $this->transaction(function (&$data) use ($cutoff) {
+            $last = array();
+            foreach ($data['notes'] as $row) {
+                $root = empty($row['reply_to']) ? (int) $row['id'] : (int) $row['reply_to'];
+                if (!isset($last[$root]) || $row['created_at'] > $last[$root]) {
+                    $last[$root] = $row['created_at'];
+                }
+            }
+            $doomed = array();
+            foreach ($last as $root => $when) {
+                if ($when < $cutoff) {
+                    $doomed[$root] = true;
+                }
+            }
+            $kept = array();
+            $gone = 0;
+            foreach ($data['notes'] as $row) {
+                $root = empty($row['reply_to']) ? (int) $row['id'] : (int) $row['reply_to'];
+                if (isset($doomed[$root])) { $gone++; continue; }
+                $kept[] = $row;
+            }
+            $data['notes'] = $kept;
+            return $gone;
+        });
+    }
+
     public function resolve($id, $project, $by, $version, $resolutionPayload, $resolved = true)
     {
         $this->transaction(function (&$data) use ($id, $project, $by, $version, $resolutionPayload, $resolved) {

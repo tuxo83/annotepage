@@ -81,8 +81,8 @@ Export keys, in the closed list the longest-prefix rule reads from:
 `to note`, `author`, `date`, `version`, `environment`, `viewport`, `status`,
 `resolved`, `text`.
 
-Header keys: `tool`, `format`, `version`, `project`, `encryption`, `export`,
-`notes`. Values: `encryption yes | no | mixed`, `mode encrypted`,
+Header keys: `tool`, `format`, `version`, `project`, `encryption`, `retention`,
+`export`, `notes`. Values: `encryption yes | no | mixed`, `mode encrypted`,
 `status open | resolved`.
 
 Check `to note` against the longest-prefix rule before shipping: `note` is not

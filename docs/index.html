@@ -478,6 +478,15 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
 }
+
+        .aside-line { color: var(--dim); font-size: .95rem; margin-top: -.4rem; }
+        .aside-line code { color: var(--text); }
+        .linkish {
+            background: none; border: 0; padding: 0; margin-left: .35rem;
+            font: inherit; color: var(--accent); cursor: pointer;
+            text-decoration: underline; text-underline-offset: 2px;
+        }
+        .linkish:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 </style>
 <script type="application/ld+json">
 {
@@ -580,25 +589,26 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             </div>
             <div class="step-body">
                 <p>
-                    Load the client on any page of the site with <code>data-setup</code>
-                    and <em>without</em> <code>data-project</code>. The setup screen
-                    generates a 256-bit salt and hands you four things to copy: the salt,
-                    the project id, the finished tag, and the lines to declare on the
-                    server. No network request is made at that point.
+                    Here, now, in your browser. This page makes no network request &mdash;
+                    not one, and you can check &mdash; so the salt below has never
+                    existed anywhere else and never will. That is the whole property:
+                    the server must never see it.
                 </p>
 
                 <div class="snip">
                     <div class="snip-head">
-                        <span class="snip-name">setup &mdash; remove once the project exists</span>
-                        <button class="copy" type="button" data-copy="snip-setup">Copy</button>
+                        <span class="snip-name">your salt &mdash; save this before anything else</span>
+                        <button class="copy" type="button" data-copy="snip-salt">Copy</button>
                     </div>
-<pre id="snip-setup"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.0/dist/annotepage.js"
-        integrity="sha384-A5Wrzv2mtFVnn8Mt0xC7BglTbxbb75unG3CNt5YHUNQ6X5QcwfFPI0OWtANjN2V/"
-        crossorigin="anonymous"
-        data-server="https://your-server.example.com/annotepage/api.php"
-        data-setup
-        defer&gt;&lt;/script&gt;</code></pre>
+<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s own setup screen does the same thing.</code></pre>
                 </div>
+
+                <p class="aside-line">
+                    Project id <code id="the-id">&mdash;</code>, derived from that salt.
+                    It is public: it sits in the tag on every annotated page, and the
+                    salt cannot be worked back from it.
+                    <button type="button" class="linkish" id="regenerate">Generate another</button>
+                </p>
 
                 <div class="callout">
                     <p><strong>Salt lost = notes lost.</strong> The salt is the only
@@ -629,11 +639,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         <span class="snip-name">the finished tag</span>
                         <button class="copy" type="button" data-copy="snip-tag">Copy</button>
                     </div>
-<pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.0/dist/annotepage.js"
+<pre id="snip-tag"><code>&lt;script src="https://annotepage.com/annotepage-client-2.0.0.js"
         integrity="sha384-A5Wrzv2mtFVnn8Mt0xC7BglTbxbb75unG3CNt5YHUNQ6X5QcwfFPI0OWtANjN2V/"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
-        data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"
+        data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
         defer&gt;&lt;/script&gt;</code></pre>
                 </div>
 
@@ -1063,8 +1073,14 @@ text
             <li><b>No accounts, no login.</b> The name typed in is a convenience, not an
             identity. The project id is a bearer token: whoever has it can read and write
             &mdash; and in encrypted mode, what they read is useless without the salt.</li>
-            <li><b>No moderation, no deletion.</b> A note that is posted stays. The only
-            state it can change is resolved, and that can be taken back.</li>
+            <li><b>No moderation, and nobody can delete.</b> A note that is
+              posted stays; the only state it can change is resolved, and that can
+              be taken back. A remark one can erase is a remark one can no longer
+              contradict. The single exception is age: a server may be set to expire
+              whole threads once their last message passes a given number of days
+              &mdash; a public relay needs a ceiling on what it stores. Nobody
+              chooses which, and a server that does it says so in the header of
+              every export.</li>
             <li><b>No notifications.</b> Nobody is told that a note has arrived.</li>
             <li><b>No salt rotation,</b> and no channel for handing the salt to the second
             reviewer.</li>
@@ -1241,5 +1257,86 @@ text
 }());
 </script>
 
+
+<script>
+(function () {
+    'use strict';
+
+    /* THE SALT IS GENERATED HERE, IN THE READER'S BROWSER, AND GOES NOWHERE.
+       This page issues no network request at all -- that is checked -- so
+       there is no path by which the value below could reach us, or anyone.
+       It is the same computation the client's own setup screen performs; it
+       happens here so that a reader can obtain a project before installing
+       anything, instead of having to stand up a server first in order to be
+       handed a salt. */
+
+    var out    = document.getElementById('the-salt');
+    var idOut  = document.getElementById('the-id');
+    var tagOut = document.getElementById('tag-id');
+    var again  = document.getElementById('regenerate');
+    if (!out || !idOut || !tagOut) return;
+
+    /* Without a secure context there is no WebCrypto, and a salt drawn from
+       Math.random would be guessable -- which is worse than no salt at all,
+       because it would look like one. We say so instead. */
+    if (!window.crypto || !window.crypto.subtle || !window.crypto.getRandomValues) {
+        out.textContent = 'This browser gives no WebCrypto here. '
+            + 'Open this page over https, or use the client\u2019s setup screen.';
+        if (again) again.hidden = true;
+        return;
+    }
+
+    /* ---- BEGIN derivation: must agree with mcp/src/crypto.mjs.
+            tools/check-landing-derivation.mjs runs this against it. ---- */
+    var HKDF_SALT_STRING = 'annotepage/1';
+
+    function b64url(bytes) {
+        var s = '';
+        for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function projectIdFromSalt(saltBytes) {
+        var enc = new TextEncoder();
+        return window.crypto.subtle
+            .importKey('raw', saltBytes, 'HKDF', false, ['deriveBits'])
+            .then(function (master) {
+                return window.crypto.subtle.deriveBits({
+                    name: 'HKDF',
+                    hash: 'SHA-256',
+                    /* HKDF's "salt" is NOT our salt: ours is the input keying
+                       material. Swapping the two yields a system that works and
+                       whose ids disagree with every other implementation. */
+                    salt: enc.encode(HKDF_SALT_STRING),
+                    info: enc.encode('id')
+                }, master, 256);
+            })
+            .then(function (bits) {
+                /* 16 bytes, not 32: this value is copied by hand into a tag and
+                   a configuration file. 22 characters can be; 43 cannot. */
+                return b64url(new Uint8Array(bits).subarray(0, 16));
+            });
+    }
+    /* ---- END derivation ---- */
+
+    function fresh() {
+        var salt = new Uint8Array(32);
+        window.crypto.getRandomValues(salt);
+        var text = b64url(salt);
+        return projectIdFromSalt(salt).then(function (id) {
+            out.textContent   = text;
+            idOut.textContent = id;
+            tagOut.textContent = id;
+        });
+    }
+
+    if (again) {
+        again.addEventListener('click', function () {
+            fresh().then(function () { out.focus && out.focus(); });
+        });
+    }
+    fresh();
+}());
+</script>
 </body>
 </html>

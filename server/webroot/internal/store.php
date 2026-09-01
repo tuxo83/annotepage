@@ -45,9 +45,16 @@
  *   - the backfill of a 1.2.0 database writes `project` and `page_index` on
  *     rows that had none (see "BACKFILL" below);
  *   - the rate counter, which is not a note.
- * Nothing is ever deleted -- a remark one erases is a remark one can no longer
- * contradict. Several reviewers can therefore annotate at the same time with no
- * lock and no conflict.
+ * Nothing is ever deleted BY ANYONE -- a remark one erases is a remark one can
+ * no longer contradict. Several reviewers can therefore annotate at the same
+ * time with no lock and no conflict.
+ *
+ * The one thing that removes rows is RETENTION, and it is the fourth named
+ * exception: `max_note_age_days`, off unless set. It expires whole threads by
+ * age, mechanically, choosing nothing -- nobody can point at a remark and make
+ * it go. A relay open to strangers needs a ceiling on what it stores, and this
+ * is it. A server where it is set says so in its diagnostic and in the export
+ * header, because "nothing is deleted" stops being true there.
  *
  * Dates are written by PHP in UTC, never by the SQL server's NOW(): PHP's
  * timezone and the database's are not aligned by default, and a note dated
@@ -1241,6 +1248,55 @@ class ApStore
      * Reopening clears both forms at once: it is the same information under two
      * modes, and a mixed database must not keep half of a cancelled resolution.
      */
+    /**
+     * Expires whole threads whose LAST message is older than $days.
+     *
+     * A thread and not a note: cutting a reply off its remark would leave the
+     * reader a fragment nobody can situate, and cutting an old remark that is
+     * still being answered would erase a live conversation. The thread is dated
+     * by its most recent message, so a discussion stays as long as it lives.
+     *
+     * NOBODY CHOOSES. That is what keeps the append-only promise honest: no
+     * moderation, no takedown, no "this one goes". Age, and nothing else.
+     *
+     * @param int $days 0 disables it entirely -- and it is the default.
+     * @return int rows removed
+     */
+    public function expireOlderThan($days)
+    {
+        $days = (int) $days;
+        if ($days <= 0) {
+            return 0;
+        }
+
+        // The cutoff is computed by PHP in UTC, like every other date here, and
+        // never by the SQL engine: the two timezones are not aligned by default,
+        // and an expiry running hours off would be invisible until it had eaten
+        // something it should not have.
+        $cutoff = gmdate('Y-m-d H:i:s', time() - ($days * 86400));
+        $table  = $this->table();
+
+        // COALESCE(reply_to, id) is the thread's root: a remark is its own root.
+        // The derived table is not decoration -- MySQL refuses to DELETE from a
+        // table named directly in the subquery.
+        $sql = "DELETE FROM `" . $table . "` WHERE COALESCE(`reply_to`, `id`) IN ("
+             . "SELECT `root` FROM (SELECT COALESCE(`reply_to`, `id`) AS `root` "
+             . "FROM `" . $table . "` GROUP BY COALESCE(`reply_to`, `id`) "
+             . "HAVING MAX(`created_at`) < ?) AS `expired`)";
+
+        try {
+            $req = $this->pdo()->prepare($sql);
+            $req->execute(array($cutoff));
+            return (int) $req->rowCount();
+        } catch (PDOException $e) {
+            // Housekeeping must never fail a write. A relay that refused notes
+            // because its own cleanup stumbled would be worse than one that
+            // grows.
+            ap_log('retention: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
     public function resolve($id, $project, $by, $version, $resolutionPayload, $resolved = true)
     {
         $this->ensureSchema();
