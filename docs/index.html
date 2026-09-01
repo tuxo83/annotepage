@@ -202,9 +202,11 @@ main .split-col > .snip { max-width: 48rem; }
    1345 up; below that the column really is too narrow and they wrap, which is
    a wrap and not a defect. */
 main .split-col > .claims { max-width: none; }
-        /* Two rows, because the first two chips answer WHERE it runs and
-           the others WHAT it is. One row made a reader compare a hosting
-           choice with a licence. */
+        /* Three rows, one subject each: WHERE it runs, WHAT it is, and HOW it
+           behaves with people. One row made a reader compare a hosting choice
+           with a licence. "Many reviewers at once" is not a slogan -- store.php
+           states it: several reviewers annotate at the same time, with no lock
+           and no conflict, and everyone sees everyone's notes. */
         .claims-next { margin-top: .5rem; }
 
 .dim { color: var(--dim); }
@@ -789,7 +791,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <ul class="claims claims-next">
                 <li>Free <span>&middot; MIT</span></li>
                 <li>Open source</li>
+            </ul>
+
+            <ul class="claims claims-next">
                 <li>End-to-end encrypted <span>&middot; in the browser</span></li>
+                <li>Many reviewers at once <span>&middot; no accounts</span></li>
             </ul>
 
             <p style="margin-top: 1.6rem;"><a class="cta" href="#use">See how you use it</a></p>
@@ -924,7 +930,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.1/dist/annotepage.js"
         integrity="sha384-VBUfe2CFvh85WRBCH1/uKse1O2wauw3at7B9gGC2fC8Y/sG03p9bZABq3MyUDbKE"
         crossorigin="anonymous"
-        data-server="https://api.annotepage.com/api.php"
+        data-server="https://www.api.annotepage.com/api.php"
         data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
         data-version="1.4.13"
         defer&gt;&lt;/script&gt;</code></pre>

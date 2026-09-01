@@ -1,11 +1,11 @@
 # Standing up the free public relay
 
-Everything needed to put `api.annotepage.com` online. It is one PHP directory
+Everything needed to put `www.api.annotepage.com` online. It is one PHP directory
 and one database; there is no build step and nothing to compile.
 
 ## What goes where
 
-    webroot/                  ->  the document root of api.annotepage.com
+    webroot/                  ->  the document root of www.api.annotepage.com
     relay/config-local.php    ->  webroot/internal/config-local.php
     secrets/                  ->  one level ABOVE the document root
 
@@ -35,7 +35,7 @@ HTTPS serves nobody. Any certificate does.
 
 ## Checking it, in one request
 
-    curl 'https://api.annotepage.com/api.php?action=diagnostic'
+    curl 'https://www.api.annotepage.com/api.php?action=diagnostic'
 
 Read three lines:
 
