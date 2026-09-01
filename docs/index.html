@@ -60,6 +60,8 @@
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
             Arial, "Noto Sans", sans-serif;
     --radius: 10px;
+    /* THE READING MEASURE, and it is not the page's width -- see .wrap. */
+    --measure: 44rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -116,7 +118,63 @@ h3 { font-size: 1.05rem; font-weight: 650; }
 p  { margin: 0 0 1em; }
 p:last-child { margin-bottom: 0; }
 
-.wrap { width: 100%; max-width: 61rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
+/* TWO WIDTHS, AND THEY ARE DELIBERATELY NOT THE SAME NUMBER.
+
+   The page column is what a PICTURE gets. The measure is what a SENTENCE
+   gets, and it is much narrower. One number served both until now, and the
+   number had to be the sentence's: 61rem. That capped the figures at the
+   width of a paragraph -- the replay's terminal came out 51 columns, where
+   the session was captured in 79 -- and it left the page sitting in the
+   middle of the screen with a quarter of it empty either side. Measured:
+   68% of a 1440 window, 51% of a 1920 one, and on a landscape tablet the
+   same margins with less to spare.
+
+   Separated, the limit is not removed, it is moved. Paragraphs keep the
+   measure they already had, to the pixel; the terminal and the panel beside
+   it take the room that used to be margin. */
+.wrap { width: 100%; max-width: 85rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
+
+/* THE MEASURE ITSELF. rem and not em on purpose: in em each block would take
+   its own font size as the unit, and a heading, a paragraph and a caption
+   would each stop at a different place. In rem they share one right edge,
+   which is what makes a left-aligned column read as a column at all. At body
+   size the two are the same number, so no line of prose changes width.
+
+   It is hung on what the wrap HOLDS rather than on `p`, because `p` on this
+   page also means a line of a terminal and the second sentence of a card,
+   both of which are already sized by the thing they sit in. What is a
+   picture opts out just below; what is read keeps the measure. */
+main .wrap > * { max-width: var(--measure); }
+
+/* The two pictures, and the only two. Both are looked at rather than read,
+   and both were being starved by a limit meant for sentences.
+
+   THEY DO NOT TAKE THE SAME ROOM, and that is the point of giving them
+   separate rules. The replay wants every pixel: its terminal is the pane the
+   whole column was widened for. The three steps do NOT -- their frames are
+   small drawings, and at the full 85rem they became 645px boxes with a
+   thumbnail's worth of content adrift in each, and the sentence beside them
+   sat half a screen from the picture it belongs to. 62rem is where the pair
+   still reads as a pair: 467px of words and 490px of picture at 1440, both
+   up on the 428 and 449 they had at 61rem, and neither stretched. */
+main .wrap > .use-steps { max-width: 62rem; }
+main .wrap > .replay-block { max-width: none; }
+
+/* The headline is the one piece of prose with its own measure, because it is
+   set in 3.1rem and 44 of them is only 14em of it. The line break is written
+   into the markup, so the browser is only ever fitting the longer half --
+   "The assistant answers in the thread.", 862px measured -- and at 704 it
+   broke into three lines. 58rem is 928px: past the 862 it needs, and past the
+   912 the headline was proven in before this page widened, so the two lines
+   the <br> asks for survive a wider font than the one measured here. */
+main .wrap > h1 { max-width: 58rem; }
+
+/* Code gets its own measure, and it is set by the longest line actually
+   shipped and not by comfort: the install command is 91 columns, which is
+   700px at this size. At the prose measure it would be the one block on the
+   page a reader has to scroll sideways to finish reading, and it is the
+   block the whole install section exists to hand over. */
+main .wrap > .snip { max-width: 48rem; }
 
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
@@ -513,8 +571,20 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 .use-steps > li:nth-child(2) { animation-delay: .26s; }
 .use-steps > li:nth-child(3) { animation-delay: .42s; }
 
-/* The one line between the steps and the figure, saying what the figure is of. */
-.fig-lead { margin: clamp(2.2rem, 5vw, 3rem) 0 0; color: var(--dim); }
+/* THE LEAD LINE AND THE FIGURE ARE ONE BLOCK, and this div is the whole
+   reason: the line saying what the figure is of used to be a paragraph in the
+   text column while the figure below it was a wider element of its own, so the
+   two were laid out by different rules and lined up with nothing. Grouped, they
+   take one left edge and one width, and the line becomes the figure's label
+   instead of a sentence stranded between two things.
+
+   The space above the block is what separates it from the steps; the space
+   between the line and the frame is what binds them. The first is roughly
+   twice the second, which is what makes the pair read as one object. */
+.replay-block { margin: clamp(2.6rem, 5.5vw, 3.4rem) 0 0; }
+/* Its own measure, not the block's: the block goes wide, a line of prose does
+   not. */
+.fig-lead { margin: 0; color: var(--dim); max-width: 34em; }
 
 /* == THE REPLAY ========================================================== */
 
@@ -582,7 +652,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     --t-ident:   #a4cbfa;
 }
 
-.replay-fig { margin: 1.6rem 0 0; }
+/* Caption to frame. It was 1.6rem under a line that sat 3rem below the row
+   above, which put the line nearer the black rectangle than anything it could
+   be labelling and still close enough to crowd it. The gap is a caption gap
+   now, and the one above the block carries the separation. */
+.replay-fig { margin: 2rem 0 0; }
 .rp {
     display: grid; gap: 1rem;
     /* min(27rem, 100%): the floor, and it was raised. At 21rem the two panes
@@ -605,30 +679,35 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 /* -- and where there is room, the figure takes it -------------------------
 
-   In the 61rem text measure the terminal pane holds 51.6 columns. The longest
-   row the session still rests on is 68 characters -- the sentence naming the
-   two buttons -- so every one of them broke in two, and a session whose every
-   sentence wraps reads as a wall however few lines it has. No terminal a
-   developer opens is 51 columns wide.
+   THE BLOCK NO LONGER HAS TO ESCAPE ANYTHING. It used to sit in a 61rem text
+   measure that gave the terminal pane 51.6 columns -- against a session
+   captured in 79 -- so it grew rightwards out of the column with a calc() on
+   the viewport, and stopped at 71rem because that is where the arithmetic ran
+   out. The page column is 85rem now and the measure is a separate number, so
+   the figure simply fills its wrap: no escape, no calc, no broken left edge
+   to apologise for. The rule that did it is gone rather than retuned.
 
-   So past 74rem the figure leaves the text measure and takes 70rem. The
-   terminal gets 1.6 of the 2.6 shares -- 79 columns, wide enough that only the
-   two commands the session cannot shorten are cut off -- and the picture keeps
-   424px, past the 407px below which the two green buttons stack. Below 74rem
-   nothing changes: the panes go back to equal shares and the terminal wraps,
-   which is what a narrow terminal does. */
-@media (min-width: 75rem) {
-    .replay-fig {
-        width: min(71rem, calc(100vw - 4rem));
-        margin-inline: calc((100% - min(71rem, calc(100vw - 4rem))) / 2);
-    }
-    /* The picture keeps 28rem -- the width it already had, and the width the
-       pair was proven at. Two fractions here instead cost it 23px, and at
-       400.6px of content the two fixed buttons stacked: measured, and a fix
-       that stacks two buttons reads as the opposite of what it did. So the
-       picture is fixed and the terminal takes what is left, which is 672px:
-       79 columns, eleven past the widest line in the capture. */
-    .rp { grid-template-columns: minmax(0, 1fr) 28rem; }
+   What is left here is the SPLIT. Equal shares are right while both panes are
+   cramped, and wrong once there is room: at 1440 the wrap holds 1296px, and
+   halved that leaves the terminal a 640px track where a fixed picture leaves
+   it 800px. So past
+   66rem -- the first width at which a fixed picture beats an equal share --
+   the picture takes a stated width and the terminal takes the rest. Below it
+   nothing changes. */
+@media (min-width: 66rem) {
+    /* The picture takes 30rem, up from the 28rem it was pinned at while every
+       pixel it gained came off the session. It is still a stated width and
+       not a fraction, for the reason it always was: at 400.6px of content the
+       two fixed green buttons stacked, measured, and a fix that stacks two
+       buttons reads as the opposite of what it did. 30rem is 480px, and the
+       review panel beside the session is the pane that reads better for it.
+
+       The terminal takes what is left: an 800px track, 772px of pane once
+       its padding is off, which is 95 columns at this font size -- measured,
+       at 1440 and at 1920 alike, the wrap being the same 1296px at both. Every line of the capture fits on one line there,
+       including the 91-column commit command, which is the first time the
+       session has read as a session rather than as a wall of wrapped text. */
+    .rp { grid-template-columns: minmax(0, 1fr) 30rem; }
 
     /* And the picture stops short of the terminal: 199px of nothing beside it
        at 1440x900, measured, for the whole replay. The slack goes to the
@@ -640,7 +719,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 }
 
 /* Wherever the two panes ARE side by side -- from 59rem up, the width at which
-   the grid above stops stacking -- the picture takes the terminal's height and
+   the grid above stops stacking, whether in equal shares or in the split
+   above -- the picture takes the terminal's height and
    the slack goes to the review panel. It is the one place in the figure where
    more room buys more of the review rather than more margin: the third remark
    stops being cropped off the bottom edge. The crop itself stays.
@@ -718,8 +798,15 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 }
 .rp[data-play] .rp-flow > * { flex: none; }
 
-/* Every line of the session sits inside this width, and wraps inside it. */
-.rp-flow > * { max-width: 78ch; }
+/* Every line of the session sits inside this width, and wraps inside it.
+
+   100ch and not the 78ch it was. 78 was the column the capture was made in,
+   and while the pane was 79 columns wide the two numbers agreed and the cap
+   did nothing. The pane is 95 columns now, and a cap of 78 would have spent
+   the new room on empty black to the right of lines that still broke in two.
+   The longest row in the session is 91 characters, so 100 clears every one of
+   them and the pane, not this rule, is what the session wraps against. */
+.rp-flow > * { max-width: 100ch; }
 
 /* -- the lines ------------------------------------------------------------ */
 
@@ -1152,8 +1239,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 .rp-foot p { margin: 0; font-size: .87rem; line-height: 1.55; color: var(--dim); max-width: 34em; }
 .rp-foot .what { color: var(--text); font-weight: 600; }
 /* The one line the figure owes anybody who lands on it mid-scroll: what it
-   is, and what it is not. Its own line, and quieter than the caption. */
-.rp-foot .disc { display: block; margin-top: .25rem; font-size: .8rem; }
+   is, and what it is not.
+
+   ITS OWN LINE, AND THE CAPTION'S OWN SIZE. It used to be set a step smaller
+   than the sentence directly above it, which is two type sizes inside one
+   caption of two lines: too close to read as a deliberate hierarchy, far
+   enough to read as an afterthought bolted on. It is the same caption, so it
+   is the same size; what separates it is the line break and the sentence above
+   it opening in the page's own ink. The extra breath is what makes it a second
+   line rather than a continuation. */
+.rp-foot .disc { display: block; margin-top: .45rem; }
 
 /* -- AND THE FIGURE SAYS WHICH STEP IT IS PASSING THROUGH -----------------
 
@@ -1248,15 +1343,15 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <strong>replies with what it measured</strong>, and stamps the version.
         </p>
 
-        <!-- THE PREREQUISITE, IN BODY TYPE, ABOVE EVERYTHING ELSE.
-             Three readers looking only at screenshots each found this fact late,
-             as a pale link 1300px down, and each asked for it here. It is not a
-             feature and must never be worded as one: it is what decides whether
-             the reader can finish at all. The day the shared server answers,
-             this paragraph is the one line to change. -->
+        <!-- WHERE THE NOTES GO, IN BODY TYPE, ABOVE EVERYTHING ELSE.
+             Three readers looking only at screenshots each asked for this fact
+             here, when it was a pale link 1300px down. It decides whether the
+             reader can finish at all, so it stays in the opening whichever way
+             it reads. -->
         <p class="need">
-            <b>You run the server.</b> One PHP directory on a host of your own &mdash;
-            there is no shared server yet. Free and open source, MIT.
+            <b>Nothing to install on a server.</b> Notes go to a free shared one,
+            open to everybody &mdash; or to your own PHP directory if you would
+            rather keep them.
         </p>
 
         <ul class="claims">
@@ -1373,6 +1468,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             </li>
         </ol>
 
+        <!-- The lead line and the frame it describes, wrapped as one block so
+             they share a left edge and a width. Apart, the line belonged to the
+             text column and the frame to a wider one of its own, and the label
+             lined up with nothing it was labelling. -->
+        <div class="replay-block">
         <p class="fig-lead">Steps 2 and 3, as they really ran.</p>
 
         <figure class="replay-fig">
@@ -1516,6 +1616,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 </p>
             </figcaption>
         </figure>
+        </div>
 
         <!-- This script sits here, and not with the others at the foot of the
              page, for one reason: its first act hides what the block above
@@ -1966,6 +2067,35 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        Only the clock waits. */
     reset();
 
+    /* AND WHAT IT WAITS AS IS A FINISHED SESSION, NOT AN EMPTY PANE.
+
+       Arming leaves the pane at the full height of the session with nothing in
+       it: four hundred pixels of black with one prompt line along the bottom.
+       That is the state the figure is in on any full-page capture, and for
+       anybody who lands below it and never scrolls it into view -- and it is
+       the same shape as an embed that failed to load, which is exactly what
+       three readers took the old black rectangle for.
+
+       So the state it rests in is the state it ends in: every line of the
+       session on screen, the turn closed with the time it took, the reviewer's
+       page as she finds it again. Nothing is invented here -- every call below
+       is one the run itself makes, and the seconds come from the same two
+       constants, so the resting frame cannot say a different number from the
+       one the reader watches. The first cue of the first pass clears it. */
+    (function () {
+        for (var k = 0; k < all.length; k++) all[k].classList.add('on');
+        picture(true);
+        /* The input is empty when a turn is over, so the cells laid out for
+           typing come out -- the same removal the send does. Emptied, not
+           hidden: a hidden cell still holds its row. */
+        while (box.childNodes.length > 2) box.removeChild(box.lastChild);
+        cells = [];
+        rp.removeAttribute('data-idle');
+        wkd.textContent = Math.floor((TURN_END - SENT) / 1000) + 's';
+        rp.setAttribute('data-worked', '');
+        toBottom();
+    }());
+
     /* And the clock waits until the frame is actually on screen: a session
        that played out while the reader was still in the hero never happened.
        A margin rather than a ratio, because the frame is taller than a short
@@ -2017,15 +2147,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.1/dist/annotepage.js"
         integrity="sha384-VBUfe2CFvh85WRBCH1/uKse1O2wauw3at7B9gGC2fC8Y/sG03p9bZABq3MyUDbKE"
         crossorigin="anonymous"
-        data-server="https://your-server.example.com/annotepage/api.php"
+        data-server="https://api.annotepage.com/api.php"
         data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
         data-version="1.4.13"
         defer&gt;&lt;/script&gt;</code></pre>
         </div>
 
         <p class="small dim">
-            Only <code>data-server</code> is yours &mdash; your PHP directory, told about
-            the project in <a href="how-it-works.html#server">three lines</a>. The id was
+            Nothing in it is yours to fill in. <code>data-server</code> is the shared
+            server; point it at <a href="how-it-works.html#server">your own</a>
+            instead if you prefer. The id was
             derived in your browser from the salt below.
         </p>
 
