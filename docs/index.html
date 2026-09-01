@@ -595,7 +595,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         /* The three gestures, said in one line each, in the hero. The full
            section stays where it is: raising it whole pushed the first copyable
            block from 1602px to 3421px at phone width -- measured -- which is a
-           high price for something that can be said in nine words. */
+           steep cost for something that can be said in nine words. */
         .gestures-brief {
             display: flex; flex-wrap: wrap; gap: .5rem 1.4rem;
             margin: 1.6rem 0 0; padding: 0; list-style: none;
@@ -608,23 +608,14 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             color: var(--accent);
         }
 
-        /* THE DEMO CARD. A plain, real piece of page -- not a picture of one --
-           so the annotepage button beside it has something honest to point at. */
-        .demo {
-            border: 1px solid var(--line); border-radius: var(--radius);
-            background: var(--bg-soft); padding: 1.3rem 1.4rem; margin-top: 1.8rem;
-            max-width: 24rem;
-        }
-        .demo h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
-        .demo .price { font-size: 1.9rem; font-weight: 700; letter-spacing: -.02em; }
-        .demo .price span { font-size: .95rem; font-weight: 400; color: var(--dim); }
-        .demo .year { margin-top: .5rem; font-size: .92rem; color: var(--dim); }
-        .demo .save {
-            display: inline-block; margin-left: .4rem; padding: .12rem .5rem;
-            border-radius: 999px; font-size: .8rem; font-weight: 600;
-            background: var(--ok-soft); color: var(--ok);
-        }
-        .demo-hint { margin-top: .9rem; font-size: .95rem; color: var(--dim); max-width: 30rem; }
+        /* The one line under the hero that says the page is the demo. There is
+           no sample card: the page itself is what gets annotated, which is
+           lighter and cannot be mistaken for something we are selling. */
+        /* One line, in the hero, saying what the project is. It is a sentence and
+           not a section on purpose: the page was cut from 3046 words to well under
+           800 and must not grow back. */
+        .free-line { margin: 1.1rem 0 0; font-size: .95rem; color: var(--dim); max-width: 34rem; }
+        .demo-hint { margin-top: 1.4rem; font-size: .95rem; color: var(--dim); max-width: 32rem; }
         .demo-hint b { color: var(--text); }
 </style>
 <script type="application/ld+json">
@@ -637,8 +628,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
   "operatingSystem": "Any",
   "license": "https://opensource.org/licenses/MIT",
   "isAccessibleForFree": true,
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "description": "Annotate any web page. An AI reads the notes, fixes, replies with what it measured, and stamps the version. Open source, self-hostable, encrypted.",
+  "description": "Annotate any web page. An AI reads the notes, fixes, replies with what it measured, and stamps the version. Free, MIT, open source, self-hostable, encrypted.",
   "codeRepository": "https://github.com/tuxo83/annotepage"
 }
 </script>
@@ -666,16 +656,20 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         <h1>Annotate a page. <br>The assistant answers in the thread.</h1>
         <p class="lead">
             Someone reviewing a staging site clicks what they see &mdash; a heading, a
-            button, a price &mdash; and writes what is wrong. An assistant reads the
+            button, a link &mdash; and writes what is wrong. An assistant reads the
             notes, fixes the code, <strong>replies saying what it measured</strong>, and
-            marks the remark resolved with the version the fix ships in.
+            resolves it with the version the fix ships in.
         </p>
 
         <ul class="claims">
-            <li>Open source <span>&middot; MIT</span></li>
+            <li>Free <span>&middot; MIT</span></li>
+            <li>Open source</li>
             <li>Self-hostable</li>
             <li>End-to-end encrypted <span>&middot; in the browser</span></li>
         </ul>
+
+        <p class="free-line">Free, and not for sale. Run it on your own server; a
+        shared one, open to everybody at no cost, comes next.</p>
 
         <ul class="gestures-brief">
             <li><span class="n">01</span> <b>Open</b> one button on the page</li>
@@ -685,16 +679,10 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
         <p><a class="cta" href="#install">Put it on a page</a></p>
 
-        <div class="demo">
-            <h3>Team</h3>
-            <div class="price">$9 <span>per user, per month</span></div>
-            <div class="year">or $90 billed yearly <span class="save">Save 20%</span></div>
-        </div>
-
         <p class="demo-hint">
-            <b>This page is running annotepage.</b> Open it, bottom right, and tell
-            that badge what is wrong with it. Your note goes nowhere: no server, and
-            a reload forgets it.
+            <b>This page is running annotepage.</b> Open it, bottom right, and point
+            at anything. Your note goes nowhere: no server behind this, and a reload
+            forgets it.
         </p>
 
         <div class="mock" style="margin-top: 2.4rem;">
@@ -704,24 +692,26 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             </div>
             <div class="mock-body">
                 <div class="card">
-                    <span class="stamp">Resolved on Sep 1, 2026, 9:02 AM by Assistant</span>
-                    <div class="card-meta"><b>Camille</b><span>Sep 1, 2026, 9:02 AM</span></div>
-                    <div class="card-about">About: Save 20%</div>
-                    <p>The yearly toggle says &ldquo;Save 20%&rdquo;, but Team is $9 a month
-                    and $90 a year. That is not 20%.</p>
+                    <span class="stamp">Resolved on Sep 1, 2026, 10:35 AM by Assistant</span>
+                    <div class="card-meta"><b>Camille</b><span>Sep 1, 2026, 10:34 AM</span></div>
+                    <div class="card-about">About: Download the calibration table</div>
+                    <p>The label on this button breaks onto two lines on a 360px phone.
+                    It should hold on one line down to 320px.</p>
                     <div class="card-actions">Reply &middot; Show on the page &middot; Reopen this remark</div>
                 </div>
                 <div class="card reply">
-                    <div class="card-meta"><b>Assistant</b><span>Sep 1, 2026, 9:02 AM</span></div>
-                    <p>Measured: 12 x $9 = $108 a year against $90 billed yearly, so 16.7%,
-                    not 20%. Business is the same. The badge now reads Save 17%.</p>
+                    <div class="card-meta"><b>Assistant</b><span>Sep 1, 2026, 10:35 AM</span></div>
+                    <p>Measured: the label needs 232px and the button offers 222px at 360px,
+                    so it wraps at 369px and below. Horizontal padding cut from 36px to 16px
+                    and the label to 16px; measured again, it holds on one line down to
+                    317px.</p>
                 </div>
             </div>
         </div>
 
         <p class="small dim" style="margin-top: 1rem; max-width: 34rem;">
-            That thread is real: it is
-            <a href="#assistant">the session below</a>, seen from the other side.
+            That thread is real:
+            <a href="#assistant">the session below</a>, from the other side.
         </p>
     </div>
 </section>
@@ -756,11 +746,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <article class="path">
                 <p class="path-who">If you can edit the page</p>
                 <h3>Copy and paste a tag</h3>
-                <p>One script tag at the end of <code>&lt;body&gt;</code>. No framework,
-                no bundler, no build step: one file, no dependencies.</p>
-                <p class="path-cost"><b>Two steps here,</b> about a minute. Then a server
-                has to answer, and <a href="how-it-works.html#server">there is no public
-                relay yet</a>.</p>
+                <p>One script tag at the end of <code>&lt;body&gt;</code>: no framework,
+                no bundler, no build step, no dependencies.</p>
+                <p class="path-cost"><b>Two steps,</b> about a minute. Then a server has
+                to answer, and <a href="how-it-works.html#server">there is no public relay
+                yet</a>.</p>
             </article>
         </div>
 
@@ -772,7 +762,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <div class="step-body">
                 <p>
                     Generated here, in your browser. This page makes no network
-                    request, so this value has never existed anywhere else.
+                    request, so it has never existed anywhere else.
                 </p>
 
                 <div class="snip">
@@ -780,7 +770,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         <span class="snip-name">your salt &mdash; save this before anything else</span>
                         <button class="copy" type="button" data-copy="snip-salt">Copy</button>
                     </div>
-<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s own setup screen does the same thing.</code></pre>
+<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
                 </div>
 
                 <p class="aside-line">
@@ -790,9 +780,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 </p>
 
                 <div class="callout">
-                    <p><strong>Salt lost = notes lost.</strong> Nobody can give it back to
-                    you: no recovery, no escrow, and no rotation. Put it where your team
-                    keeps its passwords, now &mdash;
+                    <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow, no
+                    rotation. Put it where your team keeps its passwords, now &mdash;
                     <a href="how-it-works.html#no-recovery">what that costs, in full</a>.</p>
                 </div>
             </div>
@@ -806,7 +795,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <div class="step-body">
                 <p>
                     At the end of <code>&lt;body&gt;</code>, on the pages to annotate. The
-                    project id is already filled in.
+                    project id is filled in.
                 </p>
 
                 <div class="snip">
@@ -826,8 +815,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <p class="small dim">
                     The server is then told about the project in
                     <a href="how-it-works.html#server">three lines of its
-                    configuration</a>. The salt is not one of them: the server receives it
-                    in no form whatsoever.
+                    configuration</a>. The salt is not one of them: it never reaches the
+                    server, in any form.
                 </p>
             </div>
         </div>
@@ -870,34 +859,34 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
 <pre><code><span class="cmd">$ annotepage open</span>
 <span class="cut">[... 7 header lines: tool, format, version, project, encryption, export, notes ...]</span>
 note 1
-page /pricing
+page /guide
 <span class="cut">[... 4 fields: page-index, mode, date, viewport ...]</span>
-element main:nth-of-type(1) &gt; p:nth-of-type(1) &gt; span:nth-of-type(1)
-excerpt Save 20%
+element main:nth-of-type(1) &gt; div:nth-of-type(1) &gt; a:nth-of-type(1)
+excerpt Download the calibration table
 author Camille
 version 1.4.12
 environment staging
 status open
 text
-    The yearly toggle says "Save 20%", but Team is $9 a month and $90 a year. That is not 20%.
+    The label on this button breaks onto two lines on a 360px phone. It should hold on one line down to 320px.
+<span class="cut">[... note 2, same shape ...]</span>
 
-<span class="cmd">$ annotepage reply 1 'Measured: 12 x $9 = $108 a year against $90 billed yearly, so 16.7%, not 20%. Business is the same. The badge now reads Save 17%.'</span>
+<span class="cmd">$ annotepage reply 1 'Measured: the label needs 232px and the button offers 222px at 360px, so it wraps at 369px and below. Horizontal padding cut from 36px to 16px and the label to 16px; measured again, it holds on one line down to 317px.'</span>
 Reply written in the thread of note 1, signed "Assistant".
 
 <span class="cmd">$ annotepage resolve 1 1.4.13</span>
 Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
             </div>
             <figcaption>
-                Captured output, not a mock-up. Every drop is marked; nothing else is
-                cut or reflowed.
+                Captured output, not a mock-up. Every drop is marked.
             </figcaption>
         </figure>
 
         <p>
             The remark arrives carrying the page, the element, the text on screen and
-            the version being served, so a fix needs no conversation back. Resolving
+            the version being served, so a fix needs no conversation. Resolving
             states the version the fix ships in: until the site serves it, the note stays
-            under the reviewer&rsquo;s eyes.
+            in front of the reviewer.
         </p>
     </div>
 </section>
@@ -907,10 +896,9 @@ Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
     <div class="wrap">
         <h2>The rest of it</h2>
         <p class="lead">
-            A second page carries the depth: the three gestures in full, the encryption and what the server can
-            still see through it, what the tool deliberately does not do &mdash; no
-            accounts, no moderation, no notifications, no deletion except by age &mdash;
-            the supply chain, and how to run the server yourself.
+            A second page carries the depth: the gestures in full, the encryption and
+            what the server still sees, what the tool refuses to do, and how to run
+            the server yourself.
         </p>
         <p><a class="cta" href="how-it-works.html">Read how it works</a></p>
     </div>
@@ -928,8 +916,8 @@ Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/ROADMAP.md">Roadmap</a></li>
         </ul>
         <p>
-            annotepage is MIT-licensed. It loads no font, no script and no image from
-            anywhere else: no outgoing request at all.
+            annotepage is free, MIT-licensed and open to contributions. It loads no
+            font, no script and no image from anywhere else: no outgoing request at all.
         </p>
     </div>
 </footer>

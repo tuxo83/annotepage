@@ -586,7 +586,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         /* The three gestures, said in one line each, in the hero. The full
            section stays where it is: raising it whole pushed the first copyable
            block from 1602px to 3421px at phone width -- measured -- which is a
-           high price for something that can be said in nine words. */
+           steep cost for something that can be said in nine words. */
         .gestures-brief {
             display: flex; flex-wrap: wrap; gap: .5rem 1.4rem;
             margin: 1.6rem 0 0; padding: 0; list-style: none;
@@ -661,8 +661,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <div class="hint">Click an element of the page to write a remark
                     about it.<br>Press Escape to stop.</div>
                     <div class="target">
-                        <span class="marker">Save 20%</span>
-                        <span class="fake-cta">Save 20%</span>
+                        <span class="marker">Download the calibration table</span>
+                        <span class="fake-cta">Download the calibration table</span>
                     </div>
                 </div>
                 <h3>Point</h3>
@@ -674,10 +674,10 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <div class="gesture">
                 <div class="frame" aria-hidden="true">
                     <div class="mini-form">
-                        <div class="lbl">About: Save 20%</div>
+                        <div class="lbl">About: Download the calibration table</div>
                         <div class="lbl">You are writing as Camille.</div>
-                        <div class="fld tall">The yearly toggle says &ldquo;Save 20%&rdquo;,
-                        but Team is $9 a month and $90 a year.</div>
+                        <div class="fld tall">The label on this button breaks onto two
+                        lines on a 360px phone.</div>
                         <span class="send">Send</span>
                     </div>
                 </div>
@@ -725,23 +725,23 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <pre><code><span class="cmd">$ annotepage open</span>
 <span class="cut">[... 7 header lines: tool, format, version, project, encryption, export, notes ...]</span>
 note 1
-page /pricing
-page-index okKG0TYI5LJQbftXDJqBGw
-element main:nth-of-type(1) &gt; p:nth-of-type(1) &gt; span:nth-of-type(1)
-excerpt Save 20%
+page /guide
+page-index 3a3JXOyhR7AARIKVVKX70Q
+element main:nth-of-type(1) &gt; div:nth-of-type(1) &gt; a:nth-of-type(1)
+excerpt Download the calibration table
 mode encrypted
 author Camille
-date 2026-09-01T07:02:33+00:00
+date 2026-09-01T08:34:45+00:00
 version 1.4.12
 environment staging
 viewport 1280x800
 status open
 text
-    The yearly toggle says "Save 20%", but Team is $9 a month and $90 a year. That is not 20%.
+    The label on this button breaks onto two lines on a 360px phone. It should hold on one line down to 320px.
 
 <span class="cut">[... note 2, same shape ...]</span>
 
-<span class="cmd">$ annotepage reply 1 'Measured: 12 x $9 = $108 a year against $90 billed yearly, so 16.7%, not 20%. Business is the same. The badge now reads Save 17%.'</span>
+<span class="cmd">$ annotepage reply 1 'Measured: the label needs 232px and the button offers 222px at 360px, so it wraps at 369px and below. Horizontal padding cut from 36px to 16px and the label to 16px; measured again, it holds on one line down to 317px.'</span>
 Reply written in the thread of note 1, signed "Assistant".
 
 <span class="cmd">$ annotepage resolve 1 1.4.13</span>
@@ -761,11 +761,13 @@ Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
             element, the text that was on screen, the author, the version being served
             and the viewport it was written at. That is what makes a fix possible without
             a conversation.</li>
-            <li><b>The answer is a measurement.</b> &ldquo;12 x $9 = $108 a year
-            against $90 billed yearly, so 16.7%, not 20%.&rdquo; The arithmetic was run
-            before the reply was written, and the page really changed:
-            <code>Save 20%</code> became <code>Save 17%</code>. &ldquo;Done&rdquo; would
-            have been worth nothing to the person who wrote the remark.</li>
+            <li><b>The answer is a measurement.</b> &ldquo;The label needs 232px and
+            the button offers 222px at 360px, so it wraps at 369px and below.&rdquo; Those
+            widths were read off the rendered page in a browser before the reply was
+            written, and the page really changed: the horizontal padding went from 36px to
+            16px, and a second measurement put the wrap at 317px.
+            &ldquo;Done&rdquo; would have been worth nothing to the person who wrote the
+            remark.</li>
             <li><b>Resolving states a version.</b> <code>1.4.13</code>, and that is the
             point. The client compares it with the version the site declares it is
             serving: newer than the site, and the note stays under the reviewer's eyes,
@@ -950,7 +952,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
             whatsoever, and nobody can give it back to you &mdash; no recovery, no
             security question, no escrow. There is no rotation either: a leaked salt means
             starting a fresh project and abandoning the notes already written. This is the
-            price of the sentence above, and it is not negotiable away.</p>
+            cost of the sentence above, and it is not negotiable away.</p>
         </div>
 
         <div class="facts">
@@ -1099,7 +1101,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/ROADMAP.md">Roadmap</a></li>
         </ul>
         <p>
-            annotepage is MIT-licensed. Two packages on npm:
+            annotepage is free, MIT-licensed and not for sale. Two packages on npm:
             <code>annotepage-client</code> and <code>annotepage-mcp</code>.
             <code>FORMAT.md</code> is the reference; where any other document disagrees
             with it, it is right.
