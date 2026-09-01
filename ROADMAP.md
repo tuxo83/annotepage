@@ -109,6 +109,20 @@ fixing it needs per-project numbering. Documented in FORMAT.md 2.4.
 
 ---
 
+## The priority: a community, and everything free
+
+Stated by the owner on 1 September. Everything is free and MIT; there will be
+ONE shared server anyone can use at no cost. That server must be extremely
+light, because nobody is paying for it and nobody is going to administer it.
+
+This is not a business decision deferred, it is the shape of the project today,
+and it constrains what goes on the site: see the section added to site/BRIEF.md.
+A product may come later; nothing should be built now that assumes it.
+
+The retention ceiling and open registration, both added today, exist for exactly
+this server: it stores what it cannot read, for people it will never meet, and
+without a bound it only grows.
+
 ## The public endpoint, and what it does not solve
 
 A dedicated subdomain will host a public relay, so that putting the tool on a
