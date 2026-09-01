@@ -266,11 +266,13 @@ h1 + .lead { margin-top: 1.15rem; }
 .claims li span { color: var(--dim); font-weight: 400; }
 
 /* -- The way in ---------------------------------------------------------- */
-
-/* One action on the first screen, and only one. It borrows --accent and
-   --on-accent, which are already defined on bare :root and redefined in the
-   dark block: no colour of its own, hence none that exists in one scheme
-   only. */
+/* The steps end, and this is the step after them. It takes the gap the replay
+   used to take from the steps, which is what keeps it reading as the section's
+   own conclusion rather than as a stray link under the last one. */
+.see-more { margin: clamp(2.6rem, 5.5vw, 3.4rem) 0 0; }
+/* The one action on this page. Its colours are tokens defined on bare :root and
+   redefined in the dark block: no colour of its own, hence none that exists in
+   one scheme only. */
 .cta {
     display: inline-block;
     margin: 1.7rem 0 0;
@@ -280,24 +282,6 @@ h1 + .lead { margin-top: 1.15rem; }
     padding: .55rem 1.15rem;
     text-decoration: none;
 }
-.cta:hover { text-decoration: underline; text-decoration-thickness: 2px; }
-
-/* THE WAY THROUGH TO THE SESSION, AND IT IS DELIBERATELY NOT THAT BUTTON.
-   The rule above exists because there is one action on the first screen and
-   only one; a second slab of accent further down the page would make it two,
-   and the reader would have to choose between them before knowing what either
-   does. Same shape, in outline: a door rather than an offer. It borrows
-   --control-line, which is the token for the edge of something you can press
-   and is already measured at 3.35:1 and 3.69:1 against the two grounds. */
-.cta-quiet {
-    color: var(--accent); background: var(--bg);
-    border-color: var(--control-line);
-}
-.cta-quiet:hover { border-color: var(--accent); }
-/* The steps end, and this is the step after them. It takes the gap the replay
-   used to take from the steps, which is what keeps it reading as the section's
-   own conclusion rather than as a stray link under the last one. */
-.see-more { margin: clamp(2.6rem, 5.5vw, 3.4rem) 0 0; }
 .see-more .cta { margin-top: 0; }
 
 /* -- Code snippets ------------------------------------------------------- */
@@ -795,10 +779,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
             <ul class="claims claims-next">
                 <li>End-to-end encrypted <span>&middot; in the browser</span></li>
-                <li>Many reviewers at once <span>&middot; no accounts</span></li>
+                <li>Multiple reviewers at once <span>&middot; no accounts</span></li>
             </ul>
 
-            <p style="margin-top: 1.6rem;"><a class="cta" href="#use">See how you use it</a></p>
     </div>
 </section>
 
@@ -886,7 +869,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
              The button says what is behind it, and what is behind it is that
              session. -->
         <p class="see-more">
-            <a class="cta cta-quiet" href="example-session.html">See it in detail, with a real session</a>
+            <a class="cta" href="example-session.html">See it in detail, with a real session</a>
         </p>
     </div>
 </section>
