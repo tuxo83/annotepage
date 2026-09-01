@@ -153,7 +153,7 @@ p:last-child { margin-bottom: 0; }
 
 section { padding: clamp(3rem, 8vw, 5.5rem) 0; border-top: 1px solid var(--line-soft); }
 section:first-of-type { border-top: 0; }
-.hero { padding-top: clamp(2.5rem, 7vw, 4.5rem); }
+.hero { padding-top: clamp(1.6rem, 4vw, 2.6rem); }
 
 .eyebrow {
     font-family: var(--mono); font-size: .75rem; letter-spacing: .09em;
@@ -592,31 +592,29 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         }
         .linkish:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-        /* The three gestures, said in one line each, in the hero. The full
-           section stays where it is: raising it whole pushed the first copyable
-           block from 1602px to 3421px at phone width -- measured -- which is a
-           steep cost for something that can be said in nine words. */
-        .gestures-brief {
-            display: flex; flex-wrap: wrap; gap: .5rem 1.4rem;
-            margin: 1.6rem 0 0; padding: 0; list-style: none;
-            font-size: .95rem; color: var(--dim);
-        }
-        .gestures-brief li { display: flex; align-items: baseline; gap: .45rem; }
-        .gestures-brief b { color: var(--text); font-weight: 600; }
-        .gestures-brief .n {
-            font: 600 .75rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-            color: var(--accent);
-        }
-
         /* The one line under the hero that says the page is the demo. There is
            no sample card: the page itself is what gets annotated, which is
            lighter and cannot be mistaken for something we are selling. */
         /* One line, in the hero, saying what the project is. It is a sentence and
            not a section on purpose: the page was cut from 3046 words to well under
            800 and must not grow back. */
-        .free-line { margin: 1.1rem 0 0; font-size: .95rem; color: var(--dim); max-width: 34rem; }
         .demo-hint { margin-top: 1.4rem; font-size: .95rem; color: var(--dim); max-width: 32rem; }
         .demo-hint b { color: var(--text); }
+
+        /* The prerequisite. Body type, not a badge: a badge reads as a feature
+           and this is the opposite -- it is what stops a reader who has no host. */
+        .need { margin: 1.1rem 0 0; max-width: 34rem; }
+        .need b { color: var(--text); }
+
+        /* The product's own pill floats bottom-right, over whatever is there.
+           On a 390px screen it landed on the last line of the salt warning --
+           the one sentence about permanent loss. Reserving the corner is a
+           page-side patch; the product should not cover text on anyone's site,
+           which is recorded in ROADMAP. */
+        @media (max-width: 44rem) {
+            .callout { padding-bottom: 3.6rem; }
+            body { padding-bottom: 4.5rem; }
+        }
 </style>
 <script type="application/ld+json">
 {
@@ -652,40 +650,33 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <!-- 1. WHAT IT DOES ==================================================== -->
 <section class="hero" id="top">
     <div class="wrap">
-        <p class="eyebrow">Review notes on a web page</p>
         <h1>Annotate a page. <br>The assistant answers in the thread.</h1>
+
         <p class="lead">
-            Someone reviewing a staging site clicks what they see &mdash; a heading, a
-            button, a link &mdash; and writes what is wrong. An assistant reads the
-            notes, fixes the code, <strong>replies saying what it measured</strong>, and
-            resolves it with the version the fix ships in.
+            Someone reviewing a page writes what is wrong with it. An assistant reads
+            the note, fixes the code, <strong>replies saying what it measured</strong>,
+            and resolves it with the version the fix ships in.
+        </p>
+
+        <!-- THE PREREQUISITE, IN BODY TYPE, ABOVE EVERYTHING ELSE.
+             Three readers looking only at screenshots each found this fact late,
+             as a pale link 1300px down, and each asked for it here. It is not a
+             feature and must never be worded as one: it is what decides whether
+             the reader can finish at all. The day api.annotepage.com answers,
+             this paragraph is the one line to change. -->
+        <p class="need">
+            <b>You run the server.</b> One PHP directory on a host of your own &mdash;
+            there is no shared server yet. Free and open source, MIT.
         </p>
 
         <ul class="claims">
             <li>Free <span>&middot; MIT</span></li>
             <li>Open source</li>
-            <li>Self-hostable</li>
             <li>End-to-end encrypted <span>&middot; in the browser</span></li>
         </ul>
 
-        <p class="free-line">Free, and not for sale. Run it on your own server; a
-        shared one, open to everybody at no cost, comes next.</p>
 
-        <ul class="gestures-brief">
-            <li><span class="n">01</span> <b>Open</b> one button on the page</li>
-            <li><span class="n">02</span> <b>Point</b> at what is wrong</li>
-            <li><span class="n">03</span> <b>Write</b> the remark</li>
-        </ul>
-
-        <p><a class="cta" href="#install">Put it on a page</a></p>
-
-        <p class="demo-hint">
-            <b>This page is running annotepage.</b> Open it, bottom right, and point
-            at anything. Your note goes nowhere: no server behind this, and a reload
-            forgets it.
-        </p>
-
-        <div class="mock" style="margin-top: 2.4rem;">
+        <div class="mock" style="margin-top: 1.6rem;">
             <div class="mock-bar">
                 <b>Review notes</b>
                 <span class="x">Close</span>
@@ -708,6 +699,13 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 </div>
             </div>
         </div>
+
+        <p><a class="cta" href="#install">Put it on a page</a></p>
+
+        <p class="demo-hint">
+            <b>This page is running annotepage.</b> Open it, bottom right, and point at
+            anything &mdash; the note stays in this tab.
+        </p>
 
         <p class="small dim" style="margin-top: 1rem; max-width: 34rem;">
             That thread is real:
@@ -757,45 +755,13 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         <div class="step">
             <div class="step-head">
                 <span class="step-num">01</span>
-                <h3>Take the salt, and save it</h3>
+                <h3>Paste this tag</h3>
             </div>
             <div class="step-body">
                 <p>
-                    Generated here, in your browser. This page makes no network
-                    request, so it has never existed anywhere else.
-                </p>
-
-                <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">your salt &mdash; save this before anything else</span>
-                        <button class="copy" type="button" data-copy="snip-salt">Copy</button>
-                    </div>
-<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
-                </div>
-
-                <p class="aside-line">
-                    Project id <code id="the-id">&mdash;</code>, derived from that salt.
-                    It is public, and the salt cannot be worked back from it.
-                    <button type="button" class="linkish" id="regenerate">Generate another</button>
-                </p>
-
-                <div class="callout">
-                    <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow, no
-                    rotation. Put it where your team keeps its passwords, now &mdash;
-                    <a href="how-it-works.html#no-recovery">what that costs, in full</a>.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="step">
-            <div class="step-head">
-                <span class="step-num">02</span>
-                <h3>Paste the tag it gives you</h3>
-            </div>
-            <div class="step-body">
-                <p>
-                    At the end of <code>&lt;body&gt;</code>, on the pages to annotate. The
-                    project id is filled in.
+                    At the end of <code>&lt;body&gt;</code>, on the pages to annotate.
+                    The project id below was generated in your browser a moment ago and
+                    is already in it; only <code>data-server</code> is yours to fill in.
                 </p>
 
                 <div class="snip">
@@ -820,6 +786,37 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 </p>
             </div>
         </div>
+        <div class="step">
+            <div class="step-head">
+                <span class="step-num">02</span>
+                <h3>Save the salt that made it</h3>
+            </div>
+            <div class="step-body">
+                <p>
+                    Generated here, in your browser, and sent nowhere. This page
+                        fetches one thing, the annotepage script itself; the salt
+                        below has never left this tab and never will.lass="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">your salt &mdash; save this before anything else</span>
+                        <button class="copy" type="button" data-copy="snip-salt">Copy</button>
+                    </div>
+<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
+                </div>
+
+                <p class="aside-line">
+                    Project id <code id="the-id">&mdash;</code>, derived from that salt.
+                    It is public, and the salt cannot be worked back from it.
+                    <button type="button" class="linkish" id="regenerate">Generate another</button>
+                </p>
+
+                <div class="callout">
+                    <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow, no
+                    rotation. Put it where your team keeps its passwords, now &mdash;
+                    <a href="how-it-works.html#no-recovery">what that costs, in full</a>.</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 </section>
 
@@ -1017,8 +1014,12 @@ Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
     'use strict';
 
     /* THE SALT IS GENERATED HERE, IN THE READER'S BROWSER, AND GOES NOWHERE.
-       This page issues no network request at all -- that is checked -- so
-       there is no path by which the value below could reach us, or anyone.
+       This page fetches exactly one thing, the annotepage script itself, and
+       nothing here transmits -- so there is no path by which the value below
+       could reach us, or anyone. (It used to say "no network request at all",
+       which stopped being true the day the page started running the product.
+       A claim about what is sent has to be re-read every time the page gains
+       something that sends.)
        It is the same computation the client's own setup screen performs; it
        happens here so that a reader can obtain a project before installing
        anything, instead of having to stand up a server first in order to be
