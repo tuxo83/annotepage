@@ -45,12 +45,6 @@ permissions:
   id-token: write
   contents: read
 
-# Two tags pushed one after the other must not cross in the registry; and we do
-# not cancel a publication in flight, it cannot be replayed.
-concurrency:
-  group: publish-${{ matrix.package }}
-  cancel-in-progress: false
-
 jobs:
   publish:
     strategy:
@@ -65,6 +59,15 @@ jobs:
             directory: mcp
 
     name: ${{ matrix.package }}
+
+    # Inside the job, not at workflow level: `matrix` does not exist up there,
+    # and referring to it makes GitHub refuse to read the file at all -- the run
+    # then appears under the file's PATH instead of its name, which is the only
+    # clue you get. Two pushes must not cross in the registry for the SAME
+    # package; the two packages may go out at once.
+    concurrency:
+      group: publish-${{ matrix.package }}
+      cancel-in-progress: false
     # GitHub-hosted runner: trusted publishing refuses self-hosted runners, it
     # would not know who it is talking to.
     runs-on: ubuntu-latest
