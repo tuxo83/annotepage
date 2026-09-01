@@ -209,3 +209,35 @@ the sign the protocol was cut in the right place.
 two a reader wants: "you control the site" -> the tag; "you do not" -> the
 extension. Offering both with equal weight on the first screen would put a
 choice in front of someone who has not yet understood what the tool does.
+
+---
+
+## Languages
+
+The tool ships in English and the interface strings are overridable: a French
+set is in `client/labels/fr.json`, loaded through `data-labels`. That covers the
+reviewer's screen, which is the part a non-English-speaking team actually reads.
+
+What is NOT covered, and should be, in this order:
+
+1. **More label sets, contributed.** The mechanism exists and costs nothing per
+   language: a JSON file of 101 keys. What is missing is a place to put them and
+   a line on the site saying they are welcome. Cheapest win here by a distance.
+2. **The setup screen and the error messages.** Some of what the client says in
+   a bad situation -- no secure context, refused origin, unreadable note -- comes
+   from the server, in English, and no label file can reach it. A reviewer who
+   hits one of those meets English at the worst moment.
+3. **The site itself.** English only, deliberately: it addresses developers
+   choosing a tool, and that audience reads English. Translating it would double
+   the maintenance of the one artefact that changes most. Revisit only if usage
+   shows otherwise.
+4. **The assistant's replies.** The MCP writes in whatever language the
+   assistant answers in, which is right and needs nothing -- except that a note
+   written in French and answered in English reads badly in the thread. Worth a
+   sentence in the MCP readme telling the assistant to answer in the language of
+   the note it is answering.
+
+**What must never be translated:** the protocol. Column names, export keys,
+action names and configuration keys stay English, whatever the interface shows.
+That is the whole point of CONVENTIONS.md, and a localised wire format would
+make two installations unable to read each other.
