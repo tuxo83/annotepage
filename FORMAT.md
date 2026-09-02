@@ -129,6 +129,57 @@ The domain and an optional path prefix define the **scope** of the project:
 which pages belong to it, which origins are allowed to consume it. That is
 configuration (§6.2), never cryptography.
 
+**And this is what forbids the one derivation that looks obvious: deriving the
+key from the domain name.** The client always talks to a different origin from
+the site under review, so the browser writes an `Origin` header on every
+request and the relay reads it (§6.2): a relay therefore knows the domain of
+every project writing to it. A key that were a function of the domain would be
+a key the relay can compute, and with it the project id, and with both every
+row it stores — without even loading the page. That is plain mode sold as
+encrypted, and it is worse than plain mode, which is at least honest.
+
+### 1.5 Where the key comes from: the tag, or the browser
+
+The key reaches the client one of two ways, and **which one is used is the
+mode**. It is carried by the tag, and by nothing else — there is no stored
+row, no column and no flag anywhere in this format that records it.
+
+| On the tag | What it means |
+| --- | --- |
+| `data-key` | the 43 characters of the key itself. The project is **public**: whoever can load the page holds the key. The client derives the project id from it (§1.3, label `id`), asks for nothing, and writes nothing to `localStorage`. |
+| `data-project` | the 22 characters of the id alone. The project is **confidential**: the key is asked for once per browser and per origin (§1.1), and until it is there the client fetches nothing and decrypts nothing. |
+
+**The id is redundant in the public form and is dropped from it.** `derive()`
+already produces it from the key, so writing both would write the same fact
+twice in a tag people copy by hand — where the two can disagree, silently, in
+a project whose notes nobody can read.
+
+A tag that carries **both** is therefore not a third mode: the client derives
+the id from the key and compares it with the declared one. Equal, it proceeds;
+different, it **refuses**, exactly as a wrongly pasted key is refused (§1.2)
+— nothing sent, nothing decrypted — and it does not pick a winner. One of the
+two is a typo, and guessing buries it.
+
+A `data-key` that is not 43 base64url characters is refused the same way, and
+**said**: somebody wrote that attribute on purpose, and a tag that quietly
+does nothing is the failure nobody finds.
+
+**This is not the `mode` of §3.4.** The two words name two different things and
+they do not interact: a note written on a public key is an ordinary
+`mode = encrypted` row, with the same envelope, the same AAD and the same blind
+index. Nothing in the stored rows distinguishes a public project from a
+confidential one — the server cannot tell them apart, and neither can an
+export. Only the page says it, because only the page carries the key.
+
+What it costs, and it is irreversible: the key is served to whoever the page is
+served to, search engines and archive sites included. A project made public
+cannot be made private again — making it private means a new key, therefore a
+new project id, therefore a new tag, and the old notes stay behind.
+
+What it opens is **not mainly reading**. The key gives read AND write, and this
+format has no reader role (§6.3): a public-key page is a page anybody who can
+open it can also post to.
+
 ---
 
 ## 2. The schema of a note
@@ -358,6 +409,10 @@ Reading rules:
 - `mode` absent or empty: the row comes from format 1, it counts as `plain`;
 - `mode` unknown: the row is **skipped**, with a count displayed. Neither
   guessed, nor silently rendered empty.
+
+This `mode` is about the **envelope**, and it is not the public/confidential
+choice of §1.5. A note written on a project whose key is in the tag is a
+`mode = encrypted` row like any other; nothing here changes.
 
 The mode is decided **at install time** and applies to the notes written
 afterwards. Encryption is **on by default**. It can only be switched off when
