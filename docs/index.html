@@ -1572,7 +1572,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
      The tag now points at the public CDN copy of the published package, with
      the digest of the file that CDN actually serves. The self-hosted copy at
-     /annotepage-client-2.0.1.js stays where it is: this page's own live demo
+     /annotepage-client-2.0.2.js stays where it is: this page's own live demo
      loads it same-origin, and moving it would break the demo, not the tag. -->
 <section id="install">
     <div class="wrap">
@@ -1660,13 +1660,13 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         <div class="bar-line w45"></div>
                     </div>
                     <div class="nt-panel nt-form">
-                        <p class="fm-title">The salt of this project is needed</p>
+                        <p class="fm-title">The key of this project is needed</p>
                         <p class="fm-help">The notes of this project are encrypted in
-                        your browser. Without the project salt, this browser can
+                        your browser. Without the project key, this browser can
                         neither read them nor write any.</p>
-                        <p class="fm-label">The project salt (43 characters)</p>
+                        <p class="fm-label">The project key (43 characters)</p>
                         <p class="fm-area fm-key"><span id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</span></p>
-                        <p class="fm-acts"><span class="fm-send">Use this salt</span></p>
+                        <p class="fm-acts"><span class="fm-send">Use this key</span></p>
                     </div>
                 </div>
 
@@ -1930,7 +1930,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
      THE PRODUCT, RUNNING ON ITS OWN PAGE.
 
      This is not an illustration and not a copy: it is
-     annotepage-client-2.0.1.js, byte for byte the file the tag above loads
+     annotepage-client-2.0.2.js, byte for byte the file the tag above loads
      from the CDN, switched on. It is served from this origin and not from the
      CDN because the demo needs it same-origin. The page is therefore its own
      smoke test -- if this stops working, the product is broken and we want to
@@ -1997,7 +1997,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     };
 }());
 </script>
-<script src="/annotepage-client-2.0.1.js"
+<script src="/annotepage-client-2.0.2.js"
         data-server="/DEMO/api.php"
         data-project="Xt8fTaJo1culOstdfwmWkQ"
         defer></script>

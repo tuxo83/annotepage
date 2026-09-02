@@ -452,10 +452,10 @@
             '{n} notes were written by a more recent version of annotepage and '
             + 'could not be read.',
         'read.unreadable_one':
-            '1 note could not be decrypted. The salt in this browser may not be '
+            '1 note could not be decrypted. The key in this browser may not be '
             + 'the one it was written with.',
         'read.unreadable_n':
-            '{n} notes could not be decrypted. The salt in this browser may not be '
+            '{n} notes could not be decrypted. The key in this browser may not be '
             + 'the one they were written with.',
         'read.unknown_one':
             '1 note is written in a mode this tool does not know, and was not '
@@ -470,52 +470,52 @@
         'marker.n': '{n} notes here',
 
         /* -- The salt: the only secret, and it cannot be recovered ---------- */
-        'salt.title': 'The salt of this project is needed',
+        'salt.title': 'The key of this project is needed',
         'salt.help':
             'The notes of this project are encrypted in your browser. Without the '
-            + 'project salt, this browser can neither read them nor write any. Ask '
+            + 'project key, this browser can neither read them nor write any. Ask '
             + 'whoever installed the tool for it, and paste it below. It will be '
             + 'remembered by this browser, for this site.',
-        'salt.label': 'The project salt (43 characters)',
-        'salt.confirm': 'Use this salt',
-        'salt.empty': 'Paste the salt before confirming.',
+        'salt.label': 'The project key (43 characters)',
+        'salt.confirm': 'Use this key',
+        'salt.empty': 'Paste the key before confirming.',
         'salt.shape':
-            'This is not a salt: 43 characters are expected, from A-Z a-z 0-9 - _, '
+            'This is not a key: 43 characters are expected, from A-Z a-z 0-9 - _, '
             + 'with no space and no decorative dash. Copy it in one block.',
         'salt.wrong':
-            'This salt is not the one for this project. Nothing was sent, nothing '
-            + 'was decrypted. Check that you are pasting the salt of the right '
+            'This key is not the one for this project. Nothing was sent, nothing '
+            + 'was decrypted. Check that you are pasting the key of the right '
             + 'project.',
         'salt.origin_changed':
-            'This salt is remembered per browser AND per domain. The day staging '
+            'This key is remembered per browser AND per domain. The day staging '
             + 'becomes production, it has to be pasted once more on the new domain '
             + '-- the notes themselves do not move.',
         'salt.not_kept':
-            'This browser refuses to remember the salt (private browsing, or '
-            + 'storage blocked). The tool works for this page, but the salt will '
+            'This browser refuses to remember the key (private browsing, or '
+            + 'storage blocked). The tool works for this page, but the key will '
             + 'have to be pasted again on the next load.',
-        'salt.replace': 'Paste another salt',
-        'salt.forget': 'Forget the salt on this browser',
+        'salt.replace': 'Paste another key',
+        'salt.forget': 'Forget the key on this browser',
 
         /* -- Setup --------------------------------------------------------- */
         'setup.title': 'Install annotepage on this site',
-        'setup.generate': 'Generate a salt and create the project',
+        'setup.generate': 'Generate a key and create the project',
         'setup.warning_title': 'Read this before continuing',
         'setup.warning':
-            'The salt below is the ONLY secret of the project, and nobody else has '
+            'The key below is the ONLY secret of the project, and nobody else has '
             + 'it: not the server, not the author of the tool, nobody you can ask. '
-            + 'SALT LOST = NOTES LOST, for good, with no recovery. Put it away now, '
+            + 'KEY LOST = NOTES LOST, for good, with no recovery. Put it away now, '
             + 'where your team keeps its passwords, before continuing.',
-        'setup.salt': 'The project salt -- keep it',
+        'setup.salt': 'The project key -- keep it',
         'setup.project': 'The project id -- public, it goes into the page',
         'setup.tag': 'The tag to paste at the end of <body>, on the pages to annotate',
         'setup.server': 'To declare in the server configuration',
         'setup.copy': 'Copy',
         'setup.copied': 'Copied',
         'setup.copy_failed': 'Select the text and copy it by hand.',
-        'setup.continue': 'I have put the salt away, continue',
+        'setup.continue': 'I have put the key away, continue',
         'setup.done':
-            'The salt is remembered by this browser. Paste the tag above into the '
+            'The key is remembered by this browser. Paste the tag above into the '
             + 'pages, declare the project on the server, then reload this page: the '
             + 'tool takes over.',
         'setup.no_server':
