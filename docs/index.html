@@ -269,7 +269,6 @@ section:first-of-type { border-top: 0; }
 h2 + .lead, h2 + p, h2 + .split { margin-top: .9rem; }
 .route { font-size: .95rem; color: var(--dim); }
 .route a { color: var(--accent); }
-.install-more { margin-top: clamp(2rem, 4vw, 3rem); }
 /* The lead sits under a headline, not welded to it. */
 h1 + .lead { margin-top: 1.15rem; }
 
@@ -744,7 +743,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    interface and every pixel of it is legibility. A short sentence beside a
    large picture is the shape this section is, so the layout says it. */
 @media (min-width: 48rem) {
-    .use-steps > li, .see-more { grid-template-columns: minmax(0, .62fr) minmax(0, 1fr); }
+    .use-steps > li { grid-template-columns: minmax(0, .62fr) minmax(0, 1fr); }
 }
 
 /* A STATED WIDTH, ONCE THERE IS ENOUGH ROOM TO STATE ONE. A fraction is the
@@ -760,7 +759,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    hero and the install split into two columns as well -- one place where
    this page decides it is wide. */
 @media (min-width: 78rem) {
-    .use-steps > li, .see-more { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
+    .use-steps > li { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
 }
 .use-steps .cap {
     margin: 0; display: flex; align-items: baseline; gap: .6rem;
@@ -1436,8 +1435,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     <div class="wrap">
         <h2>How you install it &mdash; the quick way</h2>
         <p class="route">
-            Several ways in; this is the fastest, on the free shared server.
-            <a href="install.html">See the others</a>.
+            Several ways in. This is the fastest: the free shared server, no
+            account.
         </p>
 
         <!-- THREE STEPS, THE SAME SHAPE AS "HOW YOU USE IT" ABOVE.
@@ -1505,15 +1504,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 claude mcp add annotepage -- annotepage-mcp</code></pre>
                 </div>
 
-                <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">the commands it gains</span>
-                        <button class="copy" type="button" data-copy="snip-cli">Copy</button>
-                    </div>
-<pre id="snip-cli"><code>annotepage open
-annotepage reply &lt;id&gt; &lt;text&gt;
-annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
-                </div>
                 </div>
             </li>
 
@@ -1553,11 +1543,8 @@ annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
             </li>
         </ol>
 
-        <p class="small dim install-more">
-            Installing it somewhere else &mdash; Next.js, Nuxt, Rails, Django, Laravel,
-            Symfony, WordPress &mdash; or running the server yourself:
-            <a href="install.html">ways to install it</a>. Where the notes live and what
-            the server still sees: <a href="how-it-works.html">how it works</a>.
+        <p class="see-more">
+            <a class="more" href="install.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
     </div>
 </section>
