@@ -338,6 +338,56 @@ included, since the browser hands it the Origin on every request.
 Same simplicity for the user either way: no password to invent, nothing to
 paste. One of the two keeps the promise the sentence makes.
 
+### The mode is not chosen at first use -- it is chosen when the tag is made
+
+Proposed: on install, look for existing notes; if there are some, test the key
+and ask for it if it is wrong; if there are none, show a screen asking the
+operator to choose between a public key and a confidential one, and perhaps
+write a seed note so the choice "occupies the ground".
+
+The first half is what the client already does. The second half cannot work,
+and the reason removes the need for it.
+
+**The project id IS the key, hashed.** A tag exists only because a key was
+generated first, and choosing the other mode means a different key, therefore
+a different project id, therefore a different tag on every annotated page. So
+there is no moment where a project exists, is empty, and is waiting to be told
+what it is. The choice was made when the tag was made, and it is as
+irreversible as the key -- which is exactly what the page must say at the
+moment of choosing, and nowhere else.
+
+Which also answers the seed note: there is nothing to hold. A seed note would
+be a real row -- stored, counted against the project cap, present in every
+export, and needing a new kind in the format so nobody mistakes it for a
+remark -- to record something the tag already states. Not worth a format
+concept.
+
+**And the client does not need to look for existing notes to know the mode.**
+It cannot, before it has the key: the page index is HMAC(index key, path), so
+without the key there is no question to ask the server. It does not have to.
+The tag carries `data-key` or it does not, and that is the mode.
+
+### What a public key actually opens, and it is not mainly reading
+
+Worth stating where the choice is offered, because the obvious half is the
+less dangerous one. The key gives read AND write -- there is no reader role in
+this format. So a public-key project is a page anybody who opens it can also
+POST to.
+
+On a staging site behind a login, that is a team. On a public production page,
+it is the internet, and two things follow that a warning has to name:
+
+- the project's note cap is the only thing between that and a full database,
+  and the relay's rate limit is per IP, which is not an answer to more than one
+  of them;
+- **a copied tag writes into your project**. The domain lock is what stops
+  that, and on a relay with `open_registration` a project has no declared
+  origins to match, so it does not apply. Someone who lifts a public tag from
+  your source writes into your notes from their own site.
+
+Neither is a reason not to build the public mode. Both are reasons the
+sentence next to the choice cannot only be about who can read.
+
 ### What is NOT settled
 
 Whether the shared relay should carry public projects at all. (b) keeps the
