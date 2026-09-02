@@ -178,7 +178,8 @@ main .wrap > * { max-width: var(--measure); }
    (The replay was the other one, and it wanted every pixel: its terminal is
    the pane this column was widened for in the first place. It is on
    example-session.html now, and so is the rule that let it span.) */
-main .wrap > .use-steps { max-width: none; }
+main .wrap > .use-steps,
+main .wrap > .install-note { max-width: none; }
 /* And the button under them, for the same reason and only from 48rem up: it
    is laid out on the steps' own two columns down there (see .see-more), and a
    measure meant for sentences would cap the grid at 704px and put the button
@@ -803,7 +804,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    interface and every pixel of it is legibility. A short sentence beside a
    large picture is the shape this section is, so the layout says it. */
 @media (min-width: 48rem) {
-    .use-steps > li { grid-template-columns: minmax(0, .62fr) minmax(0, 1fr); }
+    .use-steps > li, .install-note { grid-template-columns: minmax(0, .62fr) minmax(0, 1fr); }
+    .install-note { display: grid; gap: clamp(.9rem, 3.4vw, 2.6rem); }
+    .install-note > .install-other { grid-column: 2; }
 }
 
 /* A STATED WIDTH, ONCE THERE IS ENOUGH ROOM TO STATE ONE. A fraction is the
@@ -819,7 +822,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    hero and the install split into two columns as well -- one place where
    this page decides it is wide. */
 @media (min-width: 78rem) {
-    .use-steps > li { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
+    .use-steps > li, .install-note { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
+    .install-note { display: grid; gap: clamp(.9rem, 3.4vw, 2.6rem); }
+    .install-note > .install-other { grid-column: 2; }
 }
 .use-steps .cap {
     margin: 0; display: flex; align-items: baseline; gap: .6rem;
@@ -1639,8 +1644,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <p class="cap"><span class="n"></span> You paste one tag</p>
                     <p class="say">
                         At the end of <code>&lt;body&gt;</code>. Nothing to build, no
-                        account. The key is in it, so anyone who can open the page
-                        can read the notes &mdash; and write them.
+                        account. Everyone who opens the page can annotate it.
                     </p>
                 </div>
 
@@ -1660,8 +1664,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <div>
                     <p class="cap"><span class="n"></span> You plug in your assistant, and that is all</p>
                     <p class="say">
-                        Two commands, once, on your machine &mdash; and the same key,
-                        in its configuration file.
+                        Two commands, once, on your machine &mdash; plus the
+                        <code>data-key</code> line above, in its configuration
+                        file.
                     </p>
                 </div>
 
@@ -1676,11 +1681,17 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             </li>
         </ol>
 
+        <!-- IN THE BLOCKS' COLUMN, not across the gutter. The chapter has two
+             axes -- a sentence at the left edge, a block beside it -- and this
+             note started at the first and ended past the second, aligning with
+             neither. It is about the tag, so it stands where the tag stands. -->
+        <div class="install-note">
         <p class="install-other">
             <span class="tick" aria-hidden="true">&#9432;</span>
-            This is the open mode. A secure one exists, where the key stays out
-            of the page.
+            Anyone who can open your page can read these notes and add their
+            own. Want them private? There is another way.
         </p>
+        </div>
         <p class="see-more">
             <a class="more" href="install.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
