@@ -299,6 +299,45 @@ the key is IN the page -- and the page is the one thing the server never sees.
 The server keeps receiving an id and ciphertext, and keeps being unable to open
 either.
 
+### Saying it out loud: "encrypted, and the key is public"
+
+The owner's refinement, and it settles the honesty question: keep everything
+encrypted exactly as it is, and when the key was not chosen by a person, SAY
+SO -- end-to-end encrypted, and the key is public. A small standing mention in
+the tool, not a footnote on a website.
+
+That is the right sentence and it should be built. It removes the objection
+that a public-key project would be "sold as encrypted": nothing is sold, the
+tool says what it has.
+
+Three behaviours go with it, and the first two already exist:
+
+- notes exist and the key in this browser derives a DIFFERENT project id: the
+  client asks for the key. That is `start()` in 90-boot.js today;
+- a key is pasted that does not derive the declared id: refused, with nothing
+  sent and nothing decrypted. Today's `salt.wrong`;
+- **new**: when the project is running on the public key, the tool says so
+  where the notes are, every time, not once. "Encrypted, and the key of this
+  project is public: anyone who can open this page can read these notes."
+
+WHERE THE PUBLIC KEY COMES FROM IS STILL THE WHOLE QUESTION, and the answer is
+the tag, not the domain -- on the owner's own criterion.
+
+His goal, in his words, is that the notes be protected by "the same thing that
+protects the site: being able to reach it". A key written into the tag does
+exactly that: to read the notes you must be able to load the page, so a
+staging site behind HTTP auth, a VPN or an IP allowlist protects its review
+notes with the same lock that protects itself.
+
+A key derived from the domain BREAKS that, and not marginally: the hostname of
+a private staging site is not a secret -- it is in DNS, in certificate
+transparency logs, in a link somebody pasted -- and anyone holding it could
+read every note of that project without ever reaching the site. The relay
+included, since the browser hands it the Origin on every request.
+
+Same simplicity for the user either way: no password to invent, nothing to
+paste. One of the two keeps the promise the sentence makes.
+
 ### What is NOT settled
 
 Whether the shared relay should carry public projects at all. (b) keeps the
