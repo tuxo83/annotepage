@@ -388,6 +388,43 @@ it is the internet, and two things follow that a warning has to name:
 Neither is a reason not to build the public mode. Both are reasons the
 sentence next to the choice cannot only be about who can read.
 
+### The tag carries the key, OR the id -- and that is the mode
+
+The owner's unease, and it is the useful kind: "either you put the project id
+in the tag or you don't, and if you do it asks for the key -- something bothers
+me there." What bothers him is that the tag was being asked to carry an
+identity somebody has to create elsewhere, by two paths that behave nothing
+alike.
+
+It resolves into one rule, and the rule IS the choice:
+
+    data-key      the key itself. Public: whoever loads the page reads and
+                  writes. Nothing is asked, nothing is stored, no first-run
+                  screen.
+    data-project  the id alone. Confidential: the key is asked for once per
+                  browser, and until it is there the client fetches nothing
+                  and decrypts nothing.
+    data-setup    neither, temporarily: create the project on your own site,
+                  then replace the tag with one of the two above.
+
+**The id becomes redundant in the public form, and must be dropped from it.**
+`derive()` already produces the id from the key -- HKDF label `id`, first 16
+bytes -- so a client given `data-key` computes `data-project` itself, in the
+line it already runs. Writing both would mean writing the same fact twice, in a
+tag people copy by hand, where the two can disagree.
+
+That is not hypothetical: keeping the printed id equal to the id inside the
+generated tag is a thing the landing page has to check on every regeneration,
+and it is the kind of pair that goes wrong silently -- a tag whose notes nobody
+can read, with nothing to see. In the public form the class of bug disappears
+rather than being guarded.
+
+So the sentence next to the choice writes itself, and it is about the tag
+rather than about a setting:
+
+    the tag carries the key    -> anyone who can open the page
+    the tag carries the id     -> only the people you hand the key to
+
 ### What is NOT settled
 
 Whether the shared relay should carry public projects at all. (b) keeps the
