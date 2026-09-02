@@ -304,14 +304,18 @@ h1 + .lead { margin-top: 1.15rem; }
 .claims li span { color: var(--dim); font-weight: 400; }
 
 /* -- The way in ---------------------------------------------------------- */
-/* The steps end, and this is the step after them. Three numbers, measured at
-   1456: the steps stand 87px apart, the section's own padding leaves 88px
-   under this line, and a caption sits about 26px under its picture. 1.6rem
-   was that caption distance, and hard under the third frame it read as a
-   label for that ONE picture rather than as the end of all three. 2.6rem is
-   42px: past the caption, well short of the step break, and it halves a band
-   that used to be 26 above against 88 below. */
-.see-more { margin: 2.6rem 0 0; }
+/* Far enough from the third step to be a different kind of thing.
+
+   Measured at 1456: the three steps stand 88 and 89px apart, and the section's
+   own padding leaves 88px under this button. At 2.6rem the gap above it was
+   37px -- LESS than the distance between two steps -- so it read as glued to
+   step 03, a fourth item somebody forgot to number. It is not one: it is the
+   way out of the chapter.
+
+   It now tracks the step gap instead of undercutting it: 95 above against 88
+   below at 1456, 91/88 at 1440, 81/88 at 1280, 69/88 at 1100, 47/48 at 390 --
+   at or past the distance between two steps at every width measured. */
+.see-more { margin: clamp(3.2rem, 6.6vw, 6.2rem) 0 0; }
 
 /* AND IT IS CENTRED UNDER THE THREE STEPS, on the page's own axis.
 
