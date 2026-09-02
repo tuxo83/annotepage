@@ -331,53 +331,56 @@ h1 + .lead { margin-top: 1.15rem; }
    Nothing left to undo on a rename: the paragraph centres its own inline
    content, whatever class the anchor ends up carrying. */
 .see-more { text-align: center; }
-}
 
 /* -- Code snippets ------------------------------------------------------- */
 
 .snip {
+    position: relative;            /* the copy button anchors to this */
     margin: 1.3rem 0;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--bg-code);
     overflow: hidden;
 }
-.snip-head {
-    display: flex; align-items: center; gap: .75rem;
-    padding: .4rem .5rem .4rem .8rem;
-    border-bottom: 1px solid var(--line-soft);
-    background: var(--bg-soft);
-    min-height: 2.55rem;
-}
-.snip-name {
-    font-family: var(--mono); font-size: .74rem; letter-spacing: .04em;
-    text-transform: uppercase; color: var(--dim);
-    /* min-width: 0 is what actually lets it shrink: a flex item refuses to go
-       below its content width without it, and the Copy button is pushed off a
-       360px screen.
+/* THE HEADER ROW IS GONE, and with it the little label above each block.
 
-       It WRAPS, it is not cut. An ellipsis here turned "setup -- remove once
-       the project exists" into "setup -- remove once the projec..." at 360px,
-       which keeps the word and eats the instruction. Measured: every name
-       fits on one line down to 412px, and takes two below that. */
-    flex: 0 1 auto; min-width: 0;
-    overflow-wrap: anywhere;
-}
+   It named what the block was -- "the whole tag", "plug it in" -- next to a
+   numbered step that had just said the same thing in a full sentence. Two
+   captions for one object, and the uppercase one was the less informative.
+
+   Which leaves the copy button with nowhere to sit but the block itself, and
+   that is the shape people already know: an icon in the top right corner, two
+   overlapping squares, becoming a tick when it worked. It is a button and not
+   a decoration -- it keeps a border, a hit area of 30px, and a focus ring.
+
+   The label lives in aria-label rather than in text, so the announcement still
+   changes ("Copy" -> "Copied"), and #copy-status says it out loud as before. */
 .copy {
-    margin-left: auto; flex: none;
-    font: inherit; font-size: .78rem; font-weight: 600; font-family: var(--sans);
-    color: var(--text); background: var(--bg);
+    position: absolute; top: .5rem; right: .5rem; z-index: 1;
+    display: grid; place-items: center;
+    width: 1.9rem; height: 1.9rem; padding: 0;
+    color: var(--dim); background: var(--bg);
     border: 1px solid var(--control-line); border-radius: 7px;
-    padding: .3rem .7rem; cursor: pointer;
-    min-height: 1.9rem;
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease;
 }
-.copy:hover { border-color: var(--accent); color: var(--accent); }
+.copy svg {
+    width: 1.05rem; height: 1.05rem;
+    fill: none; stroke: currentColor; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.copy .i-done { display: none; }
+.copy:hover { color: var(--accent); border-color: var(--accent); }
 .copy[data-state="done"] { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.copy[data-state="done"] .i-copy { display: none; }
+.copy[data-state="done"] .i-done { display: block; }
 .copy[data-state="failed"] { color: var(--warn); border-color: var(--warn); }
 
 .snip pre {
     margin: 0;
-    padding: .95rem 1rem;
+    /* Room on the right for the button, so a long line scrolls UNDER it rather
+       than stopping short of it. */
+    padding: .95rem 3rem .95rem 1rem;
     overflow-x: auto;              /* the frame scrolls, never the page */
     -webkit-overflow-scrolling: touch;
 }
@@ -1081,8 +1084,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     --t-dim:     #999999;
 }
 
-}
-
 
         /* The composer names its author so the reader recognises her in the
            thread three frames below. One line, not the client's full
@@ -1464,10 +1465,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
                 <div>
                 <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">the whole tag</span>
-                        <button class="copy" type="button" data-copy="snip-tag">Copy</button>
-                    </div>
+                    <button class="copy" type="button" data-copy="snip-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.2" y="2.8" width="10" height="12" rx="2.2"/><path d="M12.8 17.2H4.8a2 2 0 0 1-2-2V6.4"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"
         data-server="https://api.annotepage.com/api.php"
         data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
@@ -1496,10 +1494,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
                 <div>
                 <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">plug it in</span>
-                        <button class="copy" type="button" data-copy="snip-mcp">Copy</button>
-                    </div>
+                    <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.2" y="2.8" width="10" height="12" rx="2.2"/><path d="M12.8 17.2H4.8a2 2 0 0 1-2-2V6.4"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-mcp"><code>npm install -g annotepage-mcp
 claude mcp add annotepage -- annotepage-mcp</code></pre>
                 </div>
@@ -1520,10 +1515,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
 
                 <div>
                 <div class="snip">
-                    <div class="snip-head">
-                        <span class="snip-name">your salt &mdash; save it now</span>
-                        <button class="copy" type="button" data-copy="snip-salt">Copy</button>
-                    </div>
+                    <button class="copy" type="button" data-copy="snip-salt" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.2" y="2.8" width="10" height="12" rx="2.2"/><path d="M12.8 17.2H4.8a2 2 0 0 1-2-2V6.4"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
                 </div>
 
@@ -1615,9 +1607,10 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
     var timers = new WeakMap();
 
     var announce = function (button, ok) {
-        var original = button.getAttribute('data-label') || button.textContent;
-        button.setAttribute('data-label', original);
-        button.textContent = ok ? 'Copied' : 'Select and copy';
+        /* The button has no text any more, it has an icon. What changes is the
+           accessible name and the state attribute the icons key off -- a screen
+           reader hears the same thing it heard when this was a word. */
+        button.setAttribute('aria-label', ok ? 'Copied' : 'Select and copy');
         button.setAttribute('data-state', ok ? 'done' : 'failed');
         status.textContent = ok
             ? 'Copied to the clipboard.'
@@ -1625,7 +1618,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
 
         clearTimeout(timers.get(button));
         timers.set(button, setTimeout(function () {
-            button.textContent = original;
+            button.setAttribute('aria-label', 'Copy');
             button.removeAttribute('data-state');
             status.textContent = '';
         }, ok ? 1800 : 4000));
