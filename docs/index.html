@@ -267,6 +267,8 @@ section:first-of-type { border-top: 0; }
 /* The .split is the wrapper the install's first row is laid out in, and it
    inherits the gap the lead used to take from being the h2's next sibling. */
 h2 + .lead, h2 + p, h2 + .split { margin-top: .9rem; }
+.route { font-size: .95rem; color: var(--dim); }
+.route a { color: var(--accent); }
 /* The lead sits under a headline, not welded to it. */
 h1 + .lead { margin-top: 1.15rem; }
 
@@ -302,10 +304,14 @@ h1 + .lead { margin-top: 1.15rem; }
 .claims li span { color: var(--dim); font-weight: 400; }
 
 /* -- The way in ---------------------------------------------------------- */
-/* The steps end, and this is the step after them. It takes the gap the replay
-   used to take from the steps, which is what keeps it reading as the section's
-   own conclusion rather than as a stray link under the last one. */
-.see-more { margin: clamp(2.6rem, 5.5vw, 3.4rem) 0 0; }
+/* The steps end, and this is the step after them. Three numbers, measured at
+   1456: the steps stand 87px apart, the section's own padding leaves 88px
+   under this line, and a caption sits about 26px under its picture. 1.6rem
+   was that caption distance, and hard under the third frame it read as a
+   label for that ONE picture rather than as the end of all three. 2.6rem is
+   42px: past the caption, well short of the step break, and it halves a band
+   that used to be 26 above against 88 below. */
+.see-more { margin: 2.6rem 0 0; }
 
 /* AND IT SITS UNDER THE PICTURES, NOT UNDER NOTHING. It was hard left, in line
    with three short sentences, while every one of the three rows above it ends
@@ -323,25 +329,19 @@ h1 + .lead { margin-top: 1.15rem; }
    it is.
 
    Only from 48rem, the line where the two columns exist at all. Below it there
-   is one column, the button is a paragraph's inline-block again, and a phone
-   renders exactly what it rendered before this rule. */
+   is one column, the link is a paragraph's inline text again, and a phone
+   renders exactly what it rendered before this rule.
+
+   THE SELECTOR IS THE CHILD, NOT ITS CLASS. This rule was written for a .cta
+   and the paragraph now holds an .more instead, so it matched nothing and the
+   link fell back into column one -- the bottom-left corner this whole comment
+   argues against, rendered for as long as nobody compared the page with the
+   text above it. There is exactly one anchor in here; it is addressed as one,
+   and the next rename cannot silently undo the placement again. */
 @media (min-width: 48rem) {
     .see-more { display: grid; gap: clamp(.9rem, 3.4vw, 2.6rem); }
-    .see-more .cta { grid-column: 2; justify-self: start; }
+    .see-more > a { grid-column: 2; justify-self: start; }
 }
-/* The one action on this page. Its colours are tokens defined on bare :root and
-   redefined in the dark block: no colour of its own, hence none that exists in
-   one scheme only. */
-.cta {
-    display: inline-block;
-    margin: 1.7rem 0 0;
-    font-size: .95rem; font-weight: 650;
-    color: var(--on-accent); background: var(--accent);
-    border: 1px solid var(--accent); border-radius: 8px;
-    padding: .55rem 1.15rem;
-    text-decoration: none;
-}
-.see-more .cta { margin-top: 0; }
 
 /* -- Code snippets ------------------------------------------------------- */
 
@@ -559,7 +559,12 @@ code:not(pre code) {
     background: var(--ok); color: var(--on-accent);
     font-size: .72rem; font-weight: 650; line-height: 1.35;
 }
-.gbs-before .gb { padding: .5rem 1.5rem; max-width: 11.4rem; }
+/* The break is forced with <br>, not obtained from a width: a width holds only
+   until a root font-size or a viewport moves, and on a tablet it did move --
+   the label sat on ONE line while the note beside it said it wrapped onto two.
+   An illustration that contradicts its own caption is worse than no
+   illustration. */
+.gbs-before .gb { padding: .5rem 1.5rem; }
 .gbs-after  .gb { padding: .5rem .7rem; }
 /* Above the element, never on it: the tool floats the text it is about to
    quote, so the reviewer sees what the note will say it is about. */
@@ -1093,6 +1098,26 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
            thread three frames below. One line, not the client's full
            "You are writing as X. Change". */
         .fm-sign { margin: .1rem 0 .45rem; font-size: .78rem; color: var(--dim); }
+
+        /* An invitation, not a call to action. A filled button reads as commerce
+           here. A designer looking only at the rendering said the first version
+           was too heavy -- bold, near heading weight -- and competed with the
+           step title above it. Plain weight, the accent colour, and an arrow
+           that nudges on hover: found by whoever is looking for it, quiet for
+           whoever is not. */
+        .more {
+            display: inline-flex; align-items: baseline; gap: .3rem;
+            font-size: .94rem; font-weight: 400;
+            color: var(--accent); text-decoration: none;
+            border-bottom: 1px solid transparent;
+        }
+        .more .arrow { font-size: .9em; transition: transform .18s ease; }
+        .more:hover { border-bottom-color: var(--accent); }
+        .more:hover .arrow { transform: translateX(2px); }
+        .more:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+        @media (prefers-reduced-motion: reduce) {
+            .more .arrow { transition: none; }
+        }
 </style>
 <script type="application/ld+json">
 {
@@ -1244,8 +1269,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         <div class="gbs gbs-before">
                             <span class="target">
                                 <span class="marker">Download the full report</span>
-                                <span class="gb">Download the full report</span>
-                            </span><span class="gb roomy">Open the monthly summary</span>
+                                <span class="gb">Download the full<br>report</span>
+                            </span><span class="gb roomy">Open the monthly<br>summary</span>
                         </div>
                         <div class="bar-line w70 below"></div>
                         <div class="bar-line w85 roomy"></div>
@@ -1268,7 +1293,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         <p class="fm-title">Your remark</p>
                         <p class="fm-about">About: Download the full report</p>
                         <p class="fm-sign">Writing as Camille</p>
-                        <p class="fm-area">This label wraps onto two lines. Keep it on one.<span class="caret"></span></p>
+                        <p class="fm-area">Wraps onto two lines. Same for the one beside it.<span class="caret"></span></p>
                         <p class="fm-acts"><span class="fm-send">Send</span></p>
                     </div>
                     <!-- AND THE BUTTON ONLY WHERE IT IS IN THE CROP. Below
@@ -1368,11 +1393,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                                 <span class="nt-stamp">Resolved<span class="roomy d-now"> on Sep 1, 2026, 12:01 PM</span> by Assistant</span>
                                 <p class="nt-who"><b>Camille</b><span class="roomy d-then"> &middot; Sep 1, 2026, 11:59 AM</span></p>
                                 <p class="nt-about">About: Download the full report</p>
-                                <p class="roomy">This label wraps onto two lines. Keep it on one.</p>
+                                <p class="roomy">Wraps onto two lines. Same for the one beside it.</p>
                             </div>
                             <div class="nt reply">
                                 <p class="nt-who"><b>Assistant</b><span class="roomy d-now"> &middot; Sep 1, 2026, 12:01 PM</span></p>
-                                <p>Measured: the label needs 232px and the button offered 222px. Cut the padding; it now holds one line down to 317px.</p>
+                                <p>Measured: both labels need 232px and the buttons offered 222px. Cut the padding; they hold one line down to 317px.</p>
                             </div>
                         </div>
                     </div>
@@ -1391,7 +1416,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
              The button says what is behind it, and what is behind it is that
              session. -->
         <p class="see-more">
-            <a class="cta" href="example-session.html">See it in detail, with a real session</a>
+            <a class="more" href="example-session.html">See a real session, start to finish<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
     </div>
 </section>
@@ -1411,6 +1436,18 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <section id="install">
     <div class="wrap">
         <h2>How you install it</h2>
+
+        <!-- WHAT THIS SECTION IS, AND WHAT IT IS NOT. The three steps below are
+             one route in: the shared server, no account, no build. They are the
+             right route for most sites, and they were also the ONLY route the
+             page acknowledged -- a reader on Next.js, or one who wants the blobs
+             on their own disk, had no way of knowing the tool covers them. The
+             qualifier costs one line and the alternative is a page. -->
+        <p class="route">
+            The quick way, and the one most sites want.
+            <a href="install.html">The other ways in</a> &mdash; your framework&rsquo;s
+            layout file, your own server, localhost.
+        </p>
 
         <!-- FOUR ROWS, EACH ONE A SENTENCE AND THE THING IT HANDS OVER.
 
@@ -1526,8 +1563,10 @@ annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
         </div>
 
         <p class="small dim">
-            Where the notes live, what the server still sees, and how to run it:
-            <a href="how-it-works.html">read how it works</a>.
+            Installing it somewhere else &mdash; Next.js, Nuxt, Rails, Django, Laravel,
+            Symfony, WordPress &mdash; or running the server yourself:
+            <a href="install.html">ways to install it</a>. Where the notes live and what
+            the server still sees: <a href="how-it-works.html">how it works</a>.
         </p>
     </div>
 </section>
@@ -1538,6 +1577,7 @@ annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
     <div class="wrap">
         <ul class="foot-links">
             <li><a href="how-it-works.html">How it works</a></li>
+                <li><a href="install.html">Ways to install it</a></li>
             <li><a href="example-session.html">A real session</a></li>
             <li><a href="https://github.com/tuxo83/annotepage">Source</a></li>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md">Format &amp; security model</a></li>
