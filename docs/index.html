@@ -1088,6 +1088,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 }
 
+
+        /* The composer names its author so the reader recognises her in the
+           thread three frames below. One line, not the client's full
+           "You are writing as X. Change". */
+        .fm-sign { margin: .1rem 0 .45rem; font-size: .78rem; color: var(--dim); }
 </style>
 <script type="application/ld+json">
 {
@@ -1262,6 +1267,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <div class="nt-panel nt-form roomy">
                         <p class="fm-title">Your remark</p>
                         <p class="fm-about">About: Download the full report</p>
+                        <p class="fm-sign">Writing as Camille</p>
                         <p class="fm-area">This label wraps onto two lines. Keep it on one.<span class="caret"></span></p>
                         <p class="fm-acts"><span class="fm-send">Send</span></p>
                     </div>
@@ -1359,13 +1365,13 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         <div class="nt-bar">Review notes<span class="nt-count">3 resolved</span></div>
                         <div class="nt-body">
                             <div class="nt done">
-                                <span class="nt-stamp">Resolved<span class="roomy"> on Sep 1, 2026, 12:01 PM</span> by Assistant</span>
-                                <p class="nt-who"><b>Camille</b><span class="roomy"> &middot; Sep 1, 2026, 11:59 AM</span></p>
+                                <span class="nt-stamp">Resolved<span class="roomy d-now"> on Sep 1, 2026, 12:01 PM</span> by Assistant</span>
+                                <p class="nt-who"><b>Camille</b><span class="roomy d-then"> &middot; Sep 1, 2026, 11:59 AM</span></p>
                                 <p class="nt-about">About: Download the full report</p>
                                 <p class="roomy">This label wraps onto two lines. Keep it on one.</p>
                             </div>
                             <div class="nt reply">
-                                <p class="nt-who"><b>Assistant</b><span class="roomy"> &middot; Sep 1, 2026, 12:01 PM</span></p>
+                                <p class="nt-who"><b>Assistant</b><span class="roomy d-now"> &middot; Sep 1, 2026, 12:01 PM</span></p>
                                 <p>Measured: the label needs 232px and the button offered 222px. Cut the padding; it now holds one line down to 317px.</p>
                             </div>
                         </div>
@@ -1800,5 +1806,33 @@ annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
         data-server="/DEMO/api.php"
         data-project="Xt8fTaJo1culOstdfwmWkQ"
         defer></script>
+
+<script>
+(function () {
+    'use strict';
+    /* THE THREAD IS DATED TODAY. A landing page carrying a fixed date reads as
+       abandoned within months, and this one is an illustration, not a capture --
+       the session page keeps the real timestamps. The markup holds a written
+       date so a reader with no JavaScript sees one rather than nothing. */
+    var now = new Date();
+    var then = new Date(now.getTime() - 2 * 60000);
+    var fmt = function (d) {
+        try {
+            return ' \u00b7 ' + d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                 + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        } catch (e) { return null; }
+    };
+    var a = fmt(then), b = fmt(now);
+    if (!a || !b) return;
+    var set = function (sel, text) {
+        var n = document.querySelectorAll(sel);
+        for (var i = 0; i < n.length; i++) n[i].textContent = text;
+    };
+    set('.d-then', a);
+    set('.d-now', b);
+    var stamp = document.querySelector('.nt-stamp .d-now');
+    if (stamp) stamp.textContent = ' on' + b.slice(2);
+}());
+</script>
 </body>
 </html>
