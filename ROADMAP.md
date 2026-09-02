@@ -220,15 +220,40 @@ it, and work -- no configuration file holding the only secret in the system,
 which today is the one file the MCP README puts in bold. For a public project
 that is a genuine simplification and not a shortcut.
 
-It is not free, and the cost is in a direction the MCP has never gone: today it
-talks to ONE address, the one written in its configuration. Fetching a URL the
-assistant chose is a new outbound surface -- private ranges, localhost,
-redirects -- and worse, the page it fetches decides where the notes are read
-and written, since `data-server` is on the same tag. Point it at a hostile page
-and it talks to a hostile server. So this needs a designed answer (a refusal of
-private ranges at least, and probably the URL confirmed by the human once per
-project) rather than a fetch call. A private project keeps its configuration
-file, and should.
+Three shapes for it, and the owner's is the cheapest AND the safest:
+
+1. **The MCP fetches the URL itself.** The obvious one, and the worst: today
+   it talks to ONE address, the one in its configuration. Fetching a URL the
+   assistant chose is a new outbound surface -- private ranges, localhost,
+   redirects -- and the page it fetches carries `data-server` too, so it also
+   decides where the notes are read and written. Point it at a hostile page and
+   it talks to a hostile server. Would need a refusal of private ranges and
+   probably a human confirmation per project.
+
+2. **The ASSISTANT fetches it, and passes what it found to the MCP.** The owner's
+   version. The assistant already reads web pages; it reads the tag, takes
+   `data-project` and `data-key`, and calls the tool with them. The MCP gains
+   NO new capability -- no outbound fetch, no URL parsing, no allowlist to
+   maintain -- it only has to accept a project and a key per call instead of
+   reading them from a file. And the URL came from the human, who is the one
+   who knows which site is theirs. The trust boundary does not move.
+
+   What it needs is small: tools that take `project` and `key` as arguments,
+   and a tool description that tells the assistant where to find them ("the
+   annotepage tag at the end of the page carries both"). That description is
+   the actual feature; the code around it is an argument.
+
+3. **Ask the human for the key.** The fallback for when there is no page to
+   read, and what happens today, just spelled out in the moment rather than in
+   a configuration file.
+
+**THE LINE THAT MUST NOT BE CROSSED, and it decides where 2 applies.** In shape
+2 the key travels through the assistant's context: a model provider's logs, a
+transcript, a shared session. For a PUBLIC project that is exactly nothing --
+the key is in the page, it is public by construction. For a private project it
+is a leak of the only secret in the system, and an unrotatable one. So shape 2
+is for public projects and must refuse to be used for anything else; a private
+project keeps its configuration file, and should.
 
 What (b) costs, and must be said where it is offered: the key is served to
 whoever the page is served to -- search engines and archive sites included --
