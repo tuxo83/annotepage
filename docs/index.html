@@ -1670,11 +1670,21 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     </div>
                 </div>
 
+                <!-- THE TWO ACTIONS, AND NOT THE SENTENCE THAT USED TO CARRY THEM.
+                     "Project id <id>, derived from it and safe to publish" printed
+                     an id the tag two rows above already shows, and reassured the
+                     reader about publishing something they had not been asked to
+                     publish. What only this line can do is hand the key over and
+                     roll another one, so that is what is left of it.
+
+                     #the-id stays -- the generator writes the id into it and into
+                     the tag together, and a page where those two disagree hands
+                     out a tag nobody can read. It is here, unread, rather than
+                     removed and silently unwired. -->
                 <p class="aside-line">
-                    Project id <code id="the-id">&mdash;</code>, derived from it and
-                    safe to publish.
                     <button type="button" class="linkish" data-copy="the-key">Copy the key</button>
                     <button type="button" class="linkish" id="regenerate">Generate another</button>
+                    <span class="vh">Project id <code id="the-id">&mdash;</code></span>
                 </p>
                 <div class="callout">
                     <p><strong>Lose the key, lose the notes.</strong> No recovery, no escrow,
