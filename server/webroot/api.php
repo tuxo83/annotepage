@@ -321,10 +321,62 @@ function ap_require_post($what)
 //     what gives access to the rows;
 //   - no effect. The diagnostic does not create the table it comes looking for,
 //     does not complete a schema, does not attach any row to any project.
+//
+// AND A FOURTH, WHICH DECIDES WHETHER THE OTHER THREE EVER RUN: none of this
+// is published to anybody until the operator asks for it. Everything this page prints is written for the
+// operator, and this page has no authentication of any kind -- the PHP version,
+// the storage engine and its version, the path of the configuration on disk,
+// the update source, the caps and the declared projects are equally legible to
+// whoever else asks for the URL. So `diagnostic` in internal/config.php decides
+// how much comes out, and its default is `minimal`: the tool, its version, the
+// format, and the verdict.
+//
+// THE FILTER IS IN ap_diag_line() AND NOWHERE ELSE. Every line below goes
+// through it, so a block added tomorrow is withheld by default rather than
+// published by somebody forgetting it existed.
+
+/** The four keys `minimal` keeps: what this is, what it speaks, and how it is. */
+function ap_diag_minimal_keys()
+{
+    return array('tool', 'version', 'format', 'verdict');
+}
+
+/**
+ * Are we writing the short report? Set once, at the top of
+ * ap_write_diagnostic(); read by every writer below.
+ */
+function ap_diag_minimal($set = null)
+{
+    static $minimal = false;
+    if ($set !== null) {
+        $minimal = (bool) $set;
+    }
+    return $minimal;
+}
 
 function ap_diag_line($key, $value)
 {
+    if (ap_diag_minimal() && !in_array($key, ap_diag_minimal_keys(), true)) {
+        return;
+    }
     echo $key . ' ' . $value . "\n";
+}
+
+/**
+ * The free text: the blank lines that separate the blocks, and the messages a
+ * failure carries with it.
+ *
+ * `minimal` withholds all of it. Those messages name the configuration file,
+ * the storage and the SQL that would repair it -- the detail the short report
+ * exists in order not to publish. The verdict says WHAT is wrong; the full
+ * report is what says where.
+ */
+function ap_diag_text($text)
+{
+    if (ap_diag_minimal()) {
+        return;
+    }
+    echo $text;
 }
 
 function ap_yes_no($boolean)
@@ -332,13 +384,20 @@ function ap_yes_no($boolean)
     return $boolean ? 'yes' : 'NO';
 }
 
-function ap_write_diagnostic($config, $version, $configError)
+/**
+ * @param string $mode `full` or `minimal`. `off` never reaches here: the
+ *                     routing refuses the action before this file is asked to
+ *                     write anything.
+ */
+function ap_write_diagnostic($config, $version, $configError, $mode)
 {
+    ap_diag_minimal($mode !== 'full');
+
     ap_diag_line('tool', 'annotepage');
     ap_diag_line('version', $version);
     ap_diag_line('format', AP_FORMAT);
     ap_diag_line('date', gmdate('Y-m-d\TH:i:sP'));
-    echo "\n";
+    ap_diag_text("\n");
 
     // --- PHP really served by the web server ------------------------------
     ap_diag_line('php.version', PHP_VERSION);
@@ -364,7 +423,7 @@ function ap_write_diagnostic($config, $version, $configError)
         ap_diag_line('php.extension.' . $extension,
             extension_loaded($extension) ? 'present' : 'MISSING');
     }
-    echo "\n";
+    ap_diag_text("\n");
 
     // --- Versions, and the way out -----------------------------------------
     // LEVEL 1, and it is here rather than further down on purpose: this block
@@ -376,11 +435,18 @@ function ap_write_diagnostic($config, $version, $configError)
     // It DOES make one outbound request, deliberately: the published version
     // cannot be known without one. That happens only when a human asks for
     // this page, never on a visitor's note.
-    foreach (ap_update_diagnostic_lines(
-                 $configError === null ? $config : ap_config_defaults()) as $line) {
-        ap_diag_line($line[0], $line[1]);
+    //
+    // SKIPPED by `minimal`, and skipped rather than filtered: this is the one
+    // block that reaches out to the network, and a page with no authentication
+    // that makes an outbound request on every hit is a page somebody else can
+    // aim. Whoever wants the version comparison asks for `full`.
+    if (!ap_diag_minimal()) {
+        foreach (ap_update_diagnostic_lines(
+                     $configError === null ? $config : ap_config_defaults()) as $line) {
+            ap_diag_line($line[0], $line[1]);
+        }
+        ap_diag_text("\n");
     }
-    echo "\n";
 
     // --- Configuration ----------------------------------------------------
     // This block is written EVEN when the configuration could not be loaded:
@@ -409,9 +475,9 @@ function ap_write_diagnostic($config, $version, $configError)
 
     if ($configError !== null) {
         ap_diag_line('config.loading', 'FAILED');
-        echo "\n";
-        echo $configError . "\n";
-        echo "\n";
+        ap_diag_text("\n");
+        ap_diag_text($configError . "\n");
+        ap_diag_text("\n");
         ap_diag_line('verdict',
             "the configuration could not be loaded: nothing else can be checked until "
             . "this is fixed.");
@@ -463,7 +529,7 @@ function ap_write_diagnostic($config, $version, $configError)
     ap_diag_line('quota.notes_per_project',
         (int) $config['max_notes_per_project'] > 0
             ? $config['max_notes_per_project'] : 'no limit');
-    echo "\n";
+    ap_diag_text("\n");
 
     // --- Projects ---------------------------------------------------------
     // The origins are shown IN FULL: they are public domain names, and they are
@@ -489,13 +555,13 @@ function ap_write_diagnostic($config, $version, $configError)
                 : 'yes, towards ' . ap_short_project($backfill));
     } catch (ApFailure $e) {
         ap_diag_line('projects.declared', 'FAILED');
-        echo "\n" . $e->getMessage() . "\n\n";
+        ap_diag_text("\n" . $e->getMessage() . "\n\n");
         ap_diag_line('verdict',
             "the project declaration is invalid: no note will be served until this is "
             . "fixed.");
         return;
     }
-    echo "\n";
+    ap_diag_text("\n");
 
     if (!$config['active']) {
         ap_diag_line('verdict',
@@ -511,13 +577,13 @@ function ap_write_diagnostic($config, $version, $configError)
     try {
         $lines = (new ApStore($config))->diagnosticLines();
     } catch (ApFailure $e) {
-        echo $e->getMessage() . "\n\n";
+        ap_diag_text($e->getMessage() . "\n\n");
         ap_diag_line('verdict', 'the storage cannot even be questioned.');
         return;
     }
     foreach ($lines as $line) {
         if ($line[0] === '') {
-            echo $line[1] === '' ? "\n" : $line[1] . "\n";
+            ap_diag_text($line[1] === '' ? "\n" : $line[1] . "\n");
             continue;
         }
         ap_diag_line($line[0], $line[1]);
@@ -537,10 +603,24 @@ $action = strtolower(trim($action));
 // message that announces it.
 $actions = array('list', 'add', 'resolve', 'text', 'diagnostic', 'backfill');
 
-if (!in_array($action, $actions, true)) {
+/**
+ * The refusal an action nobody knows gets.
+ *
+ * IT IS A FUNCTION for one reason: `diagnostic` set to `off` throws exactly
+ * this, and "exactly" has to survive somebody editing the wording. Two copies
+ * drifting apart is how a switched-off page ends up announcing that it is only
+ * switched off.
+ *
+ * The list it prints still names `diagnostic` on a server where the key is
+ * `off`, deliberately: the list is a constant, the same for every server, and
+ * a list that dropped the line would tell that same visitor, from that same
+ * request, that this one has something to hide there.
+ */
+function ap_unknown_action_failure($action)
+{
     // Never an empty body: whoever gets the address wrong must read what they
     // should have written.
-    throw new ApFailure(
+    return new ApFailure(
         ($action === ''
             ? "No action requested."
             : "Unknown action: " . ap_readable_excerpt($action) . ".")
@@ -552,6 +632,10 @@ if (!in_array($action, $actions, true)) {
         . "  ?action=diagnostic                       state of the server (plain text)\n"
         . "  ?action=backfill&project=<id>            backfill of a 1.2.0 database",
         400);
+}
+
+if (!in_array($action, $actions, true)) {
+    throw ap_unknown_action_failure($action);
 }
 
 // The configuration is loaded WITHOUT interrupting the diagnostic if it fails.
@@ -575,6 +659,26 @@ try {
     ap_log('local configuration unreadable : ' . $e->getMessage());
     $configError = "The file internal/config-local.php contains a PHP syntax error.\n"
         . "The detail is in the server's PHP error log.";
+}
+
+// HOW MUCH THE DIAGNOSTIC MAY PUBLISH, and whether it exists at all. See
+// `diagnostic` in internal/config.php for the three values.
+//
+// A configuration that did not load falls back on `minimal`, and not on the
+// value it may have held: nothing can be read out of a file that does not
+// parse, and each of the two other answers would be wrong in its own way. A
+// broken configuration file must not become the way to unlock the full report
+// on any server -- one missing read permission would be enough -- and `off`
+// would take away the one page INSTALL.md sends you to precisely when nothing
+// else answers.
+$diagnostic = $configError === null ? ap_diagnostic_mode($config) : 'minimal';
+
+// `off`: THE ACTION DOES NOT EXIST. Refused here, before the store is even
+// loaded, so that this request does the same work and takes the same road as a
+// request for an action nobody ever heard of -- and refused with the same
+// function, so the code and the body are the same ones, not similar ones.
+if ($action === 'diagnostic' && $diagnostic === 'off') {
+    throw ap_unknown_action_failure($action);
 }
 
 // THE STORE, chosen by the configuration and loaded here -- see
@@ -603,7 +707,7 @@ try {
 // note.
 if ($action === 'diagnostic') {
     ap_begin_text();
-    ap_write_diagnostic($config, ap_version(), $configError);
+    ap_write_diagnostic($config, ap_version(), $configError, $diagnostic);
     exit;
 }
 

@@ -592,7 +592,19 @@ function ap_i_config_text(array $values)
     $text .= "    // absolute http(s) URL here and such a visit is sent there with a 302\n";
     $text .= "    // -- what a public relay wants, so somebody landing on the bare host\n";
     $text .= "    // reaches a page explaining what the thing is instead of nothing.\n";
-    $text .= "    'forward_root_to' => '',\n";
+    $text .= "    'forward_root_to' => '',\n\n";
+
+    // Written out although it is the default, like the two keys above it: the
+    // installer's last screen sends the operator to ?action=diagnostic, and
+    // this is where they will come looking for the reason it says four lines.
+    $text .= "    // HOW MUCH ?action=diagnostic PUBLISHES. 'minimal' -- the tool, the\n";
+    $text .= "    // version, the format and the verdict -- because that page has no\n";
+    $text .= "    // authentication and answers whoever asks. 'full' adds the PHP really\n";
+    $text .= "    // served, the storage and its engine, this file's path, the update\n";
+    $text .= "    // source, the caps and the declared projects: set it while you\n";
+    $text .= "    // diagnose, and set it back. 'off' refuses the action like one nobody\n";
+    $text .= "    // ever heard of.\n";
+    $text .= "    'diagnostic' => 'minimal',\n";
     $text .= ");\n";
 
     return $text;
@@ -792,9 +804,15 @@ function ap_i_run(array $options)
             . 'local file and reload this page &mdash; and know that the notes stay where '
             . 'they are, in the storage the old file named.</p>' . "\n";
         echo '<h2>To check the state of the server</h2>' . "\n";
-        echo '<p><code>api.php?action=diagnostic</code> answers in plain text: the PHP '
-            . 'really served, the storage, the declared projects and their origins, and '
-            . "what is left to do. It is one request and it needs no shell.</p>\n";
+        echo '<p><code>api.php?action=diagnostic</code> answers in plain text. By '
+            . 'default it says four things &mdash; the tool, its version, the format '
+            . 'and the verdict &mdash; because that page has no authentication and '
+            . "answers whoever asks for it.</p>\n";
+        echo '<p>Put <code>\'diagnostic\' => \'full\'</code> in '
+            . '<code>internal/config-local.php</code> and the same request reports the '
+            . 'PHP really served, the storage, the declared projects and their origins, '
+            . 'and what is left to do. Set it back afterwards. It is one request either '
+            . "way, and it needs no shell.</p>\n";
         echo '<h2>Delete this file</h2>' . "\n";
         echo '<p>It is not needed any more. An installer that stays reachable and '
             . 'writable on a live server is a liability.</p>' . "\n";
@@ -1057,9 +1075,16 @@ function ap_i_run(array $options)
 
         echo '<h2>Check it, in one request</h2>' . "\n";
         echo '<pre>' . ap_i_h($serverUrl) . '?action=diagnostic</pre>' . "\n";
-        echo '<p>Plain text: the PHP really served, the storage and its state, the '
-            . 'declared projects with their origins. No credential value ever appears '
-            . "there.</p>\n";
+        echo '<p>Plain text, and short by default: the tool, its version, the format '
+            . 'and the verdict &mdash; running, or not, and what to do about it. That '
+            . 'page has no authentication, so what it publishes it publishes to '
+            . "everybody.</p>\n";
+        echo '<p>The configuration just written carries '
+            . '<code>\'diagnostic\' => \'minimal\'</code>. Change it to '
+            . '<code>\'full\'</code> for the whole report &mdash; the PHP really '
+            . 'served, the storage and its state, the declared projects with their '
+            . 'origins &mdash; and change it back when you are done. No credential '
+            . "value ever appears there, under either value.</p>\n";
 
         echo '<h2>Now delete this file</h2>' . "\n";
         echo '<p>It has done its job. It refuses to act while the configuration exists, '

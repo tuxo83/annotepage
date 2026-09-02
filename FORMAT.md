@@ -637,6 +637,14 @@ state of the server, never notes. It **never** displays a project id in full:
 six characters are enough to confirm one is looking at the right one, and the
 id is what gives access to the rows.
 
+**How much of that state comes out is the server's decision**, and a client may
+not assume any of it. The default is four lines — `tool`, `version`, `format`
+and a final `verdict` — because the action is unauthenticated; an operator can
+widen it to the whole report or switch it off, and a server that switched it off
+answers it exactly as it answers an action nobody ever heard of, 400 and the
+list above. A client reads what comes back and shows it; nothing in the protocol
+depends on a line being there.
+
 ### 6.2 The domain lock
 
 Every project declares, in the server configuration, the list of origins

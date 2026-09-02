@@ -189,8 +189,9 @@ everything leaks. So, in this order:
 
 Whichever it is, `install.php` **requests that file's URL over HTTP** and
 refuses to finish on anything but a refusal. `?action=diagnostic` reports the
-path and answers `storage.inside_document_root` on every later call, so a
-server configuration that changes afterwards is visible.
+path and answers `storage.inside_document_root` on every later call — under
+`'diagnostic' => 'full'`, see below — so a server configuration that changes
+afterwards is visible.
 
 Writing `database.file` by hand works too, and then it is your job to put it
 somewhere no URL reaches. The store writes the two guard files next to whatever
@@ -289,12 +290,56 @@ free.
 https://<site>/notes/api.php?action=diagnostic
 ```
 
-Returns, in plain text: the PHP version REALLY served, the extensions present,
-the deployment mode, whether https is required and what the request itself
-arrived as, the declared projects with their origins, whether the
-credential files are readable, the state of the storage — table present, missing
-columns, missing indexes, number of notes — and what is left to backfill from a
-1.2.0 database.
+**Four lines, by default** — and that is a change from every version before this
+one:
+
+```
+tool annotepage
+version 2.0.1
+format 2
+verdict operational.
+```
+
+The tool, its version, the format it speaks, and the verdict: running, or not,
+and what to do about it. Nothing else — no PHP version, no storage, no update
+source, no caps, no projects, no path on disk.
+
+**Why the default changed.** That page has no authentication and never had. It
+is written for whoever operates the server, and it answered whoever else asked
+in exactly the same words: the PHP version really served, the MariaDB version,
+the path of `config-local.php` on disk, the table names, the update source, the
+caps, the declared projects and their origins. None of that is a hole on its
+own. All of it shortens the afternoon of somebody who arrives with a working
+exploit and is looking for a version to use it on. An existing installation gets
+the short page as soon as it updates, with nothing to write and nothing to
+choose — that is the point of a default.
+
+**The whole report, for the length of a diagnosis**, in
+`internal/config-local.php`:
+
+```php
+'diagnostic' => 'full',
+```
+
+Reload the same URL, read it, then put the line back to `'minimal'` or delete it
+— the two are the same thing. `'full'` returns, in plain text: the PHP version
+REALLY served, the extensions present, the deployment mode, whether https is
+required and what the request itself arrived as, the declared projects with their
+origins, whether the credential files are readable, the state of the storage —
+table present, missing columns, missing indexes, number of notes — and what is
+left to backfill from a 1.2.0 database. Everything quoted from this page in the
+rest of this file is `'full'`.
+
+**Or not at all:**
+
+```php
+'diagnostic' => 'off',
+```
+
+The action then does not exist. `?action=diagnostic` is refused exactly as
+`?action=banana` is — same 400, same body, the same list of available actions —
+so the page cannot be told apart from a typo by whoever goes looking for it.
+Nothing else changes: the notes are served as before.
 
 Three rules are kept there without exception:
 
@@ -312,8 +357,25 @@ Three rules are kept there without exception:
   does not complete a schema, does not attach any row.
 
 It answers EVEN when the local configuration is unreadable, malformed, or
-declares an invalid project: it then names the file and the cause. That is
-precisely the moment when it is all you have.
+declares an invalid project. That is precisely the moment when it is all you
+have, and it is the reason `'off'` should be a decision and not a habit.
+
+It is then **`minimal` whatever the file says** — the key lives in that file, and
+nothing can be read out of a file that does not parse. The verdict names the
+state:
+
+```
+verdict the configuration could not be loaded: nothing else can be checked until this is fixed.
+```
+
+The cause in full — which file, and whether it is a read permission, a PHP
+syntax error, or a file that returns something other than an array — is a
+`'full'` line, and `'full'` cannot be reached while that same file is broken.
+Those three are the whole list: check that `internal/config-local.php` is
+readable by the user PHP runs as, that it parses, and that it ends with
+`return array(...);`. A syntax error is also in the host's PHP error log — and
+any OTHER action, `?action=text` for one, still fails with the cause in its
+message, which is unchanged and is the shortest way to it.
 
 The origins, on the other hand, are shown **in full**: they are public domain
 names, and they are the line you come to compare character by character with what
@@ -329,7 +391,8 @@ tool completes its storage — the columns AND the indexes an earlier version ha
 not created are added, and the format-1 column names are renamed.
 
 If the database user has no right to do it, the message returns **the exact SQL**
-to run once, and `?action=diagnostic` lists what is missing.
+to run once, and `?action=diagnostic` lists what is missing under
+`'diagnostic' => 'full'`.
 
 An index that cannot be created interrupts nothing: it makes the queries slow,
 not wrong, and refusing to serve the notes for that would be a manufactured
@@ -416,9 +479,10 @@ of this. It is told so in one sentence rather than failing blank.
 
 ### What the diagnostic says, on every installation
 
-`?action=diagnostic` reports the running version, the published one, and whether
-outbound HTTPS works at all, on **every** installation including those that will
-never turn the key on. That part writes nothing and needs no permission:
+Under `'diagnostic' => 'full'`, `?action=diagnostic` reports the running version,
+the published one, and whether outbound HTTPS works at all, on **every**
+installation including those that will never turn the key on. That part writes
+nothing and needs no permission:
 
 ```
 update.running_version    2.0.0
@@ -431,7 +495,8 @@ update.published_version  2.0.1 -- NEWER than what runs here
 
 It is the one place that makes one deliberate outbound request, because the
 published version cannot be known without one, and only when a human asks for
-the page.
+the page. The short report skips that block rather than hiding its lines: a
+public page that reaches out on every hit is a page somebody else can aim.
 
 ---
 
@@ -641,7 +706,7 @@ coin.
 ### Confirming it is on
 
 ```
-GET <base>/api.php?action=diagnostic
+GET <base>/api.php?action=diagnostic      # with 'diagnostic' => 'full'
 ```
 
 ```
@@ -697,8 +762,9 @@ nothing else. Unchecked it would be a header injection and an open redirect at
 once. A host that does not match redirects nothing and the request is served.
 
 **`allow_plain_http` is not a security preference. It is the way out when the
-detection is wrong on this host.** If every request loops, set it to `true`, read
-`?action=diagnostic`, and report the host:
+detection is wrong on this host.** If every request loops, set it to `true`, set
+`'diagnostic' => 'full'` next to it, read `?action=diagnostic`, and report the
+host:
 
 ```
 config.https_required   yes -- plain http gets a 308 to the same URL over https
@@ -748,7 +814,7 @@ Three rules, each of which is the reason it is safe rather than surprising:
   or an embedded newline is refused — the value is typed by hand, which is
   exactly the input one is tempted to trust, and an unvalidated string in that
   header is a header injection. A refused value redirects nothing and shows as
-  `REFUSED` in `?action=diagnostic`.
+  `REFUSED` in `?action=diagnostic` under `'diagnostic' => 'full'`.
 
 `install.php?stay=1` — any query string, in fact — shows the page instead of
 redirecting, so the "delete this file" button stays reachable on a server that
