@@ -1,2 +1,3 @@
+2.0.2  sha384-ozz/RzNqWwcqwcKVLVrrJht2k97gwDYfvH4AkZyUAxW0lPbKiip8wj9hDvD6PNhy  134184 bytes
 2.0.1  sha384-aSkx1XQLhcYpDQrpoD8yUn0Wu00BHbi1KktWiXqMQufioNtReQw+tm804/ZzNfo8  134184 bytes
 2.0.0  sha384-hqDI4neEKI/hhkIKK5P4GVNRQrJ5dFYvBu9JovxWccyK9irmi+ouvhrgrumlXnXl  134205 bytes

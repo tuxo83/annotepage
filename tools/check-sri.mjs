@@ -21,6 +21,37 @@ if (!existsSync(BUNDLE)) {
     process.exit(1);
 }
 
+/* THE BUNDLE MUST HAVE BEEN BUILT FROM THIS package.json, and that is not a
+   detail: the build stamps "Package version : x.y.z" into the file's own
+   header, so a dist built before a version bump hashes DIFFERENTLY from the
+   one the release will publish.
+
+   It happened. 2.0.2 was built, then the version was bumped, then the digest
+   of that stale build was written into both READMEs and into the site's
+   locked tag -- and every check here passed, because they all compared it
+   with the same stale file. What the CDN then served hashed to something
+   else. A wrong digest is a silent failure: the browser refuses the script,
+   nothing appears on the page and nothing appears in the logs.
+
+   So the comparison is not "do the digests match the file", it is "does the
+   file come from the version we are about to publish". */
+const pkgVersion = JSON.parse(
+    readFileSync('client/package.json', 'utf8')).version;
+const bundleText = readFileSync(BUNDLE, 'utf8');
+const stamped = bundleText.match(/Package version\s*:\s*([0-9A-Za-z.+-]+)/);
+if (!stamped) {
+    console.error(`${BUNDLE} carries no "Package version" line.`);
+    console.error('The build writes one; a bundle without it was not built by it.');
+    process.exit(1);
+}
+if (stamped[1] !== pkgVersion) {
+    console.error(`${BUNDLE} was built at ${stamped[1]}, `
+        + `client/package.json says ${pkgVersion}.`);
+    console.error('Every digest below would be the digest of a file nobody will');
+    console.error('ever serve. Run "npm run build" in client/ and copy them again.');
+    process.exit(1);
+}
+
 const expected = 'sha384-' + createHash('sha384')
     .update(readFileSync(BUNDLE)).digest('base64');
 
