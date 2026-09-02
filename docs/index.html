@@ -348,7 +348,7 @@ h1 + .lead { margin-top: 1.15rem; }
    Four and not fourteen: a name, an attribute, a quoted value, an operator.
    Past that a reader is looking at a paint chart, not at a tag.
 
-   THE SALT GETS THE BLOCK AND NONE OF THE COLOUR, and that is not an omission.
+   THE KEY GETS THE BLOCK AND NONE OF THE COLOUR, and that is not an omission.
    43 characters of base64 have no name, no attribute and no string in them:
    anything picked out of it would be picking out nothing. It keeps the block
    because what the block says is "this is yours to take", and the salt is the
@@ -437,7 +437,7 @@ code:not(pre code) {
 /* -- Inside the install section ------------------------------------------
 
    Two subheadings, and deliberately no numbers on them. The section adds ONE
-   thing; numbering the salt and the assistant would say it adds three, and
+   thing; numbering the key and the assistant would say it adds three, and
    would put a third set of counted steps on a page whose whole revision was
    about having only one. */
 
@@ -638,7 +638,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         .demo-hint b { color: var(--text); }
 
         /* The product's own pill floats bottom-right, over whatever is there.
-           On a 390px screen it landed on the last line of the salt warning --
+           On a 390px screen it landed on the last line of the key warning --
            the one sentence about permanent loss. Reserving the corner is a
            page-side patch; the product should not cover text on anyone's site,
            which is recorded in ROADMAP. */
@@ -1032,7 +1032,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     gap: .4rem; font-size: .64rem;
 }
 
-/* -- the salt screen, drawn for the install chapter ----------------------
+/* -- the key screen, drawn for the install chapter ----------------------
    Two lines the note form does not have, because the client's panel has
    them here: the sentence that explains why it is asking, and the field's
    label. The key itself takes .fm-area -- it is the same field, with the
@@ -1665,7 +1665,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         your browser. Without the project key, this browser can
                         neither read them nor write any.</p>
                         <p class="fm-label">The project key (43 characters)</p>
-                        <p class="fm-area fm-key"><span id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</span></p>
+                        <p class="fm-area fm-key"><span id="the-key">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</span></p>
                         <p class="fm-acts"><span class="fm-send">Use this key</span></p>
                     </div>
                 </div>
@@ -1673,7 +1673,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <p class="aside-line">
                     Project id <code id="the-id">&mdash;</code>, derived from it and
                     safe to publish.
-                    <button type="button" class="linkish" data-copy="the-salt">Copy the key</button>
+                    <button type="button" class="linkish" data-copy="the-key">Copy the key</button>
                     <button type="button" class="linkish" id="regenerate">Generate another</button>
                 </p>
                 <div class="callout">
@@ -1852,7 +1852,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        anything, instead of having to stand up a server first in order to be
        handed a salt. */
 
-    var out    = document.getElementById('the-salt');
+    var out    = document.getElementById('the-key');
     var idOut  = document.getElementById('the-id');
     var tagOut = document.getElementById('tag-id');
     var again  = document.getElementById('regenerate');
