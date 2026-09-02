@@ -300,6 +300,11 @@ Three rules are kept there without exception:
 
 - no database credential **value** ever appears, not even its length: we say
   where it comes from and whether it is readable;
+- the database **host and port** appear only when the connection FAILED. That is
+  the only moment they help — and on shared hosting the database host names the
+  hosting company, on an endpoint that is public and needs no credential. A
+  connection that succeeded has already proved the host; printing it then only
+  tells the world where the site is hosted;
 - a **project** id appears only through its first six characters. Six are enough
   to confirm you are looking at the right one, and the whole id is what gives
   access to the rows;
