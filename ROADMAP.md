@@ -204,9 +204,30 @@ clear in the browser.
 The locked form is documented at install.html#locked with its digest, and the
 READMEs still carry it. Both are supported; neither is hidden.
 
-What would make this cheaper, and is not built: the client noticing a newer
-version exists and telling the site owner once, in the tool's own surface,
-so a pinned tag can stay pinned without going stale unnoticed.
+THE ARGUMENT THAT WAS MISSING WHEN THIS WAS DECIDED, raised by the owner the
+same day and written here because it points the other way.
+
+The salt does not only travel; it LIVES in the reviewer's browser, in the
+localStorage of the annotated origin, for as long as the project exists. The
+client is third-party JavaScript running on that origin. So a compromised
+release does not read one note in flight -- it reads the salt, and with it
+every note of that project, past and future, on every site carrying the tag.
+FORMAT.md already says an XSS on an annotated page compromises the project
+"full stop"; a compromised client IS that XSS, delivered by us.
+
+That makes the integrity attribute the one control standing between the supply
+chain and the only secret in the system, which is not the same thing as a
+protection against a stale bundle. Weigh accordingly the next time this is
+looked at.
+
+What would make the trade cheaper, and is not built: the client noticing a
+newer version exists and telling the site owner once, in the tool's own
+surface, so a pinned tag can stay pinned without going stale unnoticed.
+
+What would remove the trade entirely, and is the real answer: the browser
+extension already described above. The salt would live in the extension rather
+than in the page's localStorage, out of reach of anything running on the site
+under review -- including an XSS, including a bad release of the client.
 
 ## Plugins for off-the-shelf platforms
 
