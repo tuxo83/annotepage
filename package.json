@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "node client/tools/build.mjs",
-    "check": "npm run check:sri && npm run check:injection && npm run check:css && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp",
+    "check": "npm run check:sri && npm run check:injection && npm run check:css && npm run check:html && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp",
     "check:sri": "node tools/check-sri.mjs",
     "check:injection": "node tools/check-no-html-injection.mjs",
     "check:versions": "node tools/check-versions.mjs",
@@ -17,7 +17,8 @@
     "check:client": "node client/tools/check.mjs",
     "check:mcp": "node mcp/tools/check.mjs",
     "check:landing": "node tools/check-landing-derivation.mjs",
-    "check:css": "node tools/check-css-balance.mjs"
+    "check:css": "node tools/check-css-balance.mjs",
+    "check:html": "node tools/check-html-nesting.mjs"
   },
   "engines": {
     "node": ">=20"
