@@ -40,13 +40,12 @@
     --dim:       #52565f;
     --line:      #d3d7de;
     --line-soft: #e2e5ea;
-    /* The boundary of an INTERACTIVE control, which --line cannot serve.
-       Measured on the rendered pixels: --line reaches 1.34:1 against the
-       strip the Copy button sits on, where WCAG 1.4.11 asks for 3. This one
-       measures 3.35:1 against that strip and 3.62:1 against the button's own
-       fill. It is deliberately NOT applied to the frames around code, cards
-       and tables: those are decoration, and 1.4.11 does not cover them. */
-    --control-line: #7f8794;
+    /* --control-line lived here: the 3:1 boundary WCAG 1.4.11 asks of an
+       interactive control, and the only control that needed it was the copy
+       button. That button no longer stands on a surface that follows the
+       theme, so its boundary cannot either -- it is --code-chip-line now,
+       measured on the ground it actually sits on. A token defined against a
+       strip it is no longer painted on is a measurement nobody can check. */
     --accent:    #0b53c0;
     --on-accent: #ffffff;
     --warn:      #7a4200;
@@ -82,7 +81,6 @@
         --dim:       #a3a9b4;
         --line:      #38404c;
         --line-soft: #262c35;
-        --control-line: #6a7484;   /* 3.69:1 on --bg-soft, 4.00:1 on --bg */
         --accent:    #8ab4ff;
         --on-accent: #0f1115;
         --warn:      #f2c17a;
@@ -337,11 +335,32 @@ h1 + .lead { margin-top: 1.15rem; }
 .snip {
     position: relative;            /* the copy button anchors to this */
     margin: 1.3rem 0;
-    border: 1px solid var(--line);
+    border: 1px solid var(--code-edge);
     border-radius: var(--radius);
-    background: var(--bg-code);
+    background: var(--code-ground);
+    color: var(--code-text);
     overflow: hidden;
 }
+/* THE COLOURS ARE IN THE MARKUP, and that is the whole reason there are any.
+   A highlighter is a library, a library is a request to somewhere else, and
+   this page makes none -- so the four things worth telling apart in three
+   fixed snippets are spans written by hand, once, in the source they colour.
+   Four and not fourteen: a name, an attribute, a quoted value, an operator.
+   Past that a reader is looking at a paint chart, not at a tag.
+
+   THE SALT GETS THE BLOCK AND NONE OF THE COLOUR, and that is not an omission.
+   43 characters of base64 have no name, no attribute and no string in them:
+   anything picked out of it would be picking out nothing. It keeps the block
+   because what the block says is "this is yours to take", and the salt is the
+   one thing on the page that is only true if the reader takes it.
+
+   The copy button reads textContent, so none of this reaches the clipboard --
+   verified by clicking it and reading back what arrived, not by trusting the
+   sentence. */
+.snip .tg { color: var(--code-name); }
+.snip .at { color: var(--code-att); }
+.snip .st { color: var(--code-str); }
+.snip .op { color: var(--code-dim); }
 /* THE HEADER ROW IS GONE, and with it the little label above each block.
 
    It named what the block was -- "the whole tag", "plug it in" -- next to a
@@ -359,10 +378,10 @@ h1 + .lead { margin-top: 1.15rem; }
     position: absolute; top: .5rem; right: .5rem; z-index: 1;
     display: grid; place-items: center;
     width: 1.9rem; height: 1.9rem; padding: 0;
-    color: var(--dim); background: var(--bg);
-    border: 1px solid var(--control-line); border-radius: 7px;
+    color: var(--code-dim); background: var(--code-chip);
+    border: 1px solid var(--code-chip-line); border-radius: 7px;
     cursor: pointer;
-    transition: color .15s ease, border-color .15s ease;
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
 }
 .copy svg {
     width: 1.05rem; height: 1.05rem;
@@ -370,11 +389,23 @@ h1 + .lead { margin-top: 1.15rem; }
     stroke-linecap: round; stroke-linejoin: round;
 }
 .copy .i-done { display: none; }
-.copy:hover { color: var(--accent); border-color: var(--accent); }
-.copy[data-state="done"] { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+/* ITS THREE STATES ARE PINNED TOO, because the surface under them is. The
+   page's own --accent is #0b53c0 in the light theme: a navy tick on a
+   near-black chip, unreadable, and the failure's --warn (#7a4200) worse. So
+   the states are taken from the palette that is already on this ground --
+   green for the tick that says it arrived, amber for the refusal, and both
+   are the colours the code beside them is already using. */
+.copy:hover { color: var(--code-name); border-color: var(--code-name); }
+.copy[data-state="done"] { color: var(--code-ground); background: var(--code-str); border-color: var(--code-str); }
 .copy[data-state="done"] .i-copy { display: none; }
 .copy[data-state="done"] .i-done { display: block; }
-.copy[data-state="failed"] { color: var(--warn); border-color: var(--warn); }
+.copy[data-state="failed"] { color: var(--code-att); border-color: var(--code-att); }
+/* AND THE FOCUS RING, for the same reason and it is not cosmetic. The page's
+   ring is 2px of --accent, which is #0b53c0 in the light theme: 2.50:1 against
+   this block, under the 3 that WCAG 1.4.11 asks of a focus indicator, on the
+   one control a keyboard reaches here. The palette's own blue is 6.91:1 on
+   the same ground, in both themes, because the ground is the same in both. */
+.copy:focus-visible { outline-color: var(--code-name); }
 
 .snip pre {
     margin: 0;
@@ -721,6 +752,12 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
    The 1.8rem floor is untouched, and it is what a phone gets: 6vw does not
    reach it until 480px, so 360 and 390 keep the spacing they had. */
+/* The install steps are three sentences beside three code blocks; the steps
+   above are three sentences beside three CAPTURES, which need room to be
+   looked at. At 88px the short rows read as three islands rather than one
+   chapter, so they keep their own gap. */
+.use-steps.install-steps { gap: clamp(1.6rem, 3.4vw, 3.5rem); }
+
 .use-steps {
     display: grid; gap: clamp(1.8rem, 6vw, 5.5rem);
     margin: 2rem 0 0; padding: 0; list-style: none;
@@ -1059,6 +1096,39 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 .use-steps > li:nth-child(2) { animation-delay: .26s; }
 .use-steps > li:nth-child(3) { animation-delay: .42s; }
 
+/* == AND THE SAME THREE ROWS, WITH CODE WHERE THE PICTURES ARE ============
+
+   The install borrows the steps' grid and needed two things back from it.
+
+   THE ROW STARTS ON ONE LINE. Centring is right upstairs, where a two-line
+   caption sits beside a 300px capture and has nothing to line up with. Here
+   the two columns are of comparable height, so centring gave three rows three
+   different relationships: the code hung 29px below its heading in 02, the
+   words floated 30px down in 03. Aligned to the top -- and with the block's
+   own leading margin dropped, which is exactly what `.split` does above for
+   the same reason -- the number, the heading and the first line of code all
+   begin on one horizontal line, three times. That is the rhythm the chapter
+   above gets for free from three frames of the same size.
+
+   AND THE THREE BLOCKS ARE ONE SET. Their contents are 4 lines, 2 lines and
+   1: 117, 75 and 53px, which read as a block, a strip and a field, not as
+   three things of the same kind. The floor is the same answer the frames got
+   at 78rem -- a floor and never a height, so nothing is stretched and the tag
+   keeps the four lines it needs. What it costs is air around a short command,
+   which is what a code block has anyway.
+
+   Below 48rem none of it applies, at the line where the two columns collapse:
+   stacked, the margin between a sentence and the block under it IS the
+   spacing, and a floor under a one-line command is dead screen on a phone. */
+@media (min-width: 48rem) {
+    .install-steps > li { align-items: start; }
+    .install-steps > li > div > :first-child { margin-top: 0; }
+    .install-steps .snip {
+        display: grid; align-content: center;
+        min-height: 5.6rem;
+    }
+}
+
 /* -- the terminal palette for step 02's frame, PINNED DARK IN BOTH THEMES --
 
    The crop of the command line in step 02 does not follow the reader's theme,
@@ -1082,6 +1152,51 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     --t-border:  #888888;
     --t-claude:  #d77757;
     --t-dim:     #999999;
+}
+
+/* -- the ink of the three code blocks, PINNED DARK IN BOTH THEMES ---------
+
+   The blocks in "How you install it" are not panels of this page and they
+   stopped looking like them. What a reader is being handed is a fragment of a
+   file -- a tag for an editor, two lines for a shell -- and the ground a
+   fragment of a file is read on does not change because the reader's site is
+   set to light. Drawn in --bg-code the block was the page's own paper with a
+   hairline round it, and in the dark theme that paper was #13161b on #0f1115:
+   a block whose only remaining edge was its border. Pinned, there is ONE
+   rendering of the tag, it is the one the reader will see again in their
+   editor, and it survives both themes because it depends on neither.
+
+   THE GROUND IS THE TERMINAL'S, DELIBERATELY, and not a second near-black
+   invented beside it. Two almost-equal blacks on one page read as a mistake,
+   not as a distinction -- and there is nothing to distinguish: both surfaces
+   are a machine's, and the page already decided what a machine's surface is
+   made of. What separates them is what is drawn ON them: the terminal has a
+   prompt, a spinner and two rules and no button; these have a rim, syntax
+   colour and something to press.
+
+   Measured on rendered pixels against the #1a1a1a ground, and the figures
+   cannot differ between page themes because nothing here depends on one:
+   code 13.94:1, the element and command names 6.91:1, attributes 8.70:1,
+   strings 9.52:1, the recessive ink 6.59:1. The rim is 2.14:1 on its own
+   ground and 2.32:1 on the dark page it has to hold an edge against -- it is
+   decoration, like --line at 1.34:1 elsewhere, and firmer than that.
+
+   --code-dim is one colour with one job under two names: an operator and a
+   resting button icon are both things that must be legible and must not be
+   looked at first. Two tokens holding the same value would be the lie. */
+:root {
+    --code-ground:    #1a1a1a;
+    --code-edge:      #4a5058;
+    --code-text:      #e6e6e6;
+    --code-name:      #7aa2f7;   /* <script>, npm, claude */
+    --code-att:       #e0af68;   /* data-server=, install, add */
+    --code-str:       #9ece6a;   /* "..." -- and the tick that says it copied */
+    --code-dim:       #9aa0a6;
+    /* The copy button's own chip: a step up from the ground so a control is
+       not a hole in the block. 5.36:1 for its edge against the block and
+       4.66:1 against its own fill, where 1.4.11 asks for 3. */
+    --code-chip:      #262626;
+    --code-chip-line: #8a8f98;
 }
 
 
@@ -1454,49 +1569,37 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         <ol class="use-steps install-steps">
             <li>
                 <div>
-                    <p class="cap"><span class="n">01</span> You paste one tag into your page</p>
+                    <p class="cap"><span class="n">01</span> You paste one tag</p>
                     <p class="say">
-                        At the end of <code>&lt;body&gt;</code>, on the pages you want
-                        annotated. Nothing to build, nothing to import, no account.
-                        Once it is there, it works: everyone who opens the page can
-                        annotate it.
+                        At the end of <code>&lt;body&gt;</code>. Nothing to build, no
+                        account. Once it is there, it works.
                     </p>
                 </div>
 
                 <div>
                 <div class="snip">
-                    <button class="copy" type="button" data-copy="snip-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.2" y="2.8" width="10" height="12" rx="2.2"/><path d="M12.8 17.2H4.8a2 2 0 0 1-2-2V6.4"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"
-        data-server="https://api.annotepage.com/api.php"
-        data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
-        defer&gt;&lt;/script&gt;</code></pre>
+                    <button class="copy" type="button" data-copy="snip-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-tag"><code>&lt;<span class="tg">script</span> <span class="at">src</span>=<span class="st">"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"</span>
+        <span class="at">data-server</span>=<span class="st">"https://api.annotepage.com/api.php"</span>
+        <span class="at">data-project</span>=<span class="st">"<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"</span>
+        <span class="at">defer</span>&gt;&lt;/<span class="tg">script</span>&gt;</code></pre>
                 </div>
-
-                <p class="small dim">
-                    Nothing in it is yours to fill in. <code>data-server</code> is the
-                    shared server; point it at
-                    <a href="install.html#server">your own</a> instead if you prefer.
-                    <code>@2</code> takes fixes on its own &mdash;
-                    <a href="install.html#locked">the locked tag</a> does not, and says
-                    why that is a choice.
-                </p>
                 </div>
             </li>
 
             <li>
                 <div>
-                    <p class="cap"><span class="n">02</span> You let your assistant read them</p>
+                    <p class="cap"><span class="n">02</span> You plug in your assistant</p>
                     <p class="say">
-                        An MCP server and a command line, over the same notes. It reads
-                        every note, fixes, and answers each one in its thread.
+                        Two commands, once, on your machine.
                     </p>
                 </div>
 
                 <div>
                 <div class="snip">
-                    <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.2" y="2.8" width="10" height="12" rx="2.2"/><path d="M12.8 17.2H4.8a2 2 0 0 1-2-2V6.4"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-mcp"><code>npm install -g annotepage-mcp
-claude mcp add annotepage -- annotepage-mcp</code></pre>
+                    <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
+<span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
                 </div>
 
                 </div>
@@ -1506,31 +1609,28 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
                 <div>
                     <p class="cap"><span class="n">03</span> You keep the salt</p>
                     <p class="say">
-                        This is the one thing that cannot be undone. The notes are
-                        encrypted in the browser with this salt, and the project id in
-                        your tag was derived from it. It was generated here and sent
-                        nowhere &mdash; nobody else has a copy.
+                        Encrypted with it, in the browser. Nobody else has a copy
+                        &mdash; lose it and the notes go with it.
                     </p>
                 </div>
 
                 <div>
                 <div class="snip">
-                    <button class="copy" type="button" data-copy="snip-salt" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.2" y="2.8" width="10" height="12" rx="2.2"/><path d="M12.8 17.2H4.8a2 2 0 0 1-2-2V6.4"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                    <button class="copy" type="button" data-copy="snip-salt" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
                 </div>
 
+                <p class="aside-line">
+                    Project id <code id="the-id">&mdash;</code>, derived from it and
+                    safe to publish.
+                    <button type="button" class="linkish" id="regenerate">Generate another</button>
+                </p>
                 <div class="callout">
                     <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow,
                     no rotation. Keep it where your team keeps its passwords &mdash;
                     <a href="how-it-works.html#no-recovery">what that costs</a>, and
                     <a href="how-it-works.html#data">what the server can still see</a>.</p>
                 </div>
-
-                <p class="aside-line">
-                    Project id <code id="the-id">&mdash;</code>, derived from it. Public;
-                    the salt cannot be worked back from it.
-                    <button type="button" class="linkish" id="regenerate">Generate another</button>
-                </p>
                 </div>
             </li>
         </ol>
