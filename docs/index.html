@@ -1571,8 +1571,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <div>
                     <p class="cap"><span class="n">01</span> You paste one tag</p>
                     <p class="say">
-                        At the end of <code>&lt;body&gt;</code>. Nothing to build, no
-                        account. Once it is there, it works.
+                        At the end of <code>&lt;body&gt;</code>, on the pages you want
+                        annotated. Nothing to build, nothing to import, no account.
                     </p>
                 </div>
 
@@ -1589,30 +1589,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
             <li>
                 <div>
-                    <p class="cap"><span class="n">02</span> You plug in your assistant</p>
+                    <p class="cap"><span class="n">02</span> You open your page and paste the key</p>
                     <p class="say">
-                        Two commands, once, on your machine &mdash; and the same key,
-                        in its configuration file.
-                    </p>
-                </div>
-
-                <div>
-                <div class="snip">
-                    <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
-<span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
-                </div>
-
-                </div>
-            </li>
-
-            <li>
-                <div>
-                    <p class="cap"><span class="n">03</span> You keep the key</p>
-                    <p class="say">
-                        The project&rsquo;s encryption key &mdash; the tool calls it
-                        the salt. Your reviewers each paste it once; lose it and
-                        the notes go with it.
+                        The tool asks for it once, in the page itself, and
+                        remembers it. Every reviewer does the same &mdash; you are
+                        simply the first.
                     </p>
                 </div>
 
@@ -1633,6 +1614,25 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <a href="how-it-works.html#no-recovery">what that costs</a>, and
                     <a href="how-it-works.html#data">what the server can still see</a>.</p>
                 </div>
+                </div>
+            </li>
+
+            <li>
+                <div>
+                    <p class="cap"><span class="n">03</span> You plug in your assistant, and that is all</p>
+                    <p class="say">
+                        Two commands, once, on your machine &mdash; and the same key,
+                        in its configuration file.
+                    </p>
+                </div>
+
+                <div>
+                <div class="snip">
+                    <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
+<span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
+                </div>
+
                 </div>
             </li>
         </ol>
