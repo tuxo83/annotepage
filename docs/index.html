@@ -1099,22 +1099,38 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
            "You are writing as X. Change". */
         .fm-sign { margin: .1rem 0 .45rem; font-size: .78rem; color: var(--dim); }
 
-        /* An invitation, not a call to action. A filled button reads as commerce
-           here. A designer looking only at the rendering said the first version
-           was too heavy -- bold, near heading weight -- and competed with the
-           step title above it. Plain weight, the accent colour, and an arrow
-           that nudges on hover: found by whoever is looking for it, quiet for
-           whoever is not. */
+        /* A signpost, not a call to action -- and it went too far the other way
+           first. A filled button reads as commerce here, so it became a plain
+           accent link with an arrow; that was quiet enough to be skipped by
+           the visitor it exists for, who would never learn there IS a longer
+           version. The fault was not its weight, it was that it said nothing:
+           an arrow and five words cannot tell you that what you just read was
+           the short version.
+
+           So: a bordered panel that says so in one sentence, then names what is
+           behind it. A border and a soft fill make it exist while the eye runs
+           down the page; it stays a frame and not a filled button, which is the
+           difference between a signpost and an advertisement. The whole panel
+           is the link -- a target 918px wide beats a target of five words. */
         .more {
-            display: inline-flex; align-items: baseline; gap: .3rem;
-            font-size: .94rem; font-weight: 400;
-            color: var(--accent); text-decoration: none;
-            border-bottom: 1px solid transparent;
+            display: block; text-decoration: none; color: inherit;
+            border: 1px solid var(--line); border-radius: var(--radius);
+            background: var(--bg-soft);
+            padding: 1rem 1.15rem;
+            transition: border-color .18s ease, background .18s ease;
+        }
+        .more-txt { display: block; font-size: .95rem; line-height: 1.55; color: var(--dim); }
+        .more-txt b { color: var(--text); font-weight: 650; }
+        .more-go {
+            display: inline-flex; align-items: baseline; gap: .35rem;
+            margin-top: .6rem;
+            font-size: .95rem; font-weight: 600; color: var(--accent);
         }
         .more .arrow { font-size: .9em; transition: transform .18s ease; }
-        .more:hover { border-bottom-color: var(--accent); }
+        .more:hover { border-color: var(--accent); background: var(--bg); }
+        .more:hover .more-go { text-decoration: underline; }
         .more:hover .arrow { transform: translateX(2px); }
-        .more:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+        .more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
         @media (prefers-reduced-motion: reduce) {
             .more .arrow { transition: none; }
         }
@@ -1415,9 +1431,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
              The button says what is behind it, and what is behind it is that
              session. -->
-        <p class="see-more">
-            <a class="more" href="example-session.html">See a real session, start to finish<span class="arrow" aria-hidden="true">&rarr;</span></a>
-        </p>
+        <div class="see-more">
+              <a class="more" href="example-session.html">
+                  <span class="more-txt">
+                      <b>Those three steps are the short version.</b>
+                      Here is one whole review as it actually ran &mdash; the notes, the
+                      assistant reading them, and what it wrote back.
+                  </span>
+                  <span class="more-go">A real session, start to finish<span class="arrow" aria-hidden="true">&rarr;</span></span>
+              </a>
+          </div>
     </div>
 </section>
 
