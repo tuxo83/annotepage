@@ -1108,19 +1108,36 @@ class ApStore
         $db = isset($this->config['database']) && is_array($this->config['database'])
             ? $this->config['database'] : array();
 
-        // The host and the port are not secrets: showing them saves whoever is
-        // diagnosing a round trip. The user and the password are.
-        $public = array('host' => true, 'port' => true);
+        // The state is read FIRST, because it decides what may be printed below.
+        $state = $this->state();
+
+        // The host and the port are not secrets, but they are not nothing
+        // either: on shared hosting the database host names the hosting
+        // company, and this endpoint is public and unauthenticated. The reason
+        // for printing them was always "it saves whoever is diagnosing a round
+        // trip" -- and whoever is diagnosing is looking at a connection that
+        // FAILED. When it succeeded, the host has already proved itself and
+        // printing it only tells the world where the site is hosted.
+        //
+        // So: in full when the connection failed, withheld when it worked. The
+        // user and the password are never shown either way.
+        $public = $state['connection'] ? array() : array('host' => true, 'port' => true);
         foreach (array('host', 'port', 'name', 'user', 'password') as $key) {
             $value = isset($db[$key]) ? $db[$key] : null;
-            $lines[] = array('storage.' . $key, ap_describe_configured_value(
-                $value, 'database.' . $key, !isset($public[$key])));
+            if ($state['connection'] && ($key === 'host' || $key === 'port')) {
+                $line = ($value === null || $value === '')
+                    ? 'not in the configuration'
+                    : 'declared -- shown only when the connection fails';
+            } else {
+                $line = ap_describe_configured_value(
+                    $value, 'database.' . $key, !isset($public[$key]));
+            }
+            $lines[] = array('storage.' . $key, $line);
         }
         $lines[] = array('storage.table', $this->table);
         $lines[] = array('storage.rate_table', $this->rateTable);
         $lines[] = array('', '');
 
-        $state = $this->state();
         $lines[] = array('storage.connection', $state['connection'] ? 'SUCCEEDED' : 'FAILED');
         if ($state['engine'] !== null) {
             $lines[] = array('storage.engine', $state['engine']);
