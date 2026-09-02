@@ -162,6 +162,68 @@ do, and does not do today, is make the shape visible before the reader starts:
 - once the public endpoint exists, present it as what removes nine of the
   seventeen, not as a different product.
 
+## Two choices at generation time: public notes, or notes with a key
+
+Proposed by the owner on 2026-09-02. The friction he is aiming at is real:
+today every reviewer has to be handed a 43-character key and paste it once per
+browser and per domain, and that is the single hardest step in the whole tool.
+His shape: at generation, two options -- no key, everybody sees everything; or
+a key, and only the people holding it see anything.
+
+Half of it exists: `data-mode="plain"`. **A relay refuses it**, with a 400, and
+FORMAT.md 3.4 demands that refusal. So the choice cannot be offered on the
+shared server as things stand.
+
+There are two ways to build it, and they are not variants of each other.
+
+### (a) Allow plain mode on the public relay -- NOT recommended
+
+Cheapest to build, and it changes what the relay is. It would hold readable
+third-party content: the text of reviews, the paths of pages, the selectors,
+the reviewers' names, from strangers' staging sites. The operator can read it,
+a backup carries it, a breach publishes it, and someone will eventually ask
+for it.
+
+Worse, and this is the part that decides: **the project id is a bearer token
+sitting in the page source.** In plain mode, whoever reads the HTML once can
+read every note of that project, from any machine, for as long as the project
+exists. That is not "everyone on the site sees everything" -- it is "the notes
+are public on the internet", including the ones about a site that is not
+published yet. It also breaks, in one word, the promise the site makes about
+the shared server.
+
+### (b) Put the key IN the tag -- recommended
+
+`data-key` beside `data-project`. The client reads it there instead of asking
+for it, and stores nothing.
+
+- Zero friction, which is the whole point: a visitor arrives, the key is
+  already there, no screen, no pasting, everyone annotates and everyone reads.
+- **The relay still cannot read anything.** The envelope is unchanged,
+  AES-256-GCM, and the blind index still hides the paths. Backups, the
+  database, the hosting company: all still opaque.
+- The sentence to put on the page is exact and short: *the key is in your
+  page, so anyone who can read the page can read the notes*. No claim to walk
+  back.
+- No format change and no server change. The client gains one attribute; the
+  landing page gains a choice at generation.
+
+What (b) costs, and must be said where it is offered: the key is served to
+whoever the page is served to -- search engines and archive sites included --
+and there is no going back. A project made public cannot be made private
+again, because the key is out; making it private means a new key, therefore a
+new project, and the old notes stay behind. That is the same irreversibility
+the key already has, pointed the other way.
+
+### What is NOT settled
+
+Whether the shared relay should carry public projects at all. (b) keeps the
+notes unreadable to the operator, which removes the liability argument, but a
+project anyone can write to is a project anyone can fill with noise, and the
+per-project cap is the only thing between that and the relay's disk. The rate
+limit is per IP and per project; neither is an answer to a public project
+someone decides to flood.
+
 ## A page of its own for the security rules
 
 The landing page's step 03 says the one thing that cannot be undone -- the salt
