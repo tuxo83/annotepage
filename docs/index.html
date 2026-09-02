@@ -777,6 +777,17 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    looked at. At 88px the short rows read as three islands rather than one
    chapter, so they keep their own gap. */
 .use-steps.install-steps { gap: clamp(1.6rem, 3.4vw, 3.5rem); }
+/* The terminal in this chapter is drawn like the two code blocks above it and
+   not like the captures upstairs: no mat, no screenshot shadow, and a floor
+   its two lines can fill. Those three frames are photographs of an interface
+   and wear a mount; these three are things the reader takes -- two to copy and
+   one to type -- and a mount on one of three makes the row that has it look
+   like a different kind of object. */
+.use-steps.install-steps .frame {
+    box-shadow: none;
+    border-color: var(--code-edge);
+    min-height: 0;
+}
 
 .use-steps {
     display: grid; gap: clamp(1.8rem, 6vw, 5.5rem);
@@ -1567,6 +1578,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     </div>
                 </div>
             </li>
+
         </ol>
 
         <!-- AND WHAT THE STEPS DELIBERATELY DO NOT SHOW. The session that used
@@ -1673,9 +1685,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <div>
                     <p class="cap"><span class="n"></span> You plug in your assistant, and that is all</p>
                     <p class="say">
-                        Two commands, once, on your machine &mdash; plus the
-                        <code>data-key</code> line above, in its configuration
-                        file.
+                        Two commands, once, on your machine. The key from the tag
+                        goes in its configuration file.
                     </p>
                 </div>
 
@@ -1686,6 +1697,26 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
                 </div>
 
+                </div>
+            </li>
+            <!-- AND THE THIRD IS THE USE, borrowed from the chapter above.
+
+                 The install chapter stopped at "the assistant is plugged in",
+                 which is where a reader is left holding two commands and no
+                 idea what to type next. The chapter above already answers that
+                 with one line in a terminal; the same crop, with the site
+                 NAMED, is the shortest way to say what plugged in is for.
+
+                 It is the tool's own dark ground in both themes, like the
+                 terminal it is a crop of. -->
+            <li>
+                <div>
+                    <p class="cap"><span class="n"></span> You ask it to go and read them</p>
+                    <p class="say">One sentence. Name the site, and it takes it from there.</p>
+                </div>
+                <div class="frame term" aria-hidden="true">
+                    <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
+                    <div class="mt-input"><span class="ps">&#x276F;</span> read the notes on annotepage.com and fix what they ask<span class="cur"></span></div>
                 </div>
             </li>
         </ol>
