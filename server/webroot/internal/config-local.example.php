@@ -206,4 +206,15 @@ return array(
     // widget needs a secure context for WebCrypto, so over http it cannot
     // encrypt anything anyway.
     // 'allow_plain_http' => true,
+
+    // HOW MUCH ?action=diagnostic PUBLISHES, on a page that has no
+    // authentication and never had: 'minimal' (the default -- the tool, the
+    // version, the format and the verdict), 'full' (everything: the PHP really
+    // served, the storage and its engine, this file's path, the update source,
+    // the caps, the declared projects), or 'off' (the action is refused like
+    // one nobody ever heard of).
+    //
+    // Set it to 'full' while you diagnose, and set it back. That is what the
+    // three values are for.
+    // 'diagnostic' => 'full',
 );

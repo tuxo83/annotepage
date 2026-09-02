@@ -339,6 +339,43 @@ function ap_config_defaults()
         // WebCrypto only in a secure context, so over http the widget cannot
         // derive a key or open an envelope at all.
         'allow_plain_http' => false,   // true: serve over http as well
+
+        // HOW MUCH ?action=diagnostic PUBLISHES. Three values, and the default
+        // is the quiet one.
+        //
+        //   'minimal'  the tool, its version, the format it speaks, and the
+        //              verdict: running, or not, and what to do about it. THE
+        //              DEFAULT;
+        //   'full'     everything the page has ever printed -- the PHP really
+        //              served and its extensions, the storage engine and its
+        //              version, the path of this file on disk, the tables, the
+        //              update source and what it answered, the caps and the
+        //              rate limits, the declared projects with their origins;
+        //   'off'      the action does not exist. It is refused exactly as an
+        //              action nobody ever heard of is refused, same code, same
+        //              body, so that the page cannot be told from a typo.
+        //
+        // WHY THE DEFAULT IS NOT `full`, since `full` is what every version
+        // before this one did. That page has no authentication of any kind and
+        // it never had: it is written for the operator, and it answers whoever
+        // else asks in exactly the same words. A PHP version and a MariaDB
+        // version are what somebody with a working exploit searches the web
+        // for; the path of the configuration on disk is the other half of a
+        // file-read bug; the update source and the declared projects say what
+        // this machine is and who it serves. None of that is a vulnerability
+        // here, and all of it shortens somebody else's afternoon.
+        //
+        // `full` is meant to be set for the length of a diagnosis and set back
+        // -- it costs nothing to turn on, and INSTALL.md says so where it
+        // documents the page. `minimal` still answers when this very file is
+        // unreadable or malformed, which is the moment the page exists for.
+        //
+        // An unknown value is read as `minimal`, and logged. It is not a
+        // refusal: a key that decides how much a page prints must not take the
+        // notes down when it is misspelt, and a value nobody can read must
+        // never be read as "publish everything". `deployment` refuses for the
+        // opposite reason -- getting THAT one wrong discloses.
+        'diagnostic' => 'minimal',
     );
 }
 
@@ -603,6 +640,26 @@ function ap_request_is_https()
 {
     $detail = ap_request_scheme_detail();
     return $detail['scheme'] === 'https';
+}
+
+/**
+ * How much ?action=diagnostic may publish: `minimal`, `full` or `off`.
+ * See `diagnostic` above for what each one shows and why the default is short.
+ */
+function ap_diagnostic_mode(array $config)
+{
+    $value = isset($config['diagnostic'])
+        ? strtolower(trim((string) $config['diagnostic'])) : '';
+    if ($value === 'full' || $value === 'off' || $value === 'minimal') {
+        return $value === '' ? 'minimal' : $value;
+    }
+    if ($value !== '') {
+        // Logged, because the short report cannot say it: an operator who
+        // typed `ful` sees a page that shows four lines and no reason, and the
+        // log is then the only place the answer can be.
+        ap_log('diagnostic: unknown value in the configuration, `minimal` applied');
+    }
+    return 'minimal';
 }
 
 /** True when plain http must be redirected. See `allow_plain_http` above. */
