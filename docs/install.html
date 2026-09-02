@@ -730,6 +730,28 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             repository changes.
         </p>
 
+        <!-- THE THREE QUESTIONS THE TAG RAISES, ANSWERED WHERE THEY ARE ASKED.
+             They were printed under the tag on the landing page, where a visitor
+             who has not pasted anything yet is asking none of them. Here they
+             are the first thing a reader wants after "which file". -->
+        <div class="snip">
+<pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"
+        data-server="https://api.annotepage.com/api.php"
+        data-project="&lt;yours, from the landing page&gt;"
+        defer&gt;&lt;/script&gt;</code></pre>
+        </div>
+
+        <ul>
+            <li><strong>Nothing in it is yours to fill in</strong> except the project
+            id, and the landing page generates that with the salt it comes from.</li>
+            <li><code>data-server</code> is the free shared server. Point it at
+            <a href="#server">your own</a> instead if you would rather the encrypted
+            blobs sat on your own disk &mdash; that is the only line that changes.</li>
+            <li><code>@2</code> takes fixes on its own. <a href="#locked">The locked
+            tag</a> does not, and says why that is a choice rather than an
+            oversight.</li>
+        </ul>
+
         <div class="tablescroll">
         <table>
             <thead>
