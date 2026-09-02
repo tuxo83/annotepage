@@ -146,10 +146,10 @@ function ap_i_version($here)
  */
 function ap_i_base_url()
 {
-    $https = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
-        || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
-        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO'])
-            && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+    // The SAME detector the redirect uses -- ap_request_scheme_detail() in
+    // config.php. Two copies of this test would drift, and the day they
+    // disagree the installer probes a URL the server would have redirected.
+    $https = ap_request_is_https();
     $host = isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== ''
         ? (string) $_SERVER['HTTP_HOST']
         : (isset($_SERVER['SERVER_NAME']) ? (string) $_SERVER['SERVER_NAME'] : 'localhost');

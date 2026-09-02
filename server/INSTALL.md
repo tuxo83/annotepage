@@ -290,7 +290,8 @@ https://<site>/notes/api.php?action=diagnostic
 ```
 
 Returns, in plain text: the PHP version REALLY served, the extensions present,
-the deployment mode, the declared projects with their origins, whether the
+the deployment mode, whether https is required and what the request itself
+arrived as, the declared projects with their origins, whether the
 credential files are readable, the state of the storage — table present, missing
 columns, missing indexes, number of notes — and what is left to backfill from a
 1.2.0 database.
@@ -645,6 +646,75 @@ config.open_registration   yes -- any project id is served, no origin lock
 
 A relay that is open without saying so is a trap for whoever operates it. The
 line is always printed.
+
+## https, and the one flag that turns it off
+
+**https is required, and that is the default.** Every request that arrives over
+plain `http` is answered with a **308** towards the same URL over `https`.
+
+```php
+'allow_plain_http' => false,   // true: serve over http as well
+```
+
+**308, and not 301 or 302.** Those two turn a `POST` into a `GET` in many
+clients. The note being written would arrive with no body, the server would
+refuse it, and the failure would read as a bug in the client — which is the one
+place nobody would look. 308 keeps the method and the body.
+
+It is sent with `Cache-Control: no-store`: the code has to be permanent to
+preserve the method, but an operator who later sets `allow_plain_http` must not
+find the redirect burned into every browser that ever saw it.
+
+**The scheme is detected, not assumed.** `$_SERVER['HTTPS']` alone is the wrong
+answer: on shared hosting the TLS is very often terminated by a load balancer or
+a CDN and PHP is reached over plain `http` from the machine next door, so
+`HTTPS` is empty — or the literal `off` — while the visitor's address bar says
+`https`. Five sources are read, most direct first:
+
+| Source | Set by |
+|---|---|
+| `HTTPS` | the web server, when **it** terminated the TLS |
+| `REQUEST_SCHEME` | Apache, from the same knowledge |
+| `SERVER_PORT` = 443 | the port **we** listen on |
+| `X-Forwarded-Proto` | the proxy in front — first value of the list |
+| `X-Forwarded-Ssl` | the same, in the other spelling |
+
+The last two are request headers, so a caller can write them itself and skip the
+redirect. That is accepted deliberately: this redirect authorises nothing and
+hides nothing — a caller who wants plain `http` can already just not follow it —
+while refusing to read them produces an **infinite redirect loop** on a large
+share of real hosting, and a loop takes the API down for every caller. Contrast
+`client_ip_header`, which is off by default precisely because rate limiting *is*
+a boundary.
+
+The `Host` header is validated before it reaches the `Location`: a host name and
+nothing else. Unchecked it would be a header injection and an open redirect at
+once. A host that does not match redirects nothing and the request is served.
+
+**`allow_plain_http` is not a security preference. It is the way out when the
+detection is wrong on this host.** If every request loops, set it to `true`, read
+`?action=diagnostic`, and report the host:
+
+```
+config.https_required   yes -- plain http gets a 308 to the same URL over https
+request.scheme          https -- X-Forwarded-Proto: https
+```
+
+The two lines are printed together on purpose. Apart, neither settles anything:
+"https required" plus "arrived as http" **on a request you made over https** is
+the detection being wrong, and this page is where you see it, because the loop
+leaves nothing else to look at.
+
+Turning it on does **not** make plain `http` usable by the client. The browser
+gives WebCrypto only in a secure context, so over `http` the widget cannot derive
+a key or open an envelope at all — the tool is inert there whatever this flag
+says.
+
+`install.php` is deliberately not covered: the bootstrap installer probes it over
+plain `http` to establish that it can reach its own web server, before anything
+is known about TLS on that host.
+
+---
 
 ## Where a bare visit goes
 
