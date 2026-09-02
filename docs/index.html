@@ -313,34 +313,20 @@ h1 + .lead { margin-top: 1.15rem; }
    that used to be 26 above against 88 below. */
 .see-more { margin: 2.6rem 0 0; }
 
-/* AND IT SITS UNDER THE PICTURES, NOT UNDER NOTHING. It was hard left, in line
-   with three short sentences, while every one of the three rows above it ends
-   918px away on the right: a button alone in the bottom-left corner of a wide
-   section reads as something that fell there.
+/* AND IT IS CENTRED UNDER THE THREE STEPS, on the page's own axis.
 
-   Centring it was the other answer, and it is worse here: the middle of this
-   section is the seam BETWEEN the two columns, so a centred button would line
-   up with the one vertical line in the layout that nothing is on.
+   It sat in the picture column for a while, hard against the frames' left
+   edge, on the argument that the middle of this section is the seam BETWEEN
+   two columns and a centred button would line up with the one vertical line
+   nothing is on. That argument holds for something that belongs to the steps.
+   This does not: it is the way OUT of the chapter, addressed to a visitor who
+   has finished reading it, and the page's own centre is where a reader looks
+   for that. Owner's call, and the rendering agrees -- under the frames it read
+   as a fourth item in a list of three.
 
-   So it takes the steps' own grid -- the same two columns, declared once and
-   used by both -- and sits in the second one, hard left against the frames'
-   left edge. What it opens is a session you WATCH, which is the picture
-   column's subject; it reads as the fourth thing in that column, which is what
-   it is.
-
-   Only from 48rem, the line where the two columns exist at all. Below it there
-   is one column, the link is a paragraph's inline text again, and a phone
-   renders exactly what it rendered before this rule.
-
-   THE SELECTOR IS THE CHILD, NOT ITS CLASS. This rule was written for a .cta
-   and the paragraph now holds an .more instead, so it matched nothing and the
-   link fell back into column one -- the bottom-left corner this whole comment
-   argues against, rendered for as long as nobody compared the page with the
-   text above it. There is exactly one anchor in here; it is addressed as one,
-   and the next rename cannot silently undo the placement again. */
-@media (min-width: 48rem) {
-    .see-more { display: grid; gap: clamp(.9rem, 3.4vw, 2.6rem); }
-    .see-more > a { grid-column: 2; justify-self: start; }
+   Nothing left to undo on a rename: the paragraph centres its own inline
+   content, whatever class the anchor ends up carrying. */
+.see-more { text-align: center; }
 }
 
 /* -- Code snippets ------------------------------------------------------- */
@@ -1099,36 +1085,28 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
            "You are writing as X. Change". */
         .fm-sign { margin: .1rem 0 .45rem; font-size: .78rem; color: var(--dim); }
 
-        /* A signpost, not a call to action -- and it went too far the other way
-           first. A filled button reads as commerce here, so it became a plain
-           accent link with an arrow; that was quiet enough to be skipped by
-           the visitor it exists for, who would never learn there IS a longer
-           version. The fault was not its weight, it was that it said nothing:
-           an arrow and five words cannot tell you that what you just read was
-           the short version.
+        /* Three versions of this, and the third is the one that works.
 
-           So: a bordered panel that says so in one sentence, then names what is
-           behind it. A border and a soft fill make it exist while the eye runs
-           down the page; it stays a frame and not a filled button, which is the
-           difference between a signpost and an advertisement. The whole panel
-           is the link -- a target 918px wide beats a target of five words. */
+           A filled blue button read as commerce on a page that sells nothing.
+           A plain accent link read as a footnote and was skipped by the very
+           visitor it exists for. A bordered panel explaining what was behind it
+           said the thing in too many words: the explanation buried the offer.
+
+           A button, outlined rather than filled, centred under the three steps,
+           saying in six words what is on the other side. The shape says
+           "somewhere to go" without a filled rectangle shouting it, and the
+           label carries the meaning the plain link could not. */
         .more {
-            display: block; text-decoration: none; color: inherit;
-            border: 1px solid var(--line); border-radius: var(--radius);
-            background: var(--bg-soft);
-            padding: 1rem 1.15rem;
-            transition: border-color .18s ease, background .18s ease;
-        }
-        .more-txt { display: block; font-size: .95rem; line-height: 1.55; color: var(--dim); }
-        .more-txt b { color: var(--text); font-weight: 650; }
-        .more-go {
-            display: inline-flex; align-items: baseline; gap: .35rem;
-            margin-top: .6rem;
-            font-size: .95rem; font-weight: 600; color: var(--accent);
+            display: inline-flex; align-items: baseline; gap: .45rem;
+            font-size: .95rem; font-weight: 600;
+            color: var(--accent); background: var(--bg);
+            border: 1px solid var(--accent); border-radius: 8px;
+            padding: .6rem 1.3rem;
+            text-decoration: none;
+            transition: background .18s ease, color .18s ease;
         }
         .more .arrow { font-size: .9em; transition: transform .18s ease; }
-        .more:hover { border-color: var(--accent); background: var(--bg); }
-        .more:hover .more-go { text-decoration: underline; }
+        .more:hover { background: var(--accent); color: var(--on-accent); }
         .more:hover .arrow { transform: translateX(2px); }
         .more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
         @media (prefers-reduced-motion: reduce) {
@@ -1431,16 +1409,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
              The button says what is behind it, and what is behind it is that
              session. -->
-        <div class="see-more">
-              <a class="more" href="example-session.html">
-                  <span class="more-txt">
-                      <b>Those three steps are the short version.</b>
-                      Here is one whole review as it actually ran &mdash; the notes, the
-                      assistant reading them, and what it wrote back.
-                  </span>
-                  <span class="more-go">A real session, start to finish<span class="arrow" aria-hidden="true">&rarr;</span></span>
-              </a>
-          </div>
+        <p class="see-more">
+              <a class="more" href="example-session.html">See a detailed usage example<span class="arrow" aria-hidden="true">&rarr;</span></a>
+          </p>
     </div>
 </section>
 
