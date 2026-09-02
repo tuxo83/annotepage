@@ -400,6 +400,10 @@ h1 + .lead { margin-top: 1.15rem; }
 .copy[data-state="done"] .i-copy { display: none; }
 .copy[data-state="done"] .i-done { display: block; }
 .copy[data-state="failed"] { color: var(--code-att); border-color: var(--code-att); }
+/* The worded copy button is a link, not a chip: it takes the colour and
+   nothing else. --ok and --warn are the page's own, defined in both themes. */
+.linkish[data-state="done"] { color: var(--ok); }
+.linkish[data-state="failed"] { color: var(--warn); }
 /* AND THE FOCUS RING, for the same reason and it is not cosmetic. The page's
    ring is 2px of --accent, which is #0b53c0 in the light theme: 2.50:1 against
    this block, under the 3 that WCAG 1.4.11 asks of a focus indicator, on the
@@ -1040,9 +1044,10 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     font-family: var(--mono); font-size: .64rem;
     min-height: 0; overflow-wrap: anywhere; white-space: normal;
 }
-/* The copy button is the page's, not the panel's: it sits on the frame, at
-   the same corner it occupies on every code block of this chapter. */
-.key-frame > .copy { position: absolute; top: .5rem; right: .5rem; }
+/* NO COPY BUTTON ON THIS FRAME. It had one, in the corner the code blocks
+   use, and it was the tell: a photograph of a screen does not carry a control
+   that screen has not got. Taking the key is an action of THIS page, so it is
+   a word on this page's own line under the frame, beside "Generate another".
 /* The line under it carries margin-top: -.4rem, written when what came before
    was a .snip and ended in 1.3rem of its own. A frame has no bottom margin, so
    that pull became an OVERLAP -- measured, 7px of the project id sitting under
@@ -1644,8 +1649,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                      Not aria-hidden, unlike the frames above: those are
                      illustrations, this one holds the one string the reader
                      came for. -->
-                <div class="frame key-frame">
-                    <button class="copy" type="button" data-copy="the-salt" aria-label="Copy the key"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                <div class="frame nt-frame key-frame">
+                    <div class="pg">
+                        <div class="bar-line head"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w45"></div>
+                        <div class="bar-line w70 below"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w45"></div>
+                    </div>
                     <div class="nt-panel nt-form">
                         <p class="fm-title">The salt of this project is needed</p>
                         <p class="fm-help">The notes of this project are encrypted in
@@ -1660,6 +1673,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <p class="aside-line">
                     Project id <code id="the-id">&mdash;</code>, derived from it and
                     safe to publish.
+                    <button type="button" class="linkish" data-copy="the-salt">Copy the key</button>
                     <button type="button" class="linkish" id="regenerate">Generate another</button>
                 </p>
                 <div class="callout">
@@ -1667,6 +1681,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     no rotation. Share it with your reviewers the way you share a password, and keep it there &mdash;
                     <a href="how-it-works.html#no-recovery">what that costs</a>, and
                     <a href="how-it-works.html#data">what the server can still see</a>.</p>
+                </div>
                 </div>
                 </div>
             </li>
@@ -1763,10 +1778,19 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     var timers = new WeakMap();
 
     var announce = function (button, ok) {
-        /* The button has no text any more, it has an icon. What changes is the
-           accessible name and the state attribute the icons key off -- a screen
-           reader hears the same thing it heard when this was a word. */
-        button.setAttribute('aria-label', ok ? 'Copied' : 'Select and copy');
+        /* Two shapes of button now: an icon on the code blocks, a word under
+           the key screen. The icon one has nothing to rewrite -- its state
+           attribute swaps the glyph and the accessible name carries the news.
+           The worded one says it where it is read, and keeps its original in
+           data-label so the timer can put it back. */
+        var icon = !!button.querySelector('svg');
+        if (icon) {
+            button.setAttribute('aria-label', ok ? 'Copied' : 'Select and copy');
+        } else {
+            var original = button.getAttribute('data-label') || button.textContent;
+            button.setAttribute('data-label', original);
+            button.textContent = ok ? 'Copied' : 'Select and copy';
+        }
         button.setAttribute('data-state', ok ? 'done' : 'failed');
         status.textContent = ok
             ? 'Copied to the clipboard.'
@@ -1774,13 +1798,17 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
         clearTimeout(timers.get(button));
         timers.set(button, setTimeout(function () {
-            button.setAttribute('aria-label', 'Copy');
+            if (icon) {
+                button.setAttribute('aria-label', 'Copy');
+            } else {
+                button.textContent = button.getAttribute('data-label');
+            }
             button.removeAttribute('data-state');
             status.textContent = '';
         }, ok ? 1800 : 4000));
     };
 
-    var buttons = document.querySelectorAll('button.copy');
+    var buttons = document.querySelectorAll('button[data-copy]');
     for (var i = 0; i < buttons.length; i++) {
         (function (button) {
             var id = button.getAttribute('data-copy');
