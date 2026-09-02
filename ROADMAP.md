@@ -162,6 +162,52 @@ do, and does not do today, is make the shape visible before the reader starts:
 - once the public endpoint exists, present it as what removes nine of the
   seventeen, not as a different product.
 
+## A page of its own for the security rules
+
+The landing page's step 03 says the one thing that cannot be undone -- the salt
+is the key, nobody else has a copy, losing it loses the notes -- and then sends
+the reader to two anchors on how-it-works.html. That is the right size for a
+step in a three-step chapter and the wrong size for the subject.
+
+What belongs on a page of its own, and is today scattered across FORMAT.md,
+INSTALL.md and how-it-works.html: where the salt may and may not live, what a
+shared relay learns anyway (the path of every annotated page, the sizes, the
+times), what `data-mode="plain"` costs and when it is acceptable, what a
+compromised CDN could do to a site carrying the short tag, and what changes
+when the server is your own.
+
+It also gives the tag's third line somewhere to point: the owner asked for the
+warning to lead somewhere written for it, not for a paragraph borrowed from a
+longer explanation.
+
+Not started. how-it-works.html#no-recovery and #data hold the line until then,
+and they are accurate -- they are just not a security page.
+
+## The tag on the landing page floats, and gives up SRI to do it
+
+Decided on 2026-09-02, written down because it is a real trade and the reasons
+have to survive whoever asks "why is there no integrity attribute?".
+
+The tag the landing page hands out ends in `@2`, with no `integrity` and no
+`crossorigin`. A version range and a fixed digest cannot both hold: pin the
+bytes and the tag can never update, let it update and the digest is wrong the
+day it does -- silently, the script simply never runs.
+
+The floating tag was chosen because the realistic failure of the pinned one is
+that it rots: a free tool with no update channel, pasted once into a layout
+file, still serving a version nobody has looked at in two years while a fix
+sits on npm. What it gives up is real and is written on install.html rather
+than glossed over: a compromised npm account or CDN would run whatever it
+served on every page carrying the tag, and this client reads the notes in the
+clear in the browser.
+
+The locked form is documented at install.html#locked with its digest, and the
+READMEs still carry it. Both are supported; neither is hidden.
+
+What would make this cheaper, and is not built: the client noticing a newer
+version exists and telling the site owner once, in the tool's own surface,
+so a pinned tag can stay pinned without going stale unnoticed.
+
 ## Plugins for off-the-shelf platforms
 
 Wanted, WordPress first. What the neighbours do, checked rather than
