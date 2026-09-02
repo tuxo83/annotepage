@@ -214,6 +214,35 @@ ns.defaultLabels = {
     'salt.replace': 'Paste another key',
     'salt.forget': 'Forget the key on this browser',
 
+    /* -- A project whose key is IN the page ---------------------------
+       Said where the notes are, at every draw, and not once at startup: it
+       is a standing property of the project, not an event. The write half
+       is the one nobody expects -- the key gives both, and this format has
+       no reader-only role. */
+    'public.notice':
+        'End-to-end encrypted, and the key of this project is public: it is '
+        + 'written into this page. Anyone who can open the page can read these '
+        + 'notes AND write them -- the key gives both, and this format has no '
+        + 'reader-only role.',
+
+    /* -- A tag that cannot be used as it stands ------------------------
+       Somebody put that tag there on purpose, so we speak instead of staying
+       silent -- and we refuse exactly as a wrong pasted key is refused
+       today: nothing sent, nothing decrypted. */
+    'tag.title': 'This annotepage tag cannot be used',
+    'tag.key_shape':
+        'The data-key attribute of the tag on this page is not a key: 43 '
+        + 'characters are expected, from A-Z a-z 0-9 - _, with no space and no '
+        + 'decorative dash. Nothing was sent and nothing was decrypted. '
+        + 'Whoever installed the tool has to copy the key again, in one block.',
+    'tag.key_mismatch':
+        'The tag on this page carries a key and a project id that do not go '
+        + 'together: the key does not derive that id. Nothing was sent and '
+        + 'nothing was decrypted, and the tool does not guess which of the two '
+        + 'is right. A public tag needs the key alone -- the id is derived '
+        + 'from it -- so remove data-project, or correct whichever of the two '
+        + 'is wrong.',
+
     /* -- Setup --------------------------------------------------------- */
     'setup.title': 'Install annotepage on this site',
     'setup.generate': 'Generate a key and create the project',

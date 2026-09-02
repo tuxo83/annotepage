@@ -136,7 +136,47 @@ const start = () => {
     if (!CRYPTO) {
         // Without a secure context nothing is possible -- but if somebody
         // declared a project here, they have a right to know why.
-        if (PROJECT || SETUP_REQUESTED) showScreen(openContextScreen);
+        if (PROJECT || KEY_DECLARED || SETUP_REQUESTED) showScreen(openContextScreen);
+        return;
+    }
+
+    /* THE TAG CARRIES THE KEY: the project is public, and that settles the
+       mode before anything else. Nothing is asked, nothing is read from
+       localStorage and NOTHING IS WRITTEN TO IT -- the key is in the page,
+       and a stored copy would buy nothing except a divergent state on the
+       day the tag changes. The interface then says so at every draw
+       (PUBLIC_KEY, 60-ui). */
+    if (KEY_DECLARED) {
+        const keyBytes = saltFromText(DECLARED_KEY);
+        if (!keyBytes) {
+            /* An attribute somebody wrote on purpose, and it is not a key.
+               Staying silent here would be the behaviour of a tag carrying
+               no project at all, and the difference is exactly what nobody
+               would find. */
+            showScreen(() => openTagScreen(T('tag.key_shape')));
+            return;
+        }
+
+        derive(keyBytes).then((derived) => {
+            /* Both attributes on one tag: they have to AGREE, and the id is
+               the one thing the key can check itself against (FORMAT.md
+               1.2). Disagreement is refused exactly as a wrongly pasted key
+               is -- nothing sent, nothing decrypted -- and no winner is
+               picked: one of the two is a typo, and guessing buries it in a
+               project whose notes nobody will ever see. */
+            if (DECLARED_PROJECT && derived.id !== DECLARED_PROJECT) {
+                showScreen(() => openTagScreen(T('tag.key_mismatch')));
+                return null;
+            }
+            // The id is DERIVED, never declared twice: see 00-preamble.
+            PROJECT = derived.id;
+            PUBLIC_KEY = true;
+            return startWithSalt(DECLARED_KEY, derived);
+        }, () => {
+            // derive() only fails when WebCrypto itself does, which is what
+            // that screen is about.
+            showScreen(openContextScreen);
+        });
         return;
     }
 

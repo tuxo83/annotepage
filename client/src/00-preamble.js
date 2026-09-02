@@ -38,7 +38,44 @@ if (DECLARED_SERVER) {
    and a page that never shows a single note. */
 const DECLARED_PROJECT = read('project');
 const PROJECT_WELL_FORMED = /^[A-Za-z0-9_-]{22}$/.test(DECLARED_PROJECT);
-const PROJECT = PROJECT_WELL_FORMED ? DECLARED_PROJECT : '';
+/* NOT a const: with data-key the id is DERIVED rather than declared, and
+   90-boot writes it here once derive() has produced it. There is one PROJECT
+   in this scope and everything downstream reads it -- two would have
+   diverged. */
+let PROJECT = PROJECT_WELL_FORMED ? DECLARED_PROJECT : '';
+
+/* THE KEY, WRITTEN IN THE TAG -- and that attribute IS the mode.
+
+   data-key    the key itself: the project is PUBLIC. Whoever can load the
+               page can read the notes and write them. Nothing is asked for,
+               nothing is stored, and no id is declared: derive() already
+               produces it from the key (HKDF label "id"), so writing both
+               would be writing the same fact twice in a tag people copy by
+               hand -- where the two can disagree.
+   data-project  the id alone: confidential. The key is asked for once per
+               browser, and until it is there nothing is fetched and nothing
+               is decrypted. That is the behaviour of every version so far.
+   data-setup  neither, temporarily.
+
+   THE KEY IS NOT DERIVED FROM THE DOMAIN, and it never will be. The browser
+   hands the relay an Origin header on every request (FORMAT.md section 6.2),
+   so a relay knows the domain of every project writing to it: a key that was
+   a function of the domain would be a key the relay can compute, and with it
+   the id, and with both every note it stores. That is plain mode sold as
+   encrypted. The key is random, it lives in the page, and the page is the
+   one thing the server never sees.
+
+   The SHAPE is not checked here: saltFromText() in 20-crypto is the single
+   judge of what a key looks like, and it lives in the section that owns the
+   format. What is recorded here is whether the attribute was WRITTEN at all
+   -- an empty data-key is a tag somebody meant to fill in, and it gets said
+   rather than ignored. */
+const DECLARED_KEY = read('key');
+const KEY_DECLARED = Object.prototype.hasOwnProperty.call(data, 'key');
+
+/* True once the key in the tag has been checked and adopted. It is what the
+   interface says out loud, at every draw: see PUBLIC_KEY in 60-ui. */
+let PUBLIC_KEY = false;
 
 /* The write mode for the notes TO COME. Encrypted by default: it is the only
    default that does not ask the installer to understand the threat model

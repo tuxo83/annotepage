@@ -254,6 +254,23 @@ const openSetupScreen = () => {
     });
 };
 
+/* -- A tag that refuses itself ------------------------------------------
+
+   Same rule as a key pasted wrong: nothing sent, nothing decrypted, and the
+   reason said out loud rather than a tool that quietly does not appear.
+
+   There is no field to correct here, and that is the difference with the
+   salt screen: the mistake is in the page's source, not in this browser. So
+   the screen names what has to change in the tag, and stops. */
+
+const openTagScreen = (detail) => {
+    const screen = blockingScreen(T('tag.title'), false);
+    const block = create('div', 'ap-error');
+    block.setAttribute('role', 'alert');
+    block.appendChild(create('p', 'ap-error-detail', detail));
+    screen.body.appendChild(block);
+};
+
 /* -- The "this browser cannot" screen ------------------------------------ */
 
 const openContextScreen = () => {

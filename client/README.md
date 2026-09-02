@@ -33,8 +33,8 @@ Load the client once, on a page of the site, with `data-setup` and **without**
 `data-project`:
 
 ```html
-<script src="https://<your-cdn>/annotepage-client@2.0.2/dist/annotepage.js"
-        integrity="sha384-ozz/RzNqWwcqwcKVLVrrJht2k97gwDYfvH4AkZyUAxW0lPbKiip8wj9hDvD6PNhy"
+<script src="https://<your-cdn>/annotepage-client@2.1.0/dist/annotepage.js"
+        integrity="sha384-tMQlD7gryDE13ShW/GCVLMhJU8tqODcREl9RksXuf67eectM4YPTUZXLfkmakFoO"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-setup
@@ -54,8 +54,8 @@ on the server. No network request is made at that point.
 ### 2. Paste the final tag, at the end of `<body>`
 
 ```html
-<script src="https://<your-cdn>/annotepage-client@2.0.2/dist/annotepage.js"
-        integrity="sha384-ozz/RzNqWwcqwcKVLVrrJht2k97gwDYfvH4AkZyUAxW0lPbKiip8wj9hDvD6PNhy"
+<script src="https://<your-cdn>/annotepage-client@2.1.0/dist/annotepage.js"
+        integrity="sha384-tMQlD7gryDE13ShW/GCVLMhJU8tqODcREl9RksXuf67eectM4YPTUZXLfkmakFoO"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"
@@ -93,7 +93,8 @@ browser.
 | Attribute | What it declares |
 |---|---|
 | `data-server` | the address of `api.php`. Required as soon as the client comes from a CDN. Without it, and only if the client is served by the site, the tool deduces `../api.php` from its own address -- as in version 1.2.0 |
-| `data-project` | the project id, 22 characters. Without it the tool does **nothing** (except with `data-setup`) |
+| `data-key` | **the key itself**, 43 characters. The project is then **public**: the tool derives the project id from it, asks for nothing, stores nothing, and starts. See below |
+| `data-project` | the project id, 22 characters. The project is then **confidential**: the key is asked for once per browser. Without either attribute the tool does **nothing** (except with `data-setup`) |
 | `data-setup` | opens the setup screen. To be removed once the project is created |
 | `data-mode` | `encrypted` (default) or `plain`. See below |
 | `data-path` | path prefix: the pages of the project. `/fr/` does not annotate `/en/` |
@@ -111,6 +112,63 @@ NOT deployed, the note stays visible.
 
 A standalone tool does not guess how a site names its version: without these
 attributes the fields stay empty, and that is intended.
+
+## The key in the tag, or the id in the tag
+
+The tag carries **one of the two**, and which one it carries **is** the mode.
+There is no setting anywhere else, and nothing in a stored note records it:
+
+```html
+<!-- public: whoever can open the page reads AND writes -->
+<script src="..." data-server="..." data-key="<43 characters>" defer></script>
+
+<!-- confidential: each reviewer pastes the key once, per browser -->
+<script src="..." data-server="..." data-project="<22 characters>" defer></script>
+```
+
+The id is **not** written next to the key: the client derives it (HKDF label
+`id`), so writing both is writing the same fact twice in a tag people copy by
+hand. A tag carrying both is not a third mode -- the client checks that they
+agree and **refuses** the whole tag if they do not, with nothing sent and
+nothing decrypted, rather than guessing which of the two is the typo. A
+`data-key` that is not 43 base64url characters is refused the same way, and
+said on screen: somebody put that attribute there on purpose.
+
+When the key is public, the tool says so **in the panel, at every draw** -- not
+once at load time:
+
+> End-to-end encrypted, and the key of this project is public: it is written
+> into this page. Anyone who can open the page can read these notes AND write
+> them -- the key gives both, and this format has no reader-only role.
+
+### What a public key actually opens, and it is not mainly reading
+
+Reading is the obvious half. **The key gives read AND write, and there is no
+reader role in this format**: a page anybody can open is a page anybody can
+post to. Two consequences that have to be named before choosing it:
+
+- the project's note cap is the only thing between that and a full database.
+  The relay's rate limit is per IP, which is not an answer to more than one of
+  them;
+- **a copied tag writes into your project.** The domain lock is what normally
+  stops that -- and on a relay with open registration a project has no declared
+  origins to match, so it does not apply. Someone who lifts your public tag out
+  of your page source writes into your notes, from their own site.
+
+On a staging site behind a login, a VPN or an IP allowlist, that audience is
+your team: the notes are protected by the same thing that protects the site,
+being able to reach it. On a public production page, that audience is the
+internet.
+
+And it is **irreversible**: the key is served to whoever the page is served to,
+search engines and archive sites included. A project made public cannot be made
+private again -- that would mean a new key, therefore a new project id,
+therefore a new tag, and the old notes stay behind.
+
+What does **not** change: the notes are encrypted exactly as before, the server
+still cannot read a single one, and a note written on a public key is an
+ordinary `encrypted` note. The public/confidential choice is not the
+`data-mode` below -- they are two different words for two different things.
 
 ## Encrypted, or plain
 
@@ -184,6 +242,12 @@ has not changed.
 A refusal on the very first call is shown too, unlike 1.2.0: a firewall
 blocking everything made the tool entirely invisible, and one looked for the
 failure in the wrong file.
+
+**And a tag that cannot be used is named too**, for the same reason: a
+`data-key` that is not a key, or a `data-key` and a `data-project` that do not
+derive one another, open a screen saying which of the two is wrong. Standing
+down silently would be indistinguishable from a page with no tag at all, and
+that is the difference nobody finds.
 
 ## What it does not touch
 

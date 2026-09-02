@@ -487,6 +487,23 @@ const drawPanel = () => {
     empty(ui.body);
     empty(ui.footer);
 
+    /* THE PROJECT RUNS ON A KEY THAT IS IN THE PAGE, AND IT SAYS SO -- here,
+       where the notes are, at every draw and not once at startup.
+
+       It sits above everything else, failures included, because it is not an
+       event: it describes what the notes underneath ARE. A one-off message
+       at load time would be read by whoever happened to be looking, once,
+       and by nobody who opens this panel a week later.
+
+       The half that has to survive being skim-read is the WRITE half: the
+       key gives read and write, this format has no reader role, so a page
+       anybody can open is a page anybody can post to. */
+    if (PUBLIC_KEY) {
+        const notice = create('div', 'ap-public', T('public.notice'));
+        notice.setAttribute('role', 'note');
+        ui.body.appendChild(notice);
+    }
+
     if (currentFailure) {
         ui.body.appendChild(failureBlock(currentFailure, () => {
             currentFailure = null;
@@ -570,7 +587,10 @@ const drawPanel = () => {
        origin and the salt has to be pasted once more, on every browser.
        Without this button, one would have to clear the storage by hand to
        get there. */
-    if (PROJECT && saltText) {
+    /* Not offered when the key comes from the tag: there is nothing stored
+       to replace, and a key pasted here would be overruled by the tag on the
+       next load -- while quietly leaving a copy in localStorage. */
+    if (PROJECT && saltText && !PUBLIC_KEY) {
         const changeSalt = create('button', 'ap-link', T('salt.replace'));
         changeSalt.type = 'button';
         changeSalt.title = T('salt.origin_changed');

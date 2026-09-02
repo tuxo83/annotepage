@@ -425,6 +425,33 @@ rather than about a setting:
     the tag carries the key    -> anyone who can open the page
     the tag carries the id     -> only the people you hand the key to
 
+### Nobody pastes twice: the key is generated before the tag exists
+
+Objection, and it is right about the flow it describes: asking somebody to
+paste a setup tag and then replace it IS complicated, and no default path
+should do that.
+
+No default path does. The landing page generates the key in the visitor's own
+browser and hands over the finished tag, already carrying what it needs. One
+paste. `data-setup` is the escape hatch for whoever will not let a page they
+did not write generate their key -- a legitimate refusal, and not the road.
+
+With `data-key`, that road becomes the shortest it can be:
+
+    <script src="https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"
+            data-server="https://api.annotepage.com/api.php"
+            data-key="..."
+            defer></script>
+
+One paste, nothing to save, nothing to configure, nobody to hand anything to.
+The install chapter loses its middle step for the public mode: paste the tag,
+plug in the assistant, done -- which is where the owner started.
+
+The confidential mode costs exactly one thing more, and it should be priced in
+those words rather than described: **every reviewer pastes the key once**. That
+is the whole difference, and it buys the only thing it can buy -- that somebody
+who can open the page still cannot read the notes.
+
 ### What is NOT settled
 
 Whether the shared relay should carry public projects at all. (b) keeps the
