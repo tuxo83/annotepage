@@ -981,8 +981,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     margin: .3rem 0 0; font-size: .64rem; color: var(--dim); font-style: italic;
     border-left: 2px solid var(--line-soft); padding-left: .4rem;
 }
-.fm-sign { margin: .4rem 0 0; font-size: .64rem; color: var(--dim); }
-.fm-sign .fm-change { color: var(--accent); text-decoration: underline; }
 .fm-area {
     margin: .45rem 0 0; min-height: 3.2rem;
     border: 1px solid var(--line); border-radius: 6px;
@@ -998,7 +996,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     background: var(--accent); color: var(--on-accent);
     border-radius: 6px; padding: .2rem .6rem; font-weight: 650;
 }
-.fm-cancel { border: 1px solid var(--line); border-radius: 6px; padding: .2rem .6rem; }
 
 /* THE ONE MOVING THING IN THE FIRST FRAME, and it is a text caret rather than
    the block the terminal above uses: a caret in a field is a hairline, and a
@@ -1265,9 +1262,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <div class="nt-panel nt-form roomy">
                         <p class="fm-title">Your remark</p>
                         <p class="fm-about">About: Download the full report</p>
-                        <p class="fm-sign">You are writing as Camille. <span class="fm-change">Change</span></p>
                         <p class="fm-area">This label wraps onto two lines. Keep it on one.<span class="caret"></span></p>
-                        <p class="fm-acts"><span class="fm-send">Send</span><span class="fm-cancel">Cancel</span></p>
+                        <p class="fm-acts"><span class="fm-send">Send</span></p>
                     </div>
                     <!-- AND THE BUTTON ONLY WHERE IT IS IN THE CROP. Below
                          78rem the frame holds the page alone and the tool's
@@ -1370,7 +1366,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                             </div>
                             <div class="nt reply">
                                 <p class="nt-who"><b>Assistant</b><span class="roomy"> &middot; Sep 1, 2026, 12:01 PM</span></p>
-                                <p>Measured before the change: the label needs 232px on one line and the button offers it 222px<span class="roomy"> at a 360px viewport, so it wraps at 369px and below. Cause: the single a.action rule gives both buttons 36px of horizontal padding and a 17px label. Cut to 16px of padding and a 16px label; measured again on the same page, this one holds a single line down to 317px</span>.</p>
+                                <p>Measured: the label needs 232px and the button offered 222px. Cut the padding; it now holds one line down to 317px.</p>
                             </div>
                         </div>
                     </div>
