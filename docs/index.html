@@ -472,12 +472,14 @@ code:not(pre code) {
 
 .pill {
     position: absolute; right: .55rem; bottom: .55rem;
-    /* flex-wrap, and it is load-bearing: the min-content width of a NOWRAP
-       flex row is the SUM of its items, and a min-content wider than
-       max-width wins over max-width. At a 200% text size the count badge
-       came out 41px past the frame, which clips -- "3 notes" read "3 no".
-       Wrapping makes the min-content the widest single item instead. */
-    display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+    /* A dot and a label, and that is the whole row: the min-content of a flex
+       row is the SUM of its items and it wins over max-width, so a row of two
+       items -- one of them a label free to wrap inside itself -- can never
+       push the pill past the edge of a frame that clips. It could when a
+       count badge made a third: at a 200% text size that came out 41px past
+       the frame, and "3 notes" read "3 no". The count is gone with the note
+       it counted, and so is the flex-wrap that was holding it in. */
+    display: inline-flex; align-items: center; gap: .4rem;
     /* At rest the real button is a light pill with one accent dot, not a slab
        of accent: it sits on somebody else's page and must not shout. */
     background: var(--bg); color: var(--text); border: 1px solid var(--line);
@@ -491,10 +493,6 @@ code:not(pre code) {
     max-width: calc(100% - 1.1rem);
 }
 .pill .dot { width: .42rem; height: .42rem; border-radius: 50%; background: var(--accent); flex: none; }
-.pill .count {
-    background: var(--bg-soft); color: var(--dim);
-    border-radius: 999px; padding: 0 .35rem; font-size: .68rem;
-}
 
 /* The rectangle is drawn AROUND the target, never on it -- which is also what
    the tool does: it never puts an outline on an element of the host page. */
@@ -538,17 +536,22 @@ code:not(pre code) {
    what colour somebody's buttons are is their business; that they wrap is
    ours. */
 .gbs {
+    /* 1.3rem between the two, and it is the pointed element that asks for it:
+       its rectangle is drawn 5px outside its own edge and the excerpt hangs
+       .3rem further left again, so a narrower gap would put a piece of the
+       tool on the button beside it. The same number in both frames, because
+       the two rows have to be the same row. */
     display: flex; flex-wrap: wrap; gap: 1.3rem;
     /* flex-start on both, so a row that wraps keeps the height its own padding
        gives it: stretched, the 16px pair would be drawn as tall as the 36px
        pair it replaced, and half of what the edit did is that height. */
     align-items: flex-start; align-content: flex-start;
     /* Room above for the floating excerpt, which hangs off the top of the
-       element it quotes; and .55rem on the left for the count badge, which
-       hangs .5rem off its own corner and would otherwise sit on the frame's
-       padding. Stated here rather than on .target and .spot, so that the two
-       rows -- one with those pieces, one without -- start at the same x and
-       the two frames really are the same crop. */
+       element it quotes; and .55rem on the left for the rectangle and that
+       excerpt, drawn 5px and .3rem outside the element's own left edge, which
+       would otherwise sit on the frame's padding. Stated here rather than on
+       .target, so that the two rows -- one with those pieces, one without --
+       start at the same x and the two frames really are the same crop. */
     margin: 1.9rem 0 0; padding-left: .55rem;
 }
 .gb {
@@ -565,32 +568,6 @@ code:not(pre code) {
     background: var(--accent); color: var(--on-accent);
     font-size: .62rem; font-weight: 650; line-height: 1.75;
     border-radius: 5px; padding: 0 .4rem; white-space: nowrap;
-}
-
-/* AND THE OTHER THING THE TOOL PUTS ON A PAGE, which is what an element that
-   ALREADY carries notes looks like: a small count badge on its top-left
-   corner, and nothing else. It is `.ap-marker` in the client -- an accent
-   pill, the number of notes on that element, a 2px border in the page's own
-   background so it reads as sitting above the element rather than in it, at
-   the corner minus 8px. Reproduced here, not invented here.
-
-   IT IS A SEPARATE PIECE FROM `.target` ON PURPOSE, because the tool never
-   draws both on the same element: the rectangle and the floating excerpt
-   follow the ONE element under the pointer, the badges sit on every element
-   that has been annotated already. A frame showing two rectangles at once
-   would be showing an interface state that cannot happen. */
-/* The 1.3rem that used to sit here is the ROW's gap now, and the number has not
-   changed: the badge hangs .5rem off its own left corner and the pointed
-   element beside it wears a rectangle drawn 5px outside ITS edge, so anything
-   narrower puts two pieces of the tool on top of each other. */
-.spot { position: relative; display: inline-flex; max-width: 100%; }
-.badge {
-    position: absolute; left: -.5rem; top: -.5rem;
-    min-width: 1.1rem; padding: 0 .28rem;
-    border: 2px solid var(--bg); border-radius: 999px;
-    background: var(--accent); color: var(--on-accent);
-    font-size: .58rem; font-weight: 700; line-height: 1.05rem; text-align: center;
-    box-shadow: var(--shadow);
 }
 
 /* -- Footer -------------------------------------------------------------- */
@@ -1227,21 +1204,25 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                      16px and 16px there. Same numbers, same drawing, as the
                      before/after in the figure on example-session.html.
 
-                     ONE POINTED ELEMENT AND ONE ALREADY ANNOTATED. The
-                     rectangle and the floating excerpt belong to the element
-                     under the pointer -- the second button -- and there is only
-                     ever one of those; the first already carries her note 1, so
-                     it wears the count badge the tool leaves on an element that
-                     has one. See .spot above. What is being typed on the right
-                     is therefore note 2, in her words.
+                     ONE POINTED ELEMENT, AND ONE IS ALL THERE IS. The tool
+                     anchors a note to a single element, so the rectangle and
+                     the floating excerpt belong to the one button under the
+                     pointer -- the first -- and nothing at all is drawn on the
+                     second. The other button is wrapped too, and that is the
+                     whole point of leaving it bare: the reviewer reports the
+                     defect in ONE place, and step 03 is where it turns out one
+                     rule was holding both. What is being typed on the right is
+                     therefore note 1, in her words, and it is her first: the
+                     page carries no note yet, which is why the tool's button is
+                     drawn at rest, with no count beside it.
 
                      ONE OF THE TWO LEAVES WHEN THE FRAME IS NARROW, and it is
                      the one carrying no gesture: two buttons of this size need
-                     426px of frame and below 78rem they stack, which puts the
-                     floating excerpt of the second across the face of the
-                     first. What stays is the button being pointed at, wrapped
-                     -- on a 360px screen, which is the screen Camille's note is
-                     about. -->
+                     426px of frame and below 78rem they stack, which turns the
+                     crop into a column of two green slabs with the pointed one
+                     no longer obviously the subject. What stays is the button
+                     being pointed at, wrapped -- on a 360px screen, which is
+                     the screen Camille's note is about. -->
                 <div class="frame nt-frame with-pill" aria-hidden="true">
                     <!-- The host page's own words are the host's business, so
                          they are bars. The buttons are not: their labels are
@@ -1253,13 +1234,10 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                         <div class="bar-line w70"></div>
                         <div class="bar-line w45 roomy"></div>
                         <div class="gbs gbs-before">
-                            <span class="spot roomy">
-                                <span class="badge">1</span>
+                            <span class="target">
+                                <span class="marker">Download the calibration table</span>
                                 <span class="gb">Download the calibration table</span>
-                            </span><span class="target">
-                                <span class="marker">Open the correction worksheet</span>
-                                <span class="gb">Open the correction worksheet</span>
-                            </span>
+                            </span><span class="gb roomy">Open the correction worksheet</span>
                         </div>
                         <div class="bar-line w70 below"></div>
                         <div class="bar-line w85 roomy"></div>
@@ -1274,15 +1252,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                          `form.about`, the signature line is `author.known` and
                          `author.change`, the buttons are `form.send` and
                          `form.cancel`, and the counter is `form.remaining`
-                         against the 4000-character limit -- 3924 left under 76
-                         typed. The sentence is Camille's note 2, cut where she
-                         has got to and nowhere else. -->
+                         against the 4000-character limit -- 3948 left under 52
+                         typed. What is in the field is the first sentence of
+                         Camille's note 1, whole; the second is the one she has
+                         not typed yet. -->
                     <div class="nt-panel nt-form roomy">
                         <p class="fm-title">Your remark</p>
-                        <p class="fm-about">About: Open the correction worksheet</p>
+                        <p class="fm-about">About: Download the calibration table</p>
                         <p class="fm-sign">You are writing as Camille. <span class="fm-change">Change</span></p>
-                        <p class="fm-area">Same thing further down: this one wraps too, and the second line sits almost<span class="caret"></span></p>
-                        <p class="fm-acts"><span class="fm-send">Send</span><span class="fm-cancel">Cancel</span><span class="fm-left">3924 characters left</span></p>
+                        <p class="fm-area">On my phone this button label breaks onto two lines.<span class="caret"></span></p>
+                        <p class="fm-acts"><span class="fm-send">Send</span><span class="fm-cancel">Cancel</span><span class="fm-left">3948 characters left</span></p>
                     </div>
                     <!-- AND THE BUTTON ONLY WHERE IT IS IN THE CROP. Below
                          78rem the frame holds the page alone and the tool's
@@ -1292,8 +1271,14 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                          the bottom right of a viewport this is a detail of --
                          is outside the picture. Drawing it there would also
                          put it under the form, which is the one place the
-                         tool never puts it. -->
-                    <span class="pill tight"><span class="dot"></span>Annotate this page<span class="count">3 notes</span></span>
+                         tool never puts it.
+
+                         AND AT REST, WITH NO COUNT, because the count is a
+                         fact and the fact here is zero: the client appends
+                         "1 note", "2 notes" only once notes exist, and the
+                         note in the form beside it is the first, still being
+                         written. -->
+                    <span class="pill tight"><span class="dot"></span>Annotate this page</span>
                 </div>
             </li>
             <li>
@@ -1329,17 +1314,28 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                      history toggle reads "See the history (3 resolved)". ONE
                      thread is drawn and the other two are below the fold of a
                      panel that scrolls, which is what a panel does; the one
-                     drawn is the thread of the note whose badge is on the first
-                     button in step 01. Nothing is renumbered, nothing is
-                     shortened but at a full stop, and no figure is rounded.
+                     drawn is the thread of the note being written in step 01.
+                     Nothing is renumbered, nothing is shortened but at a full
+                     stop, and no figure is rounded.
+
+                     AND THE REPLY IS WHY BOTH BUTTONS ARE FIXED WHEN ONLY ONE
+                     WAS REPORTED. The middle sentence is the assistant's own,
+                     verbatim: one `a.action` rule was giving BOTH buttons the
+                     36px padding and the 17px label, so the one edit the one
+                     note asked for answered the other button as well. That is
+                     what the session did, and it is the thing worth showing --
+                     the reviewer points at one place, the assistant finds the
+                     common cause. It arrives with the second button, at 78rem:
+                     below that line the crop is not drawn at all and a sentence
+                     about two buttons would have no picture to land on.
 
                      Every line here is a line the client draws -- the stamp is
                      `note.resolved`, "Resolved on {date} by {by}"; the author
                      and the date are the note header; "About:" is
-                     `note.about`. The reply is the assistant's, cut after its
-                     first sentence and again before its last, and both figures
-                     in it are the measured ones: 232 against 222 before, one
-                     line down to 317px after. -->
+                     `note.about`. The reply is the assistant's, whole above
+                     78rem and cut at a full stop below it, and every figure in
+                     it is the measured one: 232 against 222 before, 36px and
+                     17px in the rule, one line down to 317px after. -->
                 <div class="frame nt-frame" aria-hidden="true">
                     <div class="pg roomy">
                         <div class="bar-line head"></div>
@@ -1368,7 +1364,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                             </div>
                             <div class="nt reply">
                                 <p class="nt-who"><b>Assistant</b><span class="roomy"> &middot; Sep 1, 2026, 12:01 PM</span></p>
-                                <p>Measured before the change: the label needs 232px on one line and the button offers it 222px<span class="roomy"> at a 360px viewport, so it wraps at 369px and below. Cut to 16px of padding and a 16px label; measured again on the same page, this one holds a single line down to 317px</span>.</p>
+                                <p>Measured before the change: the label needs 232px on one line and the button offers it 222px<span class="roomy"> at a 360px viewport, so it wraps at 369px and below. Cause: the single a.action rule gives both buttons 36px of horizontal padding and a 17px label. Cut to 16px of padding and a 16px label; measured again on the same page, this one holds a single line down to 317px</span>.</p>
                             </div>
                         </div>
                     </div>
