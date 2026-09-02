@@ -269,12 +269,19 @@ section:first-of-type { border-top: 0; }
 h2 + .lead, h2 + p, h2 + .split { margin-top: .9rem; }
 
 .route { font-size: .95rem; color: var(--dim); }
-/* It closes the chapter, so it is spaced like the end of one. Hard under the
-   last step it read as a fourth sentence of that step. */
+/* A note, not a paragraph. It closes the chapter -- hard under the last step
+   it read as a fourth sentence of that step -- and it says one thing, so it is
+   drawn at the weight of one thing: a mark, a line, and the way out is the
+   button underneath. */
 .install-other {
-    margin: clamp(2rem, 4vw, 3rem) 0 0;
-    font-size: .95rem; color: var(--dim); max-width: 46em;
+    display: inline-flex; align-items: baseline; gap: .45rem;
+    margin: clamp(1.8rem, 3.6vw, 2.6rem) 0 0;
+    padding: .5rem .8rem;
+    border: 1px solid var(--line-soft); border-radius: 8px;
+    background: var(--bg-soft);
+    font-size: .88rem; color: var(--dim);
 }
+.install-other .tick { color: var(--accent); font-size: 1em; }
 .route a { color: var(--accent); }
 /* The lead sits under a headline, not welded to it. */
 h1 + .lead { margin-top: 1.15rem; }
@@ -1670,9 +1677,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         </ol>
 
         <p class="install-other">
-            Want the notes private instead, so that opening the page is not
-            enough to read them? One attribute changes, and every reviewer
-            pastes the key once.
+            <span class="tick" aria-hidden="true">&#9432;</span>
+            This is the open mode. A secure one exists, where the key stays out
+            of the page.
         </p>
         <p class="see-more">
             <a class="more" href="install.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
