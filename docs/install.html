@@ -663,6 +663,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <a href="example-session.html">A real session</a>
             <a href="#rule">The one rule</a>
             <a href="#frameworks">Frameworks</a>
+            <a href="#modes">Open or private</a>
             <a href="#locked">The locked tag</a>
             <a href="#server">Your own server</a>
             <a href="https://github.com/tuxo83/annotepage">Source</a>
@@ -807,6 +808,62 @@ data-version={process.env.NEXT_PUBLIC_VERSION}  &lt;!-- anything your bundler su
             <code>data-mode</code>, <code>data-labels</code> &mdash; is in the
             <a href="https://github.com/tuxo83/annotepage/blob/main/client/README.md#the-tag-attributes">client README</a>.
         </p>
+    </div>
+</section>
+
+<!-- OPEN OR PRIVATE ===================================================== -->
+<section id="modes">
+    <div class="wrap">
+        <h2>Open, or private</h2>
+
+        <p class="lead">
+            The notes are encrypted either way. What changes is who holds the
+            key &mdash; and that is one attribute of the tag.
+        </p>
+
+        <h3>Open: the key is in the tag</h3>
+        <p>
+            This is the tag the landing page hands you. Anyone who can open the
+            page can read the notes and add their own, because the key is
+            served with the page. Nothing to hand out, nothing to lose.
+        </p>
+        <div class="snip">
+<pre><code>data-key="&lt;43 characters, generated for you&gt;"</code></pre>
+        </div>
+        <p class="small dim">
+            The server still cannot read anything: the key is in the page, and
+            the page is the one thing it never receives. What it stores stays
+            an envelope it cannot open.
+        </p>
+        <p class="small dim">
+            The key gives reading AND writing &mdash; this format has no
+            reader-only role. On a staging site behind a login that is your
+            team. On a public page it is everyone, and a tag copied out of your
+            source writes into your project.
+        </p>
+
+        <h3>Private: the tag carries only the project id</h3>
+        <p>
+            Each reviewer pastes the key once, in their own browser, and the
+            tool remembers it for that site. Until it is there the client
+            fetches nothing and decrypts nothing. Somebody who can open the
+            page still cannot read a word.
+        </p>
+        <div class="snip">
+<pre><code>data-project="&lt;22 characters, derived from the key&gt;"</code></pre>
+        </div>
+        <p class="small dim">
+            Never write both. A tag carrying a key and an id that disagree is
+            refused, and no winner is picked &mdash; the mistake is in the page,
+            so there is nothing to type your way out of.
+        </p>
+
+        <div class="callout">
+            <p><strong>The choice is the tag, and it cannot be changed later.</strong>
+            The project id is the key hashed, so the other mode is a different
+            key, a different id, and a different tag on every annotated page.
+            Notes written under one do not move to the other.</p>
+        </div>
     </div>
 </section>
 
