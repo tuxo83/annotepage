@@ -33,8 +33,8 @@ Load the client once, on a page of the site, with `data-setup` and **without**
 `data-project`:
 
 ```html
-<script src="https://<your-cdn>/annotepage-client@2.0.1/dist/annotepage.js"
-        integrity="sha384-VBUfe2CFvh85WRBCH1/uKse1O2wauw3at7B9gGC2fC8Y/sG03p9bZABq3MyUDbKE"
+<script src="https://<your-cdn>/annotepage-client@2.0.2/dist/annotepage.js"
+        integrity="sha384-aSkx1XQLhcYpDQrpoD8yUn0Wu00BHbi1KktWiXqMQufioNtReQw+tm804/ZzNfo8"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-setup
@@ -54,8 +54,8 @@ on the server. No network request is made at that point.
 ### 2. Paste the final tag, at the end of `<body>`
 
 ```html
-<script src="https://<your-cdn>/annotepage-client@2.0.1/dist/annotepage.js"
-        integrity="sha384-VBUfe2CFvh85WRBCH1/uKse1O2wauw3at7B9gGC2fC8Y/sG03p9bZABq3MyUDbKE"
+<script src="https://<your-cdn>/annotepage-client@2.0.2/dist/annotepage.js"
+        integrity="sha384-aSkx1XQLhcYpDQrpoD8yUn0Wu00BHbi1KktWiXqMQufioNtReQw+tm804/ZzNfo8"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"
@@ -199,6 +199,21 @@ variables nor the theme of the host site.
 
 `textContent` everywhere, `innerHTML` nowhere: the text of a note is typed by a
 human and is never interpreted as markup.
+
+## The interface says "key", the format says "salt"
+
+Since 2.0.2 every string a person reads says **key** -- "The key of this
+project is needed", "The project key (43 characters)". Cryptographically that
+is what it is: 32 bytes of key material, from which HKDF derives the project
+id, the AES-256-GCM key and the blind-index key. A salt, by definition, is
+public; this is the only secret there is, and the word invited people to treat
+it as if it were not.
+
+What did NOT change, deliberately: the label KEYS are still `salt.title`,
+`salt.help` and so on -- renaming them would silently break every translation
+file already written against them -- and `FORMAT.md`, the storage key
+`annotepage/salt/<project>`, and the MCP's `salt` configuration field are
+unchanged, because those are a format and a contract rather than prose.
 
 ## Translating, or changing a word
 
