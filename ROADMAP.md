@@ -192,7 +192,12 @@ are public on the internet", including the ones about a site that is not
 published yet. It also breaks, in one word, the promise the site makes about
 the shared server.
 
-### (b) Put the key IN the tag -- recommended
+### (b) Put the key IN the tag -- DECIDED, 2026-09-02
+
+The owner's original intention, and his call after reading (a): "l'option b dans
+la configuration actuelle est tres acceptable, c'est vraiment celle que j'avais
+en tete a l'origine". (a) is recorded above so nobody rediscovers it as an
+obvious shortcut and takes it.
 
 `data-key` beside `data-project`. The client reads it there instead of asking
 for it, and stores nothing.
@@ -223,6 +228,56 @@ project anyone can write to is a project anyone can fill with noise, and the
 per-project cap is the only thing between that and the relay's disk. The rate
 limit is per IP and per project; neither is an answer to a public project
 someone decides to flood.
+
+## Rotating the key
+
+Asked for by the owner on 2026-09-02, as the thing that would absorb part of
+the risk the public option carries -- and part of the risk the key carries
+anyway, since today it cannot be changed at all.
+
+**Why there is no rotation today.** The key derives the project id. Change the
+key and you change the id, which means you have a different project: a new
+tag on every page, and every note left behind in the old one. That coupling is
+what makes the id safe to publish -- it cannot be worked back to the key --
+and it is also what makes rotation impossible. The two properties are the same
+property.
+
+**What a rotation would actually be: a re-encryption.** The CLI and the MCP
+already hold the key, and they are the only place that could do it: read every
+note with the old key, decrypt, re-encrypt with the new one, recompute every
+blind index, write them under the new project, then delete the old rows. The
+server never has to understand any of it -- it moves envelopes it cannot open,
+which is what it already does.
+
+What it costs, and none of it is hidden:
+
+- **the tag changes on every annotated page**, because the project id changed.
+  A rotation is therefore a coordinated deploy, not a button;
+- **every reviewer pastes the new key once**, on every domain, exactly as they
+  did the first time;
+- **the old rows must be deleted**, or the old key still opens them where they
+  sit.
+
+**What rotation buys, stated exactly, because it is easy to oversell.** It does
+not undo a leak: whoever holds the old key and kept a copy of the old rows
+keeps them, forever. What it buys is that the leaked key stops working against
+the live server, and that everything written after the rotation is out of its
+reach. For the public option that is the whole point -- it is the only way a
+project that was made public becomes private again for what comes next.
+
+**The change that would make it cheap, and it is a format break.** If the
+project id were random and carried in the tag rather than derived from the
+key, the key could change without the id changing: no new tag, no coordinated
+deploy, and the reviewers' re-paste becomes the only cost. Notes still need
+re-encrypting. That is format 3 territory and should not be smuggled into a
+point release; write it down here and decide it once, with FORMAT.md section 7
+open.
+
+Nothing is built. `annotepage rotate` does not exist and must not be half
+implemented -- a rotation that stops in the middle leaves a project whose notes
+are split across two keys, which is the one state the format's per-row mode
+field was designed to survive but which nobody should have to read about in a
+support message.
 
 ## A page of its own for the security rules
 
