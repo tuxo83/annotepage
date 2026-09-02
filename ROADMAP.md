@@ -213,6 +213,23 @@ for it, and stores nothing.
 - No format change and no server change. The client gains one attribute; the
   landing page gains a choice at generation.
 
+**And it would let the assistant stop being configured at all.** Raised by the
+owner in the same conversation: if the key is in the tag, `annotepage open`
+could be given a URL, fetch the page, read `data-project` and `data-key` off
+it, and work -- no configuration file holding the only secret in the system,
+which today is the one file the MCP README puts in bold. For a public project
+that is a genuine simplification and not a shortcut.
+
+It is not free, and the cost is in a direction the MCP has never gone: today it
+talks to ONE address, the one written in its configuration. Fetching a URL the
+assistant chose is a new outbound surface -- private ranges, localhost,
+redirects -- and worse, the page it fetches decides where the notes are read
+and written, since `data-server` is on the same tag. Point it at a hostile page
+and it talks to a hostile server. So this needs a designed answer (a refusal of
+private ranges at least, and probably the URL confirmed by the human once per
+project) rather than a fetch call. A private project keeps its configuration
+file, and should.
+
 What (b) costs, and must be said where it is offered: the key is served to
 whoever the page is served to -- search engines and archive sites included --
 and there is no going back. A project made public cannot be made private
