@@ -180,7 +180,26 @@ require __DIR__ . '/internal/rate-limit.php';
 require __DIR__ . '/internal/text-export.php';
 require __DIR__ . '/internal/update.php';
 
-// --- 3. Response helpers --------------------------------------------------
+// --- 3. https -------------------------------------------------------------
+//
+// BEFORE ANY ROUTING, and before the configuration failure of the next section
+// is reported: while https is required, no action, no note and no error page is
+// ever answered over plain http. An http request gets a 308 towards the same
+// URL over https -- 308 and not 301 or 302, which turn a POST into a GET in
+// many clients and would deliver a note with no body at all.
+//
+// The scheme is DETECTED, not assumed: see ap_request_scheme_detail() in
+// internal/config.php for why $_SERVER['HTTPS'] alone is the wrong answer
+// behind a proxy, and `allow_plain_http` for the way out when the detection is
+// wrong on a given host. ?action=diagnostic reports both.
+//
+// install.php is deliberately NOT covered: the bootstrap installer probes it
+// over plain http to establish that it can reach its own web server at all,
+// before anything is known about TLS on that host.
+
+ap_require_https();
+
+// --- 4. Response helpers --------------------------------------------------
 
 /**
  * Version of the TOOL, read from the VERSION file that accompanies it.
@@ -285,7 +304,7 @@ function ap_require_post($what)
     }
 }
 
-// --- 4. Diagnostic --------------------------------------------------------
+// --- 5. Diagnostic --------------------------------------------------------
 //
 // ONE SINGLE REQUEST, FROM OUTSIDE, must be enough to settle: is PHP executed,
 // in which version, with which extensions, are the credentials readable, does
@@ -372,6 +391,21 @@ function ap_write_diagnostic($config, $version, $configError)
     ap_diag_line('config.present', ap_yes_no(is_file($path)));
     ap_diag_line('config.readable',
         ap_yes_no(is_file($path) && is_readable($path)));
+
+    // HTTPS, and what the request actually arrived as. ABOVE the failure
+    // branch below, and reading the defaults when the configuration did not
+    // load, because the scheme has nothing to do with the configuration and
+    // this is exactly the pair one comes here for: "https required" plus
+    // "arrived as http" ON A REQUEST YOU MADE OVER https is the detection
+    // being wrong on this host. That is the whole reason `allow_plain_http`
+    // exists, and this page is where you see it -- the redirect loop it causes
+    // leaves nothing else to look at.
+    $scheme = ap_request_scheme_detail();
+    ap_diag_line('config.https_required',
+        ap_https_required($configError === null ? $config : ap_config_defaults())
+            ? 'yes -- plain http gets a 308 to the same URL over https'
+            : 'no -- allow_plain_http is on, http is served as it stands');
+    ap_diag_line('request.scheme', $scheme['scheme'] . ' -- ' . $scheme['from']);
 
     if ($configError !== null) {
         ap_diag_line('config.loading', 'FAILED');
@@ -490,7 +524,7 @@ function ap_write_diagnostic($config, $version, $configError)
     }
 }
 
-// --- 5. Routing -----------------------------------------------------------
+// --- 6. Routing -----------------------------------------------------------
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 if (!is_string($action)) {

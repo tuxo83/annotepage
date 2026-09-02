@@ -194,4 +194,16 @@ return array(
     // leave this key out: a header the client writes itself would make rate
     // limiting bypassable in one line.
     // 'client_ip_header' => 'HTTP_X_FORWARDED_FOR',
+
+    // https IS REQUIRED. Every http request is answered with a 308 towards the
+    // same URL over https -- 308 and not 302, so a POST stays a POST and the
+    // note keeps its body.
+    //
+    // Uncomment this ONLY if the redirect loops: that means this host reports
+    // an https visitor as http (no HTTPS, no REQUEST_SCHEME, no forwarding
+    // header), not that plain http is wanted. ?action=diagnostic prints what
+    // the request arrived as. It is a way out, not a preference -- and the
+    // widget needs a secure context for WebCrypto, so over http it cannot
+    // encrypt anything anyway.
+    // 'allow_plain_http' => true,
 );

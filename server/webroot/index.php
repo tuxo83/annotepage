@@ -14,6 +14,9 @@
  *     a 302, never a 301: a permanent redirect is cached by browsers and would
  *     outlive them changing their mind. See internal/config.php for the
  *     validation, which happens before the value reaches a Location header;
+ *   - it redirects plain http to https, like every entry point, unless
+ *     `allow_plain_http` says otherwise. That happens BEFORE the forward
+ *     below, so a bare visit is never sent on over http;
  *   - otherwise it answers 404, in text, saying nothing about the
  *     installation. The one exception is the fresh-upload window -- install.php
  *     present and no configuration yet -- where it names install.php. That
@@ -39,6 +42,13 @@ define('AP_INTERNAL', 1);
 
 require __DIR__ . '/internal/errors.php';
 require __DIR__ . '/internal/config.php';
+
+// https FIRST, before the courtesy redirect below and before anything is
+// written: a bare visit is answered over http only where the operator asked
+// for that. It is a 308 towards the same URL, it detects the scheme rather
+// than trusting $_SERVER['HTTPS'] alone, and `allow_plain_http` turns it off
+// -- all three in internal/config.php.
+ap_require_https();
 
 $forward = null;
 try {

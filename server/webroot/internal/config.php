@@ -316,6 +316,29 @@ function ap_config_defaults()
         // installs is exactly the input one is tempted to trust, and an
         // unvalidated string in that header is a header injection.
         'forward_root_to' => '',
+
+        // SERVE OVER PLAIN http AS WELL? No: https is required, and every http
+        // request is answered with a 308 towards the same URL over https.
+        //
+        // 308, and not 301 or 302: those two turn a POST into a GET in many
+        // clients. The note being written would arrive with no body, the
+        // server would refuse it, and the failure would read as a bug in the
+        // client -- which is where nobody would find it.
+        //
+        // THIS FLAG IS NOT A SECURITY PREFERENCE. It is the way out when the
+        // detection is wrong on a given host. The scheme is read from HTTPS,
+        // REQUEST_SCHEME, the server port and the two forwarding headers --
+        // see ap_request_scheme_detail() below -- and a host that reports none
+        // of them for a visitor who IS on https redirects every request to a
+        // URL that arrives here looking exactly the same. That is an infinite
+        // loop, and it takes the API down for every caller. Set this to true,
+        // read `request.scheme` in ?action=diagnostic to see what the request
+        // actually arrived as, and report the host: that is what it is for.
+        //
+        // It does NOT make plain http usable by the client. The browser gives
+        // WebCrypto only in a secure context, so over http the widget cannot
+        // derive a key or open an envelope at all.
+        'allow_plain_http' => false,   // true: serve over http as well
     );
 }
 
@@ -374,6 +397,7 @@ function ap_config()
     $config['active'] = !empty($config['active']);
     $config['open_registration'] = !empty($config['open_registration']);
     $config['auto_update'] = !empty($config['auto_update']);
+    $config['allow_plain_http'] = !empty($config['allow_plain_http']);
     $config['local_config'] = $local;
     $config['local_config_present'] = is_file($local);
 
@@ -492,6 +516,188 @@ function ap_forward_root_to(array $config)
         return null;
     }
     return $url;
+}
+
+/**
+ * HOW THE REQUEST REALLY ARRIVED: 'https' or 'http', and what said so.
+ *
+ * $_SERVER['HTTPS'] is the obvious answer and it is the WRONG one on its own.
+ * On shared hosting the TLS is very often terminated by a load balancer or a
+ * CDN, and PHP is reached over plain http from the machine next door: HTTPS is
+ * then empty -- or the literal string `off` -- while the visitor's address bar
+ * says https. Deciding on that alone means redirecting a visitor who is
+ * already on https to a URL that arrives here looking exactly the same, which
+ * the browser follows, and follows again. That is not a cosmetic bug: it is an
+ * infinite loop, and it takes the API down for every caller on that host.
+ *
+ * So five sources are read, most direct first:
+ *
+ *   HTTPS              set by the web server when IT terminated the TLS;
+ *   REQUEST_SCHEME     Apache's own name for the same knowledge;
+ *   SERVER_PORT 443    the port WE are listening on, not something a caller
+ *                      claims;
+ *   X-Forwarded-Proto  what the proxy in front reports. Chained proxies append
+ *   X-Forwarded-Ssl    to it -- `https, http` -- so only the FIRST value, the
+ *                      one that faced the client, is read.
+ *
+ * The last two are request headers, so a caller can write them itself and skip
+ * the redirect. That is accepted DELIBERATELY: this redirect authorises
+ * nothing and hides nothing -- a caller that wants plain http can already just
+ * not follow it -- while refusing to read those headers produces the loop
+ * above on a large share of real hosting. Contrast `client_ip_header`, which
+ * is off by default precisely because rate limiting IS a boundary.
+ *
+ * The reported source is reduced to printable ASCII before being returned: it
+ * comes from a request header and it is displayed by ?action=diagnostic, whose
+ * whole format is one line per key.
+ *
+ * @return array{scheme: string, from: string}
+ */
+function ap_request_scheme_detail()
+{
+    $clean = function ($value) {
+        return substr(preg_replace('/[^\x20-\x7E]/', '', (string) $value), 0, 30);
+    };
+
+    $https = isset($_SERVER['HTTPS']) ? trim((string) $_SERVER['HTTPS']) : '';
+    $lower = strtolower($https);
+    if ($https !== '' && $lower !== 'off' && $lower !== '0') {
+        return array('scheme' => 'https', 'from' => 'HTTPS=' . $clean($https));
+    }
+
+    $scheme = isset($_SERVER['REQUEST_SCHEME'])
+        ? strtolower(trim((string) $_SERVER['REQUEST_SCHEME'])) : '';
+    if ($scheme === 'https') {
+        return array('scheme' => 'https', 'from' => 'REQUEST_SCHEME=https');
+    }
+
+    if (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443) {
+        return array('scheme' => 'https', 'from' => 'SERVER_PORT=443');
+    }
+
+    $proto = isset($_SERVER['HTTP_X_FORWARDED_PROTO'])
+        ? (string) $_SERVER['HTTP_X_FORWARDED_PROTO'] : '';
+    if ($proto !== '') {
+        $parts = explode(',', $proto);
+        if (strtolower(trim($parts[0])) === 'https') {
+            return array('scheme' => 'https', 'from' => 'X-Forwarded-Proto: https');
+        }
+    }
+
+    $ssl = isset($_SERVER['HTTP_X_FORWARDED_SSL'])
+        ? strtolower(trim((string) $_SERVER['HTTP_X_FORWARDED_SSL'])) : '';
+    if ($ssl === 'on' || $ssl === '1') {
+        return array('scheme' => 'https', 'from' => 'X-Forwarded-Ssl: on');
+    }
+
+    return array(
+        'scheme' => 'http',
+        'from'   => ($proto !== '' || $ssl !== '')
+            ? 'no source says https (a forwarding header is present and says otherwise)'
+            : 'no source says https',
+    );
+}
+
+/** True when the request reached us over https, however that was established. */
+function ap_request_is_https()
+{
+    $detail = ap_request_scheme_detail();
+    return $detail['scheme'] === 'https';
+}
+
+/** True when plain http must be redirected. See `allow_plain_http` above. */
+function ap_https_required(array $config)
+{
+    return empty($config['allow_plain_http']);
+}
+
+/**
+ * The same URL as this request, over https -- or null if it cannot be built.
+ *
+ * The host comes from the Host header, which is written by the CLIENT. Copied
+ * unchecked into a Location it is two bugs at once: a header injection if it
+ * carries a newline, and an open redirect if it names somebody else's site. It
+ * is therefore matched against a host name and nothing else, and a host that
+ * does not match returns null -- the request is then served rather than sent
+ * somewhere a stranger chose.
+ */
+function ap_https_url_of_this_request()
+{
+    $host = isset($_SERVER['HTTP_HOST']) ? trim((string) $_SERVER['HTTP_HOST']) : '';
+    if ($host === '') {
+        $host = isset($_SERVER['SERVER_NAME']) ? trim((string) $_SERVER['SERVER_NAME']) : '';
+    }
+    if (!preg_match('/^(\[[0-9A-Fa-f:]{2,45}\]|[A-Za-z0-9.\-]{1,253})(:[0-9]{1,5})?$/', $host)) {
+        return null;
+    }
+    // :80 is the plain-http port. Carried over to an https URL it points at a
+    // door that is not open, and the redirect fails instead of working.
+    if (substr($host, -3) === ':80') {
+        $host = substr($host, 0, -3);
+    }
+
+    $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+    if ($uri === '' || $uri[0] !== '/' || preg_match('/[\x00-\x1F\x7F]/', $uri)) {
+        $uri = '/';
+    }
+    return 'https://' . $host . $uri;
+}
+
+/**
+ * REDIRECTS PLAIN http TO https, or returns and lets the request be served.
+ *
+ * Called first thing by every entry point, before any routing, so that no
+ * action, no note and no configuration error is ever answered over http while
+ * https is required.
+ *
+ * IT NEVER THROWS, and it loads the configuration itself rather than being
+ * handed one: it runs before the point where a configuration failure is
+ * reported, and a broken local file must not turn this guard into a 500. A
+ * configuration that will not load falls back on the defaults, which require
+ * https -- the same answer the operator gets on a working server.
+ *
+ * The 308 is sent WITH `Cache-Control: no-store`. The status code has to be
+ * permanent to preserve the method, but the operator who later sets
+ * `allow_plain_http` must not find the redirect burned into every browser that
+ * ever saw it.
+ */
+function ap_require_https()
+{
+    if (ap_request_is_https()) {
+        return;
+    }
+
+    $config = null;
+    try {
+        $config = ap_config();
+    } catch (Exception $e) {
+        $config = null;
+    } catch (Throwable $e) {
+        $config = null;
+    }
+    if ($config === null) {
+        $config = ap_config_defaults();
+    }
+    if (!ap_https_required($config)) {
+        return;
+    }
+
+    $target = ap_https_url_of_this_request();
+    if ($target === null) {
+        ap_log('https redirect skipped: the Host header is not a usable host name');
+        return;
+    }
+
+    // 308 and not 301 or 302. Those two turn a POST into a GET in many
+    // clients, and a note would arrive with an empty body.
+    header('HTTP/1.1 308 Permanent Redirect', true, 308);
+    header('Location: ' . $target);
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('X-Robots-Tag: noindex, nofollow');
+    header('X-Content-Type-Options: nosniff');
+    echo $target . "\n";
+    exit;
 }
 
 /**
