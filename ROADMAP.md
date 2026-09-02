@@ -262,6 +262,43 @@ again, because the key is out; making it private means a new key, therefore a
 new project, and the old notes stay behind. That is the same irreversibility
 the key already has, pointed the other way.
 
+### How it is offered, and one derivation that must never be built
+
+The owner's framing, 2026-09-02, and it is the right one because it is what is
+actually true: **either the notes are protected by a password, or they are
+protected by the same thing that protects the site itself -- being able to
+reach it.** Said in those words, at the moment of choosing, with nothing else
+around it.
+
+  Step 02, default:  no password. Whoever can open the page can read the notes.
+  Step 02, optional: a password. Only the people you give it to can read them,
+                     including people who can open the page.
+
+Step 03 then keeps the shape it has, plus one sentence: **if a password was
+set and the assistant does not have it, the MCP asks for it.** Nothing to
+configure in advance for the default case.
+
+**THE DERIVATION THAT LOOKS OBVIOUS AND MUST NOT BE BUILT: deriving the key
+from the domain name.** It was proposed in the same breath and it is the one
+version of this that gives everything away.
+
+The client always talks to a DIFFERENT origin from the site under review --
+`api.annotepage.com` against `example.com` -- so the browser writes an `Origin`
+header on every request, and origins.php reads it: that is how the domain lock
+works. A relay therefore knows the domain of every project writing to it. If
+the key were a function of the domain, the relay could compute the key, and
+with it the project id, and read everything it stores. It would not even need
+the page.
+
+That is option (a) with a coat of paint, and worse than (a): (a) is honestly
+plain, this one would be sold as encrypted while the operator can read it.
+
+The random key in the tag gives the owner exactly what he is asking for and
+keeps the property (a) loses. Access to the notes = access to the page, because
+the key is IN the page -- and the page is the one thing the server never sees.
+The server keeps receiving an id and ciphertext, and keeps being unable to open
+either.
+
 ### What is NOT settled
 
 Whether the shared relay should carry public projects at all. (b) keeps the
