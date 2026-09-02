@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How annotepage works &mdash; encryption, limits, server</title>
-<meta name="description" content="The depth behind annotepage: the three gestures, the encryption, what the server can still see, what the tool deliberately does not do, the supply chain, and running the server yourself.">
+<title>Ways to install annotepage &mdash; frameworks and your own server</title>
+<meta name="description" content="The landing page gives the quick route. Here are the others: where the tag goes in Next.js, Nuxt, Rails, Django, Laravel, Symfony, WordPress and plain HTML, how to run the server yourself from one PHP file, and what changes on localhost.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-<link rel="canonical" href="https://annotepage.com/how-it-works.html">
+<link rel="canonical" href="https://annotepage.com/install.html">
 <meta property="og:type"        content="article">
 <meta property="og:site_name"   content="annotepage">
-<meta property="og:url"         content="https://annotepage.com/how-it-works.html">
-<meta property="og:title"       content="How annotepage works">
-<meta property="og:description" content="The encryption, what the server can still see, what the tool deliberately does not do, the supply chain, and running the server yourself.">
+<meta property="og:url"         content="https://annotepage.com/install.html">
+<meta property="og:title"       content="Ways to install annotepage">
+<meta property="og:description" content="Where the tag goes in the framework you already use, how to run the server yourself, and what changes on localhost.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
 /* ---------------------------------------------------------------------------
@@ -640,21 +640,30 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             font: 600 .75rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
             color: var(--accent);
         }
+
+/* -- install.html only -------------------------------------------------- */
+/* The shared sheet gives tables min-width: 27rem, which is wider than a 390px
+   phone: the whole PAGE scrolled sideways, measured at 448px of content in a
+   390px window. The table keeps its width and scrolls inside its own frame. */
+.tablescroll {
+    overflow-x: auto;              /* the frame scrolls, never the page */
+    -webkit-overflow-scrolling: touch;
+    margin: 1.3rem 0;
+}
+.tablescroll table { margin: 0; }
 </style>
-</head>
 <body>
 
 <header class="top">
     <div class="wrap">
         <a class="mark" href="/">annotepage</a>
         <nav>
-            <a href="install.html">Install</a>
             <a href="/">Landing</a>
+            <a href="how-it-works.html">How it works</a>
             <a href="example-session.html">A real session</a>
-            <a href="#annotate">Annotate</a>
-            <a href="#assistant">Assistant</a>
-            <a href="#server">Server</a>
-            <a href="#data">Data</a>
+            <a href="#rule">The one rule</a>
+            <a href="#frameworks">Frameworks</a>
+            <a href="#server">Your own server</a>
             <a href="https://github.com/tuxo83/annotepage">Source</a>
         </nav>
     </div>
@@ -664,469 +673,261 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
 <section class="hero" id="top">
     <div class="wrap">
-        <p class="eyebrow">The whole of it</p>
-        <h1>How it works</h1>
+        <p class="eyebrow">Every route in</p>
+        <h1>Ways to install it</h1>
         <p class="lead">
-            What the three gestures are, what the encryption does and does not cover, what
-            the server can still see, what the tool deliberately refuses to do, where the
-            client comes from, and how to run the server yourself. The
-            <a href="/">landing page</a> is the short version.
+            The <a href="/#install">landing page</a> gives the quick one: one tag, the
+            shared server, nothing to build. It is the right route for most sites.
+            This page has the others &mdash; where the tag goes in the framework you
+            already use, how to run the server yourself, and what changes on
+            <code>localhost</code>.
         </p>
     </div>
 </section>
 
-<!-- HOW YOU ANNOTATE =================================================== -->
-<section id="annotate">
+<!-- THE ONE RULE ======================================================== -->
+<section id="rule">
     <div class="wrap">
-        <h2>Three gestures</h2>
-        <p class="lead">
-            At rest the tool is one button, bottom right. It adds a single element at the
-            end of <code>&lt;body&gt;</code> and keeps everything inside it: no class, no
-            attribute and no style lands on an element of your page.
+        <h2>One rule, and everything else follows</h2>
+
+        <p>
+            The client is a <strong>classic <code>&lt;script&gt;</code> tag</strong>. Not an
+            import, not a module. It reads its whole configuration from its own tag &mdash;
+            the server address, the project id, the version your site is running &mdash;
+            through <code>document.currentScript</code>.
         </p>
 
-        <div class="gestures">
+        <p>
+            So <code>import 'annotepage-client'</code> and
+            <code>&lt;script type="module"&gt;</code> both leave it inert.
+            <code>document.currentScript</code> is <code>null</code> in both cases, and
+            rather than guess an API address from nothing, the client returns and does
+            nothing at all. No error, no console warning: it simply is not there.
+        </p>
 
-            <div class="gesture">
-                <div class="frame" aria-hidden="true">
-                    <div class="bar-line w70"></div>
-                    <div class="bar-line w85"></div>
-                    <div class="bar-line w45"></div>
-                    <span class="pill"><span class="dot"></span>Annotate this page<span class="count">2 notes</span></span>
-                </div>
-                <h3>Open</h3>
-                <p>One button, and a count of the notes anchored on this page &mdash;
-                history included, not a to-do list. It is the tool's only trace at
-                rest.</p>
-            </div>
+        <p>
+            Which reduces every framework to a single question:
+            <strong>which file writes the final <code>&lt;body&gt;</code></strong>?
+        </p>
 
-            <div class="gesture">
-                <div class="frame" aria-hidden="true">
-                    <div class="hint">Click an element of the page to write a remark
-                    about it.<br>Press Escape to stop.</div>
-                    <div class="target">
-                        <span class="marker">Download the calibration table</span>
-                        <span class="fake-cta">Download the calibration table</span>
-                    </div>
-                </div>
-                <h3>Point</h3>
-                <p>Click what you see. The tool draws its own rectangle around it and
-                shows you the text it is about to quote &mdash; it never puts an outline
-                on your element.</p>
-            </div>
-
-            <div class="gesture">
-                <div class="frame" aria-hidden="true">
-                    <div class="mini-form">
-                        <div class="lbl">About: Download the calibration table</div>
-                        <div class="lbl">You are writing as Camille.</div>
-                        <div class="fld tall">The label on this button breaks onto two
-                        lines on a 360px phone.</div>
-                        <span class="send">Send</span>
-                    </div>
-                </div>
-                <h3>Write</h3>
-                <p>Your name is remembered for next time. The remark is sealed in the
-                browser, then pinned to that element for everybody.</p>
-            </div>
-
-        </div>
-
-        <div class="note-aside">
-            <p>Once in place the tool no longer keeps quiet. Every failure is shown, with
-            the message the server wrote, and <strong>the text typed stays in the
-            form</strong>. A remark believed saved and not saved is worse than no tool at
-            all.</p>
+        <div class="callout">
+            <p><strong>One second to check it landed.</strong> Open the console on the
+            page and run <code>document.querySelector('script[data-project]')</code>.
+            A tag means the client saw itself; <code>null</code> means it never ran.</p>
         </div>
     </div>
 </section>
 
-<!-- HOW AN AI USES IT ================================================== -->
-<section id="assistant">
+<!-- FRAMEWORKS ========================================================== -->
+<section id="frameworks">
     <div class="wrap">
-        <h2>How an assistant uses it</h2>
+        <h2>Where the tag goes</h2>
+
         <p class="lead">
-            This is the part no neighbouring tool does. Collecting a remark is common;
-            writing back into the thread, with a measurement and a version, is not.
-            Below is a real session, captured against a running server, a real browser
-            and the published package.
+            The tag itself is the same everywhere &mdash; the one the landing page
+            generates for you, with your own project id. Only its address in your
+            repository changes.
         </p>
 
-        <!-- A TERMINAL, IN PLAIN HTML AND CSS. No script, nothing to play, nothing
-             to step through: it is a picture that happens to be text, so it reads
-             identically with JavaScript off and can be selected and searched.
-             Every line is verbatim captured output. The only editing permitted is
-             dropping a WHOLE line, and every drop leaves the visible [...] marker.
-             Do not reflow the element path, do not shorten the reply. A long line
-             WRAPS, in CSS, with a hanging indent; that changes no character, and a
-             selection of this block still yields the transcript line for line. -->
-        <figure class="term-fig">
-            <div class="term">
-                <div class="term-bar">
-                    <span class="lamp" aria-hidden="true"></span>
-                    <span>a real session &mdash; 1 September 2026</span>
-                </div>
-<pre><code><span class="cmd">$ annotepage open</span>
-<span class="cut">[... 7 header lines: tool, format, version, project, encryption, export, notes ...]</span>
-note 1
-page /guide
-page-index 3a3JXOyhR7AARIKVVKX70Q
-element main:nth-of-type(1) &gt; div:nth-of-type(1) &gt; a:nth-of-type(1)
-excerpt Download the calibration table
-mode encrypted
-author Camille
-date 2026-09-01T08:34:45+00:00
-version 1.4.12
-environment staging
-viewport 1280x800
-status open
-text
-    The label on this button breaks onto two lines on a 360px phone. It should hold on one line down to 320px.
-
-<span class="cut">[... note 2, same shape ...]</span>
-
-<span class="cmd">$ annotepage reply 1 'Measured: the label needs 232px and the button offers 222px at 360px, so it wraps at 369px and below. Horizontal padding cut from 36px to 16px and the label to 16px; measured again, it holds on one line down to 317px.'</span>
-Reply written in the thread of note 1, signed "Assistant".
-
-<span class="cmd">$ annotepage resolve 1 1.4.13</span>
-Note 1 marked resolved by "Assistant", in version 1.4.13.</code></pre>
-            </div>
-            <figcaption>
-                Captured output, not a mock-up, and the note is here with every field it
-                carries. The header of the export is seven lines a machine wants and a
-                reader does not; that and the second note are the only things dropped, and
-                each drop is marked. Nothing else is cut, shortened or reflowed &mdash; a
-                long line wraps where the frame ends rather than hiding past it.
-            </figcaption>
-        </figure>
-
-        <ul class="plain">
-            <li><b>The remark arrives already usable.</b> It carries the page, the
-            element, the text that was on screen, the author, the version being served
-            and the viewport it was written at. That is what makes a fix possible without
-            a conversation.</li>
-            <li><b>The answer is a measurement.</b> &ldquo;The label needs 232px and
-            the button offers 222px at 360px, so it wraps at 369px and below.&rdquo; Those
-            widths were read off the rendered page in a browser before the reply was
-            written, and the page really changed: the horizontal padding went from 36px to
-            16px, and a second measurement put the wrap at 317px.
-            &ldquo;Done&rdquo; would have been worth nothing to the person who wrote the
-            remark.</li>
-            <li><b>Resolving states a version.</b> <code>1.4.13</code>, and that is the
-            point. The client compares it with the version the site declares it is
-            serving: newer than the site, and the note stays under the reviewer's eyes,
-            because the defect is still on screen.</li>
-            <li><b>The reviewer sees all of it</b>, on the element they clicked &mdash;
-            that is <a href="/">the panel on the landing page</a>, which is the same
-            thread from the other side.</li>
-        </ul>
+        <div class="tablescroll">
+        <table>
+            <thead>
+                <tr><th>What you build with</th><th>The file, and where in it</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Plain HTML, Vite, Parcel</td><td><code>index.html</code> &mdash; last thing before <code>&lt;/body&gt;</code></td></tr>
+                <tr><td>Astro</td><td>your layout, <code>src/layouts/*.astro</code>, inside <code>&lt;body&gt;</code></td></tr>
+                <tr><td>Next.js, App Router</td><td><code>app/layout.tsx</code> &mdash; a <code>&lt;Script&gt;</code> from <code>next/script</code>, inside <code>&lt;body&gt;</code></td></tr>
+                <tr><td>Next.js, Pages Router</td><td><code>pages/_document.tsx</code>, before <code>&lt;NextScript /&gt;</code></td></tr>
+                <tr><td>Nuxt</td><td><code>nuxt.config.ts</code> &mdash; an entry under <code>app.head.script</code></td></tr>
+                <tr><td>SvelteKit</td><td><code>src/app.html</code>, inside <code>&lt;body&gt;</code></td></tr>
+                <tr><td>Angular</td><td><code>src/index.html</code></td></tr>
+                <tr><td>Rails</td><td><code>app/views/layouts/application.html.erb</code></td></tr>
+                <tr><td>Django</td><td>your base template, the one every page extends</td></tr>
+                <tr><td>Laravel</td><td><code>resources/views/layouts/app.blade.php</code></td></tr>
+                <tr><td>Symfony</td><td><code>templates/base.html.twig</code></td></tr>
+                <tr><td>WordPress</td><td>the theme&rsquo;s <code>footer.php</code>, or the <code>wp_footer</code> hook</td></tr>
+            </tbody>
+        </table>
+        </div>
 
         <p class="small dim">
-            One fact per line, <code>key value</code>, two-space steps for replies.
-            <code>element</code> is a structural path and never a class or an id: a class
-            is renamed by the next rebuild, and the position is what survives it.
+            These are the usual addresses, not measurements &mdash; layouts get moved.
+            What <em>is</em> measured is the rule above: whatever the framework, the tag
+            has to reach the browser as a classic script. If your framework injects it
+            from JavaScript instead of writing it into the HTML, run the one-line check
+            and you will know in a second.
+        </p>
+
+        <h3>A tag your site already knows the version of</h3>
+        <p>
+            <code>data-version</code> is the one attribute worth wiring to something
+            real. When the assistant marks a note resolved, it stamps the version the
+            fix ships in and compares it with this one: equal means
+            <em>resolved and online</em>, and the note folds into the history; different
+            means <em>resolved, not deployed yet</em>, and the note stays in front of the
+            reviewer &mdash; because the defect is still on their screen. Leave it out
+            and every fix reads as not deployed.
+        </p>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">the version, from wherever your build already knows it</span>
+            </div>
+<pre><code>data-version="1.4.13"                        &lt;!-- a literal, if you deploy by hand --&gt;
+data-version="{{ app.version }}"             &lt;!-- Twig, ERB, Blade, Django: your own variable --&gt;
+data-version={process.env.NEXT_PUBLIC_VERSION}  &lt;!-- anything your bundler substitutes --&gt;</code></pre>
+        </div>
+
+        <p class="small dim">
+            The full attribute list &mdash; <code>data-path</code>,
+            <code>data-domains</code>, <code>data-environment</code>,
+            <code>data-mode</code>, <code>data-labels</code> &mdash; is in the
+            <a href="https://github.com/tuxo83/annotepage/blob/main/client/README.md#the-tag-attributes">client README</a>.
+        </p>
+    </div>
+</section>
+
+<!-- YOUR OWN SERVER ===================================================== -->
+<section id="server">
+    <div class="wrap">
+        <h2>Running the server yourself</h2>
+
+        <p class="lead">
+            The shared server at <code>api.annotepage.com</code> is free and open to
+            everyone, and it never sees anything readable. Run your own anyway if you
+            would rather the encrypted blobs sat on your own disk. It is one PHP file
+            to upload.
+        </p>
+
+        <!-- No two-column split here: this page has none anywhere else, and the
+             classes for it do not exist in its stylesheet. The four steps run
+             down the page with each snippet under the step that produces it --
+             the URL under "upload this", the pasted line under "paste this". -->
+        <p>
+            <strong>1.</strong> Put <code>annotepage-install.php</code> anywhere under
+            your web root &mdash; FTP, SFTP, the host&rsquo;s file manager. It is the only
+            file you upload.
+        </p>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">the one file</span>
+            </div>
+<pre><code>https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php</code></pre>
+        </div>
+
+        <p>
+            <strong>2.</strong> Open it in a browser. It shows one button. Pressing it
+            downloads the rest of the server over HTTPS and checks every file against
+            the release&rsquo;s <code>MANIFEST</code>, one SHA-256 each, after it lands and
+            before it is put in place. One bad hash abandons the whole thing and leaves
+            the directory exactly as it was.
+        </p>
+
+        <p>
+            <strong>3.</strong> Answer two questions &mdash; the storage, and whether the
+            server may update itself. Both already carry the answer that works. It needs
+            no JavaScript.
+        </p>
+
+        <p>
+            <strong>4.</strong> Paste the line it prints into your tag:
+        </p>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">what it prints at the end</span>
+            </div>
+<pre><code>data-server="https://&lt;site&gt;/&lt;where-you-put-it&gt;/api.php"</code></pre>
+        </div>
+
+        <p>
+            Then delete <code>annotepage-install.php</code>. The last screen offers to
+            delete it for you and says whether it managed.
+        </p>
+
+        <p class="small dim">
+            <strong>What it needs:</strong> any server that runs PHP 7.4 or newer, with
+            <code>json</code> and <code>mbstring</code>, and one of
+            <code>pdo_sqlite</code> (compiled into PHP nearly everywhere, needs nothing
+            else) or <code>pdo_mysql</code>. No dependency, no build step, no archive to
+            extract &mdash; shared hosting often has neither zip nor phar.
+        </p>
+
+        <p class="small dim">
+            The one-file route needs one thing more: a way out to HTTPS, either the curl
+            extension or <code>allow_url_fopen</code> with openssl. Without it, copying
+            the <code>webroot/</code> directory installs exactly the same server, and the
+            installer says so rather than failing halfway.
+        </p>
+
+        <p>
+            Everything else about the server &mdash; MySQL, updating it, letting it update
+            itself, retention, rate limits, the domain lock, forcing HTTPS, what it
+            learns anyway &mdash; is in
+            <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">INSTALL.md</a>.
+            What it can and cannot see is
+            <a href="how-it-works.html#data">on the how-it-works page</a>.
+        </p>
+    </div>
+</section>
+
+<!-- LOCALHOST =========================================================== -->
+<section id="local">
+    <div class="wrap">
+        <h2>Localhost, staging, and the copy of the site nobody else can reach</h2>
+
+        <p>
+            <strong>It works with no configuration at all.</strong> <code>localhost</code>
+            is a secure context, so the browser gives the client the crypto it needs.
+            There is nothing to declare and nobody to ask.
+        </p>
+
+        <p>
+            One thing is worth knowing before you use the same project for both. A note
+            is filed against <strong>the path of the page</strong> &mdash; not the scheme,
+            not the host, not the port. So
+            <code>localhost:3000/pricing</code> and
+            <code>yoursite.com/pricing</code> are, to annotepage,
+            <em>the same page</em>. Sometimes that is exactly what you want: annotate it
+            locally, see the note again in production. Sometimes it is not.
+        </p>
+
+        <div class="callout">
+            <p><strong>Use a second project, with its own salt, for local work</strong>
+            if you want them apart &mdash; and never put a <code>localhost</code> origin
+            in a project&rsquo;s domain list on a shared server. Measured:
+            <code>http://localhost:3000</code> is the same string on every machine on
+            earth, so declaring it admits writes from all of them.</p>
+        </div>
+    </div>
+</section>
+
+<!-- THE ASSISTANT SIDE ================================================== -->
+<section id="assistant">
+    <div class="wrap">
+        <h2>The assistant side</h2>
+
+        <p class="lead">
+            The same two commands wherever you install the client. The MCP server and
+            the command line read the same notes.
         </p>
 
         <div class="snip">
             <div class="snip-head">
                 <span class="snip-name">plug it in</span>
-                <button class="copy" type="button" data-copy="snip-mcp">Copy</button>
             </div>
-<pre id="snip-mcp"><code>npm install -g annotepage-mcp
+<pre><code>npm install -g annotepage-mcp
 claude mcp add annotepage -- annotepage-mcp</code></pre>
         </div>
 
         <p class="small dim">
-            The same package installs the <code>annotepage</code> command used above, for
-            a script, a CI job, or an assistant with no MCP client. Node 18 or later, no
-            dependencies. Its configuration file holds the project salt, so it is the only
-            place the plaintext comes back: <code>chmod 600</code>, never committed. Set
-            <code>"read_only": true</code> when plugging an assistant onto a review you do
-            not know yet &mdash; it cuts every write.
-        </p>
-
-        <h3 style="margin-top:2.6rem;">The seven tools an assistant gets</h3>
-        <div class="tbl-wrap">
-            <table>
-                <thead>
-                    <tr><th scope="col">Tool</th><th scope="col">What it does</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>annotepage_open_notes</code></td><td>the remarks still open, optionally for one page</td></tr>
-                    <tr><td><code>annotepage_read_note</code></td><td>one note with its replies</td></tr>
-                    <tr><td><code>annotepage_reply</code></td><td>answer in the thread</td></tr>
-                    <tr><td><code>annotepage_mark_resolved</code></td><td>resolve, stating the version the fix ships in</td></tr>
-                    <tr><td><code>annotepage_reopen</code></td><td>put a note back, when the fix was incomplete</td></tr>
-                    <tr><td><code>annotepage_export</code></td><td>the whole review as text</td></tr>
-                    <tr><td><code>annotepage_projects</code></td><td>the projects this configuration knows</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="note-aside">
-            <p>The package <strong>never creates a note</strong>. A note is pinned to an
-            element of a page; an assistant has no browser and no element to point at, so
-            what it manufactured would be undisplayable where it counts. The thread of an
-            existing note is the place provided for it to speak. Nothing is ever erased:
-            resolving and reopening are the only two state changes, and reopening records
-            no reason.</p>
-
-            <p>Every write is <strong>signed</strong> with the name in the configuration.
-            A thread where everybody signs and one voice does not is a thread you doubt
-            entirely.</p>
-        </div>
-
-        <h3 style="margin-top:2.6rem;">Or use nothing at all</h3>
-        <p class="small dim" style="margin-top:.6rem;">
-            In <em>plain</em> mode &mdash; self-hosted only &mdash; the server serves the
-            same document, and any assistant that can fetch a URL reads the whole review
-            with no integration whatsoever.
-        </p>
-        <div class="snip">
-            <div class="snip-head">
-                <span class="snip-name">plain mode, no package</span>
-                <button class="copy" type="button" data-copy="snip-curl">Copy</button>
-            </div>
-<pre id="snip-curl"><code>curl 'https://staging.example.com/notes/api.php?action=text&amp;project=&lt;id&gt;'</code></pre>
-        </div>
-        <p class="small dim">
-            In <strong>encrypted</strong> mode that same address returns only the
-            structure &mdash; note numbers, page indexes, dates, status &mdash; because
-            the server has neither the paths, nor the names, nor the texts. A reader
-            therefore knows, with no special-case code, that it is missing the salt.
-            <code>annotepage text</code> is the step that fills it in, and it emits the
-            same grammar: a tool reading the export cannot tell which of the two
-            produced it.
-        </p>
-    </div>
-</section>
-
-<!-- THE LONG ROAD ====================================================== -->
-<section id="server">
-    <div class="wrap">
-        <p class="eyebrow">The long road</p>
-        <h2>Run the server yourself</h2>
-        <p class="lead">
-            The tag on the landing page assumes a server that already answers. There is no
-            public relay yet, so today that server is something you put somewhere. It is
-            one PHP codebase and a database, with no daemon and nothing to keep running
-            &mdash; but it is an afternoon, once, not a paste.
-        </p>
-
-        <h3 style="margin-top:2.6rem;">Declare the project on the server</h3>
-        <p class="small dim" style="margin-top:.6rem;">
-            Three facts, in the server's local configuration: the id, the origins allowed
-            to consume it, and the mode. The salt is not among them &mdash; the server
-            receives it in no form whatsoever, and the tool provides no channel for it.
-        </p>
-
-        <div class="snip">
-            <div class="snip-head">
-                <span class="snip-name">internal/config-local.php</span>
-                <button class="copy" type="button" data-copy="snip-server">Copy</button>
-            </div>
-<pre id="snip-server"><code>'projects' =&gt; array(
-    'your-project-id' =&gt; array(
-        'origins' =&gt; array('https://staging.example.com',
-                           'https://www.example.com'),
-        'mode'    =&gt; 'encrypted',
-    ),
-),</code></pre>
-        </div>
-
-        <p class="small">
-            Each reviewer then pastes the salt once. The tool checks that it really
-            derives the project id the page declares, then remembers it in that browser,
-            for that origin.
-        </p>
-
-        <h3 style="margin-top:2.6rem;">The choices the configuration makes</h3>
-
-        <ul class="plain">
-            <li><b>Where it goes.</b> On the site itself, under a path such as
-            <code>/notes/</code>, or on one machine serving several sites. Drop the
-            web root in place, start from <code>config-local.example.php</code>, and
-            point <code>data-server</code> at <code>api.php</code>.</li>
-
-            <li><b>Self-hosted, or relay.</b>
-            <code>'deployment' =&gt; 'self-hosted'</code> is for notes that live beside the
-            site under review, on the same machine and behind the same access
-            restriction. <code>'relay'</code> is the other shape: one server, several
-            sites that are not its own. The choice changes what the server accepts, not
-            what the client does.</li>
-
-            <li><b><code>open_registration</code></b> &mdash; off by default, and a relay
-            only. It serves a project id <em>nobody declared</em>, so a team can paste the
-            tag and start writing without anyone touching the server configuration. Such a
-            project is always encrypted: plain mode is refused there, not offered. And it
-            declares no origins, so it has no domain lock. That is the coin it pays in,
-            and it is stated here rather than discovered.</li>
-
-            <li><b><code>data-mode="plain"</code></b> is acceptable self-hosted only,
-            where encryption protects nothing: the notes sit in the same database, on the
-            same machine, behind the same restriction as the site under review. A shared
-            relay refuses it with a 400, and shows its message.</li>
-
-            <li><b>Without a local configuration file the server answers nothing at
-            all.</b> That is the safe default, not a failure to explain.</li>
-        </ul>
-
-        <p class="small">
-            The whole procedure &mdash; requirements, database, origins, expiry, the
-            diagnostic screen that tells you what the server thinks of your setup &mdash;
-            is in
-            <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">server/INSTALL.md</a>.
-        </p>
-    </div>
-</section>
-
-<!-- THE REST =========================================================== -->
-<section id="data">
-    <div class="wrap">
-        <h2>Where the notes live, and who can read them</h2>
-        <p class="lead">
-            You choose the server: the site itself, or a separate machine hosting several
-            projects. Either way the notes are encrypted in the browser by default, and
-            whoever runs the server &mdash; including you &mdash; cannot read the review.
-        </p>
-
-        <div class="callout" id="no-recovery">
-            <p><strong>Salt lost = notes lost.</strong> The salt is the only secret of the
-            project. It never leaves the browser, the server receives it in no form
-            whatsoever, and nobody can give it back to you &mdash; no recovery, no
-            security question, no escrow. There is no rotation either: a leaked salt means
-            starting a fresh project and abandoning the notes already written. This is the
-            cost of the sentence above, and it is not negotiable away.</p>
-        </div>
-
-        <div class="facts">
-            <div>
-                <h3>One secret, three keys</h3>
-                <p>HKDF-SHA-256 derives everything from the 256-bit salt: the public
-                project id (22 characters), the AES-256-GCM key, and an HMAC key for the
-                page index. One secret to manage, and it never leaves the browser.</p>
-            </div>
-            <div>
-                <h3>Grouped without being read</h3>
-                <p>The server groups pages by a <em>blind index</em>: the first 16 bytes
-                of an HMAC of the path, which it cannot invert. It nests replies, dates
-                writes and sorts open from resolved without opening anything.</p>
-            </div>
-            <div>
-                <h3>Everything observed, sealed</h3>
-                <p>Not just the text. Encrypting the remark alone would hand over the
-                site's tree, its wording and the list of its reviewers &mdash; and a
-                staging site is precisely what has not been published yet.</p>
-            </div>
-            <div>
-                <h3>The domain is not in the key</h3>
-                <p>The day staging becomes production, the notes stay readable. Each
-                reviewer pastes the salt once more on the new domain; the notes
-                themselves do not move.</p>
-            </div>
-        </div>
-
-        <div class="note-aside">
-            <p>What goes out is an <strong>AES-256-GCM envelope</strong>: the text, but
-            also the page, the selector, the excerpt, the name, the version, the
-            environment and the viewport. What comes back is pinned to the element again
-            by its selector and its fingerprint &mdash; and when the element has really
-            changed, the note is listed as an orphan rather than pinned to the wrong
-            thing.</p>
-        </div>
-
-        <h3 style="margin-top:2.8rem;">What the server sees anyway</h3>
-        <p class="small dim" style="margin-top:.6rem; max-width:44em;">
-            Encrypting the fields is not invisibility. An operator must be able to read
-            this without feeling betrayed, and you must know it before choosing where to
-            put the server.
-        </p>
-        <ul class="plain">
-            <li>The <b>number of projects</b>, and of notes in each.</li>
-            <li>The <b>number of distinct pages</b> annotated, and the notes per page: a
-            page that collects forty remarks is visible.</li>
-            <li>The <b>time of every write</b>, hence the rhythm of the review and the
-            date of the last note.</li>
-            <li>The <b>shape of the threads</b>, and the fix rate and delay, through the
-            resolution dates.</li>
-            <li>The <b>approximate length of every remark</b>: the size of the envelope
-            gives it away to within a few bytes. It is not masked.</li>
-            <li>The <b>IP address and user agent</b> of every reviewer, like any HTTP
-            server.</li>
-            <li>On a shared server, the <b>domain of the site under review</b>, through
-            the <code>Origin</code> header the domain lock has to read. The promise is not
-            &ldquo;it does not know which site you are reviewing&rdquo;; it is &ldquo;it
-            can read neither your paths, nor your names, nor your remarks&rdquo;.</li>
-        </ul>
-
-        <div class="callout">
-            <p><strong>The domain lock is an anti-abuse measure, not an XSS defence.</strong>
-            It stops another site consuming a project id found in the source of a page. An
-            XSS runs <em>inside</em> the target page, so with the legitimate origin: it
-            goes through the lock without effort, and it reaches
-            <code>localStorage</code> anyway &mdash; hence the salt. The XSS defence is
-            elsewhere: the tool assigns text through <code>textContent</code> and never
-            parses it as markup, and a check in <code>npm run check</code> enforces it.</p>
-        </div>
-
-        <h3 style="margin-top:2.8rem;">What it deliberately does not do</h3>
-        <p class="small dim" style="margin-top:.6rem; max-width:44em;">
-            These are choices. Saying them is more useful than discovering them later.
-        </p>
-        <ul class="plain">
-            <li><b>No accounts, no login.</b> The name typed in is a convenience, not an
-            identity. The project id is a bearer token: whoever has it can read and write
-            &mdash; and in encrypted mode, what they read is useless without the salt.</li>
-            <li><b>No moderation, and nobody can delete.</b> A note that is
-              posted stays; the only state it can change is resolved, and that can
-              be taken back. A remark one can erase is a remark one can no longer
-              contradict. The single exception is age: a server may be set to expire
-              whole threads once their last message passes a given number of days
-              &mdash; a public relay needs a ceiling on what it stores. Nobody
-              chooses which, and a server that does it says so in the header of
-              every export.</li>
-            <li><b>No way to annotate a site you cannot edit.</b> The tag has to be in
-            the page, so the tool is a property of the site and not of the reader.</li>
-            <li><b>No notifications.</b> Nobody is told that a note has arrived.</li>
-            <li><b>No salt rotation,</b> and no channel for handing the salt to the second
-            reviewer.</li>
-            <li><b>No overview across pages.</b> Open a page, or read the export.</li>
-            <li><b>No screenshots</b> attached to a note &mdash; weighed, and not settled:
-            the reasons are written down in the roadmap.</li>
-        </ul>
-
-        <h3 style="margin-top:2.8rem;">Where the client comes from, and what it needs</h3>
-
-        <div class="note-aside" id="supply-chain">
-            <p><strong><code>integrity</code> is not decorative.</strong> Once the
-            client comes from a CDN, the real risk of this architecture is the
-            supply chain: a file swapped at the CDN's host runs in your page,
-            with access to <code>localStorage</code> &mdash; hence to the salt.
-            The digest makes that swap useless, and
-            <code>crossorigin="anonymous"</code> goes with it: without it the
-            browser does not check the digest of a cross-origin resource.</p>
-
-            <p>The digest in the tag on the landing page is the one for
-            <strong>2.0.1</strong>, the version that filename names. Every version has its
-            own, printed by the build and listed in <code>dist/HASHES.txt</code> inside
-            the package. Never copy a digest from a page documenting another version: the
-            browser will refuse the file, and that is exactly its job.</p>
-
-            <p><strong>Do not add <code>type="module"</code>.</strong> A module
-            script has no <code>document.currentScript</code>: the client could
-            no longer read its own attributes, and would stand down in silence.</p>
-        </div>
-
-        <div class="note-aside">
-            <p><strong>What it requires, and nothing else:</strong> a recent browser in a
-            <em>secure context</em> &mdash; <code>https</code>, or
-            <code>localhost</code>. Without one the browser does not provide WebCrypto,
-            and the tool can neither encrypt nor even compute the page index; it says so
-            on screen rather than pretending. And a reachable annotepage server.</p>
-        </div>
-
-        <p style="margin-top:2.2rem;">
-            <a class="cta" href="/">Back to the landing page</a>
+            Any MCP client works &mdash; the command to register is
+            <code>annotepage-mcp</code> over stdio. It needs the project id and the salt,
+            and the salt never leaves the machine. The
+            <a href="https://github.com/tuxo83/annotepage/blob/main/mcp/README.md">MCP README</a>
+            has the tools, the commands, and how it is configured.
         </p>
     </div>
 </section>
@@ -1137,8 +938,8 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
     <div class="wrap">
         <ul class="foot-links">
             <li><a href="/">Landing page</a></li>
+            <li><a href="how-it-works.html">How it works</a></li>
             <li><a href="example-session.html">A real session</a></li>
-            <li><a href="install.html">Ways to install it</a></li>
             <li><a href="https://github.com/tuxo83/annotepage">Source</a></li>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md">Format &amp; security model</a></li>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/client/README.md">Client</a></li>
@@ -1158,96 +959,6 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
         </p>
     </div>
 </footer>
-
-<span class="vh" id="copy-status" role="status" aria-live="polite"></span>
-
-<script>
-/* The copy buttons. The text copied is the text of the block above, exactly:
-   textContent, so the escaped markup in the snippets comes back as the markup
-   you would paste.
-
-   The Clipboard API needs a secure context and a user gesture; both hold here.
-   The fallback exists for the case where it is refused anyway -- a copy button
-   that copies nothing, on a page selling simplicity, is the worst possible
-   admission. */
-(function () {
-    'use strict';
-
-    var status = document.getElementById('copy-status');
-
-    var textOf = function (id) {
-        var target = document.getElementById(id);
-        if (!target) return null;
-        /* Trailing newline removed: a paste that lands with a blank line at the
-           end is a paste somebody has to tidy up. */
-        return target.textContent.replace(/\s+$/, '');
-    };
-
-    /* The old way, kept because it is the only one that works when the
-       Clipboard API is refused. execCommand is deprecated, not gone. */
-    var copyByHand = function (text) {
-        var area = document.createElement('textarea');
-        area.value = text;
-        area.setAttribute('readonly', '');
-        area.style.position = 'fixed';
-        area.style.top = '0';
-        area.style.left = '0';
-        area.style.opacity = '0';
-        document.body.appendChild(area);
-        area.select();
-        area.setSelectionRange(0, text.length);
-        var done = false;
-        try { done = document.execCommand('copy'); } catch (e) { done = false; }
-        document.body.removeChild(area);
-        return done;
-    };
-
-    var timers = new WeakMap();
-
-    var announce = function (button, ok) {
-        var original = button.getAttribute('data-label') || button.textContent;
-        button.setAttribute('data-label', original);
-        button.textContent = ok ? 'Copied' : 'Select and copy';
-        button.setAttribute('data-state', ok ? 'done' : 'failed');
-        status.textContent = ok
-            ? 'Copied to the clipboard.'
-            : 'Copying was refused: select the block and copy it by hand.';
-
-        clearTimeout(timers.get(button));
-        timers.set(button, setTimeout(function () {
-            button.textContent = original;
-            button.removeAttribute('data-state');
-            status.textContent = '';
-        }, ok ? 1800 : 4000));
-    };
-
-    var buttons = document.querySelectorAll('button.copy');
-    for (var i = 0; i < buttons.length; i++) {
-        (function (button) {
-            var id = button.getAttribute('data-copy');
-            /* A button whose target does not exist would copy nothing in
-               silence. It does not get to pretend: it goes away. */
-            if (textOf(id) === null) { button.hidden = true; return; }
-
-            button.addEventListener('click', function () {
-                var text = textOf(id);
-                if (text === null) { announce(button, false); return; }
-
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).then(function () {
-                        announce(button, true);
-                    }, function () {
-                        announce(button, copyByHand(text));
-                    });
-                } else {
-                    announce(button, copyByHand(text));
-                }
-            });
-        }(buttons[i]));
-    }
-}());
-</script>
-
 
 </body>
 </html>
