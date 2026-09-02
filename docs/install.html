@@ -663,6 +663,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <a href="example-session.html">A real session</a>
             <a href="#rule">The one rule</a>
             <a href="#frameworks">Frameworks</a>
+            <a href="#locked">The locked tag</a>
             <a href="#server">Your own server</a>
             <a href="https://github.com/tuxo83/annotepage">Source</a>
         </nav>
@@ -784,6 +785,81 @@ data-version={process.env.NEXT_PUBLIC_VERSION}  &lt;!-- anything your bundler su
             <code>data-domains</code>, <code>data-environment</code>,
             <code>data-mode</code>, <code>data-labels</code> &mdash; is in the
             <a href="https://github.com/tuxo83/annotepage/blob/main/client/README.md#the-tag-attributes">client README</a>.
+        </p>
+    </div>
+</section>
+
+<!-- THE LOCKED TAG ====================================================== -->
+<section id="locked">
+    <div class="wrap">
+        <h2>The locked tag, and why the short one is not it</h2>
+
+        <p class="lead">
+            The tag the landing page hands you ends in <code>@2</code>. That is a
+            moving target: jsDelivr resolves it to the newest 2.x, so a fix reaches
+            your site without you touching anything. It also means the file can
+            change under you, and there is exactly one way to prevent that.
+        </p>
+
+        <p>
+            <strong>A range and a fixed digest cannot both hold.</strong>
+            Subresource Integrity pins the bytes: the browser hashes what it
+            received and refuses to run anything else. Pin the bytes and the tag
+            can never update; let it update and the digest is wrong the day it
+            does &mdash; and a wrong digest is a silent failure, the script simply
+            never runs, with nothing on the page and nothing in the logs to say
+            why.
+        </p>
+
+        <p>
+            So it is a choice, and both answers are defensible:
+        </p>
+
+        <ul>
+            <li><strong>The short tag</strong> takes fixes on its own. What it gives
+            up: if the npm account or the CDN were ever compromised, whatever they
+            served would run on the pages carrying it. This client reads the notes
+            in the clear in the browser, so that is not a small thing.</li>
+            <li><strong>The locked tag</strong> cannot be tampered with, and cannot
+            improve either. You update it by editing the version and the digest,
+            both of which are in every release.</li>
+        </ul>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">the locked tag &mdash; pinned bytes, manual updates</span>
+            </div>
+<pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.1/dist/annotepage.js"
+        integrity="sha384-VBUfe2CFvh85WRBCH1/uKse1O2wauw3at7B9gGC2fC8Y/sG03p9bZABq3MyUDbKE"
+        crossorigin="anonymous"
+        data-server="https://api.annotepage.com/api.php"
+        data-project="&lt;your project id&gt;"
+        defer&gt;&lt;/script&gt;</code></pre>
+        </div>
+
+        <p class="small dim">
+            <code>crossorigin="anonymous"</code> is there only to make the digest
+            checkable across origins; without <code>integrity</code> it does
+            nothing, which is why the short tag has neither.
+        </p>
+
+        <div class="callout">
+            <p><strong>Every release publishes its digest</strong>, and the packages
+            are published straight from the repository with npm provenance
+            attestations &mdash; so the bytes on the CDN can be traced back to the
+            commit and the workflow that built them, whichever tag you use.</p>
+        </div>
+
+        <h3>One attribute the short tag also dropped</h3>
+        <p>
+            <code>data-version</code> is not the tool&rsquo;s version, it is
+            <em>yours</em> &mdash; the version your site is running. It is what lets a
+            resolved note say <em>resolved and online</em> rather than
+            <em>resolved, not deployed yet</em>, and without it every fix reads as
+            not deployed, so the note stays in front of the reviewer. It is left
+            out of the tag on the landing page because a first tag should have
+            nothing in it you have to think about;
+            <a href="#frameworks">wire it to something real</a> once the tool is in.
         </p>
     </div>
 </section>

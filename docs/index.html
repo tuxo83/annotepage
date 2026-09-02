@@ -267,6 +267,9 @@ section:first-of-type { border-top: 0; }
 /* The .split is the wrapper the install's first row is laid out in, and it
    inherits the gap the lead used to take from being the h2's next sibling. */
 h2 + .lead, h2 + p, h2 + .split { margin-top: .9rem; }
+.route { font-size: .95rem; color: var(--dim); }
+.route a { color: var(--accent); }
+.install-more { margin-top: clamp(2rem, 4vw, 3rem); }
 /* The lead sits under a headline, not welded to it. */
 h1 + .lead { margin-top: 1.15rem; }
 
@@ -1432,121 +1435,125 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <section id="install">
     <div class="wrap">
         <h2>How you install it &mdash; the quick way</h2>
-
-        <!-- FOUR ROWS, EACH ONE A SENTENCE AND THE THING IT HANDS OVER.
-
-             The order in the source is the order it was in before the rows
-             existed, unchanged, and that is deliberate: it is what a phone
-             reads, and what a phone reads had to stay exactly as it was. Every
-             row is one contiguous run of it. -->
-        <div class="split install-split">
-        <div class="split-col">
-        <p class="lead">
-            One tag at the end of <code>&lt;body&gt;</code>. Nothing to build, nothing
-            to import, no account. Everyone who opens the page can annotate it.
+        <p class="route">
+            Several ways in; this is the fastest, on the free shared server.
+            <a href="install.html">See the others</a>.
         </p>
-        </div>
 
-        <div class="split-col">
-        <div class="snip">
-            <div class="snip-head">
-                <span class="snip-name">the finished tag</span>
-                <button class="copy" type="button" data-copy="snip-tag">Copy</button>
-            </div>
-<pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.0.1/dist/annotepage.js"
-        integrity="sha384-VBUfe2CFvh85WRBCH1/uKse1O2wauw3at7B9gGC2fC8Y/sG03p9bZABq3MyUDbKE"
-        crossorigin="anonymous"
+        <!-- THREE STEPS, THE SAME SHAPE AS "HOW YOU USE IT" ABOVE.
+
+             It used to be four rows of sentence-beside-thing with no numbers, and
+             a reader could not tell how long it went on. The chapter above it had
+             already solved that: a numbered step, one sentence, and the thing
+             itself in the picture column. There is no reason for the two chapters
+             to be laid out differently, and every reason for a page selling
+             simplicity to show a countable number of steps.
+
+             Three, and the third is a warning rather than an action -- which is
+             the honest shape: two things to do, one thing not to lose. -->
+        <ol class="use-steps install-steps">
+            <li>
+                <div>
+                    <p class="cap"><span class="n">01</span> You paste one tag into your page</p>
+                    <p class="say">
+                        At the end of <code>&lt;body&gt;</code>, on the pages you want
+                        annotated. Nothing to build, nothing to import, no account.
+                        Once it is there, it works: everyone who opens the page can
+                        annotate it.
+                    </p>
+                </div>
+
+                <div>
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">the whole tag</span>
+                        <button class="copy" type="button" data-copy="snip-tag">Copy</button>
+                    </div>
+<pre id="snip-tag"><code>&lt;script src="https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"
         data-server="https://api.annotepage.com/api.php"
         data-project="<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"
-        data-version="1.4.13"
         defer&gt;&lt;/script&gt;</code></pre>
-        </div>
+                </div>
 
-        <!-- THE TAG'S FOOTNOTE, UNDER THE TAG -- same reason the salt warning
-             below sits under the salt. It opened the NEXT row while the salt
-             block was beside it, so the row read "here is the salt" on the
-             right and "nothing in the tag is yours to fill in" on the left,
-             and it pushed "The salt that made it" 110px below the salt. Moved
-             one row up and one column across; the SOURCE ORDER of the whole
-             section is unchanged to the character, which is what a phone
-             reads, and 360, 390 and 768 render to the same pixels. -->
-        <p class="small dim">
-            Nothing in it is yours to fill in. <code>data-server</code> is the shared
-            server; point it at <a href="how-it-works.html#server">your own</a>
-            instead if you prefer. The id was
-            derived in your browser from the salt below.
-        </p>
+                <p class="small dim">
+                    Nothing in it is yours to fill in. <code>data-server</code> is the
+                    shared server; point it at
+                    <a href="install.html#server">your own</a> instead if you prefer.
+                    <code>@2</code> takes fixes on its own &mdash;
+                    <a href="install.html#locked">the locked tag</a> does not, and says
+                    why that is a choice.
+                </p>
+                </div>
+            </li>
 
-        </div>
-        </div>
+            <li>
+                <div>
+                    <p class="cap"><span class="n">02</span> You let your assistant read them</p>
+                    <p class="say">
+                        An MCP server and a command line, over the same notes. It reads
+                        every note, fixes, and answers each one in its thread.
+                    </p>
+                </div>
 
-        <div class="split install-split">
-        <div class="split-col">
-        <h3>The salt that made it</h3>
-        <p class="small dim">Generated here, in your browser, and sent nowhere.</p>
-        </div>
-
-        <div class="split-col">
-        <div class="snip">
-            <div class="snip-head">
-                <span class="snip-name">your salt &mdash; save it now</span>
-                <button class="copy" type="button" data-copy="snip-salt">Copy</button>
-            </div>
-<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
-        </div>
-        </div>
-        </div>
-
-        <!-- The warning sits under the block it is about, not under the
-             sentence describing it: the salt is on the right, so what happens
-             when it is lost is on the right too. -->
-        <div class="split install-split">
-        <div class="split-col">
-        <p class="aside-line">
-            Project id <code id="the-id">&mdash;</code>, derived from it. Public; the
-            salt cannot be worked back from it.
-            <button type="button" class="linkish" id="regenerate">Generate another</button>
-        </p>
-        </div>
-
-        <div class="split-col">
-        <div class="callout">
-            <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow, no
-            rotation. Keep it where your team keeps its passwords &mdash;
-            <a href="how-it-works.html#no-recovery">what that costs</a>.</p>
-        </div>
-        </div>
-        </div>
-
-        <div class="split install-split">
-        <div class="split-col">
-        <h3>And on the assistant side</h3>
-        <p class="small dim">An MCP server and a command line, over the same notes.</p>
-        </div>
-
-        <div class="split-col">
-        <div class="snip">
-            <div class="snip-head">
-                <span class="snip-name">plug it in</span>
-                <button class="copy" type="button" data-copy="snip-mcp">Copy</button>
-            </div>
+                <div>
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">plug it in</span>
+                        <button class="copy" type="button" data-copy="snip-mcp">Copy</button>
+                    </div>
 <pre id="snip-mcp"><code>npm install -g annotepage-mcp
 claude mcp add annotepage -- annotepage-mcp</code></pre>
-        </div>
+                </div>
 
-        <div class="snip">
-            <div class="snip-head">
-                <span class="snip-name">the commands above</span>
-                <button class="copy" type="button" data-copy="snip-cli">Copy</button>
-            </div>
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">the commands it gains</span>
+                        <button class="copy" type="button" data-copy="snip-cli">Copy</button>
+                    </div>
 <pre id="snip-cli"><code>annotepage open
 annotepage reply &lt;id&gt; &lt;text&gt;
 annotepage resolve &lt;id&gt; &lt;version&gt;</code></pre>
-        </div>
-        </div>
-        </div>
+                </div>
+                </div>
+            </li>
 
-        <p class="small dim">
+            <li>
+                <div>
+                    <p class="cap"><span class="n">03</span> You keep the salt</p>
+                    <p class="say">
+                        This is the one thing that cannot be undone. The notes are
+                        encrypted in the browser with this salt, and the project id in
+                        your tag was derived from it. It was generated here and sent
+                        nowhere &mdash; nobody else has a copy.
+                    </p>
+                </div>
+
+                <div>
+                <div class="snip">
+                    <div class="snip-head">
+                        <span class="snip-name">your salt &mdash; save it now</span>
+                        <button class="copy" type="button" data-copy="snip-salt">Copy</button>
+                    </div>
+<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
+                </div>
+
+                <div class="callout">
+                    <p><strong>Salt lost = notes lost.</strong> No recovery, no escrow,
+                    no rotation. Keep it where your team keeps its passwords &mdash;
+                    <a href="how-it-works.html#no-recovery">what that costs</a>, and
+                    <a href="how-it-works.html#data">what the server can still see</a>.</p>
+                </div>
+
+                <p class="aside-line">
+                    Project id <code id="the-id">&mdash;</code>, derived from it. Public;
+                    the salt cannot be worked back from it.
+                    <button type="button" class="linkish" id="regenerate">Generate another</button>
+                </p>
+                </div>
+            </li>
+        </ol>
+
+        <p class="small dim install-more">
             Installing it somewhere else &mdash; Next.js, Nuxt, Rails, Django, Laravel,
             Symfony, WordPress &mdash; or running the server yourself:
             <a href="install.html">ways to install it</a>. Where the notes live and what
