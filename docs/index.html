@@ -1027,6 +1027,28 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     margin: .6rem 0 0; display: flex; align-items: center; flex-wrap: wrap;
     gap: .4rem; font-size: .64rem;
 }
+
+/* -- the salt screen, drawn for the install chapter ----------------------
+   Two lines the note form does not have, because the client's panel has
+   them here: the sentence that explains why it is asking, and the field's
+   label. The key itself takes .fm-area -- it is the same field, with the
+   same focus ring, and what is in it is 43 characters of base64 rather
+   than a sentence, so it is set in the mono face and allowed to wrap. */
+.fm-help { margin: .35rem 0 0; font-size: .64rem; color: var(--dim); line-height: 1.5; }
+.fm-label { margin: .55rem 0 0; font-size: .62rem; font-weight: 650; }
+.fm-key {
+    font-family: var(--mono); font-size: .64rem;
+    min-height: 0; overflow-wrap: anywhere; white-space: normal;
+}
+/* The copy button is the page's, not the panel's: it sits on the frame, at
+   the same corner it occupies on every code block of this chapter. */
+.key-frame > .copy { position: absolute; top: .5rem; right: .5rem; }
+/* The line under it carries margin-top: -.4rem, written when what came before
+   was a .snip and ended in 1.3rem of its own. A frame has no bottom margin, so
+   that pull became an OVERLAP -- measured, 7px of the project id sitting under
+   the frame's edge, clipped by its overflow. The frame states the margin the
+   snip used to bring. */
+.key-frame { margin-bottom: 1.3rem; }
 .fm-send {
     background: var(--accent); color: var(--on-accent);
     border-radius: 6px; padding: .2rem .6rem; font-weight: 650;
@@ -1598,9 +1620,41 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 </div>
 
                 <div>
-                <div class="snip">
-                    <button class="copy" type="button" data-copy="snip-salt" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-salt"><code id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</code></pre>
+                <!-- THE SCREEN THIS ACTUALLY HAPPENS ON, not a strip of base64.
+
+                     The chapter above shows the tool's own surface in every
+                     step, and this step is the only one whose subject IS a
+                     screen of the tool -- the panel a browser gets when it has
+                     the project but not the key. A 43-character string in a
+                     code block said what to copy and nothing about where it
+                     goes; the panel says both.
+
+                     Every string in it is the client's, taken from
+                     15-labels.js: `salt.title`, `salt.help`, `salt.label`,
+                     `salt.confirm`. The help text is SHORTENED BY DROPPING
+                     WHOLE SENTENCES, never by rewriting -- what is left is
+                     verbatim.
+
+                     The copy button is ours and is not in the real screen: the
+                     key is generated on THIS page, and a key you cannot take
+                     with you is a key you retype. It is drawn as the page's
+                     copy button rather than as part of the panel, so it does
+                     not read as interface that exists over there.
+
+                     Not aria-hidden, unlike the frames above: those are
+                     illustrations, this one holds the one string the reader
+                     came for. -->
+                <div class="frame key-frame">
+                    <button class="copy" type="button" data-copy="the-salt" aria-label="Copy the key"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                    <div class="nt-panel nt-form">
+                        <p class="fm-title">The salt of this project is needed</p>
+                        <p class="fm-help">The notes of this project are encrypted in
+                        your browser. Without the project salt, this browser can
+                        neither read them nor write any.</p>
+                        <p class="fm-label">The project salt (43 characters)</p>
+                        <p class="fm-area fm-key"><span id="the-salt">JavaScript is off &mdash; the client&rsquo;s setup screen does the same.</span></p>
+                        <p class="fm-acts"><span class="fm-send">Use this salt</span></p>
+                    </div>
                 </div>
 
                 <p class="aside-line">
