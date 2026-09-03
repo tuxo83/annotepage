@@ -486,6 +486,25 @@ own URL -- it can load a DIFFERENT one:
    fetched by this browser, so no cache stands in the way. It then withdraws
    and lets the fresh copy take over the page.
 
+**IT ANNOUNCES, IT NEVER GATES -- and this line has to hold, because the
+mechanism is tempting for a second job it must not take.** Noted 2026-09-03:
+the same channel could report a version mismatch between the client and the
+server, and could point at an available update. The second is what it is for.
+The first is already somebody else's job.
+
+Compatibility belongs to the FORMAT NUMBER, and only to it. FORMAT.md section
+7 makes it an integer, per row, appearing in three places that must agree, with
+a stated rule of evolution -- and a row of a newer format is refused flatly,
+which is the behaviour a contract should have. A version number is not a
+contract: 2.1.0 and 2.2.0 speak the same format by construction, and a client
+that refused to talk to a server one release ahead would be breaking a pair
+that works.
+
+So the announced version may say "there is something newer". It may never say
+"you cannot talk to me", and no code should ever compare it to decide whether a
+request is allowed. Two contracts drift; this project already has one, and
+FORMAT.md is the reference where any other document disagrees.
+
 **THE CHECK GOES FIRST, BEFORE THE WORK -- owner's refinement, 2026-09-03,
 and the boot path already has the seam for it.** 90-boot.js says it in its own
 comment: "The order matters: we ask the API BEFORE touching the DOM. If it does
