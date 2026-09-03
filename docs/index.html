@@ -1714,9 +1714,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                     <p class="cap"><span class="n"></span> You ask it to go and read them</p>
                     <p class="say">One sentence. Name the site, and it takes it from there.</p>
                 </div>
-                <div class="frame term" aria-hidden="true">
+                <!-- NOT aria-hidden, unlike the terminal it is a crop of two
+                     chapters up: that one illustrates, this one holds a line the
+                     reader is meant to take. Which is also why it has a copy
+                     button, and why the button copies the SENTENCE and not the
+                     prompt sign or the caret beside it -- what lands in the
+                     clipboard has to be what you would type. -->
+                <div class="frame term">
+                    <button class="copy" type="button" data-copy="ask-line" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
                     <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
-                    <div class="mt-input"><span class="ps">&#x276F;</span> read the notes on annotepage.com and fix what they ask<span class="cur"></span></div>
+                    <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-line">read the notes on staging.example.com and fix what they ask</span><span class="cur"></span></div>
                 </div>
             </li>
         </ol>
