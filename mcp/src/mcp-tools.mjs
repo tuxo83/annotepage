@@ -32,7 +32,7 @@ import {
 } from './notes.mjs';
 import { writeExport } from './text-export.mjs';
 import { readDiagnostic } from './api.mjs';
-import { chooseProject } from './config.mjs';
+import { projectForCall } from './config.mjs';
 
 /* The schema of a "project" argument, added to every tool. When the
    configuration declares only one project it is useless; when it declares
@@ -40,9 +40,84 @@ import { chooseProject } from './config.mjs';
    project cannot be undone. */
 const PROJECT_ARG = {
     type: 'string',
-    description: 'The name of the project in the local configuration. Not needed '
-        + 'if there is only one, or if one of them is declared as the default.',
+    description: 'The name of the project in the local configuration file. Not '
+        + 'needed if there is only one, or if one of them is declared as the '
+        + 'default. NEVER pass it together with "key": a key already derives the '
+        + 'project id, and a call that names two projects at once is refused '
+        + 'rather than arbitrated.',
 };
+
+/* THE TWO ARGUMENTS THIS FILE EXISTS FOR, AND THEIR DESCRIPTIONS ARE THE
+   FEATURE. The code behind them is twenty lines; what decides whether a review
+   works without any setup at all is whether the assistant reading this knows
+   where to look, in what order, and what it must never do.
+   Read rule 2 at the top of this file: a description states its consequence. */
+const API_ARG = {
+    type: 'string',
+    description: 'The address of the server holding the notes, for example '
+        + '"https://api.annotepage.com/api.php". It is the "data-server" '
+        + 'attribute of the annotepage tag at the end of the annotated page, '
+        + 'copied as it stands.\n'
+        + 'It is the one thing a key cannot derive, which is why it is asked for. '
+        + 'It goes WITH "key" and does nothing without it: given alone, the call '
+        + 'is refused rather than half completed from the configuration file.',
+};
+
+const KEY_ARG = {
+    type: 'string',
+    description: 'The 43-character key of the project, when the project is not in '
+        + 'a local configuration file. Given together with "api" it IS the whole '
+        + 'project: the project id is derived from the key, so never ask for, nor '
+        + 'pass, a project id or a project name beside it.\n\n'
+        + 'WHERE TO GET IT, IN THIS ORDER:\n'
+        + '1. READ IT OFF THE PAGE. Given the address of an annotated page, fetch '
+        + 'that page: the annotepage tag at the end of the document carries '
+        + 'data-key (this argument) and data-server (the "api" argument). This is '
+        + 'the normal case, it needs nobody, and it is what makes a review '
+        + 'possible with nothing installed and nothing configured.\n'
+        + '2. THE CONFIGURATION FILE, when there is one. That is the way for a '
+        + 'PRIVATE project, whose key is deliberately not in the page: then pass '
+        + 'neither "api" nor "key" and let the file answer.\n'
+        + '3. ASK A HUMAN — LAST RESORT ONLY, when the page cannot be reached and '
+        + 'no configuration answers. Not as a first reflex: asking someone for a '
+        + 'key they have already published in their own page is useless, and it '
+        + 'is the exact gesture that must be discouraged for the keys that are '
+        + 'not published.\n\n'
+        + 'THE LINE THAT MUST NOT BE CROSSED: this argument is for a project whose '
+        + 'key is ALREADY PUBLIC IN THE PAGE. A private key pasted into a '
+        + 'conversation travels through a model provider\'s logs and cannot be '
+        + 'taken back — this format has no key rotation, so the only repair is a '
+        + 'new project, and the notes already written stay behind.',
+};
+
+const ORIGIN_ARG = {
+    type: 'string',
+    description: 'The origin of the site the notes are about: scheme and host, a '
+        + 'port only when it is not the default, and nothing else — '
+        + '"https://staging.example.com", "http://localhost:8080". No path, no '
+        + 'query string.\n'
+        + 'YOU ALREADY HAVE IT: it is the origin of the PAGE whose annotepage tag '
+        + 'you just read. Take the scheme and the host of that address and drop '
+        + 'the rest. It is not the "api" address — those are two different domains '
+        + 'by construction, and the server compares this one against the site it '
+        + 'expects.\n'
+        + 'PASS IT WHENEVER YOU MIGHT WRITE. Without it reading works everywhere, '
+        + 'but a shared relay refuses every write that arrives with no Origin '
+        + 'header: no reply in a thread, and no note marked resolved.\n'
+        + 'It goes with "api" and "key", and alone it is refused: it describes a '
+        + 'project, it does not name one.',
+};
+
+/* Appended to every tool description. The whole text lives on the two
+   arguments above; what a tool has to say for itself is that the arguments
+   exist, so that nobody asks a human for what the page already carries. */
+const CARRIES_ITS_OWN_PROJECT =
+    '\n\nNO CONFIGURATION NEEDED FOR A PUBLIC PROJECT: this tool also takes '
+    + '"api" and "key" read off the annotepage tag of the page itself '
+    + '(data-server, data-key), plus "origin", which is simply the origin of that '
+    + 'page — and then no configuration file is required or read. Read the "key" '
+    + 'argument before asking anyone for a key, and pass "origin" whenever you '
+    + 'might write: a relay refuses a write that arrives without it.';
 
 const integer = (value, what) => {
     const n = parseInt(value, 10);
@@ -69,7 +144,7 @@ export const buildTools = (configuration) => {
        then reading three notes therefore makes one single export, and a note
        just written reappears at once. */
     const stateOf = async (args) => {
-        const project = chooseProject(configuration, args && args.project);
+        const project = await projectForCall(configuration, args);
         const state = await retrieve(project);
         return { project, state };
     };
@@ -90,11 +165,15 @@ export const buildTools = (configuration) => {
                 + 'empty value.\n\n'
                 + 'A "skipped" line at the end reports the notes that could NOT be '
                 + 'read. If it is there, the list is incomplete, and that has to be '
-                + 'said before concluding that the review is finished.',
+                + 'said before concluding that the review is finished.'
+                + CARRIES_ITS_OWN_PROJECT,
             schema: {
                 type: 'object',
                 properties: {
                     project: PROJECT_ARG,
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    origin: ORIGIN_ARG,
                     page: {
                         type: 'string',
                         description: 'Keep only the notes of this page path, for '
@@ -141,13 +220,17 @@ export const buildTools = (configuration) => {
                 + '"element") and the visible text of that element at the time of the '
                 + 'remark (key "excerpt"): that is enough to find the element again '
                 + 'in the sources, even if the page has moved since.\n\n'
-                + 'Same grammar as the list of open notes.',
+                + 'Same grammar as the list of open notes.'
+                + CARRIES_ITS_OWN_PROJECT,
             schema: {
                 type: 'object',
                 properties: {
                     id: { type: 'integer', description: 'The number of the note, as '
                         + 'the "note" line shows it.' },
                     project: PROJECT_ARG,
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    origin: ORIGIN_ARG,
                 },
                 required: ['id'],
                 additionalProperties: false,
@@ -177,10 +260,13 @@ export const buildTools = (configuration) => {
                 + 'says what it understood, what it changed, or why it is changing '
                 + 'nothing.\n\n'
                 + 'The reply is SIGNED with the name declared in the local '
-                + 'configuration: the human reviewer sees who is speaking.\n\n'
+                + 'configuration: the human reviewer sees who is speaking. On the '
+                + '"api" + "key" path there is no file to declare one, and the '
+                + 'reply is signed "assistant".\n\n'
                 + 'NOTHING IS EVER ERASED IN THIS TOOL. A reply once written stays, '
                 + 'it cannot be edited and it cannot be deleted. The thread has one '
-                + 'depth only: you reply to a note, never to a reply.',
+                + 'depth only: you reply to a note, never to a reply.'
+                + CARRIES_ITS_OWN_PROJECT,
             schema: {
                 type: 'object',
                 properties: {
@@ -189,6 +275,9 @@ export const buildTools = (configuration) => {
                     text: { type: 'string', description: 'The text of the reply. It '
                         + 'will be read by a human on the annotated page.' },
                     project: PROJECT_ARG,
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    origin: ORIGIN_ARG,
                 },
                 required: ['id', 'text'],
                 additionalProperties: false,
@@ -218,7 +307,8 @@ export const buildTools = (configuration) => {
                 + 'Only mark resolved a note whose fix you have REALLY applied. A '
                 + 'note closed by mistake leaves the list of what is left to do, and '
                 + 'nobody reads it again. It can be reopened, but somebody has to '
-                + 'notice the mistake first.',
+                + 'notice the mistake first.'
+                + CARRIES_ITS_OWN_PROJECT,
             schema: {
                 type: 'object',
                 properties: {
@@ -233,6 +323,9 @@ export const buildTools = (configuration) => {
                             + 'not deployed.',
                     },
                     project: PROJECT_ARG,
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    origin: ORIGIN_ARG,
                 },
                 required: ['id', 'version'],
                 additionalProperties: false,
@@ -262,13 +355,17 @@ export const buildTools = (configuration) => {
                 + 'WITH its reply thread: the note is not recreated, and what has been '
                 + 'said is not lost.\n\n'
                 + 'Reopening writes no name: we do not ask who signs in order to '
-                + 'cancel a fix.',
+                + 'cancel a fix.'
+                + CARRIES_ITS_OWN_PROJECT,
             schema: {
                 type: 'object',
                 properties: {
                     id: { type: 'integer', description: 'The number of the note to '
                         + 'reopen.' },
                     project: PROJECT_ARG,
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    origin: ORIGIN_ARG,
                 },
                 required: ['id'],
                 additionalProperties: false,
@@ -291,11 +388,15 @@ export const buildTools = (configuration) => {
                 + '?action=text" would return if the project were not encrypted.\n\n'
                 + 'The header says how many notes there are, and whether the project '
                 + 'is encrypted, plain, or "mixed" — an installation that changed its '
-                + 'mind along the way.',
+                + 'mind along the way.'
+                + CARRIES_ITS_OWN_PROJECT,
             schema: {
                 type: 'object',
                 properties: {
                     project: PROJECT_ARG,
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    origin: ORIGIN_ARG,
                     status: {
                         type: 'string',
                         enum: ['all', 'open', 'resolved'],
@@ -322,11 +423,17 @@ export const buildTools = (configuration) => {
                 + 'table present. Call it when another command fails without anyone '
                 + 'understanding why.\n\n'
                 + 'The salt never appears there, in any form, not even truncated. '
-                + 'What identifies a project is its id, which is already public.',
+                + 'What identifies a project is its id, which is already public — '
+                + 'so calling this with "api" and "key" reports the id THEY derive, '
+                + 'which is how a key is checked before anything is written.'
+                + CARRIES_ITS_OWN_PROJECT,
             schema: {
                 type: 'object',
                 properties: {
                     project: PROJECT_ARG,
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    origin: ORIGIN_ARG,
                     server: {
                         type: 'boolean',
                         description: 'Question the server as well '
@@ -337,7 +444,15 @@ export const buildTools = (configuration) => {
                 additionalProperties: false,
             },
             call: async (args) => {
-                let out = 'configuration ' + configuration.path + '\n';
+                /* The file may be absent, and that is no longer fatal: a call
+                   carrying its own api and key needs nothing from it. We say
+                   what happened to it rather than printing an empty list. */
+                let out = configuration.path
+                    ? 'configuration ' + configuration.path + '\n'
+                    : 'configuration none\n'
+                      + (configuration.error
+                          ? '  ' + configuration.error.message.replace(/\n/g, '\n  ') + '\n'
+                          : '');
                 for (const [name, p] of configuration.projects) {
                     out += '\nproject ' + name + '\n';
                     out += '  id ' + p.id + '\n';
@@ -353,8 +468,27 @@ export const buildTools = (configuration) => {
                 for (const word of configuration.warnings) {
                     out += '\nwarning ' + word.replace(/\n/g, '\n  ') + '\n';
                 }
+                /* An "api" + "key" call is also how one CHECKS a key: the id
+                   it derives is what tells one key from another, and it is
+                   already public (see decision 3 of config.mjs). The key
+                   itself is not echoed back, in any form. */
+                if (args.api !== undefined || args.key !== undefined
+                    || args.origin !== undefined) {
+                    const project = await projectForCall(configuration, args);
+                    out += '\nproject ' + project.name + '\n';
+                    out += '  id ' + project.id + '\n';
+                    out += '  api ' + project.api + '\n';
+                    out += '  mode ' + project.mode + '\n';
+                    out += '  key given with this call, derived, and forgotten '
+                        + 'when it returns\n';
+                    out += '  author ' + project.author + '\n';
+                    out += '  origin ' + (project.origin
+                        ? project.origin
+                        : 'none announced: a relay will refuse a write') + '\n';
+                    out += '  written to disk no\n';
+                }
                 if (args.server) {
-                    const project = chooseProject(configuration, args.project);
+                    const project = await projectForCall(configuration, args);
                     out += '\ndiagnostic ' + project.api + '\n\n';
                     out += await readDiagnostic(project);
                 }

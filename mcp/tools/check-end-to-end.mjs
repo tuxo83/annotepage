@@ -18,7 +18,7 @@
 
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -103,7 +103,7 @@ const buildServer = (state) => createServer((request, response) => {
         request.on('data', (m) => { body += m; });
         request.on('end', () => {
             const fields = new URLSearchParams(body);
-            state.received.push({ action, fields });
+            state.received.push({ action, fields, origin: request.headers.origin || null });
             if (fields.get('project') !== state.project) return text(404, 'Unknown project.');
 
             if (action === 'add') {
@@ -143,9 +143,9 @@ const buildServer = (state) => createServer((request, response) => {
 
 /* -- Run a command and read what it writes -------------------------------- */
 
-const run = (script, args, input) => new Promise((settle) => {
+const run = (script, args, input, options) => new Promise((settle) => {
     const child = spawn(process.execPath, [join(root, script)].concat(args),
-                        { stdio: ['pipe', 'pipe', 'pipe'] });
+                        Object.assign({ stdio: ['pipe', 'pipe', 'pipe'] }, options));
     let out = '';
     let errors = '';
     child.stdout.on('data', (m) => { out += m; });
@@ -406,10 +406,194 @@ await check('mcp: nothing but JSON-RPC goes out on stdout', async () => {
     contains(errors, '[annotepage-mcp]', 'messages for a human go on stderr');
 });
 
+/* -- A CALL THAT CARRIES ITS OWN PROJECT ----------------------------------
+ *
+ * The point of these: NO CONFIGURATION FILE ANYWHERE. The server is started
+ * with no --config, in an empty directory, with HOME pointed at another empty
+ * directory, so that none of the three candidate paths exists. What reaches
+ * the notes is the "api" and "key" of the call itself — which is what an
+ * assistant reads off the annotepage tag of a public page.
+ */
+
+const nowhere = mkdtempSync(join(tmpdir(), 'annotepage-nowhere-'));
+const noHome = mkdtempSync(join(tmpdir(), 'annotepage-nohome-'));
+const bareEnvironment = Object.assign({}, process.env, {
+    HOME: noHome, USERPROFILE: noHome, ANNOTEPAGE_CONFIG: '',
+});
+delete bareEnvironment.ANNOTEPAGE_CONFIG;
+
+/** A dialogue with a server started with no configuration at all. */
+const bareDialogue = async (messages) => {
+    const input = messages.map((m) => JSON.stringify(m)).join('\n') + '\n';
+    const { out, errors } = await run('mcp-server.mjs', [], input,
+        { cwd: nowhere, env: bareEnvironment });
+    const read = out.trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    return { answers: read, errors };
+};
+
+const HERE = { api: 'http://127.0.0.1:' + port + '/api.php', key: SALT };
+
+const bareCall = async (name, args) => {
+    const { answers, errors } = await bareDialogue([
+        { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } },
+        { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args } },
+    ]);
+    const result = answers[1] && answers[1].result;
+    truthy(result !== undefined, 'no result for ' + name + '\n' + errors);
+    return { text: result.content[0].text, isError: result.isError === true, errors };
+};
+
+await check('mcp: with no configuration at all, the server still starts', async () => {
+    const { answers, errors } = await bareDialogue([
+        { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } },
+        { jsonrpc: '2.0', id: 2, method: 'tools/list' },
+    ]);
+    truthy(answers.length === 2, 'it answered\n' + errors);
+    truthy(answers[1].result.tools.length === 7, 'the seven tools are there');
+    contains(errors, 'No configuration found', 'and it said so, on stderr');
+
+    for (const tool of answers[1].result.tools) {
+        const properties = tool.inputSchema.properties;
+        truthy(properties.api && properties.key, 'api and key on ' + tool.name);
+        contains(properties.key.description, 'data-key',
+            'the key argument of ' + tool.name + ' says where to read it');
+        contains(properties.key.description, 'READ IT OFF THE PAGE',
+            'and in which order to look');
+        contains(properties.key.description, 'ALREADY PUBLIC IN THE PAGE',
+            'and the line that must not be crossed');
+    }
+});
+
+await check('mcp: api + key alone read the notes, no file anywhere', async () => {
+    const { text, isError } = await bareCall('annotepage_open_notes', HERE);
+    truthy(!isError, 'no error:\n' + text);
+    contains(text, 'note 4', 'the open note');
+    contains(text, 'page /en/contact.html', 'decrypted with the key of the call');
+    contains(text, 'project ' + keys.id, 'under the id DERIVED from that key');
+});
+
+await check('mcp: api + key write, and the write reads back', async () => {
+    const written = await bareCall('annotepage_reply', Object.assign(
+        { id: 4, text: 'Read off the tag, no configuration file.' }, HERE));
+    truthy(!written.isError, 'no error:\n' + written.text);
+    contains(written.text, 'signed "assistant"', 'signed, and by whom');
+
+    const sent = state.received[state.received.length - 1];
+    truthy(sent.fields.get('project') === keys.id, 'the derived id went to the server');
+    truthy(sent.fields.get('text') === null, 'nothing in the clear');
+
+    const back = await bareCall('annotepage_read_note', Object.assign({ id: 4 }, HERE));
+    contains(back.text, '      Read off the tag, no configuration file.',
+        'the reply reads back, so its envelope and its AAD are right');
+    contains(back.text, '  author assistant', 'and carries the signature');
+});
+
+await check('mcp: origin is sent as the Origin header, canonical', async () => {
+    const written = await bareCall('annotepage_reply', Object.assign(
+        { id: 4, text: 'With an origin this time.',
+          origin: 'HTTPS://Staging.Example.COM:443/' }, HERE));
+    truthy(!written.isError, 'no error:\n' + written.text);
+
+    const sent = state.received[state.received.length - 1];
+    truthy(sent.origin === 'https://staging.example.com',
+        'the header the server received: ' + JSON.stringify(sent.origin));
+
+    // And with no origin, none is invented: FORMAT.md 6.2 refuses that write on
+    // a relay, and it must refuse it rather than arrive under a made-up domain.
+    await bareCall('annotepage_reply', Object.assign({ id: 4, text: 'None.' }, HERE));
+    truthy(state.received[state.received.length - 1].origin === null,
+        'no Origin header when the call did not say which site this is');
+});
+
+await check('mcp: an origin that is not an origin is refused with its shape', async () => {
+    const bad = async (value, what) => {
+        const { text, isError } = await bareCall('annotepage_open_notes',
+            Object.assign({ origin: value }, HERE));
+        truthy(isError, what + ': it was accepted');
+        contains(text, 'is not an origin: ' + value, what);
+        contains(text, 'no path, no query string', what + ' says the shape');
+    };
+    await bad('https://staging.example.com/review', 'a path');
+    await bad('https://staging.example.com?x=1', 'a query string');
+    await bad('staging.example.com', 'no scheme');
+    await bad('ftp://staging.example.com', 'a scheme that is not http');
+});
+
+await check('mcp: "origin" alone is refused, it describes and does not name', async () => {
+    const { text, isError } = await bareCall('annotepage_open_notes',
+        { origin: 'https://staging.example.com' });
+    truthy(isError, 'refused');
+    contains(text, '"origin" without "api" and "key"', 'it names what is missing');
+    contains(text, 'it does not name one', 'and says what an origin is');
+});
+
+await check('mcp: "origin" beside "project" is refused like the rest', async () => {
+    const { text, isError } = await bareCall('annotepage_open_notes',
+        Object.assign({ project: 'review', origin: 'https://staging.example.com' }, HERE));
+    truthy(isError, 'refused');
+    contains(text, '"api", "key" and "origin"', 'the refusal lists what was carried');
+    contains(text, 'we do not pick a winner', 'and picks no winner');
+});
+
+await check('mcp: api + key never write anything to disk', async () => {
+    truthy(readdirSync(nowhere).length === 0, 'the working directory stayed empty');
+    truthy(readdirSync(noHome).length === 0, 'and so did the home directory');
+});
+
+await check('mcp: "api" without "key" is refused, and names what is missing', async () => {
+    const { text, isError } = await bareCall('annotepage_open_notes', { api: HERE.api });
+    truthy(isError, 'refused');
+    contains(text, '"api" without "key"', 'it names the half that is missing');
+    contains(text, 'no falling back to the configuration file',
+        'and says there is no silent fallback');
+});
+
+await check('mcp: "key" without "api" is refused too', async () => {
+    const { text, isError } = await bareCall('annotepage_open_notes', { key: SALT });
+    truthy(isError, 'refused');
+    contains(text, '"key" without "api"', 'it names the half that is missing');
+});
+
+await check('mcp: "key" and "project" together: refused, no winner picked', async () => {
+    const { text, isError } = await bareCall('annotepage_open_notes',
+        Object.assign({ project: 'review' }, HERE));
+    truthy(isError, 'refused');
+    contains(text, 'we do not pick a winner', 'the refusal of section 1.5, in words');
+    contains(text, 'nothing was written', 'and what did not happen');
+    contains(text, 'derives the project id', 'and why a key needs no project beside it');
+});
+
+await check('mcp: a malformed key is refused with its expected shape', async () => {
+    const { text, isError } = await bareCall('annotepage_open_notes',
+        { api: HERE.api, key: SALT.slice(0, 20) + ' ' + SALT.slice(21) });
+    truthy(isError, 'refused');
+    contains(text, '43 characters', 'the expected length');
+    contains(text, 'A-Z a-z 0-9 - _', 'the expected alphabet');
+    truthy(text.indexOf(SALT.slice(0, 20)) === -1, 'and the key is not echoed back');
+});
+
+await check('mcp: with no configuration, a call WITHOUT api+key says which file', async () => {
+    const { text, isError } = await bareCall('annotepage_open_notes', {});
+    truthy(isError, 'refused');
+    contains(text, 'No configuration found', 'the startup error, raised at call time');
+    contains(text, '.annotepage.json', 'and the paths it looked in');
+});
+
+await check('mcp: the projects tool reports the id a key derives, never the key',
+    async () => {
+        const { text, isError } = await bareCall('annotepage_projects', HERE);
+        truthy(!isError, 'no error:\n' + text);
+        contains(text, 'id ' + keys.id, 'the derived id');
+        contains(text, 'written to disk no', 'and that nothing was kept');
+        truthy(text.indexOf(SALT) === -1, 'the key itself appears nowhere');
+    });
+
 /* -- Verdict -------------------------------------------------------------- */
 
 server.close();
 rmSync(folder, { recursive: true, force: true });
+rmSync(nowhere, { recursive: true, force: true });
+rmSync(noHome, { recursive: true, force: true });
 
 if (failures.length === 0) {
     process.stdout.write(passed + ' end-to-end checks, all passed.\n');
