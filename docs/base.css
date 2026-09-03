@@ -1,0 +1,97 @@
+/* ============================================================================
+   annotepage.com -- the tokens every page shares, and nothing else.
+
+   WHY THIS FILE EXISTS, AND WHY IT IS SMALL. The pages are written by hand,
+   with no build step: the file you read is the file that is served. That is
+   worth keeping, and it costs one thing -- the frame around the content is
+   copied rather than shared, and copies drift.
+
+   Measured before this file existed: of roughly 2 800 lines of style across
+   the site, 97 were identical everywhere, and 33 of those were these tokens.
+   The rest is genuinely different work -- one page draws screenshots and a
+   terminal, another draws a replay, another draws code blocks. Extracting THAT
+   would be inventing a framework for three pages that do not want one.
+
+   But these are the lines whose drift is invisible and fatal: an --accent that
+   differs by one page is a broken site that looks fine on every page taken
+   alone. So they live once, here, and each page keeps only the tokens it alone
+   uses.
+
+   THE RULE FOR THE COLOURS, and it is not negotiable. Every colour is defined
+   on bare `:root`, and the dark block only REDEFINES. A colour that exists in
+   one scheme and not the other is a page that renders in one of them.
+
+   HOW TO USE THEM, since the point of a shared file is that a second page can
+   reuse the first one's work:
+
+     background: var(--bg);          the page's own ground
+     background: var(--bg-soft);     a panel, a note, an inactive chip
+     background: var(--bg-code);     anything holding code
+     color: var(--text);             what is read
+     color: var(--dim);              what is read second: captions, asides
+     border: 1px solid var(--line);  a boundary meant to be SEEN
+     border: 1px solid var(--line-soft);  one meant to be felt
+     color: var(--accent);           a link, a control, the chosen thing
+     color: var(--on-accent);        text ON --accent, never anywhere else
+     --warn / --bg-warn              a cost the reader has to know about
+     --ok / --ok-soft                something that succeeded, and stays quiet
+     box-shadow: var(--shadow);      one elevation, so panels agree
+     border-radius: var(--radius);   one corner, same reason
+     max-width: var(--measure);      the reading width. Pictures ignore it.
+
+   A NEW TOKEN GOES HERE ONLY IF TWO PAGES USE IT. One page's colour belongs in
+   that page, next to the thing it paints and the reason it is that colour --
+   which is how --shot-shadow and --accent-soft stayed on the landing page.
+   ============================================================================ */
+
+:root {
+
+    --bg:        #ffffff;
+    --bg-soft:   #f5f6f8;
+    --bg-code:   #f1f2f5;
+    --bg-warn:   #fdf6e9;
+    --text:      #16181d;
+    --dim:       #52565f;
+    --line:      #d3d7de;
+    --line-soft: #e2e5ea;
+    /* --control-line lived here: the 3:1 boundary WCAG 1.4.11 asks of an
+       interactive control, and the only control that needed it was the copy
+       button. That button no longer stands on a surface that follows the
+       theme, so its boundary cannot either -- it is --code-chip-line now,
+       measured on the ground it actually sits on. A token defined against a
+       strip it is no longer painted on is a measurement nobody can check. */
+    --accent:    #0b53c0;
+    --on-accent: #ffffff;
+    --warn:      #7a4200;
+    --ok:        #0a6b3d;
+    /* The fill behind a resolved stamp. Defined here, on bare :root, and only
+       REDEFINED in the dark block -- like every other colour on this page. */
+    --ok-soft:   #e6f4ea;
+    --shadow:    0 1px 2px rgba(16, 18, 24, .06), 0 8px 28px rgba(16, 18, 24, .07);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+            "DejaVu Sans Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+            Arial, "Noto Sans", sans-serif;
+    --radius: 10px;
+    /* THE READING MEASURE, and it is not the page's width -- see .wrap. */
+    --measure: 44rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+--bg:        #0f1115;
+            --bg-soft:   #171a20;
+            --bg-code:   #13161b;
+            --bg-warn:   #1d1810;
+            --text:      #e6e8ec;
+            --dim:       #a3a9b4;
+            --line:      #38404c;
+            --line-soft: #262c35;
+            --accent:    #8ab4ff;
+            --on-accent: #0f1115;
+            --warn:      #f2c17a;
+            --ok:        #5fd39a;
+            --ok-soft:   #17291f;
+            --shadow:    0 1px 2px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .45);
+    }
+}
