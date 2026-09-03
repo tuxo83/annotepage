@@ -34,25 +34,11 @@
 
 :root {
     --accent-soft: #e8effc;
-    /* Heavier than --shadow, and it is not a second opinion about the same
-       thing: --shadow lifts a pill a millimetre off the page it floats on,
-       this one has to make a flat rectangle read as a PHOTOGRAPH of another
-       screen. The near layer draws the edge, the far one is offset down and
-       pulled in with a negative spread so the picture sits ON the page
-       rather than glowing around it. */
-    --shot-shadow: 0 2px 4px rgba(16, 18, 24, .08),
-                   0 18px 40px -12px rgba(16, 18, 24, .28);
 }
 
 @media (prefers-color-scheme: dark) {
     :root {   /* --ok on it: 8.21:1 measured (5.81:1 light) */
         --accent-soft: #16233a;
-        /* A shadow on a dark ground carries almost nothing; what separates
-           the picture from the page there is the mat and the border. This
-           still deepens the seam under it, and is the darkest ink available
-           rather than a tint of the ground, which would lighten it. */
-        --shot-shadow: 0 2px 4px rgba(0, 0, 0, .55),
-                       0 18px 40px -12px rgba(0, 0, 0, .8);
     }
 }
 
@@ -436,151 +422,6 @@ code:not(pre code) {
 .callout p { font-size: .93rem; }
 
 
-/* -- What each of the three steps is drawn out of ------------------------ */
-
-/* The frame and the pieces inside it. It draws the three steps of
-   "How you use it", one frame each, and the corner of a page in the hero.
-   (It once also drew a three-gesture section on how-it-works.html, which is
-   gone; the drawing stayed because these steps are what it is for.)
-
-   Unscoped, because it is now used in two places. It was written as
-   `.use-steps .frame` while the steps were the only thing that had one. */
-.frame {
-    position: relative;
-    /* min-height and NOT height: a fixed height was measured at the default
-       text size only, and at a 200% text size the content wraps to more lines
-       -- and was cut off with no scrollbar. The floor still aligns the three
-       whenever they sit side by side; below that they are stacked in one
-       column, where nothing has to line up with anything. */
-    min-height: 7.5rem;
-    border: 1px solid var(--line-soft);
-    border-radius: 8px;
-    background: var(--bg);
-    overflow: hidden;
-    padding: .6rem;
-}
-/* fake page furniture behind the demonstration */
-.bar-line { height: .42rem; border-radius: 3px; background: var(--line-soft); }
-.bar-line + .bar-line { margin-top: .38rem; }
-.bar-line.w70 { width: 70%; } .bar-line.w45 { width: 45%; } .bar-line.w85 { width: 85%; }
-/* A line of the page BELOW the annotated row. `.bar-line + .bar-line` cannot
-   reach it -- the row of elements sits between them -- so its gap is stated. */
-.bar-line.below { margin-top: 1rem; }
-/* A heading of the page, in the same grey shorthand: taller, shorter across,
-   the firmer of the two lines, and with a paragraph's worth of air under it.
-   Still the HOST's content and not ours -- what a page puts in its headings is
-   the business of whoever installs the tool. */
-/* Its air is its OWN margin and not the next bar's. A heading that is hidden
-   below 78rem must take its spacing with it, and `.bar-line.head + .bar-line`
-   would have left the gap behind: the adjacent-sibling combinator does not
-   care that the element it matched is display:none. */
-.bar-line.head { height: .62rem; width: 34%; background: var(--line); margin-bottom: .8rem; }
-.bar-line + .bar-line.head { margin-top: 1.4rem; }
-
-.pill {
-    position: absolute; right: .55rem; bottom: .55rem;
-    /* A dot and a label, and that is the whole row: the min-content of a flex
-       row is the SUM of its items and it wins over max-width, so a row of two
-       items -- one of them a label free to wrap inside itself -- can never
-       push the pill past the edge of a frame that clips. It could when a
-       count badge made a third: at a 200% text size that came out 41px past
-       the frame, and "3 notes" read "3 no". The count is gone with the note
-       it counted, and so is the flex-wrap that was holding it in. */
-    display: inline-flex; align-items: center; gap: .4rem;
-    /* At rest the real button is a light pill with one accent dot, not a slab
-       of accent: it sits on somebody else's page and must not shout. */
-    background: var(--bg); color: var(--text); border: 1px solid var(--line);
-    /* 1rem and not 999px: the browser clamps the radius to half the height,
-       so at one line (28px tall, measured) this is still a true pill, while a
-       999px radius turns a three-line box into an ellipse once the text is
-       enlarged. Same shape where it matters, no blob where it does not. */
-    border-radius: 1rem; padding: .3rem .7rem;
-    font-size: .72rem; font-weight: 650;
-    box-shadow: var(--shadow);
-    max-width: calc(100% - 1.1rem);
-}
-.pill .dot { width: .42rem; height: .42rem; border-radius: 50%; background: var(--accent); flex: none; }
-
-/* The rectangle is drawn AROUND the target, never on it -- which is also what
-   the tool does: it never puts an outline on an element of the host page. */
-/* max-width, so the marker hanging .85rem off the right corner always has
-   somewhere to hang: the frame only offers .6rem of padding, and at a 200%
-   text size the fake button grew to the full width and pushed the "1" 7px
-   outside the frame, which clips. */
-/* inline-FLEX and not inline-block: a flex container drops the whitespace-only
-   text nodes the indentation leaves inside these wrappers, so the wrapper is
-   exactly as tall as the button it holds. As inline-blocks they carried a line
-   box's strut and the annotated pair started six pixels lower than the fixed
-   pair in step 03 -- measured -- which is the one difference between the two
-   frames that must not exist.
-
-   The air above and the room on the left are the ROW's now (see .gbs), so that
-   the pointed pair and the fixed pair line up to the pixel between the two
-   frames. What is left here is what is particular to the piece: it is the
-   positioning context its rectangle and its excerpt are drawn against. */
-.target { position: relative; display: inline-flex; max-width: 100%; }
-.target::after {
-    content: ""; position: absolute; inset: -5px;
-    border: 2px solid var(--accent); border-radius: 8px;
-    pointer-events: none;
-}
-/* THE TWO BUTTONS OF THE PAGE UNDER REVIEW, AND THEY ARE THE MEASUREMENT.
-   They were neutral outlines while the frame only had to show that something
-   had been clicked. They are now the SUBJECT: the same two green actions the
-   session was about, drawn twice -- wrapped in step 01, on one line in step 03
-   -- so that the defect and the fix are seen and not read.
-
-   The two states are `a.action` before and after the edit, and nothing else
-   about them differs: 36px of horizontal padding with a 17px label, then 16px
-   and 16px. The ceiling on the wrapped pair is what a 360px phone offers the
-   label, which is where Camille saw it break. Identical numbers to the
-   before/after in the figure on example-session.html, deliberately: one defect,
-   drawn the same way wherever this site draws it.
-
-   --ok is the page's green and --on-accent the ink that always answers a filled
-   surface here: white on #0a6b3d is 6.51:1, near-black on #5fd39a is 10.16:1,
-   both measured. The host page's own green is #2f6f4f and is not reproduced --
-   what colour somebody's buttons are is their business; that they wrap is
-   ours. */
-.gbs {
-    /* 1.3rem between the two, and it is the pointed element that asks for it:
-       its rectangle is drawn 5px outside its own edge and the excerpt hangs
-       .3rem further left again, so a narrower gap would put a piece of the
-       tool on the button beside it. The same number in both frames, because
-       the two rows have to be the same row. */
-    display: flex; flex-wrap: wrap; gap: 1.3rem;
-    /* flex-start on both, so a row that wraps keeps the height its own padding
-       gives it: stretched, the 16px pair would be drawn as tall as the 36px
-       pair it replaced, and half of what the edit did is that height. */
-    align-items: flex-start; align-content: flex-start;
-    /* Room above for the floating excerpt, which hangs off the top of the
-       element it quotes; and .55rem on the left for the rectangle and that
-       excerpt, drawn 5px and .3rem outside the element's own left edge, which
-       would otherwise sit on the frame's padding. Stated here rather than on
-       .target, so that the two rows -- one with those pieces, one without --
-       start at the same x and the two frames really are the same crop. */
-    margin: 1.9rem 0 0; padding-left: .55rem;
-}
-.gb {
-    display: inline-block; text-align: center; border-radius: 6px;
-    background: var(--ok); color: var(--on-accent);
-    font-size: .72rem; font-weight: 650; line-height: 1.35;
-}
-/* The break is forced with <br>, not obtained from a width: a width holds only
-   until a root font-size or a viewport moves, and on a tablet it did move --
-   the label sat on ONE line while the note beside it said it wrapped onto two.
-   An illustration that contradicts its own caption is worse than no
-   illustration. */
-.gbs-before .gb { padding: .5rem 1.5rem; }
-.gbs-after  .gb { padding: .5rem .7rem; }
-/* Above the element, never on it: the tool floats the text it is about to
-   quote, so the reviewer sees what the note will say it is about. */
-.marker {
-    position: absolute; left: -.3rem; bottom: calc(100% + .45rem);
-    background: var(--accent); color: var(--on-accent);
-    font-size: .62rem; font-weight: 650; line-height: 1.75;
-    border-radius: 5px; padding: 0 .4rem; white-space: nowrap;
-}
 
 /* -- Footer -------------------------------------------------------------- */
 
@@ -748,7 +589,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    like a different kind of object. */
 .use-steps.install-steps .frame {
     box-shadow: none;
-    border-color: var(--code-edge);
     min-height: 0;
 }
 
@@ -795,11 +635,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 @media (min-width: 78rem) {
     .use-steps > li { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
 }
-.use-steps .cap {
-    margin: 0; display: flex; align-items: baseline; gap: .6rem;
-    font-size: clamp(1.06rem, 2.5vw, 1.24rem); font-weight: 650;
-    line-height: 1.3; letter-spacing: -0.01em;
-}
+/* THE NUMBERED STEP ITSELF -- the caption, its number and its one sentence --
+   is in base.css: two chapters here and a third page draw it. What stays on
+   this page is the GRID those steps are laid out on, above. */
 /* THE INSTALL NUMBERS ARE COUNTED, NOT WRITTEN. One of the three steps
    disappears in public mode, and a number typed into the markup does not
    renumber the ones after it -- it would read 01, 03. */
@@ -807,11 +645,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 .install-steps > li { counter-increment: step; }
 .install-steps .cap .n::before { content: counter(step, decimal-leading-zero); }
 
-.use-steps .cap .n {
-    flex: none;
-    font: 650 .78rem/1 var(--mono); color: var(--accent);
-}
-.use-steps .say { margin: .55rem 0 0; color: var(--dim); font-size: .95rem; max-width: 30em; }
 .use-steps .frame { min-height: 8.5rem; }
 
 /* -- AND THEY HAVE TO READ AS SCREENSHOTS --------------------------------
@@ -847,9 +680,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    by comparing the images, not by reading the media query. */
 @media (min-width: 48rem) {
     .use-steps .frame {
-        border-color: var(--line);
         box-shadow: 0 0 0 .85rem var(--bg-soft), var(--shot-shadow);
     }
+    /* NOT THE TERMINAL, and the exclusion is what keeps the drawing shared.
+       A terminal crop paints its own edge -- --t-border, in base.css, with the
+       ground it belongs to -- and this rule used to be beaten by a longer
+       selector rather than by an argument. Now that the pieces live in one
+       file, the page states which frames it is mounting: the ones that are
+       pictures of a web page. The mat itself still goes on all of them; the
+       mount is the page's business, the ink is the component's. */
+    .use-steps .frame:not(.term) { border-color: var(--line); }
 }
 
 /* A TALLER FLOOR ONCE THE FRAME IS WIDE, so that a picture is not a
@@ -912,161 +752,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     .use-steps .roomy + .bar-line { margin-top: 0; }
 }
 
-/* -- step 02: a crop of the command line, dark in both themes ------------- */
 
-/* The line in it is the line the figure below types out, character for
-   character. The two rules around the input and the indicator above it are
-   the two pieces of chrome the tool actually draws; nothing else is in here. */
-.use-steps .frame.term {
-    background: var(--t-ground); border-color: var(--t-border);
-    color: var(--t-text);
-    font-family: var(--mono); font-size: .74rem; line-height: 1.55;
-    padding: .85rem .8rem;
-    display: flex; flex-direction: column; justify-content: center; gap: .5rem;
-}
-.mt-work { margin: 0; color: var(--t-claude); }
-.mt-work .g { display: inline-block; width: 2ch; }
-.mt-input {
-    border-top: 1px solid var(--t-border);
-    border-bottom: 1px solid var(--t-border);
-    padding: .5rem 0; color: var(--t-text);
-}
-.mt-input .ps { color: var(--t-dim); margin-right: .6ch; }
 
-/* THE ONE MOVING THING IN THE SECTION, and it is one character wide. A command
-   line that is being typed into has a cursor on it; without one the frame is a
-   photograph of a terminal, and the step it illustrates is the step where
-   something is happening.
-
-   steps(1) and not a fade: a terminal cursor is on or off, and an easing curve
-   would be a web animation wearing a terminal's clothes. 1.06s is the interval
-   the cursor of a VT-style terminal keeps.
-
-   REDUCED MOTION IS ALREADY ANSWERED, by `* { animation: none !important }`
-   further up -- and the answer is the right one rather than merely an absence:
-   with no animation the span keeps its static state, which is a solid block
-   sitting after the last character. The line still reads as a prompt being
-   typed into; it simply stops blinking. Nothing else in this section moves,
-   deliberately -- the three steps' arrival is a one-shot on load, not motion. */
-.mt-input .cur {
-    display: inline-block; width: 1ch; height: 1.05em;
-    vertical-align: -.18em; margin-left: .35ch;
-    background: var(--t-text);
-    animation: term-cursor 1.06s steps(1) infinite;
-}
-@keyframes term-cursor { 50% { opacity: 0; } }
-
-/* -- step 03: the note, answered ----------------------------------------- */
-
-/* The reviewer's panel as she finds it again, in the page's own colours --
-   unlike the figure below, whose right-hand pane is a screenshot and is
-   therefore painted light in both themes on purpose. This is a drawing, not a
-   capture, so it follows the theme like everything else around it. */
-.nt-panel {
-    border: 1px solid var(--line-soft); border-radius: 8px;
-    overflow: hidden; background: var(--bg);
-}
-.nt-bar {
-    display: flex; align-items: center; gap: .4rem;
-    padding: .35rem .6rem; background: var(--bg-soft);
-    border-bottom: 1px solid var(--line-soft);
-    font-size: .7rem; font-weight: 650;
-}
-/* --ok on --ok-soft: 5.81:1 light, 8.21:1 dark, both measured. */
-.nt-count {
-    margin-left: auto; background: var(--ok-soft); color: var(--ok);
-    border-radius: 999px; padding: 0 .45rem; font-size: .64rem; font-weight: 650;
-}
-.nt-body { padding: .5rem; display: grid; gap: .45rem; }
-.nt {
-    border: 1px solid var(--line-soft); border-left: 3px solid var(--ok);
-    border-radius: 6px; padding: .42rem .5rem;
-}
-.nt p { margin: .2rem 0 0; font-size: .68rem; }
-.nt p.nt-who { margin: 0; font-size: .66rem; color: var(--dim); }
-.nt p.nt-who b { color: var(--text); font-weight: 650; }
-.nt p.nt-about {
-    margin: .2rem 0 0; font-size: .64rem; color: var(--dim);
-    border-left: 2px solid var(--line-soft); padding-left: .4rem;
-}
-.nt-stamp {
-    display: block; margin: -.42rem -.5rem .35rem; padding: .22rem .5rem;
-    background: var(--ok-soft); color: var(--ok);
-    font-size: .64rem; font-weight: 650;
-}
-.nt.reply { margin-left: .7rem; border-left: 2px solid var(--line-soft); }
-
-/* -- step 01: the same dock, with a note being written into it -----------
-
-   The reviewer's form, and it is the form and not the list: the client anchors
-   `.ap-form` beside the element just clicked, a card of its own with a shadow,
-   while the panel is the standing list. Both live in the same place on the
-   screen -- the right-hand side, at the width the tool gives them -- which is
-   why the two frames dock the same object on the same edge and the crop reads
-   as one crop.
-
-   Everything in it is a string of the client: `form.title`, `form.about`,
-   `author.known` and `author.change`, `form.send`, `form.cancel`, and
-   `form.remaining` counting down from the 4000 the tool allows. The outline is
-   the field's own focus ring -- she is typing in it -- and it is an outline
-   rather than a border because a ring costs no layout and cannot push anything
-   off the side of a frame that clips. */
-.nt-form { border-color: var(--line); box-shadow: var(--shadow); padding: .6rem; }
-.fm-title { margin: 0; font-size: .74rem; font-weight: 650; }
-.fm-about {
-    margin: .3rem 0 0; font-size: .64rem; color: var(--dim); font-style: italic;
-    border-left: 2px solid var(--line-soft); padding-left: .4rem;
-}
-.fm-area {
-    margin: .45rem 0 0; min-height: 3.2rem;
-    border: 1px solid var(--line); border-radius: 6px;
-    background: var(--bg-soft); padding: .35rem .45rem;
-    font-size: .68rem; line-height: 1.5;
-    outline: 2px solid var(--accent); outline-offset: 1px;
-}
-.fm-acts {
-    margin: .6rem 0 0; display: flex; align-items: center; flex-wrap: wrap;
-    gap: .4rem; font-size: .64rem;
-}
-
-/* -- the key screen, drawn for the install chapter ----------------------
-   Two lines the note form does not have, because the client's panel has
-   them here: the sentence that explains why it is asking, and the field's
-   label. The key itself takes .fm-area -- it is the same field, with the
-   same focus ring, and what is in it is 43 characters of base64 rather
-   than a sentence, so it is set in the mono face and allowed to wrap. */
-.fm-help { margin: .35rem 0 0; font-size: .64rem; color: var(--dim); line-height: 1.5; }
-.fm-label { margin: .55rem 0 0; font-size: .62rem; font-weight: 650; }
-.fm-key {
-    font-family: var(--mono); font-size: .64rem;
-    min-height: 0; overflow-wrap: anywhere; white-space: normal;
-}
-/* NO COPY BUTTON ON THIS FRAME. It had one, in the corner the code blocks
-   use, and it was the tell: a photograph of a screen does not carry a control
-   that screen has not got. Taking the key is an action of THIS page, so it is
-   a word on this page's own line under the frame, beside "Generate another".
-/* The line under it carries margin-top: -.4rem, written when what came before
-   was a .snip and ended in 1.3rem of its own. A frame has no bottom margin, so
-   that pull became an OVERLAP -- measured, 7px of the project id sitting under
-   the frame's edge, clipped by its overflow. The frame states the margin the
-   snip used to bring. */
-.key-frame { margin-bottom: 1.3rem; }
-.fm-send {
-    background: var(--accent); color: var(--on-accent);
-    border-radius: 6px; padding: .2rem .6rem; font-weight: 650;
-}
-
-/* THE ONE MOVING THING IN THE FIRST FRAME, and it is a text caret rather than
-   the block the terminal above uses: a caret in a field is a hairline, and a
-   block there would be a terminal drawn inside a web form. It borrows the
-   terminal's interval and its steps(1), because a caret does not fade, and the
-   reduced-motion rule further up leaves it standing still and solid. */
-.caret {
-    display: inline-block; width: 1px; height: 1.05em;
-    vertical-align: -.18em; margin-left: .5px;
-    background: var(--text);
-    animation: term-cursor 1.06s steps(1) infinite;
-}
 
 /* -- AND WHERE THE PANEL IS, once the frame is wide enough to say ---------
 
@@ -1153,30 +840,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     }
 }
 
-/* -- the terminal palette for step 02's frame, PINNED DARK IN BOTH THEMES --
-
-   The crop of the command line in step 02 does not follow the reader's theme,
-   and that is the point of it. A terminal on a developer's machine is a dark
-   ground with light text; drawn on white it stops reading as a screen and
-   starts reading as a web page dressed up as one. So it keeps its own ink, and
-   the ink is the DARK column of the theme table taken out of the client being
-   reproduced. Nothing here is invented and nothing here is redefined below.
-
-   Measured on rendered pixels against the #1a1a1a ground, and the figures
-   cannot differ between page themes because nothing painted on this ground
-   depends on one: white text 17.40:1, dim #999 6.11:1, the spinner accent
-   #d77757 5.52:1. The pair of rules round the input is #888 at 4.91:1, which
-   is a line and not text.
-
-   The full table -- the tool bullet, the success green, the band behind a sent
-   line -- went to example-session.html with the figure that used them. */
-:root {
-    --t-ground:  #1a1a1a;   /* not #000: a pure black ground is the tell */
-    --t-text:    #ffffff;
-    --t-border:  #888888;
-    --t-claude:  #d77757;
-    --t-dim:     #999999;
-}
 
 /* -- the ink of the three code blocks, PINNED DARK IN BOTH THEMES ---------
 
@@ -1224,10 +887,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 }
 
 
-        /* The composer names its author so the reader recognises her in the
-           thread three frames below. One line, not the client's full
-           "You are writing as X. Change". */
-        .fm-sign { margin: .1rem 0 .45rem; font-size: .78rem; color: var(--dim); }
 
         /* Three versions of this, and the third is the one that works.
 
