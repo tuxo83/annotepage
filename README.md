@@ -19,7 +19,7 @@ One tag, at the end of `<body>`:
 
 ```html
 <script src="https://annotepage.com/annotepage-client-2.0.1.js"
-        integrity="sha384-tMQlD7gryDE13ShW/GCVLMhJU8tqODcREl9RksXuf67eectM4YPTUZXLfkmakFoO"
+        integrity="sha384-5wrAEkCKCLyEM3YJsVd6H7gFCOHt9f63XTDIM0Eu4fVYEAr3X4wgDWEDXkx/WVb/"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
         data-project="your-project-id"

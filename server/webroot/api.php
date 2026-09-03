@@ -282,14 +282,59 @@ function ap_begin_text()
 }
 
 /** The common envelope of every JSON service response. */
+/**
+ * The CLIENT version this server release knows about, or 'unknown'.
+ *
+ * Not the same fact as ap_version(), which is the SERVER's -- two things that
+ * move separately, so two files and two fields. A client reads it to learn
+ * that something newer than itself exists.
+ *
+ * IT ANNOUNCES, IT NEVER GATES. Compatibility is the format number's job
+ * (FORMAT.md section 7) and a release number is not a contract: 2.1.0 and
+ * 2.2.0 speak the same format by construction. Nothing here may ever be
+ * compared to decide whether a request is allowed.
+ *
+ * A server left behind announces the client of its own release, which is older
+ * than a newer client -- and the client treats older as silence, so a stale
+ * server can never talk a browser into going backwards.
+ */
+function ap_client_version()
+{
+    static $version = null;
+    if ($version !== null) {
+        return $version;
+    }
+    $version = 'unknown';
+    foreach (array(__DIR__ . '/CLIENT_VERSION', __DIR__ . '/../CLIENT_VERSION') as $path) {
+        if (is_readable($path)) {
+            $read = trim((string) file_get_contents($path));
+            // The same shape the client validates before building a URL from
+            // it: three numbers. A file saying anything else says nothing.
+            if (preg_match('/^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/', $read)) {
+                $version = $read;
+                break;
+            }
+        }
+    }
+    return $version;
+}
+
 function ap_response_envelope(array $extra)
 {
-    return array_merge(array(
+    $envelope = array(
         'ok'      => true,
         'tool'    => 'annotepage',
         'format'  => AP_FORMAT,
         'version' => ap_version(),
-    ), $extra);
+    );
+    // Absent rather than 'unknown' when it is not known: the client reads an
+    // absent field as a silence, and a word it cannot parse would be one more
+    // thing to explain.
+    $client = ap_client_version();
+    if ($client !== 'unknown') {
+        $envelope['client_version'] = $client;
+    }
+    return array_merge($envelope, $extra);
 }
 
 /** Requires the POST method for an action that changes state. */

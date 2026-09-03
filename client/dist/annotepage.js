@@ -1,7 +1,7 @@
 /* ============================================================================
    annotepage -- the annotation layer, browser side.
 
-   Package version : 2.1.0
+   Package version : 2.2.0
    Format version  : 2   (see FORMAT.md)
    Licence : MIT
 
@@ -16,9 +16,9 @@
     /* Injected by the build: they come from package.json and from
        src/styles.css, so that no value is written in two places and can
        therefore diverge. */
-    const TOOL_VERSION = "2.1.0";
+    const TOOL_VERSION = "2.2.0";
     const FORMAT = 2;
-    const STYLES = "/* ============================================================================\n   styles.css -- THE STYLES OF THE TOOL, AND OF NO OTHER ELEMENT.\n\n   This sheet is INLINED into the served file by the build, then put into the\n   tool's shadow root -- as a constructed sheet when the browser can do it, in\n   a <style> otherwise. It was loaded by a <link> in the original tool; the\n   move to a CDN under SRI brought it inside the file, so that there is only\n   one digest to keep up to date. The containment itself has not changed, and\n   is still twofold:\n\n     - from the tool towards the site: no rule from here can reach an element\n       of the host site, the browser sees to that. That is what makes the\n       claim \"the layer touches nothing\" checkable rather than promised;\n     - from the site towards the tool: no rule of the site can reach an\n       element here. A redesign of the site's stylesheet therefore cannot\n       distort the tool, nor the other way round.\n\n   The \"ap-\" prefix on every class is the third safeguard: the day somebody\n   loads these styles WITHOUT a shadow root -- by mistake, or to debug --\n   nothing would answer a selector of the site.\n\n   NO RULE TARGETS html, body, * OR ANY SELECTOR OF THE SITE. That is the one\n   absolute prohibition of this file.\n\n   COLOURS: the tool has its OWN palette, defined on the shadow root. It\n   reads neither the site's variables nor its theme attribute: it has no\n   reason to know how the site names its colours, and it must stay readable\n   on a light site as on a dark one. The switch follows the system\n   preference, the only information the tool has without asking anyone.\n   ============================================================================ */\n\n\n:host {\n    --ap-bg: #ffffff;\n    --ap-bg-soft: #f4f6f8;\n    --ap-bg-raised: #e9edf2;\n    --ap-text: #1a1d21;\n    --ap-text-soft: #5b6570;\n    --ap-border: #d5dbe2;\n    --ap-accent: #2f6fed;\n    --ap-accent-dark: #1d55c8;\n    --ap-accent-text: #ffffff;\n    --ap-accent-veil: rgba(47, 111, 237, 0.14);\n    --ap-alert-bg: #fdeceb;\n    --ap-alert-border: #e3a9a4;\n    --ap-alert-text: #8a1f16;\n    --ap-shadow: 0 6px 24px rgba(16, 24, 40, 0.18);\n    --ap-radius: 10px;\n    --ap-font: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\",\n                  Arial, sans-serif;\n}\n\n@media (prefers-color-scheme: dark) {\n    :host {\n        --ap-bg: #1d2126;\n        --ap-bg-soft: #262b32;\n        --ap-bg-raised: #323942;\n        --ap-text: #e9ecf0;\n        --ap-text-soft: #a4adb8;\n        --ap-border: #3a424c;\n        --ap-accent: #6d9bff;\n        --ap-accent-dark: #8fb4ff;\n        --ap-accent-text: #10151c;\n        --ap-accent-veil: rgba(109, 155, 255, 0.18);\n        --ap-alert-bg: #3a1f1c;\n        --ap-alert-border: #7c3a33;\n        --ap-alert-text: #ffb9b1;\n        --ap-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);\n    }\n}\n\n/* ----------------------------------------------------------------------------\n   The layer.\n\n   It covers the viewport and receives NO click: that is what lets the page\n   behave exactly as usual as long as the tool is not in annotation mode.\n   Each widget re-enables clicks for itself alone.\n   ---------------------------------------------------------------------------- */\n\n.ap-layer {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    font-family: var(--ap-font);\n    font-size: 14px;\n    line-height: 1.45;\n    color: var(--ap-text);\n    text-align: left;\n    -webkit-font-smoothing: antialiased;\n}\n\n.ap-layer button,\n.ap-layer input,\n.ap-layer textarea {\n    font-family: inherit;\n    font-size: inherit;\n    line-height: inherit;\n    color: inherit;\n    margin: 0;\n    box-sizing: border-box;\n}\n\n/* ----------------------------------------------------------------------------\n   The button: the only thing visible when the tool is at rest.\n   ---------------------------------------------------------------------------- */\n\n.ap-button {\n    position: fixed;\n    right: 16px;\n    bottom: 16px;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 9px 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: 999px;\n    background: var(--ap-bg);\n    color: var(--ap-text);\n    box-shadow: var(--ap-shadow);\n    cursor: pointer;\n    pointer-events: auto;\n    opacity: 0.92;\n    transition: opacity 0.15s ease, transform 0.15s ease;\n}\n\n.ap-button:hover,\n.ap-button:focus-visible {\n    opacity: 1;\n    transform: translateY(-1px);\n}\n\n.ap-button:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n.ap-button[aria-pressed=\"true\"] {\n    background: var(--ap-accent);\n    border-color: var(--ap-accent);\n    color: var(--ap-accent-text);\n    opacity: 1;\n}\n\n.ap-button-dot {\n    display: inline-block;\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    background: var(--ap-accent);\n    flex: none;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-dot {\n    background: var(--ap-accent-text);\n}\n\n.ap-button-count {\n    padding: 1px 7px;\n    border-radius: 999px;\n    background: var(--ap-bg-raised);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-count {\n    background: rgba(255, 255, 255, 0.22);\n    color: var(--ap-accent-text);\n}\n\n/* ----------------------------------------------------------------------------\n   The pointing highlight.\n\n   It is DRAWN HERE, from the coordinates of the element being pointed at.\n   Nothing is put on the element itself: no class, no attribute, no style. So\n   the site cannot move by a single pixel because of the pointing.\n   ---------------------------------------------------------------------------- */\n\n.ap-highlight {\n    position: fixed;\n    border: 2px solid var(--ap-accent);\n    border-radius: 3px;\n    background: var(--ap-accent-veil);\n    pointer-events: none;\n    display: none;\n}\n\n.ap-highlight-label {\n    position: fixed;\n    max-width: 320px;\n    padding: 4px 8px;\n    border-radius: 6px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    pointer-events: none;\n    display: none;\n    box-shadow: var(--ap-shadow);\n}\n\n/* ----------------------------------------------------------------------------\n   The markers: \"there are already notes here\".\n   ---------------------------------------------------------------------------- */\n\n.ap-marker {\n    position: fixed;\n    min-width: 22px;\n    height: 22px;\n    padding: 0 6px;\n    border: 2px solid var(--ap-bg);\n    border-radius: 999px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    font-weight: 700;\n    line-height: 18px;\n    text-align: center;\n    cursor: pointer;\n    pointer-events: auto;\n    box-shadow: var(--ap-shadow);\n}\n\n.ap-marker:focus-visible {\n    outline: 2px solid var(--ap-accent-dark);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The panel.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel {\n    position: fixed;\n    top: 12px;\n    right: 12px;\n    bottom: 72px;\n    width: 360px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n    overflow: hidden;\n}\n\n.ap-panel.ap-open {\n    display: flex;\n}\n\n.ap-panel-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n}\n\n.ap-panel-title {\n    font-size: 15px;\n    font-weight: 600;\n    flex: 1 1 auto;\n}\n\n.ap-panel-instructions {\n    padding: 10px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    color: var(--ap-text-soft);\n    font-size: 13px;\n}\n\n.ap-panel-body {\n    flex: 1 1 auto;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 14px 14px;\n}\n\n.ap-panel-footer {\n    padding: 8px 14px;\n    border-top: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n\n.ap-section-title {\n    margin: 14px 0 6px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-weight: 600;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n\n.ap-section-help {\n    margin: 0 0 8px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-empty {\n    margin: 16px 0;\n    color: var(--ap-text-soft);\n}\n\n/* The standing mention of a public key. Deliberately NOT the alert colours:\n   this is not a failure and it is on screen for ever -- an alarm that never\n   goes away stops being read. It is a fact about the project, stated in the\n   panel's own tone, and it stays at the top of every draw. */\n.ap-public {\n    margin: 0 0 10px;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    line-height: 1.45;\n}\n\n/* ----------------------------------------------------------------------------\n   A note, and its replies.\n   ---------------------------------------------------------------------------- */\n\n.ap-note {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n}\n\n.ap-note.ap-orphan {\n    background: var(--ap-bg-soft);\n}\n\n.ap-note.ap-focused {\n    border-color: var(--ap-accent);\n    box-shadow: 0 0 0 3px var(--ap-accent-veil);\n}\n\n.ap-note-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-note-author {\n    font-weight: 600;\n}\n\n.ap-note-date {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-note-target {\n    margin: 4px 0 0;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-text {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-actions {\n    margin-top: 8px;\n    display: flex;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-replies {\n    margin: 8px 0 0;\n    padding-left: 10px;\n    border-left: 2px solid var(--ap-border);\n}\n\n.ap-reply {\n    margin: 8px 0 0;\n}\n\n/* ----------------------------------------------------------------------------\n   The form, anchored near the element pointed at.\n   ---------------------------------------------------------------------------- */\n\n.ap-form {\n    position: fixed;\n    width: 340px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    gap: 8px;\n    padding: 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n}\n\n.ap-form.ap-open {\n    display: flex;\n}\n\n.ap-form-title {\n    font-size: 15px;\n    font-weight: 600;\n}\n\n.ap-form-target {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-label {\n    display: block;\n    margin-bottom: 3px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--ap-text-soft);\n}\n\n.ap-help {\n    margin: 3px 0 0;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n.ap-field,\n.ap-area {\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n}\n\n.ap-field:focus,\n.ap-area:focus {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n.ap-area {\n    min-height: 92px;\n    resize: vertical;\n}\n\n.ap-actions {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-counter {\n    margin-left: auto;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   Buttons.\n   ---------------------------------------------------------------------------- */\n\n.ap-primary,\n.ap-secondary,\n.ap-link {\n    border-radius: 8px;\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.ap-primary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-accent);\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-weight: 600;\n}\n\n.ap-primary:hover {\n    background: var(--ap-accent-dark);\n    border-color: var(--ap-accent-dark);\n}\n\n.ap-secondary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-border);\n    background: var(--ap-bg);\n    color: var(--ap-text);\n}\n\n.ap-secondary:hover {\n    background: var(--ap-bg-raised);\n}\n\n.ap-link {\n    padding: 2px 4px;\n    border: 0;\n    background: none;\n    color: var(--ap-accent);\n    text-decoration: underline;\n    font-size: 13px;\n}\n\n.ap-primary:disabled,\n.ap-secondary:disabled,\n.ap-link:disabled {\n    opacity: 0.6;\n    cursor: default;\n}\n\n.ap-primary:focus-visible,\n.ap-secondary:focus-visible,\n.ap-link:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The failures.\n\n   They are RED, at the top of the block concerned, and carry the message the\n   server returned as it stands: that is how a non-technical team learns that\n   its remark is not saved, instead of believing it is.\n   ---------------------------------------------------------------------------- */\n\n.ap-error {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-alert-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-alert-bg);\n    color: var(--ap-alert-text);\n}\n\n.ap-error-title {\n    font-weight: 700;\n    margin-bottom: 4px;\n}\n\n.ap-error-detail {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    font-size: 13px;\n}\n\n.ap-error .ap-link {\n    color: var(--ap-alert-text);\n}\n\n/* ----------------------------------------------------------------------------\n   Narrow: the panel takes the full width, and so does the form.\n   ---------------------------------------------------------------------------- */\n\n/* ----------------------------------------------------------------------------\n   Narrow.\n\n   DEFECT OBSERVED at 375 px wide: a panel taking the full height covers the\n   whole page, and no element can be pointed at any more -- every click lands\n   on the panel. So it becomes a bottom band, which leaves the top half of\n   the viewport free; one scrolls the page there to bring the wanted element\n   into view. The form, for its part, hides the panel while typing (see\n   notes.js): on a screen that size, writing and reading the list at the same\n   time does not hold.\n   ---------------------------------------------------------------------------- */\n\n/* On a narrow screen the panel becomes a bottom band and the form takes the\n   full width.\n\n   THE WIDTH CEILING IS KEPT, and it comes from a measured defect: \"left: 8;\n   right: 8\" sizes the element against its CONTAINING BLOCK, which the host\n   site's horizontal overflow can make wider than the visible window.\n   Measured, in mobile emulation at 390 px: the site overflows to 407 px\n   (with the tool and without it), and the panel came out 391 px wide\n   starting at 8, that is 9 px off screen. \"100vw\" is the window, not the\n   containing block: the ceiling therefore does nothing when the site does\n   not overflow, and pulls the width back when it does. */\n@media (max-width: 560px) {\n    .ap-panel {\n        top: auto;\n        right: 8px;\n        left: 8px;\n        bottom: 66px;\n        height: 52vh;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n\n    .ap-form {\n        left: 8px;\n        right: 8px;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-button {\n        transition: none;\n    }\n}\n\n/* The failure shows without opening the panel: the button's dot changes\n   colour. A team that does not click must be able to see that something is\n   wrong. */\n.ap-button.ap-failed .ap-button-dot {\n    background: var(--ap-alert-text);\n}\n\n.ap-button.ap-failed {\n    border-color: var(--ap-alert-border);\n}\n\n/* Signature reminder, in the note form.\n   The name was shown at the foot of the panel only: invisible at the moment\n   one writes. A user reported not knowing which name they were writing\n   under. */\n.ap-form-signature {\n    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;\n    margin: 0 0 .6rem; font-size: .85rem; opacity: .8;\n}\n\n/* Resolution state, said on the card.\n   Two cases NOT to be confused: resolved and online, resolved but not\n   deployed yet. The second keeps the defect on the reviewer's screen; hiding\n   it or announcing it as fixed would cost them their trust in the tool. */\n.ap-state-mark {\n    display: inline-block; margin: 0 0 .5rem;\n    padding: .15rem .55rem; border-radius: 4px;\n    font-size: .75rem; font-weight: 600; letter-spacing: .02em;\n}\n.ap-note.ap-resolved { opacity: .72; }\n.ap-note.ap-resolved .ap-state-mark {\n    color: #0f7a52; background: rgba(16, 185, 129, .14);\n}\n.ap-note.ap-resolved-pending .ap-state-mark {\n    color: #8a5a00; background: rgba(245, 158, 11, .16);\n}\n/* The \"it is fixed\" / \"reopen\" block, opened under the card. Same shape as\n   the reply block: it is the same gesture, one answers a remark. */\n.ap-resolve,\n.ap-reply-form {\n    margin-top: .6rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-border);\n}\n\n.ap-history-toggle {\n    display: block; width: 100%; margin: 1rem 0 .25rem;\n    padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;\n    background: none; color: inherit; font: inherit; opacity: .7; cursor: pointer;\n}\n.ap-history-toggle:hover { opacity: 1; }\n\n\n/* ----------------------------------------------------------------------------\n   Setup and pasting the salt.\n\n   These are the only screens where something is copied by hand. Everything\n   there is SELECTABLE and monospaced: a 43-character salt copied wrong\n   cannot be recovered, and nothing helps less than a font that confuses I, l\n   and 1.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel-wide {\n    width: 560px;\n}\n\n.ap-copy {\n    display: flex;\n    align-items: flex-start;\n    gap: 8px;\n    margin: 0 0 12px;\n}\n\n.ap-code {\n    flex: 1 1 auto;\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\",\n                 monospace;\n    font-size: 12.5px;\n    line-height: 1.5;\n    resize: vertical;\n    white-space: pre;\n    overflow-x: auto;\n}\n\n.ap-code:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n@media (max-width: 560px) {\n    .ap-panel-wide {\n        width: auto;\n    }\n\n    .ap-copy {\n        flex-direction: column;\n    }\n}\n";
+    const STYLES = "/* ============================================================================\n   styles.css -- THE STYLES OF THE TOOL, AND OF NO OTHER ELEMENT.\n\n   This sheet is INLINED into the served file by the build, then put into the\n   tool's shadow root -- as a constructed sheet when the browser can do it, in\n   a <style> otherwise. It was loaded by a <link> in the original tool; the\n   move to a CDN under SRI brought it inside the file, so that there is only\n   one digest to keep up to date. The containment itself has not changed, and\n   is still twofold:\n\n     - from the tool towards the site: no rule from here can reach an element\n       of the host site, the browser sees to that. That is what makes the\n       claim \"the layer touches nothing\" checkable rather than promised;\n     - from the site towards the tool: no rule of the site can reach an\n       element here. A redesign of the site's stylesheet therefore cannot\n       distort the tool, nor the other way round.\n\n   The \"ap-\" prefix on every class is the third safeguard: the day somebody\n   loads these styles WITHOUT a shadow root -- by mistake, or to debug --\n   nothing would answer a selector of the site.\n\n   NO RULE TARGETS html, body, * OR ANY SELECTOR OF THE SITE. That is the one\n   absolute prohibition of this file.\n\n   COLOURS: the tool has its OWN palette, defined on the shadow root. It\n   reads neither the site's variables nor its theme attribute: it has no\n   reason to know how the site names its colours, and it must stay readable\n   on a light site as on a dark one. The switch follows the system\n   preference, the only information the tool has without asking anyone.\n   ============================================================================ */\n\n\n:host {\n    --ap-bg: #ffffff;\n    --ap-bg-soft: #f4f6f8;\n    --ap-bg-raised: #e9edf2;\n    --ap-text: #1a1d21;\n    --ap-text-soft: #5b6570;\n    --ap-border: #d5dbe2;\n    --ap-accent: #2f6fed;\n    --ap-accent-dark: #1d55c8;\n    --ap-accent-text: #ffffff;\n    --ap-accent-veil: rgba(47, 111, 237, 0.14);\n    --ap-alert-bg: #fdeceb;\n    --ap-alert-border: #e3a9a4;\n    --ap-alert-text: #8a1f16;\n    --ap-shadow: 0 6px 24px rgba(16, 24, 40, 0.18);\n    --ap-radius: 10px;\n    --ap-font: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\",\n                  Arial, sans-serif;\n}\n\n@media (prefers-color-scheme: dark) {\n    :host {\n        --ap-bg: #1d2126;\n        --ap-bg-soft: #262b32;\n        --ap-bg-raised: #323942;\n        --ap-text: #e9ecf0;\n        --ap-text-soft: #a4adb8;\n        --ap-border: #3a424c;\n        --ap-accent: #6d9bff;\n        --ap-accent-dark: #8fb4ff;\n        --ap-accent-text: #10151c;\n        --ap-accent-veil: rgba(109, 155, 255, 0.18);\n        --ap-alert-bg: #3a1f1c;\n        --ap-alert-border: #7c3a33;\n        --ap-alert-text: #ffb9b1;\n        --ap-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);\n    }\n}\n\n/* ----------------------------------------------------------------------------\n   The layer.\n\n   It covers the viewport and receives NO click: that is what lets the page\n   behave exactly as usual as long as the tool is not in annotation mode.\n   Each widget re-enables clicks for itself alone.\n   ---------------------------------------------------------------------------- */\n\n.ap-layer {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    font-family: var(--ap-font);\n    font-size: 14px;\n    line-height: 1.45;\n    color: var(--ap-text);\n    text-align: left;\n    -webkit-font-smoothing: antialiased;\n}\n\n.ap-layer button,\n.ap-layer input,\n.ap-layer textarea {\n    font-family: inherit;\n    font-size: inherit;\n    line-height: inherit;\n    color: inherit;\n    margin: 0;\n    box-sizing: border-box;\n}\n\n/* ----------------------------------------------------------------------------\n   The button: the only thing visible when the tool is at rest.\n   ---------------------------------------------------------------------------- */\n\n.ap-button {\n    position: fixed;\n    right: 16px;\n    bottom: 16px;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 9px 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: 999px;\n    background: var(--ap-bg);\n    color: var(--ap-text);\n    box-shadow: var(--ap-shadow);\n    cursor: pointer;\n    pointer-events: auto;\n    opacity: 0.92;\n    transition: opacity 0.15s ease, transform 0.15s ease;\n}\n\n.ap-button:hover,\n.ap-button:focus-visible {\n    opacity: 1;\n    transform: translateY(-1px);\n}\n\n.ap-button:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n.ap-button[aria-pressed=\"true\"] {\n    background: var(--ap-accent);\n    border-color: var(--ap-accent);\n    color: var(--ap-accent-text);\n    opacity: 1;\n}\n\n.ap-button-dot {\n    display: inline-block;\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    background: var(--ap-accent);\n    flex: none;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-dot {\n    background: var(--ap-accent-text);\n}\n\n.ap-button-count {\n    padding: 1px 7px;\n    border-radius: 999px;\n    background: var(--ap-bg-raised);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-count {\n    background: rgba(255, 255, 255, 0.22);\n    color: var(--ap-accent-text);\n}\n\n/* ----------------------------------------------------------------------------\n   The pointing highlight.\n\n   It is DRAWN HERE, from the coordinates of the element being pointed at.\n   Nothing is put on the element itself: no class, no attribute, no style. So\n   the site cannot move by a single pixel because of the pointing.\n   ---------------------------------------------------------------------------- */\n\n.ap-highlight {\n    position: fixed;\n    border: 2px solid var(--ap-accent);\n    border-radius: 3px;\n    background: var(--ap-accent-veil);\n    pointer-events: none;\n    display: none;\n}\n\n.ap-highlight-label {\n    position: fixed;\n    max-width: 320px;\n    padding: 4px 8px;\n    border-radius: 6px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    pointer-events: none;\n    display: none;\n    box-shadow: var(--ap-shadow);\n}\n\n/* ----------------------------------------------------------------------------\n   The markers: \"there are already notes here\".\n   ---------------------------------------------------------------------------- */\n\n.ap-marker {\n    position: fixed;\n    min-width: 22px;\n    height: 22px;\n    padding: 0 6px;\n    border: 2px solid var(--ap-bg);\n    border-radius: 999px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    font-weight: 700;\n    line-height: 18px;\n    text-align: center;\n    cursor: pointer;\n    pointer-events: auto;\n    box-shadow: var(--ap-shadow);\n}\n\n.ap-marker:focus-visible {\n    outline: 2px solid var(--ap-accent-dark);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The panel.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel {\n    position: fixed;\n    top: 12px;\n    right: 12px;\n    bottom: 72px;\n    width: 360px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n    overflow: hidden;\n}\n\n.ap-panel.ap-open {\n    display: flex;\n}\n\n.ap-panel-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n}\n\n.ap-panel-title {\n    font-size: 15px;\n    font-weight: 600;\n    flex: 1 1 auto;\n}\n\n.ap-panel-instructions {\n    padding: 10px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    color: var(--ap-text-soft);\n    font-size: 13px;\n}\n\n.ap-panel-body {\n    flex: 1 1 auto;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 14px 14px;\n}\n\n.ap-panel-footer {\n    padding: 8px 14px;\n    border-top: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n\n.ap-section-title {\n    margin: 14px 0 6px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-weight: 600;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n\n.ap-section-help {\n    margin: 0 0 8px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-empty {\n    margin: 16px 0;\n    color: var(--ap-text-soft);\n}\n\n/* The standing mention of a public key. Deliberately NOT the alert colours:\n   this is not a failure and it is on screen for ever -- an alarm that never\n   goes away stops being read. It is a fact about the project, stated in the\n   panel's own tone, and it stays at the top of every draw. */\n/* The public-key notice and the \"a newer client exists\" line are the same\n   object on screen: a standing statement about what one is looking at, above\n   the notes and above the failures. One rule, so they cannot drift apart. */\n.ap-public,\n.ap-upgrade {\n    margin: 0 0 10px;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    line-height: 1.45;\n}\n\n/* ----------------------------------------------------------------------------\n   A note, and its replies.\n   ---------------------------------------------------------------------------- */\n\n.ap-note {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n}\n\n.ap-note.ap-orphan {\n    background: var(--ap-bg-soft);\n}\n\n.ap-note.ap-focused {\n    border-color: var(--ap-accent);\n    box-shadow: 0 0 0 3px var(--ap-accent-veil);\n}\n\n.ap-note-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-note-author {\n    font-weight: 600;\n}\n\n.ap-note-date {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-note-target {\n    margin: 4px 0 0;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-text {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-actions {\n    margin-top: 8px;\n    display: flex;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-replies {\n    margin: 8px 0 0;\n    padding-left: 10px;\n    border-left: 2px solid var(--ap-border);\n}\n\n.ap-reply {\n    margin: 8px 0 0;\n}\n\n/* ----------------------------------------------------------------------------\n   The form, anchored near the element pointed at.\n   ---------------------------------------------------------------------------- */\n\n.ap-form {\n    position: fixed;\n    width: 340px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    gap: 8px;\n    padding: 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n}\n\n.ap-form.ap-open {\n    display: flex;\n}\n\n.ap-form-title {\n    font-size: 15px;\n    font-weight: 600;\n}\n\n.ap-form-target {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-label {\n    display: block;\n    margin-bottom: 3px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--ap-text-soft);\n}\n\n.ap-help {\n    margin: 3px 0 0;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n.ap-field,\n.ap-area {\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n}\n\n.ap-field:focus,\n.ap-area:focus {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n.ap-area {\n    min-height: 92px;\n    resize: vertical;\n}\n\n.ap-actions {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-counter {\n    margin-left: auto;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   Buttons.\n   ---------------------------------------------------------------------------- */\n\n.ap-primary,\n.ap-secondary,\n.ap-link {\n    border-radius: 8px;\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.ap-primary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-accent);\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-weight: 600;\n}\n\n.ap-primary:hover {\n    background: var(--ap-accent-dark);\n    border-color: var(--ap-accent-dark);\n}\n\n.ap-secondary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-border);\n    background: var(--ap-bg);\n    color: var(--ap-text);\n}\n\n.ap-secondary:hover {\n    background: var(--ap-bg-raised);\n}\n\n.ap-link {\n    padding: 2px 4px;\n    border: 0;\n    background: none;\n    color: var(--ap-accent);\n    text-decoration: underline;\n    font-size: 13px;\n}\n\n.ap-primary:disabled,\n.ap-secondary:disabled,\n.ap-link:disabled {\n    opacity: 0.6;\n    cursor: default;\n}\n\n.ap-primary:focus-visible,\n.ap-secondary:focus-visible,\n.ap-link:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The failures.\n\n   They are RED, at the top of the block concerned, and carry the message the\n   server returned as it stands: that is how a non-technical team learns that\n   its remark is not saved, instead of believing it is.\n   ---------------------------------------------------------------------------- */\n\n.ap-error {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-alert-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-alert-bg);\n    color: var(--ap-alert-text);\n}\n\n.ap-error-title {\n    font-weight: 700;\n    margin-bottom: 4px;\n}\n\n.ap-error-detail {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    font-size: 13px;\n}\n\n.ap-error .ap-link {\n    color: var(--ap-alert-text);\n}\n\n/* ----------------------------------------------------------------------------\n   Narrow: the panel takes the full width, and so does the form.\n   ---------------------------------------------------------------------------- */\n\n/* ----------------------------------------------------------------------------\n   Narrow.\n\n   DEFECT OBSERVED at 375 px wide: a panel taking the full height covers the\n   whole page, and no element can be pointed at any more -- every click lands\n   on the panel. So it becomes a bottom band, which leaves the top half of\n   the viewport free; one scrolls the page there to bring the wanted element\n   into view. The form, for its part, hides the panel while typing (see\n   notes.js): on a screen that size, writing and reading the list at the same\n   time does not hold.\n   ---------------------------------------------------------------------------- */\n\n/* On a narrow screen the panel becomes a bottom band and the form takes the\n   full width.\n\n   THE WIDTH CEILING IS KEPT, and it comes from a measured defect: \"left: 8;\n   right: 8\" sizes the element against its CONTAINING BLOCK, which the host\n   site's horizontal overflow can make wider than the visible window.\n   Measured, in mobile emulation at 390 px: the site overflows to 407 px\n   (with the tool and without it), and the panel came out 391 px wide\n   starting at 8, that is 9 px off screen. \"100vw\" is the window, not the\n   containing block: the ceiling therefore does nothing when the site does\n   not overflow, and pulls the width back when it does. */\n@media (max-width: 560px) {\n    .ap-panel {\n        top: auto;\n        right: 8px;\n        left: 8px;\n        bottom: 66px;\n        height: 52vh;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n\n    .ap-form {\n        left: 8px;\n        right: 8px;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-button {\n        transition: none;\n    }\n}\n\n/* The failure shows without opening the panel: the button's dot changes\n   colour. A team that does not click must be able to see that something is\n   wrong. */\n.ap-button.ap-failed .ap-button-dot {\n    background: var(--ap-alert-text);\n}\n\n.ap-button.ap-failed {\n    border-color: var(--ap-alert-border);\n}\n\n/* Signature reminder, in the note form.\n   The name was shown at the foot of the panel only: invisible at the moment\n   one writes. A user reported not knowing which name they were writing\n   under. */\n.ap-form-signature {\n    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;\n    margin: 0 0 .6rem; font-size: .85rem; opacity: .8;\n}\n\n/* Resolution state, said on the card.\n   Two cases NOT to be confused: resolved and online, resolved but not\n   deployed yet. The second keeps the defect on the reviewer's screen; hiding\n   it or announcing it as fixed would cost them their trust in the tool. */\n.ap-state-mark {\n    display: inline-block; margin: 0 0 .5rem;\n    padding: .15rem .55rem; border-radius: 4px;\n    font-size: .75rem; font-weight: 600; letter-spacing: .02em;\n}\n.ap-note.ap-resolved { opacity: .72; }\n.ap-note.ap-resolved .ap-state-mark {\n    color: #0f7a52; background: rgba(16, 185, 129, .14);\n}\n.ap-note.ap-resolved-pending .ap-state-mark {\n    color: #8a5a00; background: rgba(245, 158, 11, .16);\n}\n/* The \"it is fixed\" / \"reopen\" block, opened under the card. Same shape as\n   the reply block: it is the same gesture, one answers a remark. */\n.ap-resolve,\n.ap-reply-form {\n    margin-top: .6rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-border);\n}\n\n.ap-history-toggle {\n    display: block; width: 100%; margin: 1rem 0 .25rem;\n    padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;\n    background: none; color: inherit; font: inherit; opacity: .7; cursor: pointer;\n}\n.ap-history-toggle:hover { opacity: 1; }\n\n\n/* ----------------------------------------------------------------------------\n   Setup and pasting the salt.\n\n   These are the only screens where something is copied by hand. Everything\n   there is SELECTABLE and monospaced: a 43-character salt copied wrong\n   cannot be recovered, and nothing helps less than a font that confuses I, l\n   and 1.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel-wide {\n    width: 560px;\n}\n\n.ap-copy {\n    display: flex;\n    align-items: flex-start;\n    gap: 8px;\n    margin: 0 0 12px;\n}\n\n.ap-code {\n    flex: 1 1 auto;\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\",\n                 monospace;\n    font-size: 12.5px;\n    line-height: 1.5;\n    resize: vertical;\n    white-space: pre;\n    overflow-x: auto;\n}\n\n.ap-code:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n@media (max-width: 560px) {\n    .ap-panel-wide {\n        width: auto;\n    }\n\n    .ap-copy {\n        flex-direction: column;\n    }\n}\n";
 
     /* ==== 00-preamble.js ==== */
 
@@ -544,6 +544,15 @@
             + 'written into this page. Anyone who can open the page can read these '
             + 'notes AND write them -- the key gives both, and this format has no '
             + 'reader-only role.',
+
+        /* -- A newer client exists, and this copy is not going to fetch it -
+           Shown ONLY when the file is served by the site itself: a copy served
+           by a CDN replaces itself instead of talking about it (80-upgrade).
+           So the sentence has to say what was NOT done, and whose call it is. */
+        'upgrade.available':
+            'A more recent annotepage client exists: {version}. This page is '
+            + 'running {current}, served by the site itself -- nothing was fetched '
+            + 'to replace it, and when to update the file is the owner\'s call.',
 
         /* -- A tag that cannot be used as it stands ------------------------
            Somebody put that tag there on purpose, so we speak instead of staying
@@ -1871,6 +1880,21 @@
             ui.body.appendChild(notice);
         }
 
+        /* A NEWER CLIENT EXISTS, AND WE ARE NOT GOING TO FETCH IT. This copy is
+           served by the site itself -- somebody took the file off a CDN on
+           purpose -- so it says so and stops there (80-upgrade). A copy served
+           BY a CDN never gets here: it replaced itself before the panel existed.
+
+           Said at every draw and not once at load, for the same reason as the
+           notice above: a message shown at load time is read by whoever happened
+           to be looking, and by nobody who opens this panel a week later. */
+        if (upgradeAvailable) {
+            const notice = create('div', 'ap-upgrade',
+                T('upgrade.available', { version: upgradeAvailable, current: TOOL_VERSION }));
+            notice.setAttribute('role', 'note');
+            ui.body.appendChild(notice);
+        }
+
         if (currentFailure) {
             ui.body.appendChild(failureBlock(currentFailure, () => {
                 currentFailure = null;
@@ -2529,9 +2553,182 @@
         screen.body.appendChild(create('p', 'ap-help', T('context.help')));
     };
 
+    /* ==== 80-upgrade.js ==== */
+
+    /* -- 19. A stale copy replaces itself ------------------------------------
+       The problem, in one line: the distributed tag points at a RANGE on a CDN
+       (annotepage-client@2), and jsDelivr serves that range with
+       max-age=604800. A fix published today does not reach a visitor who came
+       back within seven days. The lifetime is the CDN's to set and no attribute
+       of <script> touches it -- integrity, crossorigin, defer, async, none of
+       them. Cache-Control is a response header; the requester cannot overrule
+       it.
+
+       So we do not fight the cache, we WALK AROUND IT. The stale copy does not
+       refresh its own URL: it loads a DIFFERENT one, the pinned
+       annotepage-client@X.Y.Z/dist/annotepage.js, which this browser has never
+       fetched and which therefore no cache entry can answer.
+
+       WHERE THE CURRENT VERSION COMES FROM: the answer the client already asks
+       for. `list` runs before the DOM is touched, and the server names the
+       current client version in it. No second request, no extra file to host,
+       and the answer lands exactly at the seam where the check belongs.
+
+       IT ANNOUNCES, IT NEVER GATES. The announced version says "there is
+       something newer" and nothing else. It must never decide whether a request
+       is allowed, and nothing here compares it to authorise anything:
+       compatibility belongs to the FORMAT number and only to it (FORMAT.md
+       section 7). 2.1.0 and 2.2.0 speak the same format by construction, and a
+       client that refused to talk to a server one release ahead would break a
+       pair that works.
+
+       WHY EVERY DOUBT IS A SILENCE. The announcement rides on an answer from a
+       server that may be anybody's. A self-hosted server announces whatever it
+       was installed with, which can be older than what is on this page. So:
+       absent, unreadable, malformed, EQUAL or OLDER than ours -- carry on, say
+       nothing. We only ever move forward, never back. A server cannot push a
+       client downhill. */
+
+    /* THE SHAPE OF A VERSION, and it is the only gate that matters here.
+
+       This string arrives over the network from a server we do not own. It is
+       never concatenated into a URL as it stands: it is matched against this
+       expression, and the URL is then REBUILT from a base written here, in this
+       file. A compromised or hostile server can therefore make us load a version
+       of the official package that does not exist -- which fails, and is handled
+       -- and nothing else. No host, no path, no scheme, no protocol-relative
+       "//evil", no "../", no query, no "@" of its own.
+
+       Strict on purpose: three numbers, nothing around them. No pre-release
+       suffix (a pre-release is not what one pushes to every visitor of every
+       site), no leading zero, at most four digits per part. */
+    const ANNOUNCED_SHAPE = /^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/;
+
+    /* The CDNs whose exact-version address we know how to write ourselves, and
+       only those. `base` is the whole beginning of the URL: nothing of what the
+       server said ever appears before the version number.
+
+       `prefix` is matched against the PATHNAME of the tag's own src, and the host
+       is compared whole -- indexOf on the full URL would accept
+       "cdn.jsdelivr.net.example.com". Both entries are the npm package, which is
+       the only package this file will ever point at. */
+    const CDNS = [
+        {
+            host: 'cdn.jsdelivr.net',
+            prefix: '/npm/annotepage-client@',
+            base: 'https://cdn.jsdelivr.net/npm/annotepage-client@'
+        },
+        {
+            host: 'unpkg.com',
+            prefix: '/annotepage-client@',
+            base: 'https://unpkg.com/annotepage-client@'
+        }
+    ];
+
+    /**
+     * Which CDN is serving THIS copy, or null -- and null is the interesting
+     * case, because it means the site serves the file itself.
+     */
+    const cdnServing = (src) => {
+        let url;
+        try {
+            url = new URL(String(src));
+        } catch (e) {
+            return null;
+        }
+        if (url.protocol !== 'https:') return null;
+        for (let i = 0; i < CDNS.length; i += 1) {
+            const cdn = CDNS[i];
+            if (url.host === cdn.host && url.pathname.indexOf(cdn.prefix) === 0) return cdn;
+        }
+        return null;
+    };
+
+    /** The address of one exact version, BUILT HERE. Null if anything is off. */
+    const officialUrl = (cdn, version) => {
+        // Checked again, on the very line that builds the string: the caller
+        // already checked, and a second reader of this file should not have to
+        // go and verify that it did.
+        if (!cdn || !ANNOUNCED_SHAPE.test(String(version))) return null;
+        return cdn.base + version + '/dist/annotepage.js';
+    };
+
+    /**
+     * The version the server announces, IF it is newer than ours. Null in every
+     * other case, and that includes every case of doubt: no field, not a string,
+     * not three numbers, equal to ours, older than ours.
+     */
+    const announcedVersion = (data) => {
+        if (!data || typeof data !== 'object') return null;
+        const announced = data.client_version;
+        if (typeof announced !== 'string' || !ANNOUNCED_SHAPE.test(announced)) return null;
+
+        const theirs = versionNumbers(announced);
+        const mine = versionNumbers(TOOL_VERSION);
+        if (!theirs || !mine) return null;
+        for (let i = 0; i < 3; i += 1) {
+            if (theirs[i] !== mine[i]) return theirs[i] > mine[i] ? announced : null;
+        }
+        // Equal: nothing to say, and nothing to load.
+        return null;
+    };
+
+    /* Set when we are behind and we are NOT going to do anything about it --
+       the file is served by the site itself. The panel says so, at every draw,
+       the way the public-key notice does: a message shown once at load is read
+       by whoever happened to be looking. */
+    let upgradeAvailable = '';
+
+    /* True from the moment the replacement tag is in the document. It stops the
+       old copy building anything, and it stops a second injection. */
+    let handingOver = false;
+
+    /**
+     * Injects the pinned version and stands down.
+     *
+     * The new tag CARRIES THE data- ATTRIBUTES OF THE OLD ONE, and it has to:
+     * the client reads everything it knows from its own tag
+     * (document.currentScript, 00-preamble), so a bare tag would produce a copy
+     * with no server, no project and no key -- which is a copy that does
+     * strictly nothing. The integrity attribute is deliberately NOT carried
+     * over: it is the digest of the version we are leaving, and it would refuse
+     * the version we are fetching.
+     *
+     * `onFailure` is called if that tag never loads -- a version announced but
+     * never published, a CDN that is down. We are then back to being merely old,
+     * which is the state we started in, and the tool boots normally. Losing the
+     * tool entirely because a number was wrong somewhere would be a worse
+     * outcome than being one release behind.
+     */
+    const handOverTo = (cdn, version, onFailure) => {
+        const url = officialUrl(cdn, version);
+        if (!url || handingOver) return false;
+        handingOver = true;
+
+        // BEFORE the new copy builds anything: its element and its listeners go
+        // first, or the page ends up carrying two pills. At the seam there is
+        // usually nothing to remove -- which is the whole point of checking
+        // before the work rather than after it.
+        withdraw();
+
+        const fresh = document.createElement('script');
+        const attributes = script.attributes;
+        for (let i = 0; i < attributes.length; i += 1) {
+            const name = attributes[i].name;
+            if (name.indexOf('data-') === 0) fresh.setAttribute(name, attributes[i].value);
+        }
+        fresh.src = url;
+        fresh.addEventListener('error', () => {
+            handingOver = false;
+            onFailure();
+        });
+        (document.head || document.documentElement).appendChild(fresh);
+        return true;
+    };
+
     /* ==== 90-boot.js ==== */
 
-    /* -- 19. Reading the notes ----------------------------------------------- */
+    /* -- 20. Reading the notes ----------------------------------------------- */
 
     const redraw = () => {
         if (!ui) return;
@@ -2560,7 +2757,7 @@
             });
         });
 
-    /* -- 20. Startup ----------------------------------------------------------
+    /* -- 21. Startup ----------------------------------------------------------
        The order matters: we ask the API BEFORE touching the DOM. If it does not
        answer what it should, the site never saw anything go by.
 
@@ -2589,7 +2786,22 @@
         });
     };
 
+    /**
+     * The tool leaves the page, and leaves NOTHING behind.
+     *
+     * Removing the host element is not enough on its own and never was: in
+     * annotation mode the listeners sit on `document` and on `window`, not on the
+     * host, and a repeating timer is running. Dropping the element would leave
+     * them hovering, clicking and measuring a layer that no longer exists. That
+     * did not show while withdrawal only ever happened before anything was built;
+     * it does the moment a copy withdraws in favour of a newer one (80-upgrade).
+     *
+     * leaveMode() is the one place that knows the whole list, and it is called
+     * rather than copied: two lists drift, and the one that drifts is the one
+     * nobody runs.
+     */
     const withdraw = () => {
+        if (ui && mode) leaveMode();
         if (host) host.remove();
         host = null;
         root = null;
@@ -2639,24 +2851,51 @@
                     return null;
                 }
 
-                // From here on the tool EXISTS, and will no longer keep quiet
-                // about its failures.
-                buildHost();
-                return loadLocalLabels().then(() => {
-                    clearLayer();
-                    buildUi();
-                    if (first.ok) {
-                        return readList(first.data).then((read) => {
-                            notes = read;
-                            redraw();
-                            return null;
-                        });
-                    }
-                    currentFailure = failureFrom(first, 'error.title_read');
+                /* THE SEAM. This is the one moment where a copy can discover it
+                   is out of date having drawn nothing, listened to nothing and
+                   decrypted nothing -- so it withdraws instead of undoing. The
+                   answer that carries the announcement is the one we were
+                   waiting for anyway: nothing was added in front of the boot,
+                   and a page that is up to date pays exactly nothing.
+
+                   WHAT HAPPENS NEXT DEPENDS ON WHERE THIS FILE CAME FROM, and
+                   that distinction is the whole design:
+
+                     from a CDN -- the seven-day cache is what put us here, and
+                     pulling the pinned version walks around it. We hand over.
+
+                     from anywhere else -- the site serves its own copy, which
+                     somebody CHOSE to do, and going to a CDN behind their back
+                     would add the dependency they deliberately removed. We say
+                     it in the panel and we load nothing. */
+                const newer = first.ok ? announcedVersion(first.data) : null;
+                const cdn = newer ? cdnServing(script.src) : null;
+                if (cdn && handOverTo(cdn, newer, () => { proceed(first); })) return null;
+                if (newer) upgradeAvailable = newer;
+
+                return proceed(first);
+            });
+    }
+
+    /** Everything the tool does once it has decided to stay. */
+    function proceed(first) {
+        // From here on the tool EXISTS, and will no longer keep quiet
+        // about its failures.
+        buildHost();
+        return loadLocalLabels().then(() => {
+            clearLayer();
+            buildUi();
+            if (first.ok) {
+                return readList(first.data).then((read) => {
+                    notes = read;
                     redraw();
                     return null;
                 });
-            });
+            }
+            currentFailure = failureFrom(first, 'error.title_read');
+            redraw();
+            return null;
+        });
     }
 
     const start = () => {
