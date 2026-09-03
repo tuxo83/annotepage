@@ -486,6 +486,26 @@ own URL -- it can load a DIFFERENT one:
    fetched by this browser, so no cache stands in the way. It then withdraws
    and lets the fresh copy take over the page.
 
+**THE CHECK GOES FIRST, BEFORE THE WORK -- owner's refinement, 2026-09-03,
+and the boot path already has the seam for it.** 90-boot.js says it in its own
+comment: "The order matters: we ask the API BEFORE touching the DOM. If it does
+not answer what it should, the site never saw anything go by." A stale copy
+that learns it is stale at that moment has drawn nothing, listened to nothing
+and decrypted nothing: it withdraws instead of undoing.
+
+Which forbids the obvious implementation. The check must not be a request the
+boot WAITS on before starting -- that would make every page load, on every
+site, pay for the rare case of being behind. Two shapes avoid it:
+
+- **ride the answer the client already asks for.** The `list` call happens
+  before the DOM is touched; the server can name the current client version in
+  it, and there is no second request at all. The cost is a coupling: a
+  self-hosted server would announce whatever it was installed with, so it must
+  say nothing rather than guess, and "nothing" must mean "carry on";
+- **or fetch the version file in parallel** with that call, never in front of
+  it. One extra request, concurrent, so it adds no time to a page that is up
+  to date -- which is every page, almost always.
+
 What has to be got right, and none of it is hard: the old copy must remove its
 host element and its listeners before the new one builds, or the page carries
 two pills; the check must be cheap and must not run on every page view; and a
