@@ -337,6 +337,13 @@ body:has(#d-wait:checked) #g3-note { border-left-color: var(--warn); }
    its ink, which is what every operating system draws. */
 .cursor .a { fill: var(--bg); stroke: var(--text); stroke-width: 1.4; stroke-linejoin: round; }
 .g1[data-play][data-cursor] .cursor { opacity: 1; }
+/* AND A CLICK LOOKS LIKE A CLICK. The pointer travelled to the button and the
+   state changed, with nothing in between: the reader saw an arrow arrive and a
+   panel open, and had to infer the press. The arrow dips for a sixth of a
+   second instead -- on the SVG and not the .cursor, whose transform carries the
+   position and would be overwritten. */
+.cursor svg { transition: transform .11s ease; }
+.g1[data-press] .cursor svg { transform: scale(.76); }
 
 /* The badge the tool leaves on an element that now carries a note. The client
    draws the COUNT in it; the sentence -- `marker.one`, "1 note here" -- is its
@@ -433,6 +440,13 @@ body:has(#d-wait:checked) #g3-note { border-left-color: var(--warn); }
 .g1[data-play] .fm-area .ch { visibility: hidden; }
 .g1[data-play] .fm-area .ch.on { visibility: visible; }
 .g1[data-play]:not([data-st="type"]) .caret { display: none; }
+/* AND IT DOES NOT BLINK THROUGH ITS OWN TYPING. The replay says this about its
+   own block cursor, three hundred lines down -- "a caret that blinks through
+   its own typing is the tell" -- and the rule was written there and not here.
+   A real caret sits solid while characters are arriving and starts blinking
+   when the hand stops, which is what `data-typed` marks. */
+.g1[data-play] .caret { animation: none; }
+.g1[data-play][data-typed] .caret { animation: term-cursor 1.06s steps(1) infinite; }
 
 /* == THE REPLAY ==========================================================
 
@@ -1241,14 +1255,20 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         list.push([o + 500,  function () { g.setAttribute('data-cursor', ''); moveTo('rest'); }]);
         /* The button is pressed: the label becomes `button.close` and the
            panel opens with the two lines that say what to do. */
+        list.push([o + 1420, function () { g.setAttribute('data-press', ''); }]);
         list.push([o + 1500, function () { stage('mode'); pill.textContent = 'Done'; }]);
+        list.push([o + 1590, function () { g.removeAttribute('data-press'); }]);
         list.push([o + 2200, function () { moveTo('elem'); }]);
         /* Hovered. The tool draws the rectangle and floats the text it is
            about to quote -- and it draws exactly this when the element is
            CHOSEN too, which is why the next beat is the form and not a second
            outline. */
         list.push([o + 3200, function () { stage('hover'); }]);
-        list.push([o + 4400, function () { stage('form'); g.removeAttribute('data-cursor'); }]);
+        list.push([o + 4320, function () { g.setAttribute('data-press', ''); }]);
+        list.push([o + 4400, function () { stage('form'); }]);
+        list.push([o + 4490, function () {
+            g.removeAttribute('data-press'); g.removeAttribute('data-cursor');
+        }]);
         list.push([o + 5000, function () { stage('type'); }]);
         list.push([o + 5000 + TYPE_MS + 600, function () {
             g.setAttribute('data-cursor', ''); moveTo('send');
@@ -1272,6 +1292,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             var want = Math.min(cells.length,
                 Math.floor((t - typeFrom) / (typeTo - typeFrom) * cells.length));
             while (typed < want) { cells[typed].className = 'ch on'; typed++; }
+            if (typed >= cells.length) g.setAttribute('data-typed', '');
             if (typed !== +left.getAttribute('data-n')) {
                 left.setAttribute('data-n', typed); count(typed);
             }
@@ -1320,6 +1341,8 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         }
         held = list[list.length - 1][0];
         g.setAttribute('data-rewind', '');
+        g.removeAttribute('data-typed');
+        g.removeAttribute('data-press');
         for (var k = 0; k < cells.length; k++) cells[k].className = 'ch';
         typed = 0; typeTo = typeFrom;
         stage('rest');
