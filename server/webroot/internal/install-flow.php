@@ -33,12 +33,23 @@
  * install-flow.php is inert code, not an open door -- which is exactly why
  * install.php, the entry point, stays out of the manifest.
  *
- * WHAT IT ASKS: the storage (SQLite, selected; MySQL behind a closed
+ * WHAT IT ASKS: who the server is for (one site, selected; or anyone, which
+ * writes a relay), the storage (SQLite, selected; MySQL behind a closed
  * <details>) and automatic updates (a checkbox, off, with what turning it on
  * costs written beside it). Nothing else. Retention, rate limits, origins and
  * the courtesy redirect have defaults that work and belong in the
  * configuration file, where a comment can explain them -- not in front of
  * somebody installing.
+ *
+ * WHO IT IS FOR IS ASKED BECAUSE THE ANSWER CANNOT BE GUESSED, and getting it
+ * wrong is silent both ways. Without the question this file wrote
+ * `self-hosted` unconditionally and never wrote `open_registration` at all, so
+ * every server installed through the web refused every project until somebody
+ * hand-edited config-local.php -- and there was no path through this page to a
+ * relay at all. The answer only ever WIDENS what is written: the default is
+ * the narrow one, and a value that is not the exact expected string falls back
+ * to it, because a relay opened by a typo stores strangers' notes on somebody
+ * who never asked for that.
  *
  * NO JAVASCRIPT. The MySQL fields are revealed by a <details> element, which
  * the browser opens on its own. A form that needs script to be fillable is a
@@ -503,6 +514,13 @@ function ap_i_site_root_url($here, $docRoot, $baseUrl)
  * browser generates, and the client's setup screen hands it over the first time
  * somebody opens an annotated page. Inventing one here would produce an
  * installation that answers about notes nobody can decrypt.
+ *
+ * TWO DEPLOYMENTS, ONE FILE. `$values['deployment']` decides between the
+ * server that carries one site's notes and the relay that carries anybody's.
+ * The relay branch writes the same keys, with the same reasons, as
+ * server/relay/config-local.php in the repository -- that file is the
+ * hand-written original and this is the machine writing it, so the two must
+ * not say different things about the same key.
  */
 function ap_i_config_text(array $values)
 {
@@ -511,6 +529,12 @@ function ap_i_config_text(array $values)
     };
 
     $storage = $values['storage'];
+
+    // Never a truthiness test on whatever arrived: only the one word this
+    // installer writes counts as a relay, so a key that was mistyped, dropped
+    // or copied from somewhere else produces the narrow deployment.
+    $relay = (isset($values['deployment']) && $values['deployment'] === 'relay');
+
     $text  = "<?php\n";
     $text .= "/**\n";
     $text .= " * config-local.php -- GENERATED FILE.\n";
@@ -532,15 +556,47 @@ function ap_i_config_text(array $values)
     $text .= "return array(\n\n";
     $text .= "    // Nothing answers until this is true.\n";
     $text .= "    'active' => true,\n\n";
-    $text .= "    // This server sits on the site under review, behind the same access\n";
-    $text .= "    // restriction as it. Change to 'relay' only on a machine serving\n";
-    $text .= "    // several sites -- see internal/config.php for what that changes.\n";
-    $text .= "    'deployment' => 'self-hosted',\n\n";
+    if ($relay) {
+        $text .= "    // THIS SERVER IS OPEN TO ANYBODY, which is what was asked for at\n";
+        $text .= "    // install time. It serves several sites and not one, so none of\n";
+        $text .= "    // the shortcuts a single-tenant install may take apply here --\n";
+        $text .= "    // see internal/config.php for what the two modes change.\n";
+        $text .= "    'deployment' => 'relay',\n\n";
+
+        $text .= "    // It serves projects nobody declared, which is what makes a tag\n";
+        $text .= "    // copied from a web page work with nothing to ask and nobody to\n";
+        $text .= "    // ask. The price is written down rather than discovered: any\n";
+        $text .= "    // well-formed project id is served, such a project has NO origin\n";
+        $text .= "    // lock -- nobody declared its origins and there is no way to learn\n";
+        $text .= "    // them an abuser could not use too -- so a stranger who reads an id\n";
+        $text .= "    // in the source of a page can write into it. They write bytes, not\n";
+        $text .= "    // words: the salt never reached this server, so what they insert\n";
+        $text .= "    // comes back as unreadable rows. What it really costs is your\n";
+        $text .= "    // disk, which is what the two caps below are for.\n";
+        $text .= "    //\n";
+        $text .= "    // Plain mode is refused here whatever a caller asks: a public relay\n";
+        $text .= "    // storing plaintext would hand its operator every path, every label\n";
+        $text .= "    // and every remark of every site using it. That refusal is in the\n";
+        $text .= "    // code, not in this file.\n";
+        $text .= "    'open_registration' => true,\n\n";
+    } else {
+        $text .= "    // This server sits on the site under review, behind the same access\n";
+        $text .= "    // restriction as it. Change to 'relay' only on a machine serving\n";
+        $text .= "    // several sites -- see internal/config.php for what that changes.\n";
+        $text .= "    'deployment' => 'self-hosted',\n\n";
+    }
 
     if ($storage === 'sqlite') {
         $text .= "    // ONE FILE, no database server. The path was chosen by the\n";
         $text .= "    // installer, which then requested it over HTTP and confirmed the\n";
         $text .= "    // web server refuses to serve it.\n";
+        if ($relay) {
+            $text .= "    //\n";
+            $text .= "    // ON A RELAY THIS IS THE PART THAT WILL GIVE FIRST. SQLite locks\n";
+            $text .= "    // the whole file for each write, and a relay takes concurrent\n";
+            $text .= "    // writes from people who have never heard of each other. Move to\n";
+            $text .= "    // MySQL before that becomes the reason writes fail.\n";
+        }
         $text .= "    'storage'  => 'sqlite',\n";
         $text .= "    'database' => array(\n";
         $text .= "        'file' => " . $q($values['file']) . ",\n";
@@ -559,10 +615,17 @@ function ap_i_config_text(array $values)
         $text .= "    ),\n\n";
     }
 
-    $text .= "    // THE PROJECTS. Empty until you have one, and you will have one the\n";
-    $text .= "    // first time somebody opens an annotated page: the client generates\n";
-    $text .= "    // the salt in the browser and shows you the id and the block to paste\n";
-    $text .= "    // here. The server does not compute that id, it recognises it.\n";
+    if ($relay) {
+        $text .= "    // THE PROJECTS. Empty, and it stays empty: declaring nothing is\n";
+        $text .= "    // the point of the key above. Declare one only to give it back the\n";
+        $text .= "    // origin lock -- declared projects keep it on a relay that is\n";
+        $text .= "    // otherwise open, which is the answer for a team that wants it.\n";
+    } else {
+        $text .= "    // THE PROJECTS. Empty until you have one, and you will have one the\n";
+        $text .= "    // first time somebody opens an annotated page: the client generates\n";
+        $text .= "    // the salt in the browser and shows you the id and the block to paste\n";
+        $text .= "    // here. The server does not compute that id, it recognises it.\n";
+    }
     $text .= "    //\n";
     $text .= "    // 'projects' => array(\n";
     $text .= "    //     '<the 22 characters the setup screen shows>' => array(\n";
@@ -571,6 +634,18 @@ function ap_i_config_text(array $values)
     $text .= "    //     ),\n";
     $text .= "    // ),\n";
     $text .= "    'projects' => array(),\n\n";
+
+    if ($relay) {
+        $text .= "    // WHAT BOUNDS THE DISK. Both ship as 0, meaning no limit, which is\n";
+        $text .= "    // right for a server holding one team's notes and wrong for one\n";
+        $text .= "    // holding strangers': it stores what it cannot read, for people who\n";
+        $text .= "    // will never come back to tidy up, so without a ceiling it only\n";
+        $text .= "    // grows. Ninety days is a review cycle with room to spare. The cap\n";
+        $text .= "    // per project is the only thing bounding what a single abuser costs,\n";
+        $text .= "    // since an abuser cannot be told from a project.\n";
+        $text .= "    'max_note_age_days'     => 90,\n";
+        $text .= "    'max_notes_per_project' => 500,\n\n";
+    }
 
     if ($values['auto_update']) {
         $text .= "    // AUTOMATIC UPDATES, turned on at install time. The code directory\n";
@@ -587,12 +662,25 @@ function ap_i_config_text(array $values)
         $text .= "    'auto_update' => false,\n\n";
     }
 
-    $text .= "    // WHERE A BARE VISIT GOES. Empty: a visit to this directory with no\n";
-    $text .= "    // path gets a 404 and api.php is unaffected either way. Put an\n";
-    $text .= "    // absolute http(s) URL here and such a visit is sent there with a 302\n";
-    $text .= "    // -- what a public relay wants, so somebody landing on the bare host\n";
-    $text .= "    // reaches a page explaining what the thing is instead of nothing.\n";
-    $text .= "    'forward_root_to' => '',\n\n";
+    if ($relay) {
+        $text .= "    // WHERE A BARE VISIT GOES. Somebody who reaches a relay with no\n";
+        $text .= "    // path has usually just read a project id in the source of a page\n";
+        $text .= "    // and wants to know what the thing is; a 404 answers nothing. Put\n";
+        $text .= "    // the absolute http(s) URL of the page that explains it here and\n";
+        $text .= "    // such a visit is sent there with a 302 -- the directory and\n";
+        $text .= "    // install.php only, never api.php.\n";
+        $text .= "    //\n";
+        $text .= "    // Left empty because the installer does not know that page and a\n";
+        $text .= "    // guessed redirect sends strangers somewhere you did not choose.\n";
+        $text .= "    'forward_root_to' => '',\n\n";
+    } else {
+        $text .= "    // WHERE A BARE VISIT GOES. Empty: a visit to this directory with no\n";
+        $text .= "    // path gets a 404 and api.php is unaffected either way. Put an\n";
+        $text .= "    // absolute http(s) URL here and such a visit is sent there with a 302\n";
+        $text .= "    // -- what a public relay wants, so somebody landing on the bare host\n";
+        $text .= "    // reaches a page explaining what the thing is instead of nothing.\n";
+        $text .= "    'forward_root_to' => '',\n\n";
+    }
 
     // Written out although it is the default, like the two keys above it: the
     // installer's last screen sends the operator to ?action=diagnostic, and
@@ -718,7 +806,7 @@ function ap_i_run(array $options)
     $report = isset($options['report']) ? $options['report'] : array();
     $lede = isset($options['lede']) ? $options['lede']
         : 'Upload the directory, open this page, press the button. '
-          . 'Two questions, and both have a default that works.';
+          . 'Three questions, and all three have a default that works.';
 
     // The METHOD is an argument and not a reading of the environment: the caller
     // may have consumed a POST of its own -- the bootstrap's "fetch the release"
@@ -828,13 +916,26 @@ function ap_i_run(array $options)
 
     $errors = array();
     $installed = false;
+    // Carried out of the POST branch because the last screen tells the operator
+    // what is still theirs to do, and on a relay that is nothing.
+    $installedRelay = false;
     $serverUrl = ap_i_base_url() . 'api.php';
 
     if ($method === 'POST') {
         $storage = isset($_POST['storage']) && $_POST['storage'] === 'mysql' ? 'mysql' : 'sqlite';
         $autoUpdate = !empty($_POST['auto_update']);
+
+        // WHO IT IS FOR. Compared against the one exact string the form sends,
+        // never tested for truth: a missing field, a mangled one, a value from
+        // an older form or a hand-made request all land on 'self-hosted'. The
+        // wrong answer in this direction costs a manual edit; the wrong answer
+        // in the other opens somebody's disk to strangers without them asking.
+        $deployment = (isset($_POST['audience']) && $_POST['audience'] === 'anyone')
+            ? 'relay' : 'self-hosted';
+
         $values = array(
             'storage'     => $storage,
+            'deployment'  => $deployment,
             'auto_update' => $autoUpdate,
             'version'     => ap_i_version($here),
             'installer'   => $selfName,
@@ -1043,6 +1144,7 @@ function ap_i_run(array $options)
                     // whatever umask the host happens to have.
                     @chmod($configPath, 0600);
                     $installed = true;
+                    $installedRelay = ($deployment === 'relay');
                 }
             }
         }
@@ -1058,12 +1160,20 @@ function ap_i_run(array $options)
         echo '<h2>The line</h2>' . "\n";
         echo '<p>The tag on the pages you want to annotate carries this address:</p>' . "\n";
         echo '<pre>data-server="' . ap_i_h($serverUrl) . '"</pre>' . "\n";
-        echo '<p>The rest of the tag &mdash; the script source and the project id &mdash; '
-            . 'comes from the client. Add the tag to a page, open it, and the setup screen '
-            . 'generates the salt in your browser and hands you the block to paste into '
-            . '<code>internal/config-local.php</code> under <code>projects</code>. The '
-            . 'salt never reaches this server, in any form: that is what makes the notes '
-            . "unreadable to it.</p>\n";
+        if ($installedRelay) {
+            echo '<p>The rest of the tag &mdash; the script source and the project id '
+                . '&mdash; comes from the client, and there is nothing to declare here: '
+                . 'this server answers about any project id it is given. The salt never '
+                . 'reaches it, in any form: that is what makes the notes unreadable to '
+                . "it, and to you.</p>\n";
+        } else {
+            echo '<p>The rest of the tag &mdash; the script source and the project id '
+                . '&mdash; comes from the client. Add the tag to a page, open it, and the '
+                . 'setup screen generates the salt in your browser and hands you the block '
+                . 'to paste into <code>internal/config-local.php</code> under '
+                . '<code>projects</code>. The salt never reaches this server, in any form: '
+                . "that is what makes the notes unreadable to it.</p>\n";
+        }
 
         echo '<h2>What was measured</h2>' . "\n";
         echo "<table>\n";
@@ -1132,8 +1242,25 @@ function ap_i_run(array $options)
         return isset($_POST[$name]) ? (string) $_POST[$name] : $fallback;
     };
 
+    $postedRelay = ($method === 'POST' && isset($_POST['audience'])
+        && $_POST['audience'] === 'anyone');
+
     echo '<h2>Install</h2>' . "\n";
     echo '<form method="post" action="' . ap_i_h($selfName) . '">' . "\n";
+
+    echo "<fieldset>\n<legend>Who this server is for</legend>\n";
+    echo '<label class="choice"><input type="radio" name="audience" value="one-site"'
+        . ($postedRelay ? '' : ' checked') . '> <strong>One site, mine</strong> '
+        . "&mdash; I declare its project by hand</label>\n";
+    echo '<label class="choice"><input type="radio" name="audience" value="anyone"'
+        . ($postedRelay ? ' checked' : '') . '> <strong>Anyone</strong> '
+        . "&mdash; a relay, open to projects nobody declared</label>\n";
+    echo '<p class="note">Then notes from people you have never heard of land on your '
+        . 'disk and in your hosting bill. They are encrypted with a salt this server '
+        . 'never receives, so you keep what you cannot read and cannot moderate. The '
+        . 'generated configuration bounds it: 500 notes per project, nothing kept past '
+        . '90 days.</p>' . "\n";
+    echo "</fieldset>\n";
 
     echo "<fieldset>\n<legend>Storage</legend>\n";
     echo '<label class="choice"><input type="radio" name="storage" value="sqlite"'

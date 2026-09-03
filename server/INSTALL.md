@@ -20,9 +20,15 @@ and returns them — in JSON to the client, in plain text to an assistant.
    after it has landed on disk and before it is put in place. One bad hash
    abandons the whole thing and leaves the directory exactly as it was.
 
-3. **Answer the form.** One page, two questions — the storage, and whether the
-   server may update itself — and both already carry the answer that works. It
-   needs no JavaScript.
+3. **Answer the form.** One page, three questions — who the server is for, the
+   storage, and whether the server may update itself — and all three already
+   carry the answer that works. It needs no JavaScript.
+
+   The first one is the one to read: **One site, mine** is the default and gives
+   you a server that answers only about projects you declare by hand.
+   **Anyone** gives you a public relay, which answers about any project id it is
+   given — see [Running a public relay](#running-a-public-relay) for what that
+   opens and what it costs. Nothing but that exact answer opens it.
 
 4. **Paste the line it prints** into the tag on the pages you want to annotate:
 
@@ -637,6 +643,32 @@ A relay that serves projects nobody declared, so that a tag copied from a web
 page works with nothing to ask and nobody to ask it of. This is what makes the
 shortest path short. It is off by default, and it is wrong on a server that
 hosts one team's notes.
+
+### The installer writes it, if you ask it to
+
+The form's first question is *Who this server is for*, and its second answer
+— **Anyone** — is this. Choosing it writes `deployment => 'relay'`,
+`open_registration => true`, and the two caps that keep the disk bounded
+(`max_note_age_days => 90`, `max_notes_per_project => 500`), each with the
+reason in a comment. There is nothing left to edit for the door to open.
+
+Two things it deliberately does not do. It leaves `forward_root_to` **empty**:
+it does not know which page explains your relay, and a guessed redirect sends
+strangers somewhere you did not choose. And it writes the SQLite it proved
+unreachable rather than switching you to MySQL behind your back — the generated
+file says, where the storage is set, why that is the part which gives first
+here.
+
+The default answer is **One site, mine**, and only the exact **Anyone** answer
+opens the relay: a value the form did not send — mistyped, stale, hand-made —
+produces a self-hosted server. A relay is never opened by accident.
+
+### Or write the file by hand
+
+Nothing about the route above is required. `server/relay/config-local.php` in
+the repository is the ready-made version of the same file, with the same keys
+and the same reasons; drop it in `webroot/internal/`, or write the four lines
+yourself:
 
 ```php
 'deployment'        => 'relay',
