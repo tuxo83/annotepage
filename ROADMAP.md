@@ -626,24 +626,27 @@ support message.
 
 ## A page of its own for the security rules
 
-The landing page's step 03 says the one thing that cannot be undone -- the salt
-is the key, nobody else has a copy, losing it loses the notes -- and then sends
-the reader to two anchors on how-it-works.html. That is the right size for a
-step in a three-step chapter and the wrong size for the subject.
+The one thing that cannot be undone -- the salt is the key, nobody else has a
+copy, losing it loses the notes -- is said in two anchors at the foot of
+install.html. That is the right size for the last section of an install page
+and the wrong size for the subject.
 
 What belongs on a page of its own, and is today scattered across FORMAT.md,
-INSTALL.md and how-it-works.html: where the salt may and may not live, what a
-shared relay learns anyway (the path of every annotated page, the sizes, the
-times), what `data-mode="plain"` costs and when it is acceptable, what a
-compromised CDN could do to a site carrying the short tag, and what changes
-when the server is your own.
+INSTALL.md and the closing section of install.html: where the salt may and may
+not live, what a shared relay learns anyway (the path of every annotated page,
+the sizes, the times), what `data-mode="plain"` costs and when it is
+acceptable, what a compromised CDN could do to a site carrying the short tag,
+and what changes when the server is your own.
 
 It also gives the tag's third line somewhere to point: the owner asked for the
 warning to lead somewhere written for it, not for a paragraph borrowed from a
 longer explanation.
 
-Not started. how-it-works.html#no-recovery and #data hold the line until then,
-and they are accurate -- they are just not a security page.
+Not started. install.html#no-recovery and install.html#data hold the line until
+then, and they are accurate -- they are just not a security page. (They lived
+on how-it-works.html until 2026-09-03; that page was deleted, three of its four
+sections being already said on the landing page, the session page or the
+install page, and this one moved to install.html rather than being dropped.)
 
 ## The tag on the landing page floats, and gives up SRI to do it -- SETTLED
 
