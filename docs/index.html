@@ -1672,6 +1672,23 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <div>
                 <div class="snip">
                     <button class="copy" type="button" data-copy="snip-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<!-- NO integrity ATTRIBUTE, AND THAT IS THE DECISION, NOT AN OVERSIGHT.
+
+     A version range and a fixed digest cannot both hold: pin the bytes and the
+     tag can never update, let it update and the digest is wrong the day it
+     does -- silently, the browser refusing the script with nothing on the page
+     and nothing in the logs.
+
+     The tool has to update itself with no intervention. Pinning would not cost
+     US anything -- we ship the releases -- it would cost every site that
+     pasted this tag once and will never come back to edit a digest and a
+     version number. A fix would reach nobody.
+
+     What it gives up is real and is written on install.html#locked rather than
+     glossed over: a compromised npm account or CDN would run whatever it
+     served on the pages carrying this, and this client holds the project key
+     in the browser. The locked form is documented there for whoever wants it.
+     -->
 <pre id="snip-tag"><code>&lt;<span class="tg">script</span> <span class="at">src</span>=<span class="st">"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"</span>
         <span class="at">data-server</span>=<span class="st">"https://api.annotepage.com/api.php"</span>
         <span id="tag-ident"><span class="at">data-project</span>=<span class="st">"<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"</span></span>
