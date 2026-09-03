@@ -75,21 +75,18 @@ for (const tag of ['header', 'footer']) {
     }
 }
 
-/* And the part the normalisation had to remove: every page links to the other
-   two, and to no page at all that is itself. */
+/* And the part the normalisation had to remove. The invariant is no longer
+   "every page reaches the other two": the landing page's menu deliberately
+   points INTO itself -- its two chapters are the page -- and reaches the
+   session through the button that ends the first one. What is left is the rule
+   that has no exception: a menu never links to the page it is on. */
 for (const name of PAGES) {
     if (!(name in INTERNAL)) continue;
     const html = readFileSync(join(DIR, name), 'utf8');
-    const foot = bloc(html, 'footer') || '';
-    for (const [other, href] of Object.entries(INTERNAL)) {
-        const present = foot.includes(`<li><a href="${href}">`);
-        if (other === name && present) {
-            console.error(`${DIR}/${name}: its footer links to itself.`);
-            bad++;
-        } else if (other !== name && !present) {
-            console.error(`${DIR}/${name}: its footer does not link to ${other}.`);
-            bad++;
-        }
+    const head = bloc(html, 'header') || '';
+    if (head.includes(`<a href="${INTERNAL[name]}"`)) {
+        console.error(`${DIR}/${name}: its menu links to the page it is on.`);
+        bad++;
     }
 }
 
