@@ -54,12 +54,17 @@ const normalise = (text) => {
 
 let bad = 0;
 for (const tag of ['header', 'footer']) {
+    /* A page may have no footer at all -- they were removed when they had
+       nothing left to say. What is refused is SOME pages having one. */
+    const compte = PAGES.filter((n) =>
+        bloc(readFileSync(join(DIR, n), 'utf8'), tag) !== null).length;
+    if (tag === 'footer' && compte === 0) continue;
     const seen = new Map();
     for (const name of PAGES) {
         const html = readFileSync(join(DIR, name), 'utf8');
         const raw = bloc(html, tag);
         if (raw === null) {
-            console.error(`${DIR}/${name}: no <${tag}>.`);
+            console.error(`${DIR}/${name}: no <${tag}>, but ${compte} page(s) have one.`);
             bad++;
             continue;
         }
