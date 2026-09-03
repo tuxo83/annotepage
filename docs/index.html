@@ -254,6 +254,10 @@ main .split-col > .claims { max-width: none; }
     background: var(--accent);
 }
 .top nav { margin-left: auto; display: flex; gap: 1.1rem; flex-wrap: wrap; }
+/* The one link that leaves the site, set apart from the two that do not. Four
+   entries that look alike behave three ways otherwise, and the difference is
+   only discovered by losing your place. */
+.top nav .leave { margin-left: 1.1rem; }
 .top nav a { font-size: .875rem; color: var(--dim); text-decoration: none; }
 .top nav a:hover { color: var(--text); text-decoration: underline; }
 
@@ -1317,8 +1321,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         <nav>
             <a href="#use">Use</a>
             <a href="#install">Install</a>
-            <a href="how-it-works.html">How it works</a>
-            <a href="https://github.com/tuxo83/annotepage">GitHub</a>
+            <a class="leave" href="https://github.com/tuxo83/annotepage"
+               target="_blank" rel="noopener"
+               aria-label="GitHub, opens in a new tab">GitHub</a>
         </nav>
     </div>
 </header>
