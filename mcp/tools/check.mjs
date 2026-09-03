@@ -21,6 +21,7 @@ import { createHmac } from 'node:crypto';
 import { b64url, fromB64url, normalisedLines, indent, safeValue } from '../src/format.mjs';
 import { derive, saltFromText, seal, open, indexOfPath, normalisedPath } from '../src/crypto.mjs';
 import { readExport, writeExport } from '../src/text-export.mjs';
+import { projectForCall, absentConfiguration, ConfigError } from '../src/config.mjs';
 
 let passed = 0;
 const failures = [];
@@ -445,6 +446,101 @@ await check('end to end: the decrypted path gives back the announced index', asy
     const object = await open(keys.encryptionKey, keys.id, index, 'note', payload);
     equal(await indexOfPath(keys.indexKey, normalisedPath(object.page)), index,
         'the recomputed index is the one the note is filed under');
+});
+
+/* -- A project carried by the call itself -------------------------------- */
+
+/* The configuration that does not exist: the state an MCP server is in when
+   no file was found anywhere. Every check below runs against it, which is the
+   point — this path must not need one. */
+const NO_FILE = absentConfiguration(new ConfigError('No configuration found. Looked '
+    + 'for, in order:\n  /nowhere/.annotepage.json'));
+
+const refused = async (what, args, ...pieces) => {
+    let message = null;
+    try {
+        await projectForCall(NO_FILE, args);
+    } catch (e) {
+        message = e.message;
+    }
+    truthy(message !== null, what + ': it was accepted');
+    for (const piece of pieces) {
+        truthy(message.indexOf(piece) !== -1,
+            what + '\n  looked for : ' + JSON.stringify(piece)
+            + '\n  in         :\n' + message.replace(/^/gm, '      '));
+    }
+};
+
+await check('call: api + key build a project whose id is DERIVED', async () => {
+    const project = await projectForCall(NO_FILE,
+        { api: 'https://example.com/api.php', key: SALT_TEXT });
+    const keys = await derive(saltFromText(SALT_TEXT));
+    equal(project.id, keys.id, 'the id is the one the key derives');
+    equal(project.api, 'https://example.com/api.php', 'the address of the call');
+    equal(project.mode, 'encrypted', 'a key means encrypted');
+    equal(project.read_only, false, 'writing is allowed');
+    truthy(project.keys !== null, 'the three derivations are there');
+    truthy(project.author !== '', 'and a name to sign with, or writing is refused');
+});
+
+await check('call: half a project is a named refusal, never a fallback', async () => {
+    await refused('api alone', { api: 'https://example.com/api.php' },
+        '"api" without "key"', 'no falling back to the configuration file');
+    await refused('key alone', { key: SALT_TEXT },
+        '"key" without "api"', 'data-server and data-key');
+});
+
+await check('call: a key and a project name together, no winner picked', async () => {
+    await refused('key + project', { api: 'https://example.com/api.php',
+        key: SALT_TEXT, project: 'review' },
+        'we do not pick a winner', 'nothing was written', 'derives the project id');
+});
+
+await check('call: a malformed key is refused with its shape, and not echoed', async () => {
+    await refused('too short', { api: 'https://example.com/api.php', key: 'abc' },
+        '43 characters', 'A-Z a-z 0-9 - _', 'Received: 3 characters');
+    await refused('a space inside', { api: 'https://example.com/api.php',
+        key: SALT_TEXT.slice(0, 20) + ' ' + SALT_TEXT.slice(21) },
+        '43 characters');
+    await refused('an http-less address', { api: 'example.com/api.php', key: SALT_TEXT },
+        'must start with http:// or https://');
+});
+
+await check('call: an origin is canonicalised the way the server does', async () => {
+    const of = async (origin) => (await projectForCall(NO_FILE,
+        { api: 'https://example.com/api.php', key: SALT_TEXT, origin })).origin;
+    equal(await of('https://staging.example.com'), 'https://staging.example.com',
+        'already canonical');
+    equal(await of('HTTPS://Staging.Example.COM'), 'https://staging.example.com',
+        'lowercased, as ap_normalise_origin does');
+    equal(await of('https://staging.example.com:443'), 'https://staging.example.com',
+        'the default port is dropped');
+    equal(await of('http://localhost:8080'), 'http://localhost:8080',
+        'a port that is not the default is kept');
+    equal(await of(undefined), '', 'none given, none announced, none invented');
+});
+
+await check('call: what is not an origin is refused, never trimmed', async () => {
+    for (const bad of ['https://example.com/prod', 'https://example.com?x=1',
+                       'https://example.com#a', 'example.com', 'ftp://example.com',
+                       'https://user:secret@example.com']) {
+        await refused('origin ' + bad, { api: 'https://example.com/api.php',
+            key: SALT_TEXT, origin: bad },
+            'is not an origin: ' + bad, 'no path, no query string');
+    }
+});
+
+await check('call: an origin alone names no project', async () => {
+    await refused('origin alone', { origin: 'https://example.com' },
+        '"origin" without "api" and "key"', 'it does not name one');
+    await refused('origin + project', { api: 'https://example.com/api.php',
+        key: SALT_TEXT, origin: 'https://example.com', project: 'review' },
+        '"api", "key" and "origin"', 'we do not pick a winner');
+});
+
+await check('call: with neither, the missing file speaks at call time', async () => {
+    await refused('nothing given', {}, 'No configuration found');
+    await refused('a project name given', { project: 'review' }, 'No configuration found');
 });
 
 /* -- Verdict ------------------------------------------------------------- */

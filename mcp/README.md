@@ -30,6 +30,14 @@ No dependencies. Node 18 or later.
 
 ## Configure
 
+There are **two** ways to tell this package which project it is talking to,
+and the right one depends on where that project's key lives.
+
+### 1. The configuration file -- for a project whose key is private
+
+This is the way for a project whose key is **not** written in its own page.
+The key stays on your machine and never travels through a conversation.
+
 Copy `annotepage.example.json` to `.annotepage.json` and fill it in:
 
 ```json
@@ -54,6 +62,79 @@ Copy `annotepage.example.json` to `.annotepage.json` and fill it in:
 
 Set `"read_only": true` when plugging an assistant onto a review you do not
 know yet. It cuts every write.
+
+### 2. `api` + `key` on the call -- for a project whose key is already public
+
+Since client 2.1.0 a page can carry its own key: the `annotepage` tag at the
+end of the annotated document has `data-key` beside `data-server`, and such a
+project is **public by construction** -- whoever can load the page can read
+the notes (`FORMAT.md` 1.5). Nothing has to be configured for it. Every MCP
+tool takes three optional arguments:
+
+| Argument | Where it is read from |
+|---|---|
+| `api` | the `data-server` attribute of the tag |
+| `key` | the `data-key` attribute of the tag |
+| `origin` | the origin of the page itself -- scheme and host of the address you fetched |
+
+Given **together**, `api` and `key` *are* the project for that one call: the
+project id is derived from the key and never declared beside it, no
+configuration file is required or read, nothing is written to disk, and the
+next call starts from nothing again. A reply written this way is signed
+`assistant`, since there is no file to declare a name.
+
+The assistant does not have to be told any of this: it fetches the page it was
+given, reads the two attributes off the tag, takes the origin from the address
+it just fetched, and calls the tool. That is the whole feature, and the tool
+descriptions carry it.
+
+### `origin`: pass it whenever you might write
+
+`origin` is the third of the three, and it is not decoration. A **relay**
+refuses every write that arrives with no `Origin` header (`FORMAT.md` 6.2, and
+that is the domain lock doing its job). Without it, reading works everywhere
+and writing does not: no reply in a thread, no note resolved -- half a review
+loop.
+
+It is the origin of the **page**, not of the api address; those are two
+different domains by construction. Scheme and host, a port only when it is not
+the default, nothing else:
+
+```
+https://staging.example.com        http://localhost:8080
+```
+
+It is sent as the `Origin` header, through the same field and the same two
+lines of `api.mjs` as the `origin` of the configuration file. A value that is
+not a canonical origin -- a path, a query string, no scheme -- is refused with
+the shape expected, and not trimmed into one: `https://example.com/prod` and
+`https://example.com/staging` are the same origin, and cutting one into the
+other in silence would announce a site nobody named. The rule is the server's
+own, `ap_normalise_origin()`.
+
+Refusals, and none of them is a fallback:
+
+- **`api` or `key` alone** -- refused, naming the half that is missing. An
+  address paired with somebody else's key reads another project than the one
+  you meant;
+- **`origin` alone** -- refused: it describes a project, it does not name one;
+- **`key` together with `project`** -- refused, and no winner is picked. A key
+  already derives its project id, so it never needs a project name beside it;
+- **a key that is not 43 base64url characters** -- refused with the shape
+  expected, and never echoed back;
+- **an `origin` that is not an origin** -- refused with the shape expected.
+
+> **This path is for a key that is ALREADY PUBLIC IN THE PAGE.** A key taken
+> out of a configuration file and pasted into a conversation crosses a model
+> provider's logs and cannot be taken back: this format has no key rotation,
+> so the only repair is a new project and abandoning the notes already
+> written. **A private project keeps the file above, and should.**
+
+Where to look, in order -- and the tool descriptions say the same, because
+that is where an assistant actually reads it: **the page first** (it carries
+both attributes), **then the configuration file** (the private projects), and
+**asking a human only as a last resort**, when the page cannot be reached and
+no configuration answers.
 
 ## Use it from the command line
 
@@ -91,7 +172,7 @@ The seven tools:
 | `annotepage_mark_resolved` | resolve, stating the version the fix ships in |
 | `annotepage_reopen` | put a note back, saying why |
 | `annotepage_export` | the whole review as text |
-| `annotepage_projects` | the projects this configuration knows |
+| `annotepage_projects` | the projects this configuration knows, and the id an `api` + `key` pair derives |
 
 ## Or use nothing at all
 

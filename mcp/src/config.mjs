@@ -31,13 +31,21 @@
  * read what is not encrypted would make this package a compulsory step. It
  * must not be one. We then ask for the project id directly, since it can no
  * longer be derived.
+ *
+ * AND THE FILE IS NO LONGER THE ONLY WAY IN. A project whose key is
+ * written in its own page (data-key, FORMAT.md section 1.5) is public by
+ * construction: the assistant reads the tag and passes the key per call, and
+ * this file is neither required nor read. See projectForCall at the bottom.
+ * That path exists for keys that are ALREADY public and for no others — a key
+ * out of a configuration file, pasted into a conversation, crosses a model
+ * provider's logs and cannot be taken back, this format having no rotation.
  */
 
 import { readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve as resolvePath, join } from 'node:path';
 
-import { ID_LENGTH } from './format.mjs';
+import { ID_LENGTH, SALT_LENGTH } from './format.mjs';
 import { saltFromText, derive } from './crypto.mjs';
 
 export class ConfigError extends Error {}
@@ -256,12 +264,223 @@ export const loadConfiguration = async (explicit) => {
 };
 
 /**
+ * A configuration that could NOT be read, kept instead of thrown.
+ *
+ * Since a call can carry its own project (see projectForCall below), a missing
+ * or broken file is no longer a reason to refuse to start: it is a reason to
+ * refuse the calls that need the file. The error is kept whole and raised at
+ * that moment, with the same words it would have had at startup.
+ */
+export const absentConfiguration = (error) => ({
+    path: null,
+    warnings: [],
+    defaultProject: null,
+    projects: new Map(),
+    error,
+});
+
+/* The name an inline project answers to, and the name it signs with. Both are
+   fixed: nothing on this path comes from a file, so there is nobody to ask.
+   The signature is honest rather than flattering — a human reading the thread
+   sees that an assistant wrote it, and no assistant is claiming a name it was
+   never given. */
+export const INLINE_PROJECT_NAME = '(this call)';
+export const INLINE_AUTHOR = 'assistant';
+
+/**
+ * The text of an origin -> its canonical form, or null.
+ *
+ * THE RULE IS THE SERVER'S, ap_normalise_origin() in origins.php, and it is
+ * restated here rather than invented: scheme and host, an explicit port only
+ * when it is not the default, http or https, and NO path, query, fragment or
+ * credentials. The server refuses rather than trims, because
+ * "https://example.com/prod" and "https://example.com/staging" would otherwise
+ * declare the same thing — so we refuse too, and say the shape.
+ */
+export const canonicalOrigin = (text) => {
+    const raw = String(text == null ? '' : text).trim();
+    if (raw === '' || raw.length > 255) return null;
+    let url;
+    try {
+        url = new URL(raw);
+    } catch (e) {
+        return null;
+    }
+    const scheme = url.protocol.toLowerCase();
+    if (scheme !== 'http:' && scheme !== 'https:') return null;
+    if (url.username !== '' || url.password !== '') return null;
+    if (url.search !== '' || url.hash !== '') return null;
+    if (url.pathname !== '' && url.pathname !== '/') return null;
+    if (url.hostname === '') return null;
+    /* url.origin lowercases and drops the default port: the same canonical
+       form the server computes before comparing. */
+    return url.origin;
+};
+
+/**
+ * A project built from ONE call's arguments, living exactly as long as that
+ * call. Nothing is written to disk, no file is read, and the next call starts
+ * from nothing again.
+ *
+ * THE ID IS DERIVED, NEVER DECLARED (FORMAT.md section 1.5). The key already
+ * produces it, and accepting both would be accepting the same fact twice from
+ * a place where the two can disagree.
+ */
+export const inlineProject = async (api, key, origin) => {
+    if (!/^https?:\/\//i.test(api)) {
+        throw new ConfigError(
+            'The "api" of this call must start with http:// or https:// : ' + api
+            + '\nIt is the "data-server" attribute of the annotepage tag, copied '
+            + 'as it stands.');
+    }
+
+    /* Same judge as the configuration file and as the browser: saltFromText.
+       We do not "clean" a key that is almost right — it would derive a wrong
+       project id, and the server would answer "unknown project" for what
+       looks like the right key. */
+    const bytes = saltFromText(key);
+    if (bytes === null) {
+        throw new ConfigError(
+            'The "key" of this call does not have the expected shape: 43 characters '
+            + 'taken from A-Z a-z 0-9 - _ , with no space and no decorative dash.\n'
+            + 'Received: ' + String(key).length + ' characters'
+            + (String(key).length === SALT_LENGTH
+                ? ', the right count, but not all of them from that alphabet' : '')
+            + '.\n'
+            + 'Copy the "data-key" attribute of the annotepage tag as it stands. '
+            + 'Nothing was sent: a key that is almost right derives a wrong project '
+            + 'id, and the error would come back as an unknown project.');
+    }
+
+    /* The Origin header, and it is not decoration: FORMAT.md section 6.2 has a
+       relay refuse EVERY write that arrives without one. Reading works with no
+       origin anywhere; replying and resolving do not. */
+    let announced = '';
+    if (origin !== undefined && origin !== null && String(origin).trim() !== '') {
+        announced = canonicalOrigin(origin);
+        if (announced === null) {
+            throw new ConfigError(
+                'The "origin" of this call is not an origin: ' + String(origin).trim()
+                + '\nExpected scheme://host, with a port only when it is not the '
+                + 'default, and NOTHING else — no path, no query string, no fragment, '
+                + 'no credentials. For example "https://staging.example.com" or '
+                + '"http://localhost:8080".\n'
+                + 'It is the origin of the PAGE whose tag you read: take the scheme '
+                + 'and the host of that address and drop the rest. We do not trim it '
+                + 'for you — "https://example.com/prod" and "https://example.com/'
+                + 'staging" are the same origin, and cutting one into the other in '
+                + 'silence would announce a site nobody named.');
+        }
+    }
+
+    const keys = await derive(bytes);
+    return {
+        name: INLINE_PROJECT_NAME,
+        api,
+        id: keys.id,
+        mode: 'encrypted',
+        keys,
+        author: INLINE_AUTHOR,
+        read_only: false,
+        /* Announced only if the call said which site this is. We never invent
+           one from the api address: they are two different domains by
+           construction (FORMAT.md section 6.2), and a wrong origin is a 403
+           the caller cannot explain. Same field as the configuration file's,
+           read by the same two lines of api.mjs — there is one way to write
+           this header, not two. */
+        origin: announced,
+        inline: true,
+    };
+};
+
+/**
+ * The project ONE call aims at: the one it carries, or the one the
+ * configuration file declares.
+ *
+ * Three refusals here, and none of them is a fallback. A call that half
+ * describes a project, or that describes two different ones, is a caller
+ * error: we say which, and we read nothing and write nothing.
+ */
+export const projectForCall = async (configuration, args) => {
+    const given = args || {};
+    const api = given.api == null ? '' : String(given.api).trim();
+    const key = given.key == null ? '' : String(given.key).trim();
+    const origin = given.origin == null ? '' : String(given.origin).trim();
+    const named = given.project == null ? '' : String(given.project).trim();
+
+    if (api === '' && key === '' && origin === '') {
+        return chooseProject(configuration, named);
+    }
+
+    const carried = ['api', 'key', 'origin']
+        .filter((w) => ({ api, key, origin })[w] !== '')
+        .map((w) => '"' + w + '"');
+    const listed = carried.length === 1 ? carried[0]
+        : carried.slice(0, -1).join(', ') + ' and ' + carried[carried.length - 1];
+
+    /* Two answers to the same question. We do not pick a winner: writing a
+       note into the wrong project cannot be undone, and nothing is ever
+       erased in this tool. */
+    if (named !== '') {
+        throw new ConfigError(
+            'This call names the project "' + named + '" of the configuration file '
+            + 'AND carries its own ' + listed + '.\n'
+            + 'Those are two different projects and we do not pick a winner. '
+            + 'Nothing was read, nothing was written.\n'
+            + 'Call again with "project" alone, or with "api" and "key" alone — '
+            + 'the key already derives the project id, so it never needs a project '
+            + 'name beside it.');
+    }
+
+    if (api === '' && key === '') {
+        throw new ConfigError(
+            'This call carries "origin" without "api" and "key".\n'
+            + '"origin" describes a project, it does not name one: it is the site '
+            + 'the notes are about, announced to the server so that a relay accepts '
+            + 'a write (FORMAT.md section 6.2). Alone it points at nothing.\n'
+            + 'Either add "api" and "key", both on the annotepage tag of the page '
+            + '(data-server, data-key), or drop "origin" and let the configuration '
+            + 'file answer.');
+    }
+
+    if (key === '') {
+        throw new ConfigError(
+            'This call carries "api" without "key".\n'
+            + 'The two travel together: "api" says where the notes are stored, '
+            + '"key" is what makes them readable and what the project id is derived '
+            + 'from. There is no falling back to the configuration file for the '
+            + 'missing half — an address paired with somebody else\'s key reads '
+            + 'another project than the one you meant.\n'
+            + 'Both are on the annotepage tag at the end of the annotated page: '
+            + 'data-server and data-key.');
+    }
+    if (api === '') {
+        throw new ConfigError(
+            'This call carries "key" without "api".\n'
+            + 'The two travel together: "key" makes the notes readable and derives '
+            + 'the project id, "api" says which server holds them — and that one is '
+            + 'derived from nothing. There is no falling back to the configuration '
+            + 'file for the missing half.\n'
+            + 'Both are on the annotepage tag at the end of the annotated page: '
+            + 'data-server and data-key.');
+    }
+
+    return inlineProject(api, key, origin);
+};
+
+/**
  * Chooses the project aimed at. One single project declared: no need to name
  * it. Several: we demand the name, rather than take one "at random but always
  * the same" — writing a note into the wrong project cannot be undone, nothing
  * is ever erased in this tool.
  */
 export const chooseProject = (configuration, name) => {
+    /* The file could not be read, and this call needs it. The error waited
+       here rather than stopping the server, because a call carrying its own
+       api and key needs nothing from the file. */
+    if (configuration.error && configuration.projects.size === 0) {
+        throw configuration.error;
+    }
     if (name) {
         const project = configuration.projects.get(String(name));
         if (!project) {
