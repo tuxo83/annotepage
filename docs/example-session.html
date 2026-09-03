@@ -15,6 +15,7 @@
 <meta property="og:title"       content="A real session, replayed">
 <meta property="og:description" content="One captured run of an assistant over three review notes: the line going in, the work, the measurements, and the answers arriving on the reviewer's page.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/base.css">
 <style>
 /* ---------------------------------------------------------------------------
    annotepage.com/example-session.html -- one hand-written page.
@@ -23,14 +24,6 @@
    --------------------------------------------------------------------------- */
 
 :root {
-    --bg:        #ffffff;
-    --bg-soft:   #f5f6f8;
-    --bg-code:   #f1f2f5;
-    --bg-warn:   #fdf6e9;
-    --text:      #16181d;
-    --dim:       #52565f;
-    --line:      #d3d7de;
-    --line-soft: #e2e5ea;
     /* The boundary of an INTERACTIVE control, which --line cannot serve.
        Measured on the rendered pixels: --line reaches 1.34:1 against the
        strip the Copy button sits on, where WCAG 1.4.11 asks for 3. This one
@@ -38,40 +31,11 @@
        fill. It is deliberately NOT applied to the frames around code, cards
        and tables: those are decoration, and 1.4.11 does not cover them. */
     --control-line: #7f8794;
-    --accent:    #0b53c0;
-    --on-accent: #ffffff;
-    --warn:      #7a4200;
-    --ok:        #0a6b3d;
-    /* The fill behind a resolved stamp. Defined here, on bare :root, and only
-       REDEFINED in the dark block -- like every other colour on this page. */
-    --ok-soft:   #e6f4ea;
-    --shadow:    0 1px 2px rgba(16, 18, 24, .06), 0 8px 28px rgba(16, 18, 24, .07);
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-            "DejaVu Sans Mono", monospace;
-    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-            Arial, "Noto Sans", sans-serif;
-    --radius: 10px;
-    /* THE READING MEASURE, and it is not the page's width -- see .wrap. */
-    --measure: 44rem;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg:        #0f1115;
-        --bg-soft:   #171a20;
-        --bg-code:   #13161b;
-        --bg-warn:   #1d1810;
-        --text:      #e6e8ec;
-        --dim:       #a3a9b4;
-        --line:      #38404c;
-        --line-soft: #262c35;
-        --control-line: #6a7484;   /* 3.69:1 on --bg-soft, 4.00:1 on --bg */
-        --accent:    #8ab4ff;
-        --on-accent: #0f1115;
-        --warn:      #f2c17a;
-        --ok:        #5fd39a;
-        --ok-soft:   #17291f;   /* --ok on it: 8.21:1 measured (5.81:1 light) */
-        --shadow:    0 1px 2px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .45);
+        --control-line: #6a7484;
     }
 }
 
@@ -1616,6 +1580,11 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <code>annotepage-client</code> and <code>annotepage-mcp</code>.
                 <code>FORMAT.md</code> is the reference; where any other document disagrees
                 with it, it is right.
+            </p>
+            <p style="margin-top:.8rem;">
+                This site loads no font, no script and no image from anybody else. It runs
+                the tool it describes, which talks to
+                <code>api.annotepage.com</code> and to nothing else.
             </p>
             <!-- page-specific -->
             <p style="margin-top:.8rem;">
