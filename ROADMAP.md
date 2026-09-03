@@ -461,6 +461,46 @@ per-project cap is the only thing between that and the relay's disk. The rate
 limit is per IP and per project; neither is an answer to a public project
 someone decides to flood.
 
+## The stale copy can replace itself, and the tag cannot help
+
+Asked on 2026-09-03: can the seven-day browser cache be changed from the tag,
+or from the client's own code?
+
+**From the tag, no.** No attribute of `<script>` touches cache lifetime --
+integrity, crossorigin, defer, async, referrerpolicy, fetchpriority, none of
+them. `Cache-Control` is a response header and the requester cannot overrule
+it. jsDelivr's `max-age=604800` on a range URL is theirs to set, and `@2` is
+already the shortest form they serve: a pinned `@2.1.0` is immutable there and
+cached for a YEAR.
+
+**From the code, yes, and the clean way avoids the cache entirely rather than
+fighting it.** The trick is that the stale copy does not have to refresh its
+own URL -- it can load a DIFFERENT one:
+
+1. the client knows its own version, the build stamps it (`TOOL_VERSION`);
+2. it learns the current one from somewhere with a short cache -- a small
+   JSON on annotepage.com, which GitHub Pages serves with minutes of cache,
+   not days. NOT from the CDN range, which is the very thing that is stale;
+3. if it is behind, it injects a script tag pointing at the EXACT version --
+   `annotepage-client@2.1.1/dist/annotepage.js` -- and that URL has never been
+   fetched by this browser, so no cache stands in the way. It then withdraws
+   and lets the fresh copy take over the page.
+
+What has to be got right, and none of it is hard: the old copy must remove its
+host element and its listeners before the new one builds, or the page carries
+two pills; the check must be cheap and must not run on every page view; and a
+failure to reach the version file must be a silence, not a screen -- the tool
+already works, it is merely old.
+
+The variant that does NOT work as well: `fetch(url, {cache: 'reload'})` on the
+range URL. It does refresh the HTTP cache, but a `<script src>` with no
+crossorigin is a no-cors request and a default fetch is cors, so browsers may
+key them separately and the next load can still read the stale entry. Loading
+a version that was never cached has no such subtlety.
+
+This also gives the owner-facing half for free: a client that knows it is
+behind can say so, which is what an earlier entry asked for.
+
 ## Origin patterns, and why the refusal is weaker than it reads
 
 Asked on 2026-09-02: several sites in one project, yes -- `origins` is a list
