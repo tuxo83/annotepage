@@ -184,6 +184,35 @@ jobs:
         # nothing and would suggest it is what produces it.
         run: npm publish
 
+      # THE FLOATING TAG IS ONLY AS FAST AS THE CDN, and by default that is up
+      # to twelve hours. jsDelivr resolves `@2` to a version and caches THAT
+      # resolution at the edge with s-maxage=43200; a release published now is
+      # invisible to every new visitor until it expires. Measured on 2.1.0: the
+      # range still answered 2.0.1 for hours after publication.
+      #
+      # The project chose the floating tag precisely so that a fix reaches
+      # sites whose owner has stopped thinking about the tool. Leaving half a
+      # day between "published" and "served" is giving that back for nothing,
+      # when one request closes it -- the purge endpoint answers
+      # "status": "finished" for both providers, in seconds.
+      #
+      # It cannot make the file wrong: it asks the edge to fetch again from
+      # npm, which is the only source either way. So it does not gate the job
+      # -- if it fails, the release is still published and the range catches up
+      # on its own, which is exactly what happens today.
+      - name: Ask jsDelivr to fetch the new version now
+        if: steps.target.outputs.publish == 'yes' && steps.target.outputs.name == 'annotepage-client'
+        continue-on-error: true
+        run: |
+          set -u
+          for path in \
+            "npm/annotepage-client@2/dist/annotepage.js" \
+            "npm/annotepage-client/dist/annotepage.js"; do
+            echo "purging ${path}"
+            curl -sS --max-time 30 "https://purge.jsdelivr.net/${path}" || true
+            echo
+          done
+
       - name: Summarise
         if: always()
         run: |
