@@ -41,6 +41,7 @@ const SECTIONS = [
     '50-anchors.js',
     '60-ui.js',
     '70-setup.js',
+    '80-upgrade.js',
     '90-boot.js'
 ];
 

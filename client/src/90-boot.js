@@ -1,4 +1,4 @@
-/* -- 19. Reading the notes ----------------------------------------------- */
+/* -- 20. Reading the notes ----------------------------------------------- */
 
 const redraw = () => {
     if (!ui) return;
@@ -27,7 +27,7 @@ const reload = () =>
         });
     });
 
-/* -- 20. Startup ----------------------------------------------------------
+/* -- 21. Startup ----------------------------------------------------------
    The order matters: we ask the API BEFORE touching the DOM. If it does not
    answer what it should, the site never saw anything go by.
 
@@ -56,7 +56,22 @@ const loadLocalLabels = () => {
     });
 };
 
+/**
+ * The tool leaves the page, and leaves NOTHING behind.
+ *
+ * Removing the host element is not enough on its own and never was: in
+ * annotation mode the listeners sit on `document` and on `window`, not on the
+ * host, and a repeating timer is running. Dropping the element would leave
+ * them hovering, clicking and measuring a layer that no longer exists. That
+ * did not show while withdrawal only ever happened before anything was built;
+ * it does the moment a copy withdraws in favour of a newer one (80-upgrade).
+ *
+ * leaveMode() is the one place that knows the whole list, and it is called
+ * rather than copied: two lists drift, and the one that drifts is the one
+ * nobody runs.
+ */
 const withdraw = () => {
+    if (ui && mode) leaveMode();
     if (host) host.remove();
     host = null;
     root = null;
@@ -106,24 +121,51 @@ function startWithSalt(text, derived) {
                 return null;
             }
 
-            // From here on the tool EXISTS, and will no longer keep quiet
-            // about its failures.
-            buildHost();
-            return loadLocalLabels().then(() => {
-                clearLayer();
-                buildUi();
-                if (first.ok) {
-                    return readList(first.data).then((read) => {
-                        notes = read;
-                        redraw();
-                        return null;
-                    });
-                }
-                currentFailure = failureFrom(first, 'error.title_read');
+            /* THE SEAM. This is the one moment where a copy can discover it
+               is out of date having drawn nothing, listened to nothing and
+               decrypted nothing -- so it withdraws instead of undoing. The
+               answer that carries the announcement is the one we were
+               waiting for anyway: nothing was added in front of the boot,
+               and a page that is up to date pays exactly nothing.
+
+               WHAT HAPPENS NEXT DEPENDS ON WHERE THIS FILE CAME FROM, and
+               that distinction is the whole design:
+
+                 from a CDN -- the seven-day cache is what put us here, and
+                 pulling the pinned version walks around it. We hand over.
+
+                 from anywhere else -- the site serves its own copy, which
+                 somebody CHOSE to do, and going to a CDN behind their back
+                 would add the dependency they deliberately removed. We say
+                 it in the panel and we load nothing. */
+            const newer = first.ok ? announcedVersion(first.data) : null;
+            const cdn = newer ? cdnServing(script.src) : null;
+            if (cdn && handOverTo(cdn, newer, () => { proceed(first); })) return null;
+            if (newer) upgradeAvailable = newer;
+
+            return proceed(first);
+        });
+}
+
+/** Everything the tool does once it has decided to stay. */
+function proceed(first) {
+    // From here on the tool EXISTS, and will no longer keep quiet
+    // about its failures.
+    buildHost();
+    return loadLocalLabels().then(() => {
+        clearLayer();
+        buildUi();
+        if (first.ok) {
+            return readList(first.data).then((read) => {
+                notes = read;
                 redraw();
                 return null;
             });
-        });
+        }
+        currentFailure = failureFrom(first, 'error.title_read');
+        redraw();
+        return null;
+    });
 }
 
 const start = () => {

@@ -504,6 +504,21 @@ const drawPanel = () => {
         ui.body.appendChild(notice);
     }
 
+    /* A NEWER CLIENT EXISTS, AND WE ARE NOT GOING TO FETCH IT. This copy is
+       served by the site itself -- somebody took the file off a CDN on
+       purpose -- so it says so and stops there (80-upgrade). A copy served
+       BY a CDN never gets here: it replaced itself before the panel existed.
+
+       Said at every draw and not once at load, for the same reason as the
+       notice above: a message shown at load time is read by whoever happened
+       to be looking, and by nobody who opens this panel a week later. */
+    if (upgradeAvailable) {
+        const notice = create('div', 'ap-upgrade',
+            T('upgrade.available', { version: upgradeAvailable, current: TOOL_VERSION }));
+        notice.setAttribute('role', 'note');
+        ui.body.appendChild(notice);
+    }
+
     if (currentFailure) {
         ui.body.appendChild(failureBlock(currentFailure, () => {
             currentFailure = null;

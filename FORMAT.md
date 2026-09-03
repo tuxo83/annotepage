@@ -659,6 +659,21 @@ Response: `{"ok":true,"tool":"annotepage","format":2,"version":"...",
 "project":"...","index":"...","notes":[...]}`. Each note carries its plain
 columns (§2.1), its payload columns (§2.2) and its nested replies.
 
+It may also carry **`client_version`**, the version of the browser client the
+server believes to be current — a plain `x.y.z`, and `version` above stays the
+**server's** own version, which is a different fact. It exists for one purpose:
+a client served by a CDN behind a seven-day cache learns from it that a newer
+one is published, and loads that exact version instead of waiting for the cache
+to expire (see the client's section 19).
+
+**It announces, it never gates.** No implementation may compare it to decide
+whether a request is allowed, in either direction: compatibility is the FORMAT
+number's job and only its job (§7). A server may omit the field, and a client
+that reads anything it does not fully understand — absent, not a string, not
+three numbers, equal to its own, or **older** than its own — carries on in
+silence. Older matters: a self-hosted server announces whatever it was
+installed with, and it must never be able to push a visitor's client backwards.
+
 **`add`** — `application/x-www-form-urlencoded`. We do not move to JSON: an
 urlencoded body is a "simple request" in the CORS sense and does not trigger a
 preflight, which spares the relay a whole `OPTIONS` machinery.

@@ -84,6 +84,7 @@
   "salt.replace": "Coller une autre clé",
   "salt.forget": "Oublier la clé sur ce navigateur",
   "public.notice": "Chiffré de bout en bout, et la clé de ce projet est publique : elle est écrite dans cette page. Quiconque peut ouvrir la page peut lire ces notes ET en écrire — la clé donne les deux, et ce format n’a pas de rôle lecteur seul.",
+  "upgrade.available": "Un client annotepage plus récent existe : {version}. Cette page exécute la version {current}, servie par le site lui-même — rien n’a été chargé pour la remplacer, et le moment de mettre à jour le fichier appartient au propriétaire.",
   "tag.title": "Cette balise annotepage est inutilisable telle quelle",
   "tag.key_shape": "L’attribut data-key de la balise de cette page n’est pas une clé : 43 caractères sont attendus, parmi A-Z a-z 0-9 - _, sans espace et sans tiret décoratif. Rien n’a été envoyé, rien n’a été déchiffré. La personne qui a installé l’outil doit recopier la clé, d’un seul bloc.",
   "tag.key_mismatch": "La balise de cette page porte une clé et un identifiant de projet qui ne vont pas ensemble : la clé ne dérive pas cet identifiant. Rien n’a été envoyé, rien n’a été déchiffré, et l’outil ne devine pas lequel des deux a raison. Une balise publique se suffit de la clé — l’identifiant en est dérivé — donc retirez data-project, ou corrigez celui des deux qui est faux.",

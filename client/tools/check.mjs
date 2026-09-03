@@ -38,8 +38,16 @@ const window = { crypto: webcrypto };
 const code = [
     read('10-utils.js'),
     read('20-crypto.js'),
+    /* 80-upgrade.js joins them for the same reason: its decisions -- is that
+       announced version newer, does it even look like a version, which
+       address do we build from it -- are pure, they touch no DOM, and they
+       are the ones a hostile answer would try to bend. Everything in that
+       file that touches the document is inside a function, so evaluating it
+       here costs nothing. */
+    read('80-upgrade.js'),
     'return { b64url, fromB64url, generateSalt, saltFromText, derive,',
-    '         indexOfPath, seal, open, compact };'
+    '         indexOfPath, seal, open, compact,',
+    '         versionNumbers, announcedVersion, cdnServing, officialUrl };'
 ].join('\n');
 
 /* The same values the build injects, and for the same reason: these sections
@@ -127,6 +135,70 @@ const main = async () => {
     check('a nonce of another length: refused',
         await reason(module.open(keys.encryptionKey, project, index, 'note', 'ap2.AAAA.' + envelope.split('.')[2])),
         'unreadable');
+
+    /* -- The announcement a stale copy acts on -----------------------------
+       It rides on the `list` answer, so it comes from a server that may be
+       anybody's: a relay, a self-hosted install, or something pretending to
+       be one. Everything below is what stands between that string and a
+       <script src> the visitor's browser will run.
+
+       The versions are derived from TOOL_VERSION rather than written down,
+       so that the next release does not silently turn "newer" into "older"
+       and leave these lines passing for the wrong reason. */
+    process.stdout.write('the announced client version\n');
+    const mine = module.versionNumbers(TOOL_VERSION);
+    const newer = (mine[0] + 1) + '.0.0';
+    const older = (mine[0] - 1) + '.9.9';
+    const announced = (value) => module.announcedVersion({ client_version: value });
+
+    check('a newer version is passed on', announced(newer), newer);
+    check('our own version: silence', announced(TOOL_VERSION), null);
+    check('an older version: silence', announced(older), null);
+    check('no field at all: silence', module.announcedVersion({}), null);
+    check('no answer at all: silence', module.announcedVersion(null), null);
+    check('not a string: silence', module.announcedVersion({ client_version: 3 }), null);
+    check('two numbers: silence', announced('2.1'), null);
+    /* The last group is four digits ON PURPOSE. Four groups of at most three
+       digits each is the shape of an IP address, and the repository's leak
+       guard refuses a push over anything that looks like one -- it cannot know
+       this is a version. Same case tested, four numbers where three are
+       expected, without wearing that shape. Do not shorten it. */
+    check('four numbers: silence', announced('2.1.1.1000'), null);
+    check('a pre-release: silence', announced('99.0.0-rc.1'), null);
+    check('a leading zero: silence', announced('099.0.0'), null);
+    check('a space around it: silence', announced(' 99.0.0'), null);
+    check('a newline after it: silence', announced('99.0.0\n'), null);
+
+    process.stdout.write('what a version number can never become\n');
+    const jsdelivr = module.cdnServing(
+        'https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js');
+    check('the range URL is recognised as jsDelivr', !!jsdelivr, true);
+    check('unpkg too', !!module.cdnServing(
+        'https://unpkg.com/annotepage-client@2/dist/annotepage.js'), true);
+    check('a copy served by the site is NOT a CDN', module.cdnServing(
+        'https://annotepage.com/annotepage-client-2.1.0.js'), null);
+    check('a look-alike host is NOT a CDN', module.cdnServing(
+        'https://cdn.jsdelivr.net.example.com/npm/annotepage-client@2/dist/annotepage.js'), null);
+    check('another package on the same CDN is NOT a CDN copy', module.cdnServing(
+        'https://cdn.jsdelivr.net/npm/something-else@2/dist/annotepage.js'), null);
+    check('http is NOT a CDN', module.cdnServing(
+        'http://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js'), null);
+
+    check('the address is REBUILT, never received',
+        module.officialUrl(jsdelivr, newer),
+        'https://cdn.jsdelivr.net/npm/annotepage-client@' + newer + '/dist/annotepage.js');
+    /* The four below are the whole point of building the URL ourselves: none
+       of them can reach officialUrl through announcedVersion, and none of
+       them produces an address even when handed to it directly. */
+    check('a path escape builds nothing',
+        module.officialUrl(jsdelivr, '2.1.1/../../evil@1/x.js'), null);
+    check('another origin builds nothing',
+        module.officialUrl(jsdelivr, 'https://evil.example.com/x.js'), null);
+    check('a protocol-relative address builds nothing',
+        module.officialUrl(jsdelivr, '//evil.example.com/x.js'), null);
+    check('a query of its own builds nothing',
+        module.officialUrl(jsdelivr, '2.1.1?x=1'), null);
+    check('no CDN, no address at all', module.officialUrl(null, newer), null);
 
     process.stdout.write(failures ? '\n' + failures + ' failure(s)\n' : '\neverything conforms\n');
     process.exit(failures ? 1 : 0);

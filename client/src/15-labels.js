@@ -225,6 +225,15 @@ ns.defaultLabels = {
         + 'notes AND write them -- the key gives both, and this format has no '
         + 'reader-only role.',
 
+    /* -- A newer client exists, and this copy is not going to fetch it -
+       Shown ONLY when the file is served by the site itself: a copy served
+       by a CDN replaces itself instead of talking about it (80-upgrade).
+       So the sentence has to say what was NOT done, and whose call it is. */
+    'upgrade.available':
+        'A more recent annotepage client exists: {version}. This page is '
+        + 'running {current}, served by the site itself -- nothing was fetched '
+        + 'to replace it, and when to update the file is the owner\'s call.',
+
     /* -- A tag that cannot be used as it stands ------------------------
        Somebody put that tag there on purpose, so we speak instead of staying
        silent -- and we refuse exactly as a wrong pasted key is refused
