@@ -566,7 +566,7 @@ longer explanation.
 Not started. how-it-works.html#no-recovery and #data hold the line until then,
 and they are accurate -- they are just not a security page.
 
-## The tag on the landing page floats, and gives up SRI to do it
+## The tag on the landing page floats, and gives up SRI to do it -- SETTLED
 
 Decided on 2026-09-02, written down because it is a real trade and the reasons
 have to survive whoever asks "why is there no integrity attribute?".
@@ -606,6 +606,17 @@ looked at.
 What would make the trade cheaper, and is not built: the client noticing a
 newer version exists and telling the site owner once, in the tool's own
 surface, so a pinned tag can stay pinned without going stale unnoticed.
+
+SETTLED 2026-09-03 by the owner, and the deciding argument is not the one
+this entry was weighing. It is not about what the trade costs US: we ship the
+releases, so a pinned tag would cost us one line per release. It is about
+everyone who pasted the tag ONCE into a layout file and will never come back
+to edit a digest and a version number. A pinned tag means a fix reaches
+nobody, which is the failure that actually happens to a free tool.
+
+So the floating tag stays, the absence of `integrity` is now written as a
+decision beside the tag on the landing page and on install.html#locked, and
+what it gives up is stated there rather than glossed over.
 
 What would remove the trade entirely, and is the real answer: the browser
 extension already described above. The salt would live in the extension rather
