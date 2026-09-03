@@ -1181,20 +1181,34 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
     }());
     if (!cells.length) return;
 
-    /* WHERE THE POINTER GOES, in per cent of the frame, so it lands on the
-       same things at every width. Three stations and one of them is off the
-       picture: the button it presses to start, the element it points at, and
-       the Send it never quite reaches before the figure holds. */
+    /* WHERE THE POINTER GOES, AND IT ASKS RATHER THAN REMEMBERS.
+
+       This was three pairs of percentages of the frame -- rest at 88/84, the
+       element at 17/52 -- which is a bet that those things are still there.
+       They are not, reliably: the two fake buttons wrap at some widths, the
+       whole component is scaled by --ui, and the panel's height moves with its
+       content. A pointer landing beside the thing it is about to press is
+       worse than no pointer, because it says the tool clicked somewhere else.
+
+       So a station is a SELECTOR, and the position is read from the element at
+       the moment of the move. Nothing is precomputed and nothing survives a
+       resize as a stale number. */
     var AT = {
-        rest:  [88, 84],
-        elem:  [17, 52],
-        send:  [72, 78]
+        rest: '.pill',        // the control that opens the tool
+        elem: '.target',      // the button the remark will be about
+        send: '.fm-send'      // the Send it is reaching for when the figure holds
     };
     var moveTo = function (where) {
+        var el = g.querySelector(AT[where]);
+        if (!el) return;
         var box = g.getBoundingClientRect();
-        var p = AT[where];
-        cur.style.transform = 'translate(' + (box.width * p[0] / 100) + 'px, '
-                                           + (box.height * p[1] / 100) + 'px)';
+        var r = el.getBoundingClientRect();
+        /* A station whose element is not laid out yet -- the form's Send before
+           the form exists -- would read as 0,0, which is the frame's corner.
+           We stay where we are rather than jump there. */
+        if (!r.width && !r.height) return;
+        cur.style.transform = 'translate(' + (r.left - box.left + r.width / 2) + 'px, '
+                                           + (r.top - box.top + r.height / 2) + 'px)';
     };
 
     var stage = function (name) { g.setAttribute('data-st', name); };
