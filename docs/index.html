@@ -480,9 +480,10 @@ code:not(pre code) {
 
 /* -- What each of the three steps is drawn out of ------------------------ */
 
-/* The frame and the pieces inside it. The full three-gesture section lives on
-   how-it-works.html and uses the same drawing; here it draws the three steps of
+/* The frame and the pieces inside it. It draws the three steps of
    "How you use it", one frame each, and the corner of a page in the hero.
+   (It once also drew a three-gesture section on how-it-works.html, which is
+   gone; the drawing stayed because these steps are what it is for.)
 
    Unscoped, because it is now used in two places. It was written as
    `.use-steps .frame` while the steps were the only thing that had one. */
@@ -1760,7 +1761,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <footer>
     <div class="wrap">
         <ul class="foot-links">
-            <li><a href="how-it-works.html">How it works</a></li>
                 <li><a href="install.html">Ways to install it</a></li>
             <li><a href="example-session.html">A real session</a></li>
             <li><a href="https://github.com/tuxo83/annotepage">Source</a></li>

@@ -651,6 +651,65 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     margin: 1.3rem 0;
 }
 .tablescroll table { margin: 0; }
+
+/* -- The table of contents, and this is the only page that has one -------
+   Measured, at 390px wide: this page renders 13263px tall, against 3194 for
+   the landing page and 2119 for the session page. Four times the longest of
+   the others, eight sections deep, and a reader arriving for exactly one of
+   them -- their framework, their own server, what a relay can still see --
+   had nothing but the scrollbar to find it with.
+
+   It is the page's own <h2>s, verbatim, pointing at anchors that already
+   existed. Verbatim and not shortened: an entry that does not match the
+   heading it lands on is a small lie, and the longest of the eight is the
+   one somebody is most likely to have come for.
+
+   One column, and no script. Two columns fit at 1440 and cost the list its
+   reading order for four saved centimetres on the one width where the page
+   is least cramped. There is nothing here to fold, filter or highlight. */
+.toc {
+    margin-top: 2.4rem;
+    padding: 1.15rem 1.35rem 1.25rem;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
+}
+.toc-title {
+    margin: 0 0 .75rem;
+    font-family: var(--mono); font-size: .75rem; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--dim);
+}
+.toc ol {
+    list-style: none; margin: 0; padding: 0;
+    counter-reset: toc;
+    display: flex; flex-direction: column; gap: .5rem;
+}
+.toc li {
+    counter-increment: toc;
+    display: flex; gap: .6rem; align-items: baseline;
+    font-size: .95rem; line-height: 1.45;
+}
+/* The number is drawn, not written: it is the position in the page and
+   nothing a screen reader needs read out before every link. */
+.toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    font: 600 .75rem/1.6 var(--mono);
+    color: var(--accent);
+    flex: none;
+}
+/* text-decoration and not a border-bottom: an entry that wraps to two lines
+   is one inline box in two fragments, and a border draws under the fragment
+   rather than under the words -- measured at 390px, where entries 04, 06 and
+   08 wrap and the rule ran out past the end of the text. An underline follows
+   the glyphs on every line. */
+.toc a {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 3px;
+}
+.toc a:hover { color: var(--accent); text-decoration-color: var(--accent); }
+.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 </style>
 <body>
 
@@ -659,7 +718,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         <a class="mark" href="/">annotepage</a>
         <nav>
             <a href="/">Home</a>
-            <a href="how-it-works.html">How it works</a>
             <a href="example-session.html">A real session</a>
             <a href="https://github.com/tuxo83/annotepage">GitHub</a>
         </nav>
@@ -678,6 +736,20 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             your framework&rsquo;s layout file, your own server,
             <code>localhost</code>.
         </p>
+
+        <nav class="toc" aria-label="Sections of this page">
+            <p class="toc-title">On this page</p>
+            <ol>
+                <li><a href="#rule">One rule, and everything else follows</a></li>
+                <li><a href="#frameworks">Where the tag goes</a></li>
+                <li><a href="#modes">Open, or private</a></li>
+                <li><a href="#locked">The locked tag, and why the short one is not it</a></li>
+                <li><a href="#server">Running the server yourself</a></li>
+                <li><a href="#local">Localhost, staging, and the copy of the site nobody else can reach</a></li>
+                <li><a href="#assistant">The assistant side</a></li>
+                <li><a href="#data">Where the notes live, and who can read them</a></li>
+            </ol>
+        </nav>
     </div>
 </section>
 
@@ -1022,7 +1094,7 @@ data-version={process.env.NEXT_PUBLIC_VERSION}  &lt;!-- anything your bundler su
             learns anyway &mdash; is in
             <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">INSTALL.md</a>.
             What it can and cannot see is
-            <a href="how-it-works.html#data">on the how-it-works page</a>.
+            <a href="#data">at the end of this page</a>.
         </p>
     </div>
 </section>
@@ -1086,13 +1158,164 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
     </div>
 </section>
 
+<!-- WHAT THE SERVER SEES ================================================
+     LAST, AND ON THIS PAGE RATHER THAN ONE OF ITS OWN. It used to be the
+     closing section of how-it-works.html, which is gone: three of that
+     page's four sections were already said here or on the landing page,
+     and this one had no home anywhere else. It belongs at the end of the
+     install page because the person configuring the thing is the person
+     who asks what the server can see -- and because it is the REASON for
+     the two choices the page has already made them make, open or private
+     and relay or their own machine. The anchors #data and #no-recovery
+     are load-bearing: they are cited from #server above and from the
+     roadmap, and they moved here with the text. -->
+<section id="data">
+    <div class="wrap">
+        <h2>Where the notes live, and who can read them</h2>
+        <p class="lead">
+            This page has made you choose twice &mdash;
+            <a href="#modes">open or private</a>, and the shared relay or
+            <a href="#server">a server of your own</a>. This is what those two choices
+            actually decide. Either way the notes are encrypted in the browser by
+            default, and whoever runs the server &mdash; including you &mdash; cannot
+            read the review.
+        </p>
+
+        <div class="callout" id="no-recovery">
+            <p><strong>Salt lost = notes lost.</strong> The salt is the only secret of the
+            project. It never leaves the browser, the server receives it in no form
+            whatsoever, and nobody can give it back to you &mdash; no recovery, no
+            security question, no escrow. There is no rotation either: a leaked salt means
+            starting a fresh project and abandoning the notes already written. This is the
+            cost of the sentence above, and it is not negotiable away.</p>
+        </div>
+
+        <div class="facts">
+            <div>
+                <h3>One secret, three keys</h3>
+                <p>HKDF-SHA-256 derives everything from the 256-bit salt: the public
+                project id (22 characters), the AES-256-GCM key, and an HMAC key for the
+                page index. One secret to manage, and it never leaves the browser.</p>
+            </div>
+            <div>
+                <h3>Grouped without being read</h3>
+                <p>The server groups pages by a <em>blind index</em>: the first 16 bytes
+                of an HMAC of the path, which it cannot invert. It nests replies, dates
+                writes and sorts open from resolved without opening anything.</p>
+            </div>
+            <div>
+                <h3>Everything observed, sealed</h3>
+                <p>Not just the text. Encrypting the remark alone would hand over the
+                site's tree, its wording and the list of its reviewers &mdash; and a
+                staging site is precisely what has not been published yet.</p>
+            </div>
+            <div>
+                <h3>The domain is not in the key</h3>
+                <p>The day staging becomes production, the notes stay readable. Each
+                reviewer pastes the salt once more on the new domain; the notes
+                themselves do not move.</p>
+            </div>
+        </div>
+
+        <div class="note-aside">
+            <p>What goes out is an <strong>AES-256-GCM envelope</strong>: the text, but
+            also the page, the selector, the excerpt, the name, the version, the
+            environment and the viewport. What comes back is pinned to the element again
+            by its selector and its fingerprint &mdash; and when the element has really
+            changed, the note is listed as an orphan rather than pinned to the wrong
+            thing.</p>
+        </div>
+
+        <h3 style="margin-top:2.8rem;">What the server sees anyway</h3>
+        <p class="small dim" style="margin-top:.6rem; max-width:44em;">
+            Encrypting the fields is not invisibility. An operator must be able to read
+            this without feeling betrayed, and you must know it before choosing where to
+            put the server.
+        </p>
+        <ul class="plain">
+            <li>The <b>number of projects</b>, and of notes in each.</li>
+            <li>The <b>number of distinct pages</b> annotated, and the notes per page: a
+            page that collects forty remarks is visible.</li>
+            <li>The <b>time of every write</b>, hence the rhythm of the review and the
+            date of the last note.</li>
+            <li>The <b>shape of the threads</b>, and the fix rate and delay, through the
+            resolution dates.</li>
+            <li>The <b>approximate length of every remark</b>: the size of the envelope
+            gives it away to within a few bytes. It is not masked.</li>
+            <li>The <b>IP address and user agent</b> of every reviewer, like any HTTP
+            server.</li>
+            <li>On a shared server, the <b>domain of the site under review</b>, through
+            the <code>Origin</code> header the domain lock has to read. The promise is not
+            &ldquo;it does not know which site you are reviewing&rdquo;; it is &ldquo;it
+            can read neither your paths, nor your names, nor your remarks&rdquo;.</li>
+        </ul>
+
+        <div class="callout">
+            <p><strong>The domain lock is an anti-abuse measure, not an XSS defence.</strong>
+            It stops another site consuming a project id found in the source of a page. An
+            XSS runs <em>inside</em> the target page, so with the legitimate origin: it
+            goes through the lock without effort, and it reaches
+            <code>localStorage</code> anyway &mdash; hence the salt. The XSS defence is
+            elsewhere: the tool assigns text through <code>textContent</code> and never
+            parses it as markup, and a check in <code>npm run check</code> enforces it.</p>
+        </div>
+
+        <h3 style="margin-top:2.8rem;">What it deliberately does not do</h3>
+        <p class="small dim" style="margin-top:.6rem; max-width:44em;">
+            These are choices. Saying them is more useful than discovering them later.
+        </p>
+        <ul class="plain">
+            <li><b>No accounts, no login.</b> The name typed in is a convenience, not an
+            identity. The project id is a bearer token: whoever has it can read and write
+            &mdash; and in encrypted mode, what they read is useless without the salt.</li>
+            <li><b>No moderation, and nobody can delete.</b> A note that is
+              posted stays; the only state it can change is resolved, and that can
+              be taken back. A remark one can erase is a remark one can no longer
+              contradict. The single exception is age: a server may be set to expire
+              whole threads once their last message passes a given number of days
+              &mdash; a public relay needs a ceiling on what it stores. Nobody
+              chooses which, and a server that does it says so in the header of
+              every export.</li>
+            <li><b>No way to annotate a site you cannot edit.</b> The tag has to be in
+            the page, so the tool is a property of the site and not of the reader.</li>
+            <li><b>No notifications.</b> Nobody is told that a note has arrived.</li>
+            <li><b>No salt rotation,</b> and no channel for handing the salt to the second
+            reviewer.</li>
+            <li><b>No overview across pages.</b> Open a page, or read the export.</li>
+            <li><b>No screenshots</b> attached to a note &mdash; weighed, and not settled:
+            the reasons are written down in the roadmap.</li>
+        </ul>
+
+        <h3 style="margin-top:2.8rem;">What it needs to run at all</h3>
+
+        <div class="note-aside">
+            <p><strong>What it requires, and nothing else:</strong> a recent browser in a
+            <em>secure context</em> &mdash; <code>https</code>, or
+            <code>localhost</code>. Without one the browser does not provide WebCrypto,
+            and the tool can neither encrypt nor even compute the page index; it says so
+            on screen rather than pretending. And a reachable annotepage server.</p>
+        </div>
+
+        <p class="small dim" style="max-width:44em;">
+            Where the client itself comes from is the other half of this. A file swapped
+            at the CDN&rsquo;s host runs inside your page, with access to
+            <code>localStorage</code> &mdash; hence to the salt. That trade, and the
+            pinned tag that closes it, are in
+            <a href="#locked">the locked tag</a> above.
+        </p>
+
+        <p style="margin-top:2.2rem;">
+            <a class="cta" href="/">Back to the landing page</a>
+        </p>
+    </div>
+</section>
+
 </main>
 
 <footer>
     <div class="wrap">
         <ul class="foot-links">
             <li><a href="/">Landing page</a></li>
-            <li><a href="how-it-works.html">How it works</a></li>
             <li><a href="example-session.html">A real session</a></li>
             <li><a href="https://github.com/tuxo83/annotepage">Source</a></li>
             <li><a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md">Format &amp; security model</a></li>
