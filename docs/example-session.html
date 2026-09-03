@@ -671,6 +671,20 @@ body:has(#d-wait:checked) #g3-note { border-left-color: var(--warn); }
     /* Clear of the mat the frame paints around itself. */
     .fig-foot { margin-top: 1.7rem; }
 }
+/* THE LOOP HAS TO LOOK LIKE A LOOP. Both figures run for ever now -- they are
+   the content of this page, not decoration beside it -- and a restart that
+   simply swaps the screen reads as a glitch: somebody looking away for a second
+   cannot tell whether they missed something or whether the figure moved on its
+   own. So the frame dims while it rewinds, and comes back up half a second
+   before it starts again: you see it RETURN, then go.
+
+   Opacity and not display: the box keeps its size, so nothing below it jumps.
+   And it is a transition rather than an animation, so the reduced-motion block
+   further down can stop it with the rest -- there, neither timeline arms at
+   all, and a figure that never rewinds never dims. */
+#g1, #rp { transition: opacity .52s ease; }
+#g1[data-rewind], #rp[data-rewind] { opacity: .16; }
+
 .replay {
     display: none; flex: none;
     font: 600 .85rem/1 var(--sans); color: var(--text);
@@ -1197,7 +1211,8 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
        Nothing else about the gesture differs, which is the honest picture:
        the key is asked for once, and then this is the same tool.
        ------------------------------------------------------------------ */
-    var KEY_MS = 4200, TYPE_MS = 4000, HOLD = 5000, GAP = 1600, PASSES = 2;
+    var FADE = 520;
+    var KEY_MS = 4200, TYPE_MS = 4000, HOLD = 5000, GAP = 1600, PASSES = Infinity;
 
     var cues = function (secure) {
         var o = secure ? KEY_MS : 0, list = [];
@@ -1248,6 +1263,10 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             }
         }
         if (held) {
+            // Le fondu se leve un demi-tour d avance : on voit le geste
+            // revenir a son etat de depart AVANT qu il reparte, donc on lit
+            // une reprise et non un saut.
+            if (t >= held + GAP - FADE) g.removeAttribute('data-rewind');
             if (t >= held + GAP) { pass++; play(); return; }
             raf = requestAnimationFrame(tick); return;
         }
@@ -1286,6 +1305,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             return;
         }
         held = list[list.length - 1][0];
+        g.setAttribute('data-rewind', '');
         for (var k = 0; k < cells.length; k++) cells[k].className = 'ch';
         typed = 0; typeTo = typeFrom;
         stage('rest');
@@ -1537,7 +1557,8 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
     /* One loop over one clock. Nested timers drift; a timeline against the
        wall clock does not, and pause and replay come for free. */
     var t0 = 0, cue = 0, typed = 0, raf = 0;
-    var CYCLES = 2, GAP = 1500, cycle = 0, armed = false;
+    var FADE = 520;
+    var CYCLES = Infinity, GAP = 1500, cycle = 0, armed = false;
 
     /* THE PANE IS AS TALL AS THE SESSION, AND NOT A LINE TALLER. Every line is
        laid out at this width, once, and the pane is fixed to what that
@@ -1610,8 +1631,12 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             rp.removeAttribute('data-working');
             rp.removeAttribute('data-worked');
             rp.setAttribute('data-restart', '');
+            rp.setAttribute('data-rewind', '');
             flow.scrollTop = 0;
         }
+        // Le fondu remonte avant la reprise, pour la meme raison que dans le
+        // geste : on doit voir revenir, pas voir sauter.
+        if (t >= DONE + GAP - FADE) rp.removeAttribute('data-rewind');
         if (t < DONE + GAP) { raf = requestAnimationFrame(tick); return; }
         cycle++;
         play();
