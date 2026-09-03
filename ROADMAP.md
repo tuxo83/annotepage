@@ -461,6 +461,40 @@ per-project cap is the only thing between that and the relay's disk. The rate
 limit is per IP and per project; neither is an answer to a public project
 someone decides to flood.
 
+## Origin patterns, and why the refusal is weaker than it reads
+
+Asked on 2026-09-02: several sites in one project, yes -- `origins` is a list
+and a server may declare as many projects as it likes. Wildcards, no, and
+origins.php says why where it compares:
+
+    no prefix, no wildcard, no implicit subdomain. A wildcard on subdomains
+    would look convenient and would open the project to the first page hosted
+    on a subdomain one no longer controls.
+
+That reason is sound and it is also weaker than it sounds, which is worth
+writing down before somebody quotes it as settled. **The domain lock is
+anti-abuse, not a security boundary** -- FORMAT.md says so in as many words.
+What a wildcard would open is not reading: the notes stay unreadable without
+the key. It is WRITING: somebody on a subdomain you stopped controlling could
+fill the project with noise and burn its cap. Real, and bounded.
+
+The case the refusal makes impractical is preview deployments --
+`pr-412-app.vercel.app`, a new host per branch, impossible to list. Today the
+answer there is to leave that project without declared origins, which on a
+self-hosted server means it does not work at all.
+
+The shape that looks defensible, and is NOT built: **one label, on a domain
+entirely yours** -- `https://*.preview.example.com`, never `https://*.example.com`.
+One level, so the wildcard cannot reach a sibling of the apex; and on a
+subdomain whose whole subtree you own, so "a subdomain one no longer controls"
+stops being the common case and becomes a deliberate act.
+
+Whoever builds it: the pattern is matched AFTER canonicalisation, against the
+same normalised origin the exact comparison uses, and a pattern with more than
+one `*`, or a `*` anywhere but the leftmost label, is refused at configuration
+load rather than at request time -- a lock nobody can read is a lock nobody
+maintains.
+
 ## Rotating the key
 
 Asked for by the owner on 2026-09-02, as the thing that would absorb part of
