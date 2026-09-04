@@ -409,6 +409,12 @@ body:has(#d-wait:checked) #g3-note { border-left-color: var(--warn); }
    answer before the question. `panel.empty` is what the client puts there. */
 .g1[data-play][data-st="sent"] .g-note  { display: block; }
 .g1[data-play][data-st="sent"] .g-empty { display: none; }
+/* COUNTED, NOT TYPED. Secure mode adds a step in front of the others, so a
+   number written into the markup would read 01, 01, 02, 03. */
+.use-steps { counter-reset: step; }
+.use-steps > li { counter-increment: step; }
+.use-steps .cap .n::before { content: counter(step, decimal-leading-zero); }
+
 .g1[data-play][data-st="key"]  .g-key   { display: block; }
 .g1[data-play][data-st="mode"] .g-panel,
 .g1[data-play][data-st="hover"] .g-panel,
@@ -795,10 +801,10 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             </fieldset>
 
             <fieldset class="dial">
-                <legend>Your deploy</legend>
+                <legend>When your fix goes live</legend>
                 <div class="seg">
-                    <label><input type="radio" name="dep" id="d-live" checked> <span>Automatic</span></label>
-                    <label><input type="radio" name="dep" id="d-wait"> <span>On your own schedule</span></label>
+                    <label><input type="radio" name="dep" id="d-live" checked> <span>As soon as you merge</span></label>
+                    <label><input type="radio" name="dep" id="d-wait"> <span>At your next release</span></label>
                 </div>
                 <p class="dial-say">
                     Whether the fix is already online the next time the reviewer
@@ -818,12 +824,40 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
     <div class="wrap">
         <ol class="use-steps">
 
+<!-- == THE KEY, IN SECURE MODE ONLY ================================
+     Its own step, and first, because that is when it happens: a browser
+     without the key cannot read a note, so nothing else on this page can
+     start. It used to be a second sentence inside the step below and a
+     screen inside that step's figure, which put two moments in one
+     number. -->
+<li class="if-secure">
+    <div>
+        <p class="cap"><span class="n"></span> She pastes the project key</p>
+        <p class="say">Once, in her browser. Without it this browser can neither read the notes nor write any.</p>
+    </div>
+
+    <figure class="fig">
+        <div class="frame ui-large crop" aria-hidden="true">
+            <div class="nt-panel nt-form">
+                <p class="fm-title">The key of this project is needed</p>
+                <p class="fm-help">The notes of this project are encrypted in your browser. Without the project key, this browser can neither read them nor write any. Ask whoever installed the tool for it, and paste it below. It will be remembered by this browser, for this site.</p>
+                <p class="fm-label">The project key (43 characters)</p>
+                <p class="fm-area fm-key">W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw</p>
+                <p class="fm-acts"><span class="fm-send">Use this key</span></p>
+            </div>
+        </div>
+        <figcaption class="fig-foot">
+            <p><b>Only in a project with a key.</b> In the open mode she reads and
+            writes with no screen in front of her.</p>
+        </figcaption>
+    </figure>
+</li>
+
 <!-- == 01 ============================================================== -->
         <li>
             <div>
-                <p class="cap"><span class="n">01</span> Somebody annotates the page</p>
+                <p class="cap"><span class="n"></span> Somebody annotates the page</p>
                 <p class="say">They press the button, click what is wrong, and write a sentence about it.</p>
-                <p class="say if-secure">First they paste the project key: without it this browser can neither read the notes nor write any.</p>
             </div>
 
             <figure class="fig">
@@ -866,28 +900,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                     </div>
 
                     <div class="dock">
-                        <!-- SECURE MODE ONLY, AND IT COMES FIRST. The tool
-                             cannot show a single note before this: the notes
-                             are encrypted in the browser, and without the key
-                             there is nothing to show and nothing to write
-                             with. The four lines are `salt.title`,
-                             `salt.help`, `salt.label` and `salt.confirm`. -->
-                        <div class="nt-panel nt-form g-key if-secure">
-                            <p class="fm-title">The key of this project is needed</p>
-                            <p class="fm-help">The notes of this project are encrypted in your browser. Without the project key, this browser can neither read them nor write any. Ask whoever installed the tool for it, and paste it below. It will be remembered by this browser, for this site.</p>
-                            <p class="fm-label">The project key (43 characters)</p>
-                            <!-- A DRAWN KEY, and deliberately not this site's own. This page runs
-                                 annotepage in OPEN mode, so its key is in the tag at
-                                 the foot of the file and is public by construction --
-                                 putting that one in a picture of a CONFIDENTIAL project
-                                 would illustrate the mode with a counter-example. What is
-                                 in the field is 43 base64url characters of the right
-                                 shape and nothing else: a key is random, and no key is a
-                                 sentence anybody could have written. -->
-                            <p class="fm-area fm-key">W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw</p>
-                            <p class="fm-acts"><span class="fm-send">Use this key</span></p>
-                        </div>
-
+                        
                         <!-- The panel, in annotation mode. -->
                         <div class="nt-panel g-panel">
                             <div class="nt-bar">Review notes</div>
@@ -949,7 +962,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 <!-- == 02 ============================================================== -->
         <li>
             <div>
-                <p class="cap"><span class="n">02</span> You ask your assistant</p>
+                <p class="cap"><span class="n"></span> You ask your assistant</p>
                 <p class="say">One line names the site. The rest is its own work.</p>
             </div>
 
@@ -1021,7 +1034,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 <!-- == 03 ============================================================== -->
         <li>
             <div>
-                <p class="cap"><span class="n">03</span> The reviewer finds her answer</p>
+                <p class="cap"><span class="n"></span> The reviewer finds her answer</p>
                 <p class="say">She opens the page again and finds what was measured, under the element she pointed at.</p>
                 <!-- THE ONE THING THIS SITE SAYS NOWHERE ELSE, and it is the
                      distinction `data-version` exists for. See "The tag
@@ -1231,13 +1244,14 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
        the key is asked for once, and then this is the same tool.
        ------------------------------------------------------------------ */
     var FADE = 520;
-    var KEY_MS = 4200, TYPE_MS = 4000, HOLD = 5000, GAP = 1600, PASSES = Infinity;
+    var TYPE_MS = 4000, HOLD = 5000, GAP = 1600, PASSES = Infinity;
 
-    var cues = function (secure) {
-        var o = secure ? KEY_MS : 0, list = [];
-        if (secure) {
-            list.push([0, function () { stage('key'); count(0); }]);
-        }
+    /* The key screen used to open this timeline in secure mode, four seconds
+       before the gesture began. It is a step of its own now, above this one,
+       so the gesture starts where the gesture starts -- in both modes, at the
+       same instant. */
+    var cues = function () {
+        var o = 0, list = [];
         list.push([o + 0, function () {
             stage('rest'); pill.textContent = 'Annotate this page';
             count(0); moveTo('rest');
@@ -1314,10 +1328,9 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
     };
 
     var play = function () {
-        var secure = secu.checked;
         reset();
-        list = cues(secure);
-        var o = secure ? KEY_MS : 0;
+        list = cues();
+        var o = 0;
         typeFrom = o + 5000; typeTo = typeFrom + TYPE_MS;
         t0 = (window.performance && performance.now) ? performance.now() : Date.now();
         raf = requestAnimationFrame(tick);
