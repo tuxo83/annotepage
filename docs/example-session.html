@@ -1013,7 +1013,6 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                         Captured output, replayed. Steps and sentences are left out. Results are collapsed the way the
                                                    interface collapses them. A long command is cut off rather than reworded. Nothing is
                         rewritten.
-                        <span class="disc">Terminal styling only. Not affiliated with, or endorsed by, any vendor.</span>
                     </p>
                 </figcaption>
             </figure>
@@ -1023,7 +1022,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         <li>
             <div>
                 <p class="cap"><span class="n">03</span> The reviewer finds her answer</p>
-                <p class="say">She opens the page again and the thread carries what was measured, under the element she pointed at.</p>
+                <p class="say">She opens the page again and finds what was measured, under the element she pointed at.</p>
                 <!-- THE ONE THING THIS SITE SAYS NOWHERE ELSE, and it is the
                      distinction `data-version` exists for. See "The tag
                      attributes" in client/README.md: when a note is marked
@@ -1033,8 +1032,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                      equal -- or no version declared, which is read as not
                      deployed -- the remark stays in front of the reviewer,
                      because the defect itself is still on her screen. -->
-                <p class="say"><b>Resolved is not the same as online.</b> The assistant resolves in the same turn; the fix reaches her at your next deploy. Until then the tool keeps the remark in front of her, because the defect is still on the screen.</p>
-                <p class="say">In practice this part happens beside part 02, not after it: she is on the page while the turn runs.</p>
+                <p class="say"><b>Resolved is not online.</b> The fix reaches her at your next deploy. Until then the remark stays in front of her: the defect is still on her screen.</p>
             </div>
 
             <figure class="fig">
@@ -1119,10 +1117,8 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                     <p>
                         <span class="what if-live">Deployed.</span>
                         <span class="what if-wait">Resolved, not deployed yet.</span>
-                        <span class="if-live">The three remarks are answered and online, so they have folded into the
-                                              history. Kept, never deleted, and reopenable if the fix turns out to be
-                                              incomplete.</span>
-                        <span class="if-wait">The tag says 1.4.12 and the fix shipped in 1.4.13, so the tool holds the remark in the list and says why. It moves to the history on the deploy, with nothing left to do by hand.</span>
+                        <span class="if-live">Folded into the history &mdash; kept, never deleted, reopenable.</span>
+                        <span class="if-wait">The tag says 1.4.12, the fix shipped in 1.4.13. It folds on the deploy.</span>
                     </p>
                 </figcaption>
             </figure>
