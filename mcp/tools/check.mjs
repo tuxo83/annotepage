@@ -21,7 +21,10 @@ import { createHmac } from 'node:crypto';
 import { b64url, fromB64url, normalisedLines, indent, safeValue } from '../src/format.mjs';
 import { derive, saltFromText, seal, open, indexOfPath, normalisedPath } from '../src/crypto.mjs';
 import { readExport, writeExport } from '../src/text-export.mjs';
-import { projectForCall, absentConfiguration, ConfigError } from '../src/config.mjs';
+import { projectForCall, absentConfiguration, loadConfiguration, ConfigError } from '../src/config.mjs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join as joinPath } from 'node:path';
 
 let passed = 0;
 const failures = [];
@@ -541,6 +544,132 @@ await check('call: an origin alone names no project', async () => {
 await check('call: with neither, the missing file speaks at call time', async () => {
     await refused('nothing given', {}, 'No configuration found');
     await refused('a project name given', { project: 'review' }, 'No configuration found');
+});
+
+/* -- THE KEY GIVEN IN THE COMMAND THAT PLUGS THE SERVER IN ---------------
+ *
+ * What would be wrong in silence here is the ORDER: a variable typed by the
+ * operator today, quietly losing to a file written some other week, reads
+ * another project's notes and says nothing. So the order is checked, and so is
+ * the warning that says which one answered.
+ */
+
+const withEnvironment = async (variables, body) => {
+    const saved = {};
+    /* A machine running these checks may well have a real configuration in
+       ~/.config; we point the file search at somewhere that does not exist so
+       that what is measured is our code, not the tester's home directory. */
+    const all = { ANNOTEPAGE_CONFIG: joinPath(tmpdir(), 'annotepage-absent-' + process.pid + '.json'), ...variables };
+    for (const name of ['ANNOTEPAGE_CONFIG', 'ANNOTEPAGE_API', 'ANNOTEPAGE_KEY', 'ANNOTEPAGE_ID',
+                        'ANNOTEPAGE_MODE', 'ANNOTEPAGE_AUTHOR', 'ANNOTEPAGE_ORIGIN',
+                        'ANNOTEPAGE_PROJECT', 'ANNOTEPAGE_READ_ONLY']) {
+        saved[name] = process.env[name];
+        if (all[name] === undefined) delete process.env[name];
+        else process.env[name] = all[name];
+    }
+    try {
+        return await body();
+    } finally {
+        for (const name of Object.keys(saved)) {
+            if (saved[name] === undefined) delete process.env[name];
+            else process.env[name] = saved[name];
+        }
+    }
+};
+
+/* A file, written where nothing else looks, read by the real loader. */
+const loadConfigurationOf = async (object) => {
+    const directory = mkdtempSync(joinPath(tmpdir(), 'annotepage-check-'));
+    const file = joinPath(directory, 'annotepage.json');
+    writeFileSync(file, JSON.stringify(object));
+    return withEnvironment({ ANNOTEPAGE_CONFIG: file }, () => loadConfiguration());
+};
+
+await check('environment: the key given in the command is a whole project', async () => {
+    const configuration = await withEnvironment({
+        ANNOTEPAGE_API: 'https://staging.example.com/api.php',
+        ANNOTEPAGE_KEY: SALT_TEXT,
+        ANNOTEPAGE_AUTHOR: 'Assistant',
+        ANNOTEPAGE_ORIGIN: 'https://staging.example.com/',
+    }, () => loadConfiguration());
+    equal(configuration.projects.size, 1, 'one project');
+    const project = configuration.projects.get('project');
+    equal(configuration.defaultProject, 'project', 'and it is the default one');
+    equal(project.api, 'https://staging.example.com/api.php', 'the address');
+    equal(project.author, 'Assistant', 'the signature');
+    equal(project.origin, 'https://staging.example.com', 'the origin, trailing slash removed');
+    equal(project.mode, 'encrypted', 'encrypted unless told otherwise');
+    equal(project.read_only, false, 'and it may write');
+    equal(project.id, (await derive(saltFromText(SALT_TEXT))).id, 'the id derived from the key');
+    truthy(!JSON.stringify(configuration).includes(SALT_TEXT), 'the key is nowhere in what we return');
+});
+
+await check('environment: a key with no address arms nothing', async () => {
+    /* Alone it would silently borrow the address of a file written for another
+       project, and read that one instead. */
+    let message = '';
+    await withEnvironment({ ANNOTEPAGE_KEY: SALT_TEXT }, async () => {
+        try { await loadConfiguration(); } catch (e) { message = e.message; }
+    });
+    truthy(message.includes('No configuration found'), 'the file is what answers, and there is none');
+    truthy(!message.includes(SALT_TEXT), 'and the key is not printed back');
+});
+
+await check('environment: it wins over a file, and says so', async () => {
+    const directory = mkdtempSync(joinPath(tmpdir(), 'annotepage-check-'));
+    const file = joinPath(directory, 'annotepage.json');
+    writeFileSync(file, JSON.stringify({
+        projects: { other: { api: 'https://elsewhere.example.com/api.php', key: SALT_TEXT } },
+    }));
+    const configuration = await withEnvironment({
+        ANNOTEPAGE_CONFIG: file,
+        ANNOTEPAGE_API: 'https://staging.example.com/api.php',
+        ANNOTEPAGE_KEY: SALT_TEXT,
+    }, () => loadConfiguration());
+    equal(configuration.projects.get('project').api, 'https://staging.example.com/api.php',
+        'the environment answered');
+    truthy(!configuration.projects.has('other'), 'and the file was not merged in');
+    truthy(configuration.warnings.some((w) => w.includes(file) && w.includes('was NOT read')),
+        'a warning names the file that stayed shut');
+});
+
+await check('environment: "key" and "salt" are the same field, disagreeing is refused', async () => {
+    const other = b64url(new Uint8Array(32).map((v, i) => (i * 11 + 5) & 0xff));
+    let message = '';
+    try {
+        await loadConfigurationOf({ projects: { review: {
+            api: 'https://staging.example.com/api.php', key: SALT_TEXT, salt: other } } });
+    } catch (e) { message = e.message; }
+    truthy(message.includes('BOTH "key" and "salt"'), 'refused rather than arbitrated');
+    /* And the old name alone still reads: a file written last month works. */
+    const old = await loadConfigurationOf({ projects: { review: {
+        api: 'https://staging.example.com/api.php', salt: SALT_TEXT } } });
+    equal(old.projects.get('review').id, (await derive(saltFromText(SALT_TEXT))).id,
+        '"salt" alone is still understood');
+});
+
+await check('environment: a malformed key is refused by the word the reader knows', async () => {
+    let message = '';
+    await withEnvironment({
+        ANNOTEPAGE_API: 'https://staging.example.com/api.php',
+        ANNOTEPAGE_KEY: 'obviously not a key',
+    }, async () => {
+        try { await loadConfiguration(); } catch (e) { message = e.message; }
+    });
+    truthy(message.includes('The key of'), 'it says key, not salt');
+    truthy(!message.includes('salt'), 'the internal name is not shown to anybody');
+});
+
+await check('environment: only "true" stops the writing', async () => {
+    for (const [value, expected] of [['true', true], ['false', false], ['1', false], ['', false]]) {
+        const configuration = await withEnvironment({
+            ANNOTEPAGE_API: 'https://staging.example.com/api.php',
+            ANNOTEPAGE_KEY: SALT_TEXT,
+            ANNOTEPAGE_READ_ONLY: value,
+        }, () => loadConfiguration());
+        equal(configuration.projects.get('project').read_only, expected,
+            'ANNOTEPAGE_READ_ONLY=' + JSON.stringify(value));
+    }
 });
 
 /* -- Verdict ------------------------------------------------------------- */
