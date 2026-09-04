@@ -774,7 +774,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
         <ul>
             <li><strong>Nothing in it is yours to fill in</strong> except the project
-            id, and the landing page generates that with the salt it comes from.</li>
+            id, and the landing page generates that with the key it comes from.</li>
             <li><code>data-server</code> is the free shared server. Point it at
             <a href="#server">your own</a> instead if you would rather the encrypted
             blobs sat on your own disk &mdash; that is the only line that changes.</li>
@@ -1085,7 +1085,7 @@ data-version={process.env.NEXT_PUBLIC_VERSION}  &lt;!-- anything your bundler su
         </p>
 
         <div class="callout">
-            <p><strong>Use a second project, with its own salt, for local work</strong>
+            <p><strong>Use a second project, with its own key, for local work</strong>
             if you want them apart &mdash; and never put a <code>localhost</code> origin
             in a project&rsquo;s domain list on a shared server. Measured:
             <code>http://localhost:3000</code> is the same string on every machine on
@@ -1113,13 +1113,34 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
         </div>
 
         <p class="small dim">
-            Any MCP client works &mdash; the command to register is
-            <code>annotepage-mcp</code> over stdio. In an <a href="#modes">open project</a>
-            it reads the key off the page you name it. In a private one you give it the
-            key once, in its configuration file, and that file never leaves the machine.
-            The
+            That is the whole of it for an <a href="#modes">open project</a>: the key is
+            on the page, and the assistant reads it off the page you name.
+        </p>
+
+        <p class="lead">
+            A private project gives it the key, in that same command. There is no second
+            step and nothing to write by hand.
+        </p>
+
+        <div class="snip">
+            <div class="snip-head">
+                <span class="snip-name">plug it in, private project</span>
+            </div>
+<pre><code>claude mcp add annotepage \
+  -e ANNOTEPAGE_API=https://staging.example.com/notes/api.php \
+  -e ANNOTEPAGE_KEY=&lt;the 43 characters the setup screen showed you&gt; \
+  -e ANNOTEPAGE_AUTHOR=Assistant \
+  -- annotepage-mcp</code></pre>
+        </div>
+
+        <p class="small dim">
+            The key stays on your machine and never enters the conversation &mdash; it is
+            the server that holds it, not the assistant. It does land in your shell
+            history; a configuration file avoids that, and is also the way in when you
+            review several projects. Any MCP client works, the command to register being
+            <code>annotepage-mcp</code> over stdio. The
             <a href="https://github.com/tuxo83/annotepage/blob/main/mcp/README.md">MCP README</a>
-            has the tools, the commands, and how it is configured.
+            has the tools, the variables and the file.
         </p>
     </div>
 </section>
@@ -1148,10 +1169,10 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
         </p>
 
         <div class="callout" id="no-recovery">
-            <p><strong>Salt lost = notes lost.</strong> The salt is the only secret of the
+            <p><strong>Key lost = notes lost.</strong> The key is the only secret of the
             project. It never leaves the browser, the server receives it in no form
             whatsoever, and nobody can give it back to you &mdash; no recovery, no
-            security question, no escrow. There is no rotation either: a leaked salt means
+            security question, no escrow. There is no rotation either: a leaked key means
             starting a fresh project and abandoning the notes already written. This is the
             cost of the sentence above, and it is not negotiable away.</p>
         </div>
@@ -1159,7 +1180,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
         <div class="facts">
             <div>
                 <h3>One secret, three keys</h3>
-                <p>HKDF-SHA-256 derives everything from the 256-bit salt: the public
+                <p>HKDF-SHA-256 derives everything from the 256-bit key: the public
                 project id (22 characters), the AES-256-GCM key, and an HMAC key for the
                 page index. One secret to manage, and it never leaves the browser.</p>
             </div>
@@ -1178,7 +1199,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
             <div>
                 <h3>The domain is not in the key</h3>
                 <p>The day staging becomes production, the notes stay readable. Each
-                reviewer pastes the salt once more on the new domain; the notes
+                reviewer pastes the key once more on the new domain; the notes
                 themselves do not move.</p>
             </div>
         </div>
@@ -1221,7 +1242,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
             It stops another site consuming a project id found in the source of a page. An
             XSS runs <em>inside</em> the target page, so with the legitimate origin: it
             goes through the lock without effort, and it reaches
-            <code>localStorage</code> anyway &mdash; hence the salt. The XSS defence is
+            <code>localStorage</code> anyway &mdash; hence the key. The XSS defence is
             elsewhere: the tool assigns text through <code>textContent</code> and never
             parses it as markup, and a check in <code>npm run check</code> enforces it.</p>
         </div>
@@ -1233,7 +1254,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
         <ul class="plain">
             <li><b>No accounts, no login.</b> The name typed in is a convenience, not an
             identity. The project id is a bearer token: whoever has it can read and write
-            &mdash; and in encrypted mode, what they read is useless without the salt.</li>
+            &mdash; and in encrypted mode, what they read is useless without the key.</li>
             <li><b>No moderation, and nobody can delete.</b> A note that is
               posted stays; the only state it can change is resolved, and that can
               be taken back. A remark one can erase is a remark one can no longer
@@ -1245,7 +1266,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
             <li><b>No way to annotate a site you cannot edit.</b> The tag has to be in
             the page, so the tool is a property of the site and not of the reader.</li>
             <li><b>No notifications.</b> Nobody is told that a note has arrived.</li>
-            <li><b>No salt rotation,</b> and no channel for handing the salt to the second
+            <li><b>No key rotation,</b> and no channel for handing the key to the second
             reviewer.</li>
             <li><b>No overview across pages.</b> Open a page, or read the export.</li>
             <li><b>No screenshots</b> attached to a note &mdash; weighed, and not settled:
@@ -1265,7 +1286,7 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
         <p class="small dim" style="max-width:44em;">
             Where the client itself comes from is the other half of this. A file swapped
             at the CDN&rsquo;s host runs inside your page, with access to
-            <code>localStorage</code> &mdash; hence to the salt. That trade, and the
+            <code>localStorage</code> &mdash; hence to the key. That trade, and the
             pinned tag that closes it, are in
             <a href="#locked">the locked tag</a> above.
         </p>
