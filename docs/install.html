@@ -1136,11 +1136,23 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
         <p class="small dim">
             The key stays on your machine and never enters the conversation &mdash; it is
             the server that holds it, not the assistant. It does land in your shell
-            history; a configuration file avoids that, and is also the way in when you
-            review several projects. Any MCP client works, the command to register being
-            <code>annotepage-mcp</code> over stdio. The
-            <a href="https://github.com/tuxo83/annotepage/blob/main/mcp/README.md">MCP README</a>
-            has the tools, the variables and the file.
+            history, and it covers one project.
+        </p>
+
+        <p class="lead">
+            Several sites, several keys: a file holds them, and you do not have to write
+            it. Tell your assistant the site and the key once per site, and it writes the
+            file for you.
+        </p>
+
+        <p class="small dim">
+            Writing that file yourself is better, and it is still there in the
+            <a href="https://github.com/tuxo83/annotepage/blob/main/mcp/README.md">MCP README</a>:
+            a key given in a conversation has crossed a model provider's logs, and there
+            is no key rotation. The trade is yours to make, and it buys this &mdash; each
+            project is named after its site, so from then on you name the site you are
+            looking at, never a project. Any MCP client works, the command to register
+            being <code>annotepage-mcp</code> over stdio.
         </p>
     </div>
 </section>

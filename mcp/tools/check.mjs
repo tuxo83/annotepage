@@ -21,8 +21,9 @@ import { createHmac } from 'node:crypto';
 import { b64url, fromB64url, normalisedLines, indent, safeValue } from '../src/format.mjs';
 import { derive, saltFromText, seal, open, indexOfPath, normalisedPath } from '../src/crypto.mjs';
 import { readExport, writeExport } from '../src/text-export.mjs';
-import { projectForCall, absentConfiguration, loadConfiguration, ConfigError } from '../src/config.mjs';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { projectForCall, absentConfiguration, loadConfiguration, saveProject, chooseProject,
+         siteToOrigin, ConfigError } from '../src/config.mjs';
+import { mkdtempSync, writeFileSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join as joinPath } from 'node:path';
 
@@ -670,6 +671,139 @@ await check('environment: only "true" stops the writing', async () => {
         equal(configuration.projects.get('project').read_only, expected,
             'ANNOTEPAGE_READ_ONLY=' + JSON.stringify(value));
     }
+});
+
+/* -- WRITING A PROJECT DOWN FROM THE CONVERSATION -------------------------
+ *
+ * Somebody reviewing five sites cannot be asked to hand-write JSON five times.
+ * What would be wrong in silence here: a second project quietly replacing the
+ * first, a key overwritten so that the notes under it stop existing as far as
+ * anybody can tell, and a file written correctly that nothing reads.
+ */
+
+const KEY_TWO = b64url(new Uint8Array(32).map((v, i) => (i * 11 + 5) & 0xff));
+
+const emptyConfiguration = () => ({
+    path: null, warnings: [], defaultProject: null, projects: new Map(), error: null,
+});
+
+const inADirectory = () => joinPath(
+    mkdtempSync(joinPath(tmpdir(), 'annotepage-check-')), 'annotepage.json');
+
+await check('save: a site becomes a project, named after itself', async () => {
+    const file = inADirectory();
+    const configuration = emptyConfiguration();
+    const written = await withEnvironment({}, () => saveProject(configuration, {
+        site: 'https://staging.example.com/guide?x=1',
+        api: 'https://staging.example.com/notes/api.php',
+        key: SALT_TEXT,
+        path: file,
+    }));
+    equal(written.name, 'staging.example.com', 'the host is the name');
+    equal(written.id, (await derive(saltFromText(SALT_TEXT))).id, 'the id it derives');
+    equal(written.inUse, true, 'and it answers at once');
+
+    const object = JSON.parse(readFileSync(file, 'utf8'));
+    equal(object.default_project, 'staging.example.com', 'the only one is the default');
+    equal(object.projects['staging.example.com'].origin, 'https://staging.example.com',
+        'the origin a relay will want, path and query dropped');
+    equal(object.projects['staging.example.com'].author, 'Assistant', 'a name to sign with');
+    equal(statSync(file).mode & 0o777, 0o600, 'readable by nobody else');
+
+    /* No restart: the object every tool holds is the one that changed. */
+    equal(configuration.projects.size, 1, 'the running configuration has it');
+    equal(chooseProject(configuration, 'staging.example.com').api,
+        'https://staging.example.com/notes/api.php', 'and it is found by its site');
+});
+
+await check('save: a second site joins the first, it does not evict it', async () => {
+    const file = inADirectory();
+    const configuration = emptyConfiguration();
+    await withEnvironment({}, async () => {
+        await saveProject(configuration, { site: 'staging.example.com',
+            api: 'https://staging.example.com/notes/api.php', key: SALT_TEXT, path: file });
+        await saveProject(configuration, { site: 'shop.example.com',
+            api: 'https://shop.example.com/notes/api.php', key: KEY_TWO,
+            author: 'Reviewer', path: file });
+    });
+    equal(configuration.projects.size, 2, 'both are declared');
+    equal(configuration.defaultProject, 'staging.example.com',
+        'and the first stays the default: the second must be named');
+    equal(chooseProject(configuration, 'https://shop.example.com/pricing').author,
+        'Reviewer', 'a page address names its project');
+});
+
+await check('save: another key on the same name is refused, not arbitrated', async () => {
+    const file = inADirectory();
+    const configuration = emptyConfiguration();
+    const first = { site: 'staging.example.com',
+        api: 'https://staging.example.com/notes/api.php', key: SALT_TEXT, path: file };
+    await withEnvironment({}, () => saveProject(configuration, first));
+
+    let message = '';
+    try {
+        await withEnvironment({}, () => saveProject(configuration,
+            { ...first, key: KEY_TWO }));
+    } catch (e) { message = e.message; }
+    truthy(message.includes('already declared'), 'refused');
+    truthy(message.includes('nothing points at them any more'), 'and it says what it costs');
+    equal(JSON.parse(readFileSync(file, 'utf8')).projects['staging.example.com'].key,
+        SALT_TEXT, 'the file was not touched');
+
+    /* Asked twice, it goes through: whoever passes "replace" has read why. */
+    const again = await withEnvironment({}, () => saveProject(configuration,
+        { ...first, key: KEY_TWO, replace: true }));
+    equal(again.replaced, true, 'and it says it replaced something');
+    equal(again.id, (await derive(saltFromText(KEY_TWO))).id, 'the new id');
+
+    /* The same key twice is not a replacement and needs no permission: an
+       assistant repeating a call must not have to ask for one. */
+    const idempotent = await withEnvironment({}, () => saveProject(configuration,
+        { ...first, key: KEY_TWO }));
+    equal(idempotent.id, again.id, 'writing the same thing again is not a conflict');
+});
+
+await check('save: a key that is not a key writes nothing at all', async () => {
+    const file = inADirectory();
+    const configuration = emptyConfiguration();
+    let message = '';
+    try {
+        await withEnvironment({}, () => saveProject(configuration, {
+            site: 'staging.example.com', api: 'https://staging.example.com/api.php',
+            key: 'not a key', path: file }));
+    } catch (e) { message = e.message; }
+    truthy(message.includes('Nothing was written'), 'and it says so');
+    truthy(!message.includes('not a key'), 'without echoing what it was given');
+    let readable = true;
+    try { readFileSync(file, 'utf8'); } catch (e) { readable = false; }
+    equal(readable, false, 'no file was created');
+    equal(configuration.projects.size, 0, 'and nothing entered the running configuration');
+});
+
+await check('save: written correctly, and read by nothing', async () => {
+    /* ANNOTEPAGE_API in force means the file is not what answers. Saying
+       "saved" and stopping there sends somebody hunting a bug in their key. */
+    const file = inADirectory();
+    const configuration = emptyConfiguration();
+    const written = await withEnvironment({
+        ANNOTEPAGE_API: 'https://elsewhere.example.com/api.php',
+        ANNOTEPAGE_KEY: SALT_TEXT,
+    }, () => saveProject(configuration, { site: 'staging.example.com',
+        api: 'https://staging.example.com/notes/api.php', key: KEY_TWO, path: file }));
+    equal(written.inUse, false, 'the file was written and is not in use');
+    truthy(JSON.parse(readFileSync(file, 'utf8')).projects['staging.example.com'] !== undefined,
+        'the file itself is right');
+});
+
+await check('site: what a person types becomes an origin, or nothing', async () => {
+    equal(siteToOrigin('staging.example.com'), 'https://staging.example.com',
+        'a bare host is https');
+    equal(siteToOrigin('https://staging.example.com/guide#a'), 'https://staging.example.com',
+        'a page address keeps its site');
+    equal(siteToOrigin('http://localhost:8080/x'), 'http://localhost:8080',
+        'a port that is not the default stays');
+    equal(siteToOrigin('ftp://example.com'), null, 'another scheme is not a site');
+    equal(siteToOrigin(''), null, 'and nothing is nothing');
 });
 
 /* -- Verdict ------------------------------------------------------------- */
