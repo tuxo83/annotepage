@@ -307,12 +307,11 @@ h1 + .lead { margin-top: 1.15rem; }
 @media (prefers-color-scheme: dark) {
     :root { --pale: #6b737d; --fixed: #a9b2bc; }
 }
-/* Part 01 is always the BEFORE, so its footnote keeps the failing grey. Part
-   03's follows the switch: the fix reaches the page with the deploy. */
-body:has(#d-live:checked) #g3 .pg-fn { color: var(--fixed); }
-/* The card's left rule says the same thing as the mark inside it: amber while
-   the fix is not online, green once it is. */
-body:has(#d-wait:checked) #g3-note { border-left-color: var(--warn); }
+/* Part 01 is always the BEFORE, and the last part is always the AFTER: the
+   deploy has happened by then in both branches -- in one it rode the merge, in
+   the other it is the step just above. So the footnote here keeps the fixed
+   grey, with nothing to switch. */
+#g3 .pg-fn { color: var(--fixed); }
 
 /* -- part 01: the gesture -------------------------------------------------
 
@@ -814,8 +813,8 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                     <label><input type="radio" name="dep" id="d-wait"> <span>At your next release</span></label>
                 </div>
                 <p class="dial-say">
-                    Whether the fix is already online the next time the reviewer
-                    opens the page, or still waiting behind a deploy.
+                    Your merge ships it, or you cut the release yourself. Waiting
+                    for one adds a step to the loop below.
                 </p>
             </fieldset>
 
@@ -1047,20 +1046,62 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         </li>
 
 <!-- == 03 ============================================================== -->
+        <!-- THE STEP THE WAIT ADDS, AND IT ONLY EXISTS IN THAT BRANCH.
+             `if-wait`, exactly as the key step is `if-secure`: a dial that
+             changes the number of steps is a dial you can see working. With an
+             automatic deploy this stage does not exist -- the merge shipped it
+             inside the session above -- and numbering something that did not
+             happen would be worse than saying nothing.
+
+             THE PICTURE IS A DETAIL, NOT ANOTHER FULL PAGE. The crop below
+             already shows the whole page after the deploy; repeating it here
+             in its "before" state would make the reader compare two large
+             images that differ by four words. What the wait actually costs is
+             visible on the card alone: the amber mark, and a page still
+             announcing the version the fix has not reached.
+
+             `note.resolved_pending` is the client's own string, whole, and the
+             left rule of the card is the same amber the tool draws. -->
+        <li class="if-wait">
+            <div>
+                <p class="cap"><span class="n"></span> The remark waits for your deploy</p>
+                <p class="say">Marked resolved, and stamped with the version the fix ships in.</p>
+                <p class="say">The page they open is still the old one, so the remark stays in front of them.</p>
+            </div>
+
+            <figure class="fig">
+                <div class="frame nt-frame ui-large" aria-hidden="true">
+                    <div class="pg">
+                        <div class="pg-bar">
+                            <span>staging.example.com/guide</span>
+                            <span class="ver">version <b>1.4.12</b></span>
+                        </div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w45"></div>
+                        <div class="bar-line w70 below"></div>
+                        <div class="bar-line w85"></div>
+                    </div>
+
+                    <div class="nt-panel">
+                        <div class="nt-bar">Review notes</div>
+                        <div class="nt-body">
+                            <p class="nt-sec">On this page</p>
+                            <div class="nt nt-wait">
+                                <span class="nt-stamp nt-wait">Resolved, waiting to be deployed</span>
+                                <p class="nt-who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
+                                <p class="nt-about">About: Download the calibration table</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </figure>
+        </li>
+
         <li>
             <div>
                 <p class="cap"><span class="n"></span> The reviewer finds the answer</p>
                 <p class="say">They open the page again and find what was measured, under the element they pointed at.</p>
-                <!-- THE ONE THING THIS SITE SAYS NOWHERE ELSE, and it is the
-                     distinction `data-version` exists for. See "The tag
-                     attributes" in client/README.md: when a note is marked
-                     resolved the tool compares the version of the fix with the
-                     version the site says it is serving. Equal, the remark is
-                     resolved AND online, and it folds into the history. Not
-                     equal -- or no version declared, which is read as not
-                     deployed -- the remark stays in front of the reviewer,
-                     because the defect itself is still on her screen. -->
-                <p class="say"><b>Resolved is not online.</b> Until your deploy, the remark stays in front of them: the defect is still on their screen.</p>
             </div>
 
             <figure class="fig">
@@ -1070,14 +1111,16 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                      reader is not asked to remember; the two pictures are the
                      same shape, so the eye does the comparison.
 
-                     AND THE SWITCH IS THE ARGUMENT. With an automatic deploy
-                     the version has turned over, the labels hold one line, the
-                     footnote is at its measured 4.7:1 and the three remarks
-                     have folded into the history. On your own schedule the page
-                     is still 1.4.12 -- the labels still wrap, the footnote is
-                     still pale -- and the remark is still in the list, marked
-                     `note.resolved_pending`. Nothing is hidden from the
-                     reviewer that is still true on her screen.
+                     THIS ONE NO LONGER SWITCHES, and that is the fix to a real
+                     complaint: a control at the top of the page that only
+                     changed four words inside one picture, at the bottom,
+                     weighed nothing beside the other control, which adds a
+                     whole step. So the wait now adds a step too -- and it is
+                     not a device, it is the truth: waiting for a release IS one
+                     more stage of the loop. By the time the reader reaches this
+                     figure the deploy has happened in both branches, so the
+                     page is at 1.4.13, the labels hold, and the remark has
+                     folded into the history.
 
                      Every string is the client's: the stamp is `note.resolved`,
                      "Resolved on {date} by {by}"; the pending one is
@@ -1090,17 +1133,14 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                     <div class="pg">
                         <div class="pg-bar">
                             <span>staging.example.com/guide</span>
-                            <span class="ver">version <b class="if-live">1.4.13</b><b class="if-wait">1.4.12</b></span>
+                            <span class="ver">version <b>1.4.13</b></span>
                         </div>
                         <p class="pg-h">Field Sensor Guide</p>
                         <div class="bar-line w85"></div>
                         <div class="bar-line w70"></div>
                         <div class="bar-line w45"></div>
-                        <div class="gbs gbs-after if-live">
+                        <div class="gbs gbs-after">
                             <span class="gb">Download the calibration table</span><span class="gb">Open the correction worksheet</span>
-                        </div>
-                        <div class="gbs gbs-before if-wait">
-                            <span class="gb">Download the<br>calibration table</span><span class="gb">Open the correction<br>worksheet</span>
                         </div>
                         <div class="bar-line w70 below"></div>
                         <div class="bar-line w85"></div>
@@ -1112,22 +1152,16 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                         <div class="nt-panel">
                             <div class="nt-bar">Review notes</div>
                             <div class="nt-body">
-                                <!-- The list, when the fix is not online: the
-                                     remark is still in front of her, under the
-                                     section heading, because the defect is
-                                     still on her screen. -->
-                                <p class="nt-sec if-wait">On this page</p>
-                                <!-- And when it is online: the three have
-                                     folded into the history, and this is the
-                                     toggle that brings them back, opened.
+                                <!-- The fix is online, so the three remarks
+                                     have folded into the history, and this is
+                                     the toggle that brings them back, opened.
                                      `history.hide` -- the count is in
                                      `history.show`, which is what it reads
                                      closed, and neither string is padded with
                                      the other's words. -->
-                                <p class="nt-hist if-live">Hide the history</p>
+                                <p class="nt-hist">Hide the history</p>
                                 <div class="nt" id="g3-note">
-                                    <span class="nt-stamp if-live">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
-                                    <span class="nt-stamp nt-wait if-wait">Resolved, waiting to be deployed</span>
+                                    <span class="nt-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
                                     <p class="nt-who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
                                     <p class="nt-about">About: Download the calibration table</p>
                                     <p>On my phone this button label breaks onto two lines. It should hold on one line down to 320px.</p>
@@ -1149,11 +1183,6 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 </section>
 
 </main>
-
-<p class="wrap small dim" style="margin-top:2.5rem;">
-    The terminal session above is an example of a Claude Code session, shortened. The
-    name is used to say what the tool was, not to claim any endorsement.
-</p>
 
 <!-- ===================================================================
      PART 01: THE GESTURE, ON A CLOCK.
