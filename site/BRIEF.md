@@ -119,6 +119,72 @@ The same holds for any other tool named later: name it factually as something
 this works with, and stop there. A free project with one maintainer has nothing
 to gain from borrowing somebody's credibility, and everything to lose.
 
+## What the landing page taught, and the numbers to hold it to
+
+Written on 2026-09-04, after a day of taking things off that page. Every rule
+below is something that was WRONG there first and got fixed, so none of it is
+taste. The figures are what the landing page measures today; a new page is
+compared against them rather than against an opinion.
+
+    titles          3 to 7 words
+    sentences       36 to 99 characters, NOTHING over 110
+    visible words   255 in the whole page
+    left edges      TWO: the sentences at one, the blocks at the other
+
+**A title says the gesture. The line under it says what the gesture buys.**
+When a title starts listing what the next line says, it is not a title any
+more -- one ran to twelve words doing that, and cutting it lost nothing.
+
+**Two axes, and a third reads as an accident.** A chapter is sentences at the
+wrap's left edge and blocks in the second column. Anything that starts
+somewhere else -- a note crossing the gutter, a centred paragraph -- looks
+placed by hand. The exit button is the one exception, and it is centred
+deliberately, on the page's own axis, because it belongs to no column.
+
+**Numbers are counted, never typed.** A step that can be hidden must renumber
+the ones after it, or the page shows 01, 03.
+
+**No option on a first screen.** A switch was built, worked, and came off: it
+asked a reader to arbitrate between two things before they had seen a single
+note. A switch is legitimate only where it shows the reader the case they are
+ALREADY in -- which is why the usage page keeps two and the landing page has
+none.
+
+**Say the price where it costs.** What a choice gives up goes in the step that
+makes it, not in a footnote. The open mode's line -- anyone who can open your
+page can read these notes and add their own -- sits above the steps, where
+somebody can still act on it.
+
+**Consequence before mechanism.** "The key is in it" explains a mechanism to
+somebody who does not yet know there is a key. What they need is what happens.
+
+**Anything that repeats something else on the page goes.** The footer went
+that way: eight links of which three were in the menu and five were one click
+from GitHub. The rule found it, not an opinion -- count what each element says
+that nothing else says, and delete what scores zero.
+
+**A claim must stay true, and nothing checks that for you.** The footer said
+the site made no outgoing request; it stopped being true the hour the real
+tool went on the pages, and it took days to notice. When something on the page
+becomes false, that is a defect of the same kind as a broken link.
+
+**Lightening is CHOOSING, never REWRITING** -- the rule from the replay
+section above applies to prose. A sentence of 145 characters carrying three
+honest facts about a capture is SPLIT into three sentences, not summarised
+into one that carries two.
+
+### Applying it to a second page
+
+The detailed usage page was measured against this the day it was written: 7
+sentences over 110 characters against the landing page's 0, and 541 visible
+words against 255. Six were shortened or split; the seventh is the assistant's
+captured reply and stays as it is, because verbatim outranks the rule. Its
+titles were already 4 to 5 words and its two axes were already clean.
+
+Its word count stays higher, and should: it is the page somebody opens to see
+the thing at length. The rule is not "be as short as the landing page", it is
+"no sentence longer than the landing page allows".
+
 ## What must not be done
 
 No bullet-list "features" page. No comparison with the competitors. No
