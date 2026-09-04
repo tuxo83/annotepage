@@ -841,7 +841,26 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
     </div>
 
     <figure class="fig">
-        <div class="frame ui-large crop" aria-hidden="true">
+        <!-- THE SAME CROP AS EVERY OTHER FIGURE ON THIS PAGE: a piece of the
+             page under review on the left, the tool docked on its right edge.
+             It was the panel alone, floating, which said nothing about WHERE
+             this screen appears -- and where it appears is the point: not a
+             page of ours, theirs, with the tool on it. The page's own words are
+             bars, as everywhere else. No buttons in this crop: nothing is being
+             pointed at yet, and drawing two would promise a gesture this step
+             does not make. -->
+        <div class="frame nt-frame ui-large crop" aria-hidden="true">
+            <div class="pg">
+                <div class="bar-line head"></div>
+                <div class="bar-line w85"></div>
+                <div class="bar-line w70"></div>
+                <div class="bar-line w45"></div>
+                <div class="bar-line w70 below"></div>
+                <div class="bar-line w85"></div>
+                <div class="bar-line w45"></div>
+                <div class="bar-line head"></div>
+                <div class="bar-line w70"></div>
+            </div>
             <div class="nt-panel nt-form">
                 <p class="fm-title">The key of this project is needed</p>
                 <p class="fm-help">The notes of this project are encrypted in your browser. Without the project key, this browser can neither read them nor write any. Ask whoever installed the tool for it, and paste it below. It will be remembered by this browser, for this site.</p>
