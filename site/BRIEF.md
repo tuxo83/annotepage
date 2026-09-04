@@ -210,6 +210,28 @@ the landing page, 208 on the usage page open / 235 secure, and not one sentence
 over 110 characters in any of the four states of its two dials. The tooling is
 `.outillage-test/ap4-prose.mjs` and `ap4-mesure.mjs`.
 
+## The install page, when we get to it
+
+Not written yet, and deliberately: the landing page was validated first, then
+the usage page, and this one comes after them. What follows is decided, not
+open.
+
+**THE FIRST QUESTION IS "DO YOU WANT AUTOMATIC UPDATES", AND THE TAG COMES
+AFTER IT.** Today the page shows a tag and explains the locked variant beside
+it. That is backwards. There are two tags because there are two answers to one
+question nobody was asked:
+
+- **yes** -- the tag carries no version and no digest. The client replaces
+  itself when a newer one is announced, riding the `list` response it was
+  making anyway. Nothing to come back and change, ever;
+- **no** -- the tag pins a version and carries its `integrity` digest. A
+  version range and a fixed digest cannot both hold, so this answer costs a
+  visit on every upgrade, and the page says so where it costs.
+
+Ask, then show ONE tag. Showing both, or showing the pinned one and explaining
+the other underneath, makes an install look like a decision about
+cryptography when it is a decision about who does the upgrading.
+
 ## What must not be done
 
 No bullet-list "features" page. No comparison with the competitors. No
