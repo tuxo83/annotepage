@@ -50,9 +50,9 @@
  * provider's logs and cannot be taken back, this format having no rotation.
  */
 
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync, mkdirSync, renameSync, unlinkSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { resolve as resolvePath, join } from 'node:path';
+import { resolve as resolvePath, join, dirname } from 'node:path';
 
 import { ID_LENGTH, SALT_LENGTH } from './format.mjs';
 import { saltFromText, derive } from './crypto.mjs';
@@ -563,6 +563,163 @@ export const projectForCall = async (configuration, args) => {
     return inlineProject(api, key, origin);
 };
 
+
+/* -- WRITING A PROJECT DOWN --------------------------------------------- */
+
+/**
+ * What a human calls a site, turned into an origin.
+ *
+ * canonicalOrigin below is deliberately strict: it is what we announce to a
+ * server, and a path silently cut off would announce a site nobody named.
+ * Here we are reading what a person typed -- "staging.example.com",
+ * "https://staging.example.com/guide" -- so a missing scheme and a path are
+ * expected, and dropping them is the point rather than a risk.
+ */
+export const siteToOrigin = (text) => {
+    const raw = String(text == null ? '' : text).trim();
+    if (raw === '' || raw.length > 255) return null;
+    const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : 'https://' + raw;
+    let url;
+    try {
+        url = new URL(withScheme);
+    } catch (e) {
+        return null;
+    }
+    return canonicalOrigin(url.origin);
+};
+
+/**
+ * Writes a project into the configuration file on this machine, and returns
+ * what happened. It does NOT decide whether it should have been called: see
+ * the tool description in mcp-tools.mjs.
+ *
+ * THE PROJECT IS NAMED AFTER ITS SITE, and that is the whole ergonomics of
+ * several projects: an operator says "staging.example.com" because that is
+ * what they are looking at, and nobody has to remember that it was called
+ * "review-2". chooseProject reads a host as a name for the same reason.
+ *
+ * AN EXISTING PROJECT IS NOT OVERWRITTEN unless asked twice. Replacing a key
+ * hides every note written under the old one -- they are still there, still
+ * encrypted, and nothing points at them any more.
+ */
+export const saveProject = async (configuration, wanted) => {
+    const origin = siteToOrigin(wanted.site);
+    if (origin === null) {
+        throw new ConfigError(
+            'The site is not readable as an address: ' + String(wanted.site) + '\n'
+            + 'Expected something like "staging.example.com" or '
+            + '"https://staging.example.com".');
+    }
+    const name = new URL(origin).host;
+
+    const api = String(wanted.api == null ? '' : wanted.api).trim();
+    if (!/^https?:\/\//i.test(api)) {
+        throw new ConfigError(
+            'The address of the server must start with http:// or https:// : ' + api
+            + '\nIt is the "data-server" attribute of the annotepage tag, copied as '
+            + 'it stands.');
+    }
+
+    const mode = wanted.mode === undefined ? 'encrypted' : String(wanted.mode);
+    if (mode !== 'plain' && mode !== 'encrypted') {
+        throw new ConfigError('The mode expects "plain" or "encrypted". Received: ' + mode);
+    }
+
+    const project = { api, mode, origin };
+    let id;
+    if (mode === 'encrypted' || (wanted.key !== undefined && String(wanted.key) !== '')) {
+        const bytes = saltFromText(wanted.key);
+        if (bytes === null) {
+            throw new ConfigError(
+                'The key does not have the expected shape: 43 characters taken from '
+                + 'A-Z a-z 0-9 - _ , with no space and no decorative dash.\n'
+                + 'Nothing was written. We do not "clean" it: a key that is almost '
+                + 'right gives a wrong project id, and the error would then read as '
+                + 'an unknown project.');
+        }
+        id = (await derive(bytes)).id;
+        project.key = String(wanted.key).trim();
+    } else {
+        id = requireText(wanted.id, 'id', 'this call');
+        if (id.length !== ID_LENGTH) {
+            throw new ConfigError(
+                'The id is ' + id.length + ' characters long; it needs ' + ID_LENGTH + '.');
+        }
+        project.id = id;
+    }
+
+    project.author = typeof wanted.author === 'string' && wanted.author.trim() !== ''
+        ? wanted.author.trim() : 'Assistant';
+    if (wanted.read_only === true) project.read_only = true;
+
+    /* Where it goes: the file already in use if there is one, so a second
+       project joins the first instead of starting a rival file somewhere else.
+       Otherwise the place a configuration is looked for that is not the
+       working directory -- a file in a repository gets committed. */
+    const paths = candidatePaths(wanted.path);
+    const existing = readFile(paths);
+    const target = existing ? existing.path
+        : (wanted.path ? resolvePath(wanted.path)
+           : join(homedir() || '.', '.config', 'annotepage', 'annotepage.json'));
+
+    const object = existing && existing.object && typeof existing.object === 'object'
+        ? existing.object : {};
+    if (!object.projects || typeof object.projects !== 'object') object.projects = {};
+
+    const before = object.projects[name];
+    if (before !== undefined && wanted.replace !== true) {
+        const same = before.key !== undefined || before.salt !== undefined
+            ? String(before.key !== undefined ? before.key : before.salt).trim()
+              === project.key
+            : false;
+        if (!same) {
+            throw new ConfigError(
+                'The project "' + name + '" is already declared in ' + target
+                + ', with another key.\n'
+                + 'Nothing was written. Replacing it hides every note written under '
+                + 'the old key: they stay there, still encrypted, and nothing points '
+                + 'at them any more.\n'
+                + 'Call again with "replace" set to true if that is what you mean.');
+        }
+    }
+
+    object.projects[name] = project;
+    if (Object.keys(object.projects).length === 1) object.default_project = name;
+
+    /* Written beside the target and moved onto it: a file half rewritten is a
+       configuration nobody can reread, and this one holds every key. */
+    const temporary = target + '.' + process.pid + '.new';
+    try {
+        mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+        writeFileSync(temporary, JSON.stringify(object, null, 2) + '\n', { mode: 0o600 });
+        renameSync(temporary, target);
+    } catch (e) {
+        try { unlinkSync(temporary); } catch (ignored) { /* nothing to clean */ }
+        throw new ConfigError(
+            'Could not write ' + target + ': ' + e.message + '\nNothing was changed.');
+    }
+
+    /* THE SERVER READ ITS CONFIGURATION ONCE, AT STARTUP. Without this the
+       project just written would answer nothing until somebody restarted the
+       assistant -- which is exactly the second step this tool exists to
+       remove. We reload in place, into the same object every tool holds. */
+    const reloaded = await loadConfiguration(wanted.path || target);
+    configuration.path = reloaded.path;
+    configuration.warnings = reloaded.warnings;
+    configuration.defaultProject = reloaded.defaultProject;
+    configuration.projects = reloaded.projects;
+    configuration.error = null;
+
+    /* AND THE FILE MAY NOT BE WHAT ANSWERS. When ANNOTEPAGE_API is set the
+       environment describes the project and this file is not read -- see
+       loadConfiguration. The write is real, the file is correct, and it does
+       nothing until that variable goes away. Saying "saved" and stopping there
+       would send somebody looking for a bug in their key. */
+    const inUse = reloaded.projects.has(name);
+
+    return { path: target, name, id, inUse, replaced: before !== undefined };
+};
+
 /**
  * Chooses the project aimed at. One single project declared: no need to name
  * it. Several: we demand the name, rather than take one "at random but always
@@ -577,13 +734,37 @@ export const chooseProject = (configuration, name) => {
         throw configuration.error;
     }
     if (name) {
-        const project = configuration.projects.get(String(name));
-        if (!project) {
-            throw new ConfigError(
-                'Project unknown to the configuration: ' + name + '\n'
-                + 'Declared: ' + [...configuration.projects.keys()].join(', '));
+        const asked = String(name);
+        const project = configuration.projects.get(asked);
+        if (project) return project;
+
+        /* A NAME AND A SITE ARE THE SAME THING HERE. The operator says
+           "staging.example.com" or pastes the address of the page they are
+           looking at, because that is what is in front of them; asking them to
+           remember that it was declared as "review-2" is a chore we invented.
+           saveProject names a project after its host for this reason, and an
+           older file that used its own names still answers, through the origin
+           it declares. */
+        const host = siteToOrigin(asked);
+        if (host !== null) {
+            const wanted = new URL(host).host;
+            const byName = configuration.projects.get(wanted);
+            if (byName) return byName;
+            const matching = [...configuration.projects.values()].filter(
+                (p) => p.origin !== '' && new URL(p.origin).host === wanted);
+            if (matching.length === 1) return matching[0];
+            if (matching.length > 1) {
+                throw new ConfigError(
+                    'Several projects announce the site ' + wanted + ': '
+                    + matching.map((p) => p.name).join(', ')
+                    + '\nName the one you mean. Writing a note into the wrong project '
+                    + 'cannot be undone.');
+            }
         }
-        return project;
+
+        throw new ConfigError(
+            'Project unknown to the configuration: ' + name + '\n'
+            + 'Declared: ' + [...configuration.projects.keys()].join(', '));
     }
     if (configuration.defaultProject) {
         return configuration.projects.get(configuration.defaultProject);

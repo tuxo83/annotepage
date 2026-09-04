@@ -69,6 +69,18 @@ another project's.
 
 ### 2. The configuration file -- for several projects, or no key in a history
 
+**Write it yourself, or let the assistant write it.** Writing it yourself is
+better and it is the recommended way: the key never leaves your machine.
+Passing it in the command above is equally good. But if you would rather just
+tell your assistant the key, it has a tool for that -- see
+`annotepage_save_project` below. The trade is stated there and it is real: a
+key given in a conversation has crossed a model provider's logs, and this
+format has no key rotation.
+
+One call per site, once. Each project is named after its site, so afterwards
+nobody has to remember project names: **you say the site you are looking at**,
+and `staging.example.com` or the address of a page on it finds it.
+
 Copy `annotepage.example.json` to `.annotepage.json` and fill it in:
 
 ```json
@@ -201,7 +213,7 @@ claude mcp add annotepage -- annotepage-mcp
 
 A private project adds its key to that same command; see **Configure** above.
 
-The seven tools:
+The eight tools:
 
 | Tool | What it does |
 |---|---|
@@ -212,6 +224,18 @@ The seven tools:
 | `annotepage_reopen` | put a note back, saying why |
 | `annotepage_export` | the whole review as text |
 | `annotepage_projects` | the projects this configuration knows, and the id an `api` + `key` pair derives |
+| `annotepage_save_project` | writes a project into the configuration file of this machine, named after its site, and uses it without a restart |
+
+`annotepage_save_project` is the one to know about when somebody reviews
+several sites. It takes the site, the address of `api.php` and the key, writes
+them at `600`, and the project answers on the very next call -- the server
+reloads in place rather than asking for a restart. It never repeats the key
+back; what it returns is the project **id**, which is public and is exactly
+what tells one key from another, so it can be checked against the setup screen.
+
+It refuses to replace a project of the same name that carries another key
+unless asked a second time: the notes written under the old key stay there,
+still encrypted, and nothing points at them any more.
 
 ## Or use nothing at all
 

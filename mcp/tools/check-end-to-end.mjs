@@ -18,7 +18,7 @@
 
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readdirSync, rmSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -297,7 +297,7 @@ await check('cli: read-only cuts every write', async () => {
     contains(errors, 'Nothing was written', 'and what did not happen');
 });
 
-await check('cli: a salt that does not match the id is refused', async () => {
+await check('cli: a key that does not match the id is refused', async () => {
     const wrong = join(folder, 'wrong.json');
     writeFileSync(wrong, JSON.stringify({
         projects: { r: { api: 'http://127.0.0.1:' + port + '/api.php',
@@ -305,7 +305,7 @@ await check('cli: a salt that does not match the id is refused', async () => {
     }), { mode: 0o600 });
     const { code, errors } = await run('annotepage.mjs', ['text', '--config', wrong]);
     truthy(code !== 0, 'the command fails');
-    contains(errors, 'This salt is not the salt of this project',
+    contains(errors, 'This key is not the key of this project',
         'the message of section 1.2 of the format');
     contains(errors, 'No request was made', 'and it says so before any network');
 });
@@ -449,7 +449,7 @@ await check('mcp: with no configuration at all, the server still starts', async 
         { jsonrpc: '2.0', id: 2, method: 'tools/list' },
     ]);
     truthy(answers.length === 2, 'it answered\n' + errors);
-    truthy(answers[1].result.tools.length === 7, 'the seven tools are there');
+    truthy(answers[1].result.tools.length === 8, 'the eight tools are there');
     contains(errors, 'No configuration found', 'and it said so, on stderr');
 
     for (const tool of answers[1].result.tools) {
@@ -462,6 +462,35 @@ await check('mcp: with no configuration at all, the server still starts', async 
         contains(properties.key.description, 'ALREADY PUBLIC IN THE PAGE',
             'and the line that must not be crossed');
     }
+});
+
+await check('mcp: the assistant writes the project down, and uses it in the same session', async () => {
+    /* THE POINT IS THE SECOND CALL. The server reads its configuration once,
+       at startup; a project saved mid-conversation that only worked after a
+       restart would put back exactly the step this tool removes. */
+    const file = join(mkdtempSync(join(tmpdir(), 'annotepage-e2e-')), 'annotepage.json');
+    const { answers, errors } = await bareDialogue([
+        { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } },
+        { jsonrpc: '2.0', id: 2, method: 'tools/call', params: {
+            name: 'annotepage_save_project',
+            arguments: { site: 'staging.example.com', api: HERE.api, key: SALT, path: file } } },
+        { jsonrpc: '2.0', id: 3, method: 'tools/call', params: {
+            name: 'annotepage_projects', arguments: { project: 'staging.example.com' } } },
+    ]);
+    truthy(answers.length === 3, 'three answers\n' + errors);
+    const saved = answers[1].result.content[0].text;
+    contains(saved, 'project staging.example.com', 'named after the site');
+    contains(saved, 'in use now, with no restart', 'and available at once');
+    truthy(!saved.includes(SALT), 'the key is not repeated back');
+
+    const listed = answers[2].result.content[0].text;
+    contains(listed, 'staging.example.com', 'the next call in the SAME session sees it');
+    contains(listed, 'key present', 'with its key');
+    truthy(!listed.includes(SALT), 'and still never the key itself');
+
+    const object = JSON.parse(readFileSync(file, 'utf8'));
+    truthy(object.projects['staging.example.com'].key === SALT, 'the file holds it');
+    truthy((statSync(file).mode & 0o777) === 0o600, 'and nobody else on the machine reads it');
 });
 
 await check('mcp: api + key alone read the notes, no file anywhere', async () => {

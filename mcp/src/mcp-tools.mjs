@@ -32,7 +32,7 @@ import {
 } from './notes.mjs';
 import { writeExport } from './text-export.mjs';
 import { readDiagnostic } from './api.mjs';
-import { projectForCall } from './config.mjs';
+import { projectForCall, saveProject } from './config.mjs';
 
 /* The schema of a "project" argument, added to every tool. When the
    configuration declares only one project it is useless; when it declares
@@ -411,6 +411,102 @@ export const buildTools = (configuration) => {
                 if (what === 'all') return filledExport(state, project);
                 const keep = what === 'open' ? isOpen : (n) => !isOpen(n);
                 return renderList(state, project, state.notes.filter(keep));
+            },
+        },
+
+        {
+            name: 'annotepage_save_project',
+            title: 'Remember a private project on this machine',
+            description:
+                'Writes a project into the configuration file of THIS machine, so '
+                + 'that every later call finds it by the name of its site. Use it '
+                + 'when somebody reviews several sites: one call per site, once, '
+                + 'and afterwards they name the site they are looking at and nothing '
+                + 'else.\n\n'
+                + 'SAY THIS BEFORE CALLING IT, once, and then do as they ask. '
+                + 'Writing the file themselves is better, and so is passing the key '
+                + 'in the command that starts this server (ANNOTEPAGE_KEY): a key '
+                + 'given here has travelled through the conversation, which means '
+                + 'through a model provider\'s logs, and this format has no key '
+                + 'rotation -- the only repair is a fresh project, abandoning the '
+                + 'notes already written. Whoever accepts that has weighed it; do '
+                + 'not weigh it a second time for them.\n\n'
+                + 'It writes a file to disk, at 600, holding the key in clear. '
+                + 'Nothing is sent anywhere: no request is made by this call.\n\n'
+                + 'An existing project is not replaced unless "replace" is passed: '
+                + 'a new key on an old name hides every note written under the old '
+                + 'one. They stay there, still encrypted, and nothing points at them '
+                + 'any more.',
+            schema: {
+                type: 'object',
+                properties: {
+                    site: {
+                        type: 'string',
+                        description: 'The site the notes are about, as somebody says '
+                            + 'it: "staging.example.com", or the address of a page on '
+                            + 'it. It becomes the NAME of the project and the origin '
+                            + 'announced to the server, which a relay requires in '
+                            + 'order to accept a write.',
+                    },
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    author: {
+                        type: 'string',
+                        description: 'The name replies and fixes are signed with, '
+                            + 'under the reviewers\' eyes. "Assistant" if not given.',
+                    },
+                    mode: {
+                        type: 'string',
+                        enum: ['encrypted', 'plain'],
+                        description: 'The project\'s mode, decided when it was set '
+                            + 'up. Encrypted unless said otherwise.',
+                    },
+                    id: {
+                        type: 'string',
+                        description: 'The project id, in plain mode only, where '
+                            + 'there is no key to derive it from.',
+                    },
+                    read_only: {
+                        type: 'boolean',
+                        description: 'True cuts every write for this project: no '
+                            + 'reply, no resolve, no reopening.',
+                    },
+                    replace: {
+                        type: 'boolean',
+                        description: 'Replace a project of the same name that is '
+                            + 'already declared with another key. Read the last '
+                            + 'paragraph above before passing it.',
+                    },
+                    path: {
+                        type: 'string',
+                        description: 'Where to write, when it must not be the file '
+                            + 'already in use nor the default one.',
+                    },
+                },
+                required: ['site', 'api'],
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                const written = await saveProject(configuration, args);
+                let out = 'project ' + written.name + '\n';
+                out += '  id ' + written.id + '\n';
+                out += '  written to ' + written.path + '\n';
+                out += '  permissions 600, this machine only\n';
+                out += '  ' + (written.replaced ? 'replaced an earlier declaration'
+                    : 'new declaration') + '\n';
+                out += '  ' + (written.inUse
+                    ? 'in use now, with no restart'
+                    : 'NOT in use: ANNOTEPAGE_API is set, so the environment '
+                      + 'describes the project and this file is not read. Unset '
+                      + 'that variable to use what was just written') + '\n';
+                out += '\ndeclared ' + [...configuration.projects.keys()].join(', ') + '\n';
+                /* The id, never the key: it is what tells one project from
+                   another, it is already public, and one mechanism fewer is one
+                   mechanism fewer to get wrong (config.mjs, decision 3). */
+                out += '\nTell them the id above so they can check it against the '
+                    + 'one their setup screen shows. The key itself is not repeated '
+                    + 'here and must not be repeated anywhere.\n';
+                return out;
             },
         },
 
