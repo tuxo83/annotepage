@@ -516,3 +516,32 @@
     font: 650 .78rem/1 var(--mono); color: var(--accent);
 }
 .use-steps .say { margin: .55rem 0 0; color: var(--dim); font-size: .95rem; max-width: 30em; }
+
+/* -- the page crop with the tool docked on its edge -------------------------
+
+   Two pages draw this now -- the landing page's first chapter and the usage
+   page's steps -- so it lives here rather than in whichever one wrote it
+   first. It was in the landing page until the usage page needed it, and the
+   panel simply stacked below the crop over there, which is not what the tool
+   does at that width.
+
+   STACKED IS NOT A FALLBACK, IT IS WHAT THE TOOL DOES. Below 560px the
+   client's own panel leaves the right-hand edge and becomes a band under the
+   page, so that the page above it can still be pointed at. The gap is stated
+   because neither of the two carries a margin of its own. */
+.nt-frame .nt-panel { margin-top: calc(.9rem * var(--ui)); }
+
+@media (min-width: 78rem) {
+    .nt-frame { display: flex; align-items: flex-start; gap: calc(1.4rem * var(--ui)); }
+    .nt-frame .nt-panel { margin-top: 0; }
+    /* THE PANEL SHRINKS BEFORE IT LEAVES THE FRAME. `flex: 0 0 21.5rem` held
+       its width against everything, and at a 200% text size it had to: the
+       sentence column is 21rem of a bigger rem then, so the frame comes out
+       604px and a 688px panel hung out of a box with overflow:hidden. The
+       basis is what it should be at the reading size and the panel gives it up
+       when there is not enough, with the page beside it giving up the larger
+       share -- 8rem of basis against 21.5. Measured at 200%: 378px of panel and
+       140px of page, both inside the frame. */
+    .nt-frame .pg { flex: 1 1 8rem; min-width: 0; }
+    .nt-frame .nt-panel { flex: 0 1 calc(21.5rem * var(--ui)); min-width: 0; }
+}

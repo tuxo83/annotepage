@@ -774,17 +774,12 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    becomes a band under the page, so that the page above it can still be
    pointed at. The gap is stated because neither of the two carries a margin of
    its own. */
-.nt-frame .nt-panel { margin-top: .9rem; }
 /* The mirror of .roomy: a piece that belongs to the NARROW picture and leaves
    when the frame gets wide enough to hold the other one. There is exactly one
    -- the tool's button in step 01, which sits in the corner of a page crop and
    is outside the close-up that replaces it. */
 @media (min-width: 78rem) {
     .use-steps .tight { display: none; }
-    .use-steps .frame.nt-frame {
-        display: flex; align-items: flex-start; gap: 1.4rem;
-    }
-    .nt-frame .nt-panel { margin-top: 0; }
     /* THE PANEL SHRINKS BEFORE IT LEAVES THE FRAME. `flex: 0 0 21.5rem` held
        its width against everything, and at a 200% text size it had to: the
        sentence column is 21rem of a bigger rem then, so the frame comes out
@@ -793,8 +788,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        up when there is not enough, with the page beside it giving up the
        larger share -- 8rem of basis against 21.5. Measured at 200%: 378px of
        panel and 140px of page, both inside the frame. */
-    .nt-frame .pg { flex: 1 1 8rem; min-width: 0; }
-    .nt-frame .nt-panel { flex: 0 1 21.5rem; min-width: 0; }
 }
 
 /* One after another, once, on arrival. 160 ms apart and 6px of travel: enough
