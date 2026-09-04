@@ -687,13 +687,14 @@ body:has(#d-wait:checked) #g3-note { border-left-color: var(--warn); }
 /* -- under a figure ------------------------------------------------------- */
 
 .fig { margin: 0; }
+/* NOTHING IS WRITTEN UNDER A FIGURE ANY MORE -- the pictures say it, and a
+   line repeating them scored zero. What is left is the button, and the button
+   is itself hidden unless the reader has asked for no motion or the figure has
+   run out. So the strip carries NO margin of its own: an empty caption that
+   still pushed the next step down would be spacing for nothing. The margin
+   arrives with the button, in the same rule that reveals it. */
 .fig-foot {
     display: flex; align-items: baseline; gap: .8rem 1.2rem; flex-wrap: wrap;
-    margin-top: .95rem;
-}
-@media (min-width: 48rem) {
-    /* Clear of the mat the frame paints around itself. */
-    .fig-foot { margin-top: 1.7rem; }
 }
 /* THE LOOP HAS TO LOOK LIKE A LOOP. Both figures run for ever now -- they are
    the content of this page, not decoration beside it -- and a restart that
@@ -720,11 +721,13 @@ body:has(#d-wait:checked) #g3-note { border-left-color: var(--warn); }
    asked for no motion -- in that case nothing plays unless they press it. */
 [data-done] ~ .fig-foot .replay,
 [data-quiet] ~ .fig-foot .replay { display: inline-block; }
-.fig-foot p { margin: 0; font-size: .87rem; line-height: 1.55; color: var(--dim); max-width: 34em; }
-.fig-foot .what { color: var(--text); font-weight: 600; }
-/* The one line a figure owes anybody who lands on it mid-scroll: what it is,
-   and what it is not. Its own line, and the caption's own size. */
-.fig-foot .disc { display: block; margin-top: .45rem; }
+[data-done] ~ .fig-foot,
+[data-quiet] ~ .fig-foot { margin-top: .95rem; }
+@media (min-width: 48rem) {
+    /* Clear of the mat the frame paints around itself. */
+    [data-done] ~ .fig-foot,
+    [data-quiet] ~ .fig-foot { margin-top: 1.7rem; }
+}
 
 /* == WHAT EACH SWITCH ACTUALLY CHANGES ===================================
 
@@ -1057,7 +1060,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                      equal -- or no version declared, which is read as not
                      deployed -- the remark stays in front of the reviewer,
                      because the defect itself is still on her screen. -->
-                <p class="say"><b>Resolved is not online.</b> The fix reaches them at your next deploy. Until then the remark stays in front of them: the defect is still on their screen.</p>
+                <p class="say"><b>Resolved is not online.</b> Until your deploy, the remark stays in front of them: the defect is still on their screen.</p>
             </div>
 
             <figure class="fig">

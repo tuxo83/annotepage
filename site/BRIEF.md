@@ -86,14 +86,20 @@ figure may show LESS than happened, never OTHER than what happened.
 
 ## Naming another tool, and the line not to cross
 
-The replay shows an assistant working. It is captioned **"Example -- a Claude
-Code session"**, and the name is written plainly, not hinted at. That framing is
-deliberate and it is enough: it says what the picture is, exactly as a screen
-recording would, and it claims nothing beyond that.
+The replay shows an assistant working. It is NOT captioned with the name of the
+tool it was captured from, and that was decided after the caption had shipped.
 
-**Name the client. Do not be coy about it.** A vague "an assistant" would inform
-the reader less while protecting nobody, and a figure whose subject is unnamed
-invites the reader to guess. The honest version is the specific one.
+**Why the name came off.** Two reasons, and the second is the one that decided
+it. The terminal on that page is drawn in our own HTML -- it is not a screenshot
+of anybody's interface, so nothing is being reproduced that needs attributing.
+And this tool talks to an assistant over MCP: naming ONE of them under the
+figure tells a reader that this is what it works with, which is narrower than
+the truth and costs us the readers who use another. The caption informed nobody
+and it fenced the product in.
+
+The lines from that session stay verbatim, as the rule above requires. Where the
+name is owed is in prose, as a fact -- this works with such-and-such -- not as a
+label under a picture.
 
 What is allowed, because it is simply true: saying the tool is an MCP server and
 a command line, that it works with Claude Code, and showing a session that
@@ -107,13 +113,14 @@ What is not:
   sentence, not by placement, not by a badge that looks like a certification;
 - **no suggestion that this is anybody else's product**, or that they have
   reviewed it, or that they know it exists;
-- the figure carries a caption saying what it is -- an example session -- so a
-  reader who lands on it mid-scroll cannot take it for something official.
+- **no name, no logo under the figure.** A reader who lands on it mid-scroll
+  sees a terminal, which is a shape nobody owns, and nothing claiming to be
+  anybody's product.
 
 None of that forbids showing the thing. A screen recording of a session would
 raise the same questions and be published without hesitation; a replay built
 from a session that really happened is the same object, more accurate and
-lighter. What matters is the caption, not the restraint.
+lighter. What matters is that nothing in it claims more than it is.
 
 The same holds for any other tool named later: name it factually as something
 this works with, and stop there. A free project with one maintainer has nothing
@@ -184,6 +191,24 @@ titles were already 4 to 5 words and its two axes were already clean.
 Its word count stays higher, and should: it is the page somebody opens to see
 the thing at length. The rule is not "be as short as the landing page", it is
 "no sentence longer than the landing page allows".
+
+**Then nothing was written under a figure at all**, and that is the rule now.
+Three captions sat there. Each was read out loud against "what does this say
+that nothing else says", and each answered nothing: one announced a continuity
+the two pictures already show word for word, one disclosed what the replay cut
+in five sentences where the reader needed one fact, one explained a version
+number the picture carries on its own. A picture that needs a line under it to
+be understood is the wrong picture; fix the picture.
+
+What is allowed to remain under a figure is a CONTROL, not prose -- the button
+that lets a reader who has asked for no motion play the thing once. It is
+hidden for everyone else, and the strip carries no margin until it appears, so
+an empty caption costs no space.
+
+Measured after that pass, figures excluded, at 1440px: 232 words of prose on
+the landing page, 208 on the usage page open / 235 secure, and not one sentence
+over 110 characters in any of the four states of its two dials. The tooling is
+`.outillage-test/ap4-prose.mjs` and `ap4-mesure.mjs`.
 
 ## What must not be done
 
