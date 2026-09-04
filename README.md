@@ -19,7 +19,7 @@ One tag, at the end of `<body>`:
 
 ```html
 <script src="https://annotepage.com/annotepage-client-2.0.1.js"
-        integrity="sha384-5wrAEkCKCLyEM3YJsVd6H7gFCOHt9f63XTDIM0Eu4fVYEAr3X4wgDWEDXkx/WVb/"
+        integrity="sha384-oZAAGkI1KL5aAJCD+v7QPGqxcg5fzizz8hsnUHfNJPXeNVccDX251y5+EZRDCHEl"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
         data-project="your-project-id"
@@ -55,7 +55,7 @@ curl 'https://your-server.example.com/annotepage/api.php?action=text&project=<id
 You choose the server. On the site itself, or on a separate one that hosts
 several projects.
 
-Either way the notes are **encrypted in the browser** by default, with a salt
+Either way the notes are **encrypted in the browser** by default, with a key
 generated at setup that never leaves it. The server stores sealed envelopes:
 it groups notes by project and by page, threads replies and stamps dates
 without reading a path, a name or a remark. Whoever runs it -- including you --
@@ -65,7 +65,7 @@ A staging site is precisely what a company has not published yet. The list of
 its URLs, its labels and its reviewers is a leak on its own, even with no
 remark attached.
 
-**Salt lost = notes lost.** There is no recovery and no escrow. It is written
+**Key lost = notes lost.** There is no recovery and no escrow. It is written
 here rather than in a footnote because it is the one thing that will hurt.
 
 ## What it deliberately does not do

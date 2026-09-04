@@ -67,7 +67,7 @@ Options:
   --config <file>   failing that: $ANNOTEPAGE_CONFIG, ./.annotepage.json,
                     ~/.config/annotepage/annotepage.json
 
-The configuration file carries the project SALT. It is never committed:
+The configuration file carries the project KEY. It is never committed:
 whoever reads it reads every note, and there is no key rotation.
 
 In plain mode this utility is not needed:

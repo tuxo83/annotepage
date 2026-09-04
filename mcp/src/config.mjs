@@ -1,7 +1,7 @@
 /* config.mjs — WHERE THE KEY SLEEPS ON THIS MACHINE.
  *
- * The salt is the project's only secret, and FORMAT.md section 1.1 says it
- * without detour: lost salt = lost notes, copied salt = read notes. In the
+ * The key is the project's only secret, and FORMAT.md section 1.1 says it
+ * without detour: lost key = lost notes, copied key = read notes. In the
  * browser it lives in localStorage; here it lives in a file, and a file gets
  * committed by accident.
  *
@@ -9,8 +9,8 @@
  *
  *  1. THE FILE IS NEVER COMMITTED. The default name starts with a dot and the
  *     setup writes a line into .gitignore; that is not enough, and the only
- *     measure that holds is to say so, here and in the README. A salt in a
- *     public repository is a project to start over — there is no salt rotation
+ *     measure that holds is to say so, here and in the README. A key in a
+ *     public repository is a project to start over — there is no key rotation
  *     (FORMAT.md section 8.2).
  *
  *  2. THE FILE PERMISSIONS ARE CHECKED, and a file readable by the other users
@@ -19,14 +19,14 @@
  *     container with a single account, for instance. Warning leaves the choice
  *     to whoever knows.
  *
- *  3. THE SALT IS NEVER DISPLAYED. Not in an error message, not in the
+ *  3. THE KEY IS NEVER DISPLAYED. Not in an error message, not in the
  *     diagnostic, not in the list of projects, not truncated "to check". What
- *     we display in order to check that we hold the right salt is the PROJECT
- *     ID it produces: it is already public, it is exactly what tells one salt
+ *     we display in order to check that we hold the right key is the PROJECT
+ *     ID it produces: it is already public, it is exactly what tells one key
  *     from another, and one mechanism less is one mechanism less to implement
  *     wrong (FORMAT.md section 1.2).
  *
- * Plain mode is entitled to a configuration WITH NO salt: the row is readable
+ * Plain mode is entitled to a configuration WITH NO key: the row is readable
  * in the database, "curl ?action=text" is enough, and demanding a secret to
  * read what is not encrypted would make this package a compulsory step. It
  * must not be one. We then ask for the project id directly, since it can no
@@ -54,8 +54,8 @@ import { readFileSync, statSync, writeFileSync, mkdirSync, renameSync, unlinkSyn
 import { homedir } from 'node:os';
 import { resolve as resolvePath, join, dirname } from 'node:path';
 
-import { ID_LENGTH, SALT_LENGTH } from './format.mjs';
-import { saltFromText, derive } from './crypto.mjs';
+import { ID_LENGTH, KEY_LENGTH } from './format.mjs';
+import { keyFromText, derive } from './crypto.mjs';
 
 export class ConfigError extends Error {}
 
@@ -173,7 +173,7 @@ const requireText = (value, what, where) => {
  * Returns { path, warnings, defaultProject, projects: Map<name, project> }
  * where each project carries:
  *   name, api, id, mode, author, read_only,
- *   keys (null in plain mode with no salt).
+ *   keys (null in plain mode with no key).
  */
 export const loadConfiguration = async (explicit) => {
     const paths = candidatePaths(explicit);
@@ -262,24 +262,8 @@ export const loadConfiguration = async (explicit) => {
         let keys = null;
         let id;
 
-        /* "key" is the word everywhere a human reads: the setup screen shows a
-           key, the tag carries data-key, the page asks the reviewer for a key.
-           "salt" was the internal name and it survived in this file longer than
-           it should have. Both are accepted -- a configuration written last
-           month must keep working -- and disagreeing about them is refused
-           rather than arbitrated. */
-        if (raw.key !== undefined && raw.salt !== undefined
-            && String(raw.key).trim() !== String(raw.salt).trim()) {
-            throw new ConfigError(
-                where.charAt(0).toUpperCase() + where.slice(1)
-                + ' declares BOTH "key" and "salt", and they differ.\n'
-                + 'They are two names for the same thing. Keep "key" and delete the '
-                + 'other: choosing for you would read half the notes of one project.');
-        }
-        const declaredKey = raw.key !== undefined ? raw.key : raw.salt;
-
-        if (declaredKey !== undefined && declaredKey !== null && String(declaredKey) !== '') {
-            const bytes = saltFromText(declaredKey);
+        if (raw.key !== undefined && raw.key !== null && String(raw.key) !== '') {
+            const bytes = keyFromText(raw.key);
             if (bytes === null) {
                 throw new ConfigError(
                     'The key of ' + where + ' does not have the expected shape: 43 '
@@ -291,10 +275,10 @@ export const loadConfiguration = async (explicit) => {
             keys = await derive(bytes);
             id = keys.id;
 
-            /* Checking a pasted salt, FORMAT.md section 1.2: if the
+            /* Checking a pasted key, FORMAT.md section 1.2: if the
                configuration ALSO declares an id, the two must agree. It is the
                only check possible without the network, and it catches by far
-               the most common case — two projects, two salts, copied in the
+               the most common case — two projects, two keys, copied in the
                wrong order. */
             if (raw.id !== undefined && String(raw.id).trim() !== ''
                 && String(raw.id).trim() !== id) {
@@ -305,7 +289,7 @@ export const loadConfiguration = async (explicit) => {
                     + '\nThis key is not the key of this project. No request was made.');
             }
         } else if (mode === 'plain') {
-            /* Plain mode with no salt: read-only, and by "curl" if you like.
+            /* Plain mode with no key: read-only, and by "curl" if you like.
                We can then neither encrypt nor compute a page index — so
                neither write a new note nor reply. The message will say so at
                the moment one tries, not before. */
@@ -429,17 +413,17 @@ export const inlineProject = async (api, key, origin) => {
             + 'as it stands.');
     }
 
-    /* Same judge as the configuration file and as the browser: saltFromText.
+    /* Same judge as the configuration file and as the browser: keyFromText.
        We do not "clean" a key that is almost right — it would derive a wrong
        project id, and the server would answer "unknown project" for what
        looks like the right key. */
-    const bytes = saltFromText(key);
+    const bytes = keyFromText(key);
     if (bytes === null) {
         throw new ConfigError(
             'The "key" of this call does not have the expected shape: 43 characters '
             + 'taken from A-Z a-z 0-9 - _ , with no space and no decorative dash.\n'
             + 'Received: ' + String(key).length + ' characters'
-            + (String(key).length === SALT_LENGTH
+            + (String(key).length === KEY_LENGTH
                 ? ', the right count, but not all of them from that alphabet' : '')
             + '.\n'
             + 'Copy the "data-key" attribute of the annotepage tag as it stands. '
@@ -628,7 +612,7 @@ export const saveProject = async (configuration, wanted) => {
     const project = { api, mode, origin };
     let id;
     if (mode === 'encrypted' || (wanted.key !== undefined && String(wanted.key) !== '')) {
-        const bytes = saltFromText(wanted.key);
+        const bytes = keyFromText(wanted.key);
         if (bytes === null) {
             throw new ConfigError(
                 'The key does not have the expected shape: 43 characters taken from '
@@ -668,10 +652,8 @@ export const saveProject = async (configuration, wanted) => {
 
     const before = object.projects[name];
     if (before !== undefined && wanted.replace !== true) {
-        const same = before.key !== undefined || before.salt !== undefined
-            ? String(before.key !== undefined ? before.key : before.salt).trim()
-              === project.key
-            : false;
+        const same = before.key !== undefined
+            && String(before.key).trim() === project.key;
         if (!same) {
             throw new ConfigError(
                 'The project "' + name + '" is already declared in ' + target

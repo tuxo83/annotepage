@@ -1,11 +1,11 @@
-/* crypto.mjs — THE SALT, THE THREE DERIVATIONS, THE ENVELOPE.
+/* crypto.mjs — THE KEY, THE THREE DERIVATIONS, THE ENVELOPE.
  *
  * This is the twin, on the assistant's side, of client/src/20-crypto.js. Both
  * implement FORMAT.md sections 1, 3 and 4; if one of the two becomes cleverer
  * than the other, the browser's notes stop being readable here, and nobody
  * notices before needing them.
  *
- * THE DIFFERENCE WITH THE CLIENT IS ENTIRELY HERE: the browser keeps its salt
+ * THE DIFFERENCE WITH THE CLIENT IS ENTIRELY HERE: the browser keeps its key
  * in localStorage, this machine keeps it in a configuration file. It is the
  * same secret, with the same consequence — whoever reads the file reads every
  * note of the project — and so the file is never committed. See config.mjs,
@@ -19,23 +19,23 @@
 
 import { webcrypto } from 'node:crypto';
 import {
-    FORMAT, HKDF_SALT_STRING, SALT_LENGTH, NONCE_LENGTH,
+    FORMAT, HKDF_SALT_STRING, KEY_LENGTH, NONCE_LENGTH,
     utf8, fromUtf8, b64url, fromB64url,
 } from './format.mjs';
 
 const subtle = webcrypto.subtle;
 
 /**
- * The text of a salt -> its 32 bytes, or null.
+ * The text of a key -> its 32 bytes, or null.
  *
  * We refuse what does not have exactly the right shape instead of "cleaning"
- * the spaces or the dashes: a salt that is almost right gives a wrong project
- * id, and the message "this salt is not the salt of this project" would then
+ * the spaces or the dashes: a key that is almost right gives a wrong project
+ * id, and the message "this key is not the key of this project" would then
  * send you looking in the wrong place.
  */
-export const saltFromText = (text) => {
+export const keyFromText = (text) => {
     const t = String(text == null ? '' : text).trim();
-    if (t.length !== SALT_LENGTH || !/^[A-Za-z0-9_-]+$/.test(t)) return null;
+    if (t.length !== KEY_LENGTH || !/^[A-Za-z0-9_-]+$/.test(t)) return null;
     const bytes = fromB64url(t);
     return bytes && bytes.length === 32 ? bytes : null;
 };
@@ -44,27 +44,27 @@ export const saltFromText = (text) => {
  * The three derivations, in one go.
  *
  * TRAP, named because it costs dearly: HKDF's "salt" parameter is NOT our
- * salt. Our salt is the input keying material (IKM); HKDF's salt is the
+ * key. Our key is the input keying material (IKM); HKDF's salt is the
  * fixed, public string "annotepage/1", which separates this tool from any
  * other software one might one day trust with the same secret. Swapping them
  * produces a system that works, that encrypts, and whose notes become
  * unreadable on the first reimplementation — this one, for instance.
  */
-export const derive = async (saltBytes) => {
+export const derive = async (keyBytes) => {
     const params = (label) => ({
         name: 'HKDF',
         hash: 'SHA-256',
-        salt: utf8(HKDF_SALT_STRING),   // NOT the salt: see above
+        salt: utf8(HKDF_SALT_STRING),   // HKDF's salt, NOT our key: see above
         info: utf8(label),
     });
 
     const master = await subtle.importKey(
-        'raw', saltBytes, 'HKDF', false, ['deriveBits', 'deriveKey']);
+        'raw', keyBytes, 'HKDF', false, ['deriveBits', 'deriveKey']);
 
     const [idBytes, encryptionKey, indexBytes] = await Promise.all([
         subtle.deriveBits(params('id'), master, 256),
         /* Non-extractable, as in the browser. That is hygiene, not a barrier:
-           the salt sleeps in a file right next to it, and whoever reads one
+           the key sleeps in a file right next to it, and whoever reads one
            rebuilds the other in three lines. We write it down so that nobody
            takes this "false" for a protection it is not. */
         subtle.deriveKey(params('encrypted'), master,
@@ -178,7 +178,7 @@ export const seal = async (encryptionKey, project, pageIndex, role, object) => {
  *   'newer'       the envelope carries a format number above ours. We do not
  *                 guess at cryptography: flat refusal, the note is skipped
  *                 and COUNTED, and the tool says that it exists.
- *   'unreadable'  invalid shape, or decryption failed — wrong salt, note
+ *   'unreadable'  invalid shape, or decryption failed — wrong key, note
  *                 moved by the server, damaged bytes. All three are worth the
  *                 same to the reader: there is nothing to read.
  */

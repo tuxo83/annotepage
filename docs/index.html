@@ -315,7 +315,7 @@ h1 + .lead { margin-top: 1.15rem; }
    THE KEY GETS THE BLOCK AND NONE OF THE COLOUR, and that is not an omission.
    43 characters of base64 have no name, no attribute and no string in them:
    anything picked out of it would be picking out nothing. It keeps the block
-   because what the block says is "this is yours to take", and the salt is the
+   because what the block says is "this is yours to take", and the key is the
    one thing on the page that is only true if the reader takes it.
 
    The copy button reads textContent, so none of this reaches the clipboard --
@@ -520,7 +520,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
     /* AND THE SAME RULE AGAIN, LOUD ENOUGH TO BE HEARD. `#install h3` carries
        an id, so it outranked the two lines above and kept its 2.6rem: "The
-       salt that made it" and "And on the assistant side" sat 42px below the
+       key that made it" and "And on the assistant side" sat 42px below the
        snippet each names, and the row stopped reading as a pair. Selectors
        that beat an id, for the same declarations, rather than a weaker
        margin on the heading -- stacked, that 2.6rem is what separates the
@@ -1216,14 +1216,14 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <!-- 3. HOW YOU INSTALL IT ==============================================
 
      ONE THING IS ADDED, and the section has to look like one thing. It used to
-     be "01 Paste this tag" and "02 Save the salt", which made the install a
+     be "01 Paste this tag" and "02 Save the key", which made the install a
      third set of numbered steps on a page that already had two -- and made the
-     salt look like a second thing to install. It is not: it is what the tag was
+     key look like a second thing to install. It is not: it is what the tag was
      made from, and it is kept, not installed.
 
      The tag now points at the public CDN copy of the published package, with
      the digest of the file that CDN actually serves. The self-hosted copy at
-     /annotepage-client-2.2.0.js stays where it is: this page's own live demo
+     /annotepage-client-2.3.0.js stays where it is: this page's own live demo
      loads it same-origin, and moving it would break the demo, not the tag. -->
 <section id="install">
     <div class="wrap">
@@ -1476,7 +1476,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 (function () {
     'use strict';
 
-    /* THE SALT IS GENERATED HERE, IN THE READER'S BROWSER, AND GOES NOWHERE.
+    /* THE KEY IS GENERATED HERE, IN THE READER'S BROWSER, AND GOES NOWHERE.
        This page fetches exactly one thing, the annotepage script itself, and
        nothing here transmits -- so there is no path by which the value below
        could reach us, or anyone. (It used to say "no network request at all",
@@ -1486,7 +1486,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        It is the same computation the client's own setup screen performs; it
        happens here so that a reader can obtain a project before installing
        anything, instead of having to stand up a server first in order to be
-       handed a salt. */
+       handed a key. */
 
     var tagOut = document.getElementById('tag-ident');
     /* The one target, and it is required. When the key step was removed this
@@ -1496,8 +1496,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        being wired to elements the page no longer has. */
     if (!tagOut) return;
 
-    /* Without a secure context there is no WebCrypto, and a salt drawn from
-       Math.random would be guessable -- which is worse than no salt at all,
+    /* Without a secure context there is no WebCrypto, and a key drawn from
+       Math.random would be guessable -- which is worse than no key at all,
        because it would look like one. We say so instead. */
     if (!window.crypto || !window.crypto.subtle || !window.crypto.getRandomValues) {
         while (tagOut.firstChild) tagOut.removeChild(tagOut.firstChild);
@@ -1516,15 +1516,15 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
         return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
-    function projectIdFromSalt(saltBytes) {
+    function projectIdFromSalt(keyBytes) {
         var enc = new TextEncoder();
         return window.crypto.subtle
-            .importKey('raw', saltBytes, 'HKDF', false, ['deriveBits'])
+            .importKey('raw', keyBytes, 'HKDF', false, ['deriveBits'])
             .then(function (master) {
                 return window.crypto.subtle.deriveBits({
                     name: 'HKDF',
                     hash: 'SHA-256',
-                    /* HKDF's "salt" is NOT our salt: ours is the input keying
+                    /* HKDF's "salt" is NOT our key: ours is the input keying
                        material. Swapping the two yields a system that works and
                        whose ids disagree with every other implementation. */
                     salt: enc.encode(HKDF_SALT_STRING),
@@ -1571,10 +1571,10 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
        crypto accepts, and tools/check-landing-derivation.mjs runs THIS code
        against the MCP's. A key nobody checked is a tag nobody can use. */
     function fresh() {
-        var salt = new Uint8Array(32);
-        window.crypto.getRandomValues(salt);
-        var text = b64url(salt);
-        return projectIdFromSalt(salt).then(function () {
+        var key = new Uint8Array(32);
+        window.crypto.getRandomValues(key);
+        var text = b64url(key);
+        return projectIdFromSalt(key).then(function () {
             current.key = text;
             paintTag();
         });
@@ -1590,7 +1590,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
      THE PRODUCT, RUNNING ON ITS OWN PAGE.
 
      This is not an illustration and not a copy: it is
-     annotepage-client-2.2.0.js, byte for byte the file the tag above loads
+     annotepage-client-2.3.0.js, byte for byte the file the tag above loads
      from the CDN, switched on. It is served from this origin and not from the
      CDN because the demo needs it same-origin. The page is therefore its own
      smoke test -- if this stops working, the product is broken and we want to
@@ -1598,10 +1598,10 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
      Two things make it work with no server:
 
-     1. A DEMO SALT, public and fixed. Publishing a salt is normally the worst
+     1. A DEMO KEY, public and fixed. Publishing a key is normally the worst
         thing one can do; here it is harmless, because nothing is transmitted.
         It is deposited before the client loads, otherwise the client opens its
-        blocking "the salt of this project is needed" screen -- correctly.
+        blocking "the key of this project is needed" screen -- correctly.
 
      2. A STAND-IN FOR THE SERVER. fetch is wrapped, and any call carrying
         /DEMO/ is answered from an array in this tab. Every other request goes
@@ -1612,9 +1612,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 (function () {
     'use strict';
     var PROJECT = 'Xt8fTaJo1culOstdfwmWkQ';
-    var SALT    = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    var KEY    = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
-    try { localStorage.setItem('annotepage/salt/' + PROJECT, SALT); } catch (e) { return; }
+    try { localStorage.setItem('annotepage/key/' + PROJECT, KEY); } catch (e) { return; }
 
     var rows = [], next = 1, real = window.fetch;
     window.fetch = function (url) {
@@ -1671,7 +1671,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
      The key is public by construction -- that is what open mode is -- and
      until the relay declares this project the client stands down in COMPLETE
      SILENCE. Measured against the real server, not assumed. -->
-<script src="/annotepage-client-2.2.0.js"
+<script src="/annotepage-client-2.3.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
         defer></script>

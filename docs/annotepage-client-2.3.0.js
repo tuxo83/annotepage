@@ -1,7 +1,7 @@
 /* ============================================================================
    annotepage -- the annotation layer, browser side.
 
-   Package version : 2.2.0
+   Package version : 2.3.0
    Format version  : 2   (see FORMAT.md)
    Licence : MIT
 
@@ -16,7 +16,7 @@
     /* Injected by the build: they come from package.json and from
        src/styles.css, so that no value is written in two places and can
        therefore diverge. */
-    const TOOL_VERSION = "2.2.0";
+    const TOOL_VERSION = "2.3.0";
     const FORMAT = 2;
     const STYLES = "/* ============================================================================\n   styles.css -- THE STYLES OF THE TOOL, AND OF NO OTHER ELEMENT.\n\n   This sheet is INLINED into the served file by the build, then put into the\n   tool's shadow root -- as a constructed sheet when the browser can do it, in\n   a <style> otherwise. It was loaded by a <link> in the original tool; the\n   move to a CDN under SRI brought it inside the file, so that there is only\n   one digest to keep up to date. The containment itself has not changed, and\n   is still twofold:\n\n     - from the tool towards the site: no rule from here can reach an element\n       of the host site, the browser sees to that. That is what makes the\n       claim \"the layer touches nothing\" checkable rather than promised;\n     - from the site towards the tool: no rule of the site can reach an\n       element here. A redesign of the site's stylesheet therefore cannot\n       distort the tool, nor the other way round.\n\n   The \"ap-\" prefix on every class is the third safeguard: the day somebody\n   loads these styles WITHOUT a shadow root -- by mistake, or to debug --\n   nothing would answer a selector of the site.\n\n   NO RULE TARGETS html, body, * OR ANY SELECTOR OF THE SITE. That is the one\n   absolute prohibition of this file.\n\n   COLOURS: the tool has its OWN palette, defined on the shadow root. It\n   reads neither the site's variables nor its theme attribute: it has no\n   reason to know how the site names its colours, and it must stay readable\n   on a light site as on a dark one. The switch follows the system\n   preference, the only information the tool has without asking anyone.\n   ============================================================================ */\n\n\n:host {\n    --ap-bg: #ffffff;\n    --ap-bg-soft: #f4f6f8;\n    --ap-bg-raised: #e9edf2;\n    --ap-text: #1a1d21;\n    --ap-text-soft: #5b6570;\n    --ap-border: #d5dbe2;\n    --ap-accent: #2f6fed;\n    --ap-accent-dark: #1d55c8;\n    --ap-accent-text: #ffffff;\n    --ap-accent-veil: rgba(47, 111, 237, 0.14);\n    --ap-alert-bg: #fdeceb;\n    --ap-alert-border: #e3a9a4;\n    --ap-alert-text: #8a1f16;\n    --ap-shadow: 0 6px 24px rgba(16, 24, 40, 0.18);\n    --ap-radius: 10px;\n    --ap-font: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\",\n                  Arial, sans-serif;\n}\n\n@media (prefers-color-scheme: dark) {\n    :host {\n        --ap-bg: #1d2126;\n        --ap-bg-soft: #262b32;\n        --ap-bg-raised: #323942;\n        --ap-text: #e9ecf0;\n        --ap-text-soft: #a4adb8;\n        --ap-border: #3a424c;\n        --ap-accent: #6d9bff;\n        --ap-accent-dark: #8fb4ff;\n        --ap-accent-text: #10151c;\n        --ap-accent-veil: rgba(109, 155, 255, 0.18);\n        --ap-alert-bg: #3a1f1c;\n        --ap-alert-border: #7c3a33;\n        --ap-alert-text: #ffb9b1;\n        --ap-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);\n    }\n}\n\n/* ----------------------------------------------------------------------------\n   The layer.\n\n   It covers the viewport and receives NO click: that is what lets the page\n   behave exactly as usual as long as the tool is not in annotation mode.\n   Each widget re-enables clicks for itself alone.\n   ---------------------------------------------------------------------------- */\n\n.ap-layer {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    font-family: var(--ap-font);\n    font-size: 14px;\n    line-height: 1.45;\n    color: var(--ap-text);\n    text-align: left;\n    -webkit-font-smoothing: antialiased;\n}\n\n.ap-layer button,\n.ap-layer input,\n.ap-layer textarea {\n    font-family: inherit;\n    font-size: inherit;\n    line-height: inherit;\n    color: inherit;\n    margin: 0;\n    box-sizing: border-box;\n}\n\n/* ----------------------------------------------------------------------------\n   The button: the only thing visible when the tool is at rest.\n   ---------------------------------------------------------------------------- */\n\n.ap-button {\n    position: fixed;\n    right: 16px;\n    bottom: 16px;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 9px 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: 999px;\n    background: var(--ap-bg);\n    color: var(--ap-text);\n    box-shadow: var(--ap-shadow);\n    cursor: pointer;\n    pointer-events: auto;\n    opacity: 0.92;\n    transition: opacity 0.15s ease, transform 0.15s ease;\n}\n\n.ap-button:hover,\n.ap-button:focus-visible {\n    opacity: 1;\n    transform: translateY(-1px);\n}\n\n.ap-button:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n.ap-button[aria-pressed=\"true\"] {\n    background: var(--ap-accent);\n    border-color: var(--ap-accent);\n    color: var(--ap-accent-text);\n    opacity: 1;\n}\n\n.ap-button-dot {\n    display: inline-block;\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    background: var(--ap-accent);\n    flex: none;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-dot {\n    background: var(--ap-accent-text);\n}\n\n.ap-button-count {\n    padding: 1px 7px;\n    border-radius: 999px;\n    background: var(--ap-bg-raised);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-count {\n    background: rgba(255, 255, 255, 0.22);\n    color: var(--ap-accent-text);\n}\n\n/* ----------------------------------------------------------------------------\n   The pointing highlight.\n\n   It is DRAWN HERE, from the coordinates of the element being pointed at.\n   Nothing is put on the element itself: no class, no attribute, no style. So\n   the site cannot move by a single pixel because of the pointing.\n   ---------------------------------------------------------------------------- */\n\n.ap-highlight {\n    position: fixed;\n    border: 2px solid var(--ap-accent);\n    border-radius: 3px;\n    background: var(--ap-accent-veil);\n    pointer-events: none;\n    display: none;\n}\n\n.ap-highlight-label {\n    position: fixed;\n    max-width: 320px;\n    padding: 4px 8px;\n    border-radius: 6px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    pointer-events: none;\n    display: none;\n    box-shadow: var(--ap-shadow);\n}\n\n/* ----------------------------------------------------------------------------\n   The markers: \"there are already notes here\".\n   ---------------------------------------------------------------------------- */\n\n.ap-marker {\n    position: fixed;\n    min-width: 22px;\n    height: 22px;\n    padding: 0 6px;\n    border: 2px solid var(--ap-bg);\n    border-radius: 999px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    font-weight: 700;\n    line-height: 18px;\n    text-align: center;\n    cursor: pointer;\n    pointer-events: auto;\n    box-shadow: var(--ap-shadow);\n}\n\n.ap-marker:focus-visible {\n    outline: 2px solid var(--ap-accent-dark);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The panel.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel {\n    position: fixed;\n    top: 12px;\n    right: 12px;\n    bottom: 72px;\n    width: 360px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n    overflow: hidden;\n}\n\n.ap-panel.ap-open {\n    display: flex;\n}\n\n.ap-panel-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n}\n\n.ap-panel-title {\n    font-size: 15px;\n    font-weight: 600;\n    flex: 1 1 auto;\n}\n\n.ap-panel-instructions {\n    padding: 10px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    color: var(--ap-text-soft);\n    font-size: 13px;\n}\n\n.ap-panel-body {\n    flex: 1 1 auto;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 14px 14px;\n}\n\n.ap-panel-footer {\n    padding: 8px 14px;\n    border-top: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n\n.ap-section-title {\n    margin: 14px 0 6px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-weight: 600;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n\n.ap-section-help {\n    margin: 0 0 8px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-empty {\n    margin: 16px 0;\n    color: var(--ap-text-soft);\n}\n\n/* The standing mention of a public key. Deliberately NOT the alert colours:\n   this is not a failure and it is on screen for ever -- an alarm that never\n   goes away stops being read. It is a fact about the project, stated in the\n   panel's own tone, and it stays at the top of every draw. */\n/* The public-key notice and the \"a newer client exists\" line are the same\n   object on screen: a standing statement about what one is looking at, above\n   the notes and above the failures. One rule, so they cannot drift apart. */\n.ap-public,\n.ap-upgrade {\n    margin: 0 0 10px;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    line-height: 1.45;\n}\n\n/* ----------------------------------------------------------------------------\n   A note, and its replies.\n   ---------------------------------------------------------------------------- */\n\n.ap-note {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n}\n\n.ap-note.ap-orphan {\n    background: var(--ap-bg-soft);\n}\n\n.ap-note.ap-focused {\n    border-color: var(--ap-accent);\n    box-shadow: 0 0 0 3px var(--ap-accent-veil);\n}\n\n.ap-note-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-note-author {\n    font-weight: 600;\n}\n\n.ap-note-date {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-note-target {\n    margin: 4px 0 0;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-text {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-actions {\n    margin-top: 8px;\n    display: flex;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-replies {\n    margin: 8px 0 0;\n    padding-left: 10px;\n    border-left: 2px solid var(--ap-border);\n}\n\n.ap-reply {\n    margin: 8px 0 0;\n}\n\n/* ----------------------------------------------------------------------------\n   The form, anchored near the element pointed at.\n   ---------------------------------------------------------------------------- */\n\n.ap-form {\n    position: fixed;\n    width: 340px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    gap: 8px;\n    padding: 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n}\n\n.ap-form.ap-open {\n    display: flex;\n}\n\n.ap-form-title {\n    font-size: 15px;\n    font-weight: 600;\n}\n\n.ap-form-target {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-label {\n    display: block;\n    margin-bottom: 3px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--ap-text-soft);\n}\n\n.ap-help {\n    margin: 3px 0 0;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n.ap-field,\n.ap-area {\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n}\n\n.ap-field:focus,\n.ap-area:focus {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n.ap-area {\n    min-height: 92px;\n    resize: vertical;\n}\n\n.ap-actions {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-counter {\n    margin-left: auto;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   Buttons.\n   ---------------------------------------------------------------------------- */\n\n.ap-primary,\n.ap-secondary,\n.ap-link {\n    border-radius: 8px;\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.ap-primary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-accent);\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-weight: 600;\n}\n\n.ap-primary:hover {\n    background: var(--ap-accent-dark);\n    border-color: var(--ap-accent-dark);\n}\n\n.ap-secondary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-border);\n    background: var(--ap-bg);\n    color: var(--ap-text);\n}\n\n.ap-secondary:hover {\n    background: var(--ap-bg-raised);\n}\n\n.ap-link {\n    padding: 2px 4px;\n    border: 0;\n    background: none;\n    color: var(--ap-accent);\n    text-decoration: underline;\n    font-size: 13px;\n}\n\n.ap-primary:disabled,\n.ap-secondary:disabled,\n.ap-link:disabled {\n    opacity: 0.6;\n    cursor: default;\n}\n\n.ap-primary:focus-visible,\n.ap-secondary:focus-visible,\n.ap-link:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The failures.\n\n   They are RED, at the top of the block concerned, and carry the message the\n   server returned as it stands: that is how a non-technical team learns that\n   its remark is not saved, instead of believing it is.\n   ---------------------------------------------------------------------------- */\n\n.ap-error {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-alert-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-alert-bg);\n    color: var(--ap-alert-text);\n}\n\n.ap-error-title {\n    font-weight: 700;\n    margin-bottom: 4px;\n}\n\n.ap-error-detail {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    font-size: 13px;\n}\n\n.ap-error .ap-link {\n    color: var(--ap-alert-text);\n}\n\n/* ----------------------------------------------------------------------------\n   Narrow: the panel takes the full width, and so does the form.\n   ---------------------------------------------------------------------------- */\n\n/* ----------------------------------------------------------------------------\n   Narrow.\n\n   DEFECT OBSERVED at 375 px wide: a panel taking the full height covers the\n   whole page, and no element can be pointed at any more -- every click lands\n   on the panel. So it becomes a bottom band, which leaves the top half of\n   the viewport free; one scrolls the page there to bring the wanted element\n   into view. The form, for its part, hides the panel while typing (see\n   notes.js): on a screen that size, writing and reading the list at the same\n   time does not hold.\n   ---------------------------------------------------------------------------- */\n\n/* On a narrow screen the panel becomes a bottom band and the form takes the\n   full width.\n\n   THE WIDTH CEILING IS KEPT, and it comes from a measured defect: \"left: 8;\n   right: 8\" sizes the element against its CONTAINING BLOCK, which the host\n   site's horizontal overflow can make wider than the visible window.\n   Measured, in mobile emulation at 390 px: the site overflows to 407 px\n   (with the tool and without it), and the panel came out 391 px wide\n   starting at 8, that is 9 px off screen. \"100vw\" is the window, not the\n   containing block: the ceiling therefore does nothing when the site does\n   not overflow, and pulls the width back when it does. */\n@media (max-width: 560px) {\n    .ap-panel {\n        top: auto;\n        right: 8px;\n        left: 8px;\n        bottom: 66px;\n        height: 52vh;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n\n    .ap-form {\n        left: 8px;\n        right: 8px;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-button {\n        transition: none;\n    }\n}\n\n/* The failure shows without opening the panel: the button's dot changes\n   colour. A team that does not click must be able to see that something is\n   wrong. */\n.ap-button.ap-failed .ap-button-dot {\n    background: var(--ap-alert-text);\n}\n\n.ap-button.ap-failed {\n    border-color: var(--ap-alert-border);\n}\n\n/* Signature reminder, in the note form.\n   The name was shown at the foot of the panel only: invisible at the moment\n   one writes. A user reported not knowing which name they were writing\n   under. */\n.ap-form-signature {\n    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;\n    margin: 0 0 .6rem; font-size: .85rem; opacity: .8;\n}\n\n/* Resolution state, said on the card.\n   Two cases NOT to be confused: resolved and online, resolved but not\n   deployed yet. The second keeps the defect on the reviewer's screen; hiding\n   it or announcing it as fixed would cost them their trust in the tool. */\n.ap-state-mark {\n    display: inline-block; margin: 0 0 .5rem;\n    padding: .15rem .55rem; border-radius: 4px;\n    font-size: .75rem; font-weight: 600; letter-spacing: .02em;\n}\n.ap-note.ap-resolved { opacity: .72; }\n.ap-note.ap-resolved .ap-state-mark {\n    color: #0f7a52; background: rgba(16, 185, 129, .14);\n}\n.ap-note.ap-resolved-pending .ap-state-mark {\n    color: #8a5a00; background: rgba(245, 158, 11, .16);\n}\n/* The \"it is fixed\" / \"reopen\" block, opened under the card. Same shape as\n   the reply block: it is the same gesture, one answers a remark. */\n.ap-resolve,\n.ap-reply-form {\n    margin-top: .6rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-border);\n}\n\n.ap-history-toggle {\n    display: block; width: 100%; margin: 1rem 0 .25rem;\n    padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;\n    background: none; color: inherit; font: inherit; opacity: .7; cursor: pointer;\n}\n.ap-history-toggle:hover { opacity: 1; }\n\n\n/* ----------------------------------------------------------------------------\n   Setup and pasting the salt.\n\n   These are the only screens where something is copied by hand. Everything\n   there is SELECTABLE and monospaced: a 43-character salt copied wrong\n   cannot be recovered, and nothing helps less than a font that confuses I, l\n   and 1.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel-wide {\n    width: 560px;\n}\n\n.ap-copy {\n    display: flex;\n    align-items: flex-start;\n    gap: 8px;\n    margin: 0 0 12px;\n}\n\n.ap-code {\n    flex: 1 1 auto;\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\",\n                 monospace;\n    font-size: 12.5px;\n    line-height: 1.5;\n    resize: vertical;\n    white-space: pre;\n    overflow-x: auto;\n}\n\n.ap-code:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n@media (max-width: 560px) {\n    .ap-panel-wide {\n        width: auto;\n    }\n\n    .ap-copy {\n        flex-direction: column;\n    }\n}\n";
 
@@ -89,7 +89,7 @@
        encrypted. The key is random, it lives in the page, and the page is the
        one thing the server never sees.
 
-       The SHAPE is not checked here: saltFromText() in 20-crypto is the single
+       The SHAPE is not checked here: keyFromText() in 20-crypto is the single
        judge of what a key looks like, and it lives in the section that owns the
        format. What is recorded here is whether the attribute was WRITTEN at all
        -- an empty data-key is a tag somebody meant to fill in, and it gets said
@@ -117,7 +117,7 @@
        FORMAT.md section 4). So it is TIDINESS -- the tag can stay at the foot of
        every page of the site without the online documentation collecting the
        staging notes -- and NOT a security boundary: whoever has the project id
-       and the salt writes wherever they like. */
+       and the key writes wherever they like. */
     const PATH_PREFIX = read('path');
 
     /* The project origins. The real lock is the server's (FORMAT.md section
@@ -506,33 +506,33 @@
         'marker.one': '1 note here',
         'marker.n': '{n} notes here',
 
-        /* -- The salt: the only secret, and it cannot be recovered ---------- */
-        'salt.title': 'The key of this project is needed',
-        'salt.help':
+        /* -- The key: the only secret, and it cannot be recovered ---------- */
+        'key.title': 'The key of this project is needed',
+        'key.help':
             'The notes of this project are encrypted in your browser. Without the '
             + 'project key, this browser can neither read them nor write any. Ask '
             + 'whoever installed the tool for it, and paste it below. It will be '
             + 'remembered by this browser, for this site.',
-        'salt.label': 'The project key (43 characters)',
-        'salt.confirm': 'Use this key',
-        'salt.empty': 'Paste the key before confirming.',
-        'salt.shape':
+        'key.label': 'The project key (43 characters)',
+        'key.confirm': 'Use this key',
+        'key.empty': 'Paste the key before confirming.',
+        'key.shape':
             'This is not a key: 43 characters are expected, from A-Z a-z 0-9 - _, '
             + 'with no space and no decorative dash. Copy it in one block.',
-        'salt.wrong':
+        'key.wrong':
             'This key is not the one for this project. Nothing was sent, nothing '
             + 'was decrypted. Check that you are pasting the key of the right '
             + 'project.',
-        'salt.origin_changed':
+        'key.origin_changed':
             'This key is remembered per browser AND per domain. The day staging '
             + 'becomes production, it has to be pasted once more on the new domain '
             + '-- the notes themselves do not move.',
-        'salt.not_kept':
+        'key.not_kept':
             'This browser refuses to remember the key (private browsing, or '
             + 'storage blocked). The tool works for this page, but the key will '
             + 'have to be pasted again on the next load.',
-        'salt.replace': 'Paste another key',
-        'salt.forget': 'Forget the key on this browser',
+        'key.replace': 'Paste another key',
+        'key.forget': 'Forget the key on this browser',
 
         /* -- A project whose key is IN the page ---------------------------
            Said where the notes are, at every draw, and not once at startup: it
@@ -581,7 +581,7 @@
             + 'it: not the server, not the author of the tool, nobody you can ask. '
             + 'KEY LOST = NOTES LOST, for good, with no recovery. Put it away now, '
             + 'where your team keeps its passwords, before continuing.',
-        'setup.salt': 'The project key -- keep it',
+        'setup.key': 'The project key -- keep it',
         'setup.project': 'The project id -- public, it goes into the page',
         'setup.tag': 'The tag to paste at the end of <body>, on the pages to annotate',
         'setup.server': 'To declare in the server configuration',
@@ -617,18 +617,18 @@
 
     /* ==== 20-crypto.js ==== */
 
-    /* -- 6. The salt, the three derivations, the envelope --------------------
+    /* -- 6. The key, the three derivations, the envelope --------------------
 
        This whole file implements FORMAT.md sections 1, 3 and 4, and nothing
        else. When a line here contradicts FORMAT.md, this line is wrong.
 
-       THE SALT NEVER LEAVES THE BROWSER. It is not sent to the server in any
+       THE KEY NEVER LEAVES THE BROWSER. It is not sent to the server in any
        form, in any mode, derived forms included. The only path out of here is
        the setup screen, which shows it to the person who has just generated it
        so that they can put it away. */
 
     const HKDF_SALT_STRING = 'annotepage/1';
-    const SALT_LENGTH = 43;         // 32 bytes in base64url without padding
+    const KEY_LENGTH = 43;         // 32 bytes in base64url without padding
     const NONCE_LENGTH = 16;        // 12 bytes in base64url without padding
 
     /* WebCrypto only exists in a SECURE context: https, or localhost. On a
@@ -646,14 +646,14 @@
     };
 
     /**
-     * The text of a salt -> its 32 bytes, or null.
+     * The text of a key -> its 32 bytes, or null.
      *
      * We refuse anything that has not exactly the right shape rather than
-     * "cleaning up" spaces or dashes: an almost-right salt derives a wrong
-     * project id, and the message "this salt is not the salt of this project"
+     * "cleaning up" spaces or dashes: an almost-right key derives a wrong
+     * project id, and the message "this key is not the key of this project"
      * would then send someone looking in the wrong place.
      */
-    const saltFromText = (text) => {
+    const keyFromText = (text) => {
         const t = String(text == null ? '' : text).trim();
         if (!/^[A-Za-z0-9_-]{43}$/.test(t)) return null;
         const bytes = fromB64url(t);
@@ -664,26 +664,26 @@
      * The three derivations, in one go.
      *
      * TRAP, named because it costs dearly: HKDF's "salt" parameter is NOT our
-     * salt. Our salt is the input keying material (IKM); HKDF's salt is the
+     * key. Our key is the input keying material (IKM); HKDF's salt is the
      * fixed, public string "annotepage/1", which separates this tool from any
      * other software one might one day trust with the same secret. Swapping them
      * produces a system that works, that encrypts, and whose notes become
      * unreadable on the first reimplementation.
      */
-    const derive = (saltBytes) => {
+    const derive = (keyBytes) => {
         const params = (label) => ({
             name: 'HKDF',
             hash: 'SHA-256',
-            salt: utf8(HKDF_SALT_STRING),   // NOT the salt: see above
+            salt: utf8(HKDF_SALT_STRING),   // HKDF's salt, NOT our key: see above
             info: utf8(label)
         });
 
         return CRYPTO.subtle
-            .importKey('raw', saltBytes, 'HKDF', false, ['deriveBits', 'deriveKey'])
+            .importKey('raw', keyBytes, 'HKDF', false, ['deriveBits', 'deriveKey'])
             .then((master) => Promise.all([
                 CRYPTO.subtle.deriveBits(params('id'), master, 256),
                 // The encryption key is generated NON-EXTRACTABLE. That is
-                // hygiene, not a barrier: the salt sleeps in localStorage right
+                // hygiene, not a barrier: the key sleeps in localStorage right
                 // next to it, and whoever reads one rebuilds the other in three
                 // lines. We write it down so that nobody takes this "false" for
                 // a protection it is not.
@@ -783,7 +783,7 @@
      *   'newer'       the envelope carries a format number above ours. We do not
      *                 guess at cryptography: flat refusal, the note is skipped
      *                 and counted, and the tool SAYS that it exists.
-     *   'unreadable'  invalid shape, or decryption failed -- wrong salt, note
+     *   'unreadable'  invalid shape, or decryption failed -- wrong key, note
      *                 moved by the server, damaged bytes. All three are worth
      *                 the same to the reader: there is nothing to read.
      */
@@ -850,10 +850,10 @@
        it: a note skipped in silence is a remark that disappears. */
     let skipped = { newer: 0, unreadable: 0, unknown: 0 };
 
-    /* The salt of this project, and everything derived from it. "keys" stays
-       null as long as the salt is unknown: no request, no decryption goes out
+    /* The key of this project, and everything derived from it. "keys" stays
+       null as long as the key is unknown: no request, no decryption goes out
        before then. */
-    let saltText = '';
+    let keyText = '';
     let keys = null;            // { id, encryptionKey, indexKey }
     let PAGE_INDEX = '';        // blind index of the current page
 
@@ -869,20 +869,20 @@
     // the name is there to know who to talk to, not to prove who one is.
     const AUTHOR_KEY = 'annotepage/author';
 
-    /* The salt is stored UNDER THE PROJECT ID. That naming is not cosmetic: two
+    /* The key is stored UNDER THE PROJECT ID. That naming is not cosmetic: two
        projects reviewed from the same browser must not overwrite each other.
 
        An unpleasant consequence, to be stated: localStorage is PER ORIGIN. The
-       day staging becomes production, every reviewer has to paste the salt once
+       day staging becomes production, every reviewer has to paste the key once
        more on the new domain. The notes themselves do not move -- and that is
        exactly what the rule "the domain is not in the key" buys. */
-    const saltKey = (project) => 'annotepage/salt/' + project;
+    const keyKey = (project) => 'annotepage/key/' + project;
 
     const readSalt = (project) => {
         try {
-            return String(window.localStorage.getItem(saltKey(project)) || '').trim();
+            return String(window.localStorage.getItem(keyKey(project)) || '').trim();
         } catch (e) {
-            // Without storage the salt will be asked for on every visit: that is
+            // Without storage the key will be asked for on every visit: that is
             // less comfortable, it is not a failure.
             return '';
         }
@@ -890,10 +890,10 @@
 
     const writeSalt = (project, text) => {
         try {
-            window.localStorage.setItem(saltKey(project), text);
+            window.localStorage.setItem(keyKey(project), text);
             return true;
         } catch (e) {
-            // We return false so the screen can SAY it: a salt that is not kept
+            // We return false so the screen can SAY it: a key that is not kept
             // will have to be pasted again on every page, and it is better to
             // know that straight away than on the third time.
             return false;
@@ -902,7 +902,7 @@
 
     const forgetSalt = (project) => {
         try {
-            window.localStorage.removeItem(saltKey(project));
+            window.localStorage.removeItem(keyKey(project));
         } catch (e) {
             // Nothing to do: there was no storage in the first place.
         }
@@ -1386,11 +1386,11 @@
      * once the texts are available.
      */
     const buildHost = () => {
-        // IDEMPOTENT, and this is not a stylistic precaution: the salt-pasting
+        // IDEMPOTENT, and this is not a stylistic precaution: the key-pasting
         // screen built the host BEFORE the normal startup asked for it in turn.
         // Without this guard, the site received TWO elements, one of them empty
         // and orphaned -- the promise "one single element added" fell over at the
-        // first pasted salt.
+        // first pasted key.
         if (host) return;
         host = document.createElement('annotepage-notes');
         // These properties are set INLINE and with !important, on our own
@@ -1973,18 +1973,18 @@
             ui.footer.appendChild(change);
         }
 
-        /* The salt gets pasted again from here. This is not a convenience
+        /* The key gets pasted again from here. This is not a convenience
            setting: the day staging becomes production, localStorage changes
-           origin and the salt has to be pasted once more, on every browser.
+           origin and the key has to be pasted once more, on every browser.
            Without this button, one would have to clear the storage by hand to
            get there. */
         /* Not offered when the key comes from the tag: there is nothing stored
            to replace, and a key pasted here would be overruled by the tag on the
            next load -- while quietly leaving a copy in localStorage. */
-        if (PROJECT && saltText && !PUBLIC_KEY) {
-            const changeSalt = create('button', 'ap-link', T('salt.replace'));
+        if (PROJECT && keyText && !PUBLIC_KEY) {
+            const changeSalt = create('button', 'ap-link', T('key.replace'));
             changeSalt.type = 'button';
-            changeSalt.title = T('salt.origin_changed');
+            changeSalt.title = T('key.origin_changed');
             changeSalt.addEventListener('click', () => openSaltScreen());
             ui.footer.appendChild(changeSalt);
         }
@@ -2273,18 +2273,18 @@
 
     /* ==== 70-setup.js ==== */
 
-    /* -- 18. Setup, and the salt one pastes ----------------------------------
+    /* -- 18. Setup, and the key one pastes ----------------------------------
 
-       These screens are the only places where the salt is shown or typed in.
-       They are BLOCKING: as long as the salt is unknown, the tool shows neither
+       These screens are the only places where the key is shown or typed in.
+       They are BLOCKING: as long as the key is unknown, the tool shows neither
        an annotation button nor a panel of notes. There is nothing to annotate
-       without a salt -- not even in plain mode, where the page index is already
+       without a key -- not even in plain mode, where the page index is already
        an HMAC.
 
        None of these screens makes a network request. A consequence to be
        stated: a page carrying a tag with a project, on a site whose server is
-       not configured yet, will still show the "paste the salt" screen. That is
-       accepted: without a salt we cannot even ask for the list of notes, so we
+       not configured yet, will still show the "paste the key" screen. That is
+       accepted: without a key we cannot even ask for the list of notes, so we
        cannot check that the server answers. The tag, on the other hand, was put
        there by somebody. */
 
@@ -2407,23 +2407,23 @@
         + '  origins  ' + location.origin + '\n'
         + '  mode     ' + MODE;
 
-    /* -- The "paste the salt" screen ---------------------------------------- */
+    /* -- The "paste the key" screen ---------------------------------------- */
 
     const openSaltScreen = () => {
-        const screen = blockingScreen(T('salt.title'), false);
-        screen.body.appendChild(create('p', 'ap-help', T('salt.help')));
-        screen.body.appendChild(create('p', 'ap-help', T('salt.origin_changed')));
+        const screen = blockingScreen(T('key.title'), false);
+        screen.body.appendChild(create('p', 'ap-help', T('key.help')));
+        screen.body.appendChild(create('p', 'ap-help', T('key.origin_changed')));
 
-        screen.body.appendChild(create('div', 'ap-label', T('salt.label')));
+        screen.body.appendChild(create('div', 'ap-label', T('key.label')));
         const field = create('input', 'ap-field');
         field.type = 'text';
         field.setAttribute('autocomplete', 'off');
         field.setAttribute('spellcheck', 'false');
-        field.setAttribute('maxlength', String(SALT_LENGTH + 8));
+        field.setAttribute('maxlength', String(KEY_LENGTH + 8));
         screen.body.appendChild(field);
 
         const actions = create('div', 'ap-actions');
-        const confirm = create('button', 'ap-primary', T('salt.confirm'));
+        const confirm = create('button', 'ap-primary', T('key.confirm'));
         confirm.type = 'button';
         actions.appendChild(confirm);
         screen.body.appendChild(actions);
@@ -2433,30 +2433,30 @@
             if (previous) previous.remove();
             if (detail) {
                 screen.body.insertBefore(
-                    failureBlock({ title: T('salt.title'), detail: detail }), screen.body.firstChild);
+                    failureBlock({ title: T('key.title'), detail: detail }), screen.body.firstChild);
             }
         };
 
         confirm.addEventListener('click', () => {
             const raw = normalize(field.value).replace(/\s+/g, '');
-            if (!raw) return say(T('salt.empty'));
-            const bytes = saltFromText(raw);
-            if (!bytes) return say(T('salt.shape'));
+            if (!raw) return say(T('key.empty'));
+            const bytes = keyFromText(raw);
+            if (!bytes) return say(T('key.shape'));
             say(null);
             confirm.disabled = true;
 
             /* The check happens HERE: we re-derive the project id and compare it
-               with the tag's. Equal, the salt is the right one. Nothing is sent
+               with the tag's. Equal, the key is the right one. Nothing is sent
                to the network and nothing is decrypted before this test -- which
-               is what saves us from carrying a checksum alongside the salt: the
+               is what saves us from carrying a checksum alongside the key: the
                project id already plays that part, and it is public. */
             derive(bytes).then((derived) => {
                 confirm.disabled = false;
-                if (derived.id !== PROJECT) return say(T('salt.wrong'));
+                if (derived.id !== PROJECT) return say(T('key.wrong'));
                 if (!writeSalt(PROJECT, raw)) {
                     // Storage refuses: we carry on for this page anyway, but we
                     // do not let anyone believe it is remembered.
-                    say(T('salt.not_kept'));
+                    say(T('key.not_kept'));
                 }
                 startWithSalt(raw, derived);
             }, () => {
@@ -2483,11 +2483,11 @@
         generate.addEventListener('click', () => {
             generate.disabled = true;
             const fresh = generateSalt();
-            const bytes = saltFromText(fresh);
+            const bytes = keyFromText(fresh);
             derive(bytes).then((derived) => {
                 empty(screen.body);
 
-                /* The warning comes BEFORE the salt, and before the button that
+                /* The warning comes BEFORE the key, and before the button that
                    continues. It is spelled out in full, not in a footnote: it is
                    the only secret of the project, and there is no recovery. */
                 const warning = create('div', 'ap-error');
@@ -2496,7 +2496,7 @@
                 warning.appendChild(create('p', 'ap-error-detail', T('setup.warning')));
                 screen.body.appendChild(warning);
 
-                copyBlock(screen.body, T('setup.salt'), fresh);
+                copyBlock(screen.body, T('setup.key'), fresh);
                 copyBlock(screen.body, T('setup.project'), derived.id);
                 copyBlock(screen.body, T('setup.tag'), tagToPaste(derived.id));
                 copyBlock(screen.body, T('setup.server'), serverConfig(derived.id));
@@ -2515,7 +2515,7 @@
                 proceed.addEventListener('click', () => {
                     const kept = writeSalt(derived.id, fresh);
                     const done = create('p', 'ap-help',
-                        kept ? T('setup.done') : T('salt.not_kept'));
+                        kept ? T('setup.done') : T('key.not_kept'));
                     actions.replaceWith(done);
                 });
                 actions.appendChild(proceed);
@@ -2535,7 +2535,7 @@
        reason said out loud rather than a tool that quietly does not appear.
 
        There is no field to correct here, and that is the difference with the
-       salt screen: the mistake is in the page's source, not in this browser. So
+       key screen: the mistake is in the page's source, not in this browser. So
        the screen names what has to change in the tag, and stops. */
 
     const openTagScreen = (detail) => {
@@ -2761,8 +2761,8 @@
        The order matters: we ask the API BEFORE touching the DOM. If it does not
        answer what it should, the site never saw anything go by.
 
-       One exception, accepted: the setup and salt-pasting screens, which CANNOT
-       ask the API -- without a salt there is no page index to give it. They are
+       One exception, accepted: the setup and key-pasting screens, which CANNOT
+       ask the API -- without a key there is no page index to give it. They are
        declared (data-setup) or asked for by a tag that already carries a
        project: either way, somebody put that tag here on purpose. */
 
@@ -2831,11 +2831,11 @@
         r.cause === 'server' || r.cause === 'failure' || String(r.cause).indexOf('refused') === 0;
 
     /**
-     * The salt is known and checked: we derive the page index, we ask the
+     * The key is known and checked: we derive the page index, we ask the
      * server, and the tool takes its normal shape.
      */
     function startWithSalt(text, derived) {
-        saltText = text;
+        keyText = text;
         keys = derived;
 
         return indexOfPath(keys.indexKey, pagePath())
@@ -2845,7 +2845,7 @@
             })
             .then((first) => {
                 if (!first.ok && !speaksAtStartup(first)) {
-                    // Complete silence: no node, no pixel, no message. If a salt
+                    // Complete silence: no node, no pixel, no message. If a key
                     // screen was open, it goes away with the rest.
                     withdraw();
                     return null;
@@ -2919,7 +2919,7 @@
            day the tag changes. The interface then says so at every draw
            (PUBLIC_KEY, 60-ui). */
         if (KEY_DECLARED) {
-            const keyBytes = saltFromText(DECLARED_KEY);
+            const keyBytes = keyFromText(DECLARED_KEY);
             if (!keyBytes) {
                 /* An attribute somebody wrote on purpose, and it is not a key.
                    Staying silent here would be the behaviour of a tag carrying
@@ -2958,7 +2958,7 @@
         }
 
         const text = readSalt(PROJECT);
-        const bytes = saltFromText(text);
+        const bytes = keyFromText(text);
         if (!bytes) {
             showScreen(openSaltScreen);
             return;
@@ -2966,7 +2966,7 @@
 
         derive(bytes).then((derived) => {
             if (derived.id !== PROJECT) {
-                // The salt stored under this key does not derive this id: the
+                // The key stored under this key does not derive this id: the
                 // tag has changed project, or the storage was tampered with. We
                 // ask again, we do not guess.
                 showScreen(openSaltScreen);

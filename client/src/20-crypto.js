@@ -1,15 +1,15 @@
-/* -- 6. The salt, the three derivations, the envelope --------------------
+/* -- 6. The key, the three derivations, the envelope --------------------
 
    This whole file implements FORMAT.md sections 1, 3 and 4, and nothing
    else. When a line here contradicts FORMAT.md, this line is wrong.
 
-   THE SALT NEVER LEAVES THE BROWSER. It is not sent to the server in any
+   THE KEY NEVER LEAVES THE BROWSER. It is not sent to the server in any
    form, in any mode, derived forms included. The only path out of here is
    the setup screen, which shows it to the person who has just generated it
    so that they can put it away. */
 
 const HKDF_SALT_STRING = 'annotepage/1';
-const SALT_LENGTH = 43;         // 32 bytes in base64url without padding
+const KEY_LENGTH = 43;         // 32 bytes in base64url without padding
 const NONCE_LENGTH = 16;        // 12 bytes in base64url without padding
 
 /* WebCrypto only exists in a SECURE context: https, or localhost. On a
@@ -27,14 +27,14 @@ const generateSalt = () => {
 };
 
 /**
- * The text of a salt -> its 32 bytes, or null.
+ * The text of a key -> its 32 bytes, or null.
  *
  * We refuse anything that has not exactly the right shape rather than
- * "cleaning up" spaces or dashes: an almost-right salt derives a wrong
- * project id, and the message "this salt is not the salt of this project"
+ * "cleaning up" spaces or dashes: an almost-right key derives a wrong
+ * project id, and the message "this key is not the key of this project"
  * would then send someone looking in the wrong place.
  */
-const saltFromText = (text) => {
+const keyFromText = (text) => {
     const t = String(text == null ? '' : text).trim();
     if (!/^[A-Za-z0-9_-]{43}$/.test(t)) return null;
     const bytes = fromB64url(t);
@@ -45,26 +45,26 @@ const saltFromText = (text) => {
  * The three derivations, in one go.
  *
  * TRAP, named because it costs dearly: HKDF's "salt" parameter is NOT our
- * salt. Our salt is the input keying material (IKM); HKDF's salt is the
+ * key. Our key is the input keying material (IKM); HKDF's salt is the
  * fixed, public string "annotepage/1", which separates this tool from any
  * other software one might one day trust with the same secret. Swapping them
  * produces a system that works, that encrypts, and whose notes become
  * unreadable on the first reimplementation.
  */
-const derive = (saltBytes) => {
+const derive = (keyBytes) => {
     const params = (label) => ({
         name: 'HKDF',
         hash: 'SHA-256',
-        salt: utf8(HKDF_SALT_STRING),   // NOT the salt: see above
+        salt: utf8(HKDF_SALT_STRING),   // HKDF's salt, NOT our key: see above
         info: utf8(label)
     });
 
     return CRYPTO.subtle
-        .importKey('raw', saltBytes, 'HKDF', false, ['deriveBits', 'deriveKey'])
+        .importKey('raw', keyBytes, 'HKDF', false, ['deriveBits', 'deriveKey'])
         .then((master) => Promise.all([
             CRYPTO.subtle.deriveBits(params('id'), master, 256),
             // The encryption key is generated NON-EXTRACTABLE. That is
-            // hygiene, not a barrier: the salt sleeps in localStorage right
+            // hygiene, not a barrier: the key sleeps in localStorage right
             // next to it, and whoever reads one rebuilds the other in three
             // lines. We write it down so that nobody takes this "false" for
             // a protection it is not.
@@ -164,7 +164,7 @@ const seal = (encryptionKey, project, pageIndex, role, object) => {
  *   'newer'       the envelope carries a format number above ours. We do not
  *                 guess at cryptography: flat refusal, the note is skipped
  *                 and counted, and the tool SAYS that it exists.
- *   'unreadable'  invalid shape, or decryption failed -- wrong salt, note
+ *   'unreadable'  invalid shape, or decryption failed -- wrong key, note
  *                 moved by the server, damaged bytes. All three are worth
  *                 the same to the reader: there is nothing to read.
  */

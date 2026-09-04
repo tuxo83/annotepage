@@ -10,11 +10,11 @@
  * once the texts are available.
  */
 const buildHost = () => {
-    // IDEMPOTENT, and this is not a stylistic precaution: the salt-pasting
+    // IDEMPOTENT, and this is not a stylistic precaution: the key-pasting
     // screen built the host BEFORE the normal startup asked for it in turn.
     // Without this guard, the site received TWO elements, one of them empty
     // and orphaned -- the promise "one single element added" fell over at the
-    // first pasted salt.
+    // first pasted key.
     if (host) return;
     host = document.createElement('annotepage-notes');
     // These properties are set INLINE and with !important, on our own
@@ -597,18 +597,18 @@ const drawPanel = () => {
         ui.footer.appendChild(change);
     }
 
-    /* The salt gets pasted again from here. This is not a convenience
+    /* The key gets pasted again from here. This is not a convenience
        setting: the day staging becomes production, localStorage changes
-       origin and the salt has to be pasted once more, on every browser.
+       origin and the key has to be pasted once more, on every browser.
        Without this button, one would have to clear the storage by hand to
        get there. */
     /* Not offered when the key comes from the tag: there is nothing stored
        to replace, and a key pasted here would be overruled by the tag on the
        next load -- while quietly leaving a copy in localStorage. */
-    if (PROJECT && saltText && !PUBLIC_KEY) {
-        const changeSalt = create('button', 'ap-link', T('salt.replace'));
+    if (PROJECT && keyText && !PUBLIC_KEY) {
+        const changeSalt = create('button', 'ap-link', T('key.replace'));
         changeSalt.type = 'button';
-        changeSalt.title = T('salt.origin_changed');
+        changeSalt.title = T('key.origin_changed');
         changeSalt.addEventListener('click', () => openSaltScreen());
         ui.footer.appendChild(changeSalt);
     }

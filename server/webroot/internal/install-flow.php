@@ -510,7 +510,7 @@ function ap_i_site_root_url($here, $docRoot, $baseUrl)
  * is safe. It is -- nothing rewrites it, the updater cannot even name it.
  *
  * `projects` is left EMPTY on purpose and the block to paste is right there in
- * a comment. The project id does not exist yet: it is derived from a salt the
+ * a comment. The project id does not exist yet: it is derived from a key the
  * browser generates, and the client's setup screen hands it over the first time
  * somebody opens an annotated page. Inventing one here would produce an
  * installation that answers about notes nobody can decrypt.
@@ -548,7 +548,7 @@ function ap_i_config_text(array $values)
     $text .= " * here keeps the default from internal/config.php, which is where each\n";
     $text .= " * one is documented.\n";
     $text .= " *\n";
-    $text .= " * THE SALT IS NOT HERE AND NEVER WILL BE. It is generated in the browser,\n";
+    $text .= " * THE KEY IS NOT HERE AND NEVER WILL BE. It is generated in the browser,\n";
     $text .= " * over 256 bits, and the server never receives it in any form. What goes\n";
     $text .= " * below is the PROJECT ID, which descends from it and does not lead back.\n";
     $text .= " */\n\n";
@@ -570,7 +570,7 @@ function ap_i_config_text(array $values)
         $text .= "    // lock -- nobody declared its origins and there is no way to learn\n";
         $text .= "    // them an abuser could not use too -- so a stranger who reads an id\n";
         $text .= "    // in the source of a page can write into it. They write bytes, not\n";
-        $text .= "    // words: the salt never reached this server, so what they insert\n";
+        $text .= "    // words: the key never reached this server, so what they insert\n";
         $text .= "    // comes back as unreadable rows. What it really costs is your\n";
         $text .= "    // disk, which is what the two caps below are for.\n";
         $text .= "    //\n";
@@ -623,7 +623,7 @@ function ap_i_config_text(array $values)
     } else {
         $text .= "    // THE PROJECTS. Empty until you have one, and you will have one the\n";
         $text .= "    // first time somebody opens an annotated page: the client generates\n";
-        $text .= "    // the salt in the browser and shows you the id and the block to paste\n";
+        $text .= "    // the key in the browser and shows you the id and the block to paste\n";
         $text .= "    // here. The server does not compute that id, it recognises it.\n";
     }
     $text .= "    //\n";
@@ -1163,15 +1163,15 @@ function ap_i_run(array $options)
         if ($installedRelay) {
             echo '<p>The rest of the tag &mdash; the script source and the project id '
                 . '&mdash; comes from the client, and there is nothing to declare here: '
-                . 'this server answers about any project id it is given. The salt never '
+                . 'this server answers about any project id it is given. The key never '
                 . 'reaches it, in any form: that is what makes the notes unreadable to '
                 . "it, and to you.</p>\n";
         } else {
             echo '<p>The rest of the tag &mdash; the script source and the project id '
                 . '&mdash; comes from the client. Add the tag to a page, open it, and the '
-                . 'setup screen generates the salt in your browser and hands you the block '
+                . 'setup screen generates the key in your browser and hands you the block '
                 . 'to paste into <code>internal/config-local.php</code> under '
-                . '<code>projects</code>. The salt never reaches this server, in any form: '
+                . '<code>projects</code>. The key never reaches this server, in any form: '
                 . "that is what makes the notes unreadable to it.</p>\n";
         }
 
@@ -1256,7 +1256,7 @@ function ap_i_run(array $options)
         . ($postedRelay ? ' checked' : '') . '> <strong>Anyone</strong> '
         . "&mdash; a relay, open to projects nobody declared</label>\n";
     echo '<p class="note">Then notes from people you have never heard of land on your '
-        . 'disk and in your hosting bill. They are encrypted with a salt this server '
+        . 'disk and in your hosting bill. They are encrypted with a key this server '
         . 'never receives, so you keep what you cannot read and cannot moderate. The '
         . 'generated configuration bounds it: 500 notes per project, nothing kept past '
         . '90 days.</p>' . "\n";

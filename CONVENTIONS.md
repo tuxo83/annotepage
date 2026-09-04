@@ -35,7 +35,7 @@ way. A synonym that reads better in one file breaks the match in another.
 | note | note | |
 | reponse | reply | a reply IS a note carrying `reply_to` |
 | projet | project | |
-| sel | salt | |
+| sel | key | |
 | enveloppe | envelope | the sealed encrypted unit |
 | chiffre / clair | encrypted / plain | the two modes, and their literal values |
 | index aveugle | blind index | |
@@ -99,9 +99,9 @@ file, not the code. Recorded here so the next change has one place to look.
 | actions `liste` `ajout` `resoudre` `texte` `diagnostic` `reprise` | `list` `add` `resolve` `text` `diagnostic` `backfill` |
 | HTTP parameters `par` `resolue` | `by` `resolved` |
 | export keys `charge` `charge_resolution` `saute` `saute_raison` | `payload` `resolution-payload` `skipped` `skipped-reason` |
-| MCP config `sel` `identifiant` `lecture_seule` `projet_par_defaut` | `salt` `id` `read_only` `default_project` |
+| MCP config `sel` `identifiant` `lecture_seule` `projet_par_defaut` | `key` `id` `read_only` `default_project` |
 | `marqueur` | `marker` -- distinct from `repere`/`ancre`, which is `anchor` |
-| `annotepage/sel/<id>` `annotepage/auteur` | `annotepage/salt/<project_id>` `annotepage/author` |
+| `annotepage/sel/<id>` `annotepage/auteur` | `annotepage/key/<project_id>` `annotepage/author` |
 | `preprod` (example values) | `staging` |
 
 One term splits, deliberately: `etat` is `status` on the wire, where it means

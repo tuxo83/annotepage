@@ -23,7 +23,7 @@
  *   10-utils      base64url, utf8 — the bytes of the format
  *   15-labels     the texts, which the messages of 40 depend on
  *   20-crypto     the three derivations, the blind index, the envelope
- *   30-state      the salt, the keys, the index of the current page
+ *   30-state      the key, the keys, the index of the current page
  *   40-api        the five addresses, and above all THE BUILDING OF THE BODY
  *
  * Sections 50 to 90 are left out: they build an interface, they carry no
@@ -76,12 +76,12 @@ const EPILOGUE = `
                    PATH_PREFIX, PAGE_INDEX }),
 
     /* The boot (section 90, not loaded) does exactly this: it derives the
-       keys from the salt, computes the index of the page, and sets them. */
+       keys from the key, computes the index of the page, and sets them. */
     install: (newKeys, index) => { keys = newKeys; PAGE_INDEX = index; },
 
     /* The protocol, as the client writes it. */
     derive, indexOfPath, pagePath, seal, open,
-    generateSalt, saltFromText, b64url, fromB64url, utf8, fromUtf8,
+    generateSalt, keyFromText, b64url, fromB64url, utf8, fromUtf8,
 
     /* The five addresses, as the client calls them. noteBody and
        resolutionBody are the sensitive point: that is where it is decided

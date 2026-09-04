@@ -14,7 +14,7 @@
    implementation of HKDF-SHA-256 written by hand from RFC 5869, and not
    copied from the output of the code under test: without that cross-check, a
    test that freezes its own mistake passes for ever. That is how we check, in
-   particular, that the salt is the IKM and "annotepage/1" the salt, and not
+   particular, that the key is the IKM and "annotepage/1" the key, and not
    the other way round -- both "work", only one is the format.
 
    No dependency. "node tools/check.mjs".
@@ -45,7 +45,7 @@ const code = [
        file that touches the document is inside a function, so evaluating it
        here costs nothing. */
     read('80-upgrade.js'),
-    'return { b64url, fromB64url, generateSalt, saltFromText, derive,',
+    'return { b64url, fromB64url, generateSalt, keyFromText, derive,',
     '         indexOfPath, seal, open, compact,',
     '         versionNumbers, announcedVersion, cdnServing, officialUrl };'
 ].join('\n');
@@ -69,7 +69,7 @@ const check = (name, got, expected) => {
     }
 };
 
-/* The salt of the vector: bytes 0 to 31, in order. Chosen so that another
+/* The key of the vector: bytes 0 to 31, in order. Chosen so that another
    implementation can reproduce it without copying a string. */
 const vectorBytes = new Uint8Array(32);
 for (let i = 0; i < 32; i += 1) vectorBytes[i] = i;
@@ -77,13 +77,13 @@ const VECTOR_SALT = module.b64url(vectorBytes);
 
 const main = async () => {
     process.stdout.write('base64url\n');
-    check('salt of the vector (43 characters)', VECTOR_SALT,
+    check('key of the vector (43 characters)', VECTOR_SALT,
         'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8');
     check('round trip', module.b64url(module.fromB64url(VECTOR_SALT)), VECTOR_SALT);
-    check('a malformed salt is refused', module.saltFromText(VECTOR_SALT + 'X'), null);
-    check('a spaced salt is refused', module.saltFromText('AAEC AwQF'), null);
+    check('a malformed key is refused', module.keyFromText(VECTOR_SALT + 'X'), null);
+    check('a spaced key is refused', module.keyFromText('AAEC AwQF'), null);
 
-    process.stdout.write('HKDF-SHA-256 derivations, salt "annotepage/1"\n');
+    process.stdout.write('HKDF-SHA-256 derivations, key "annotepage/1"\n');
     const keys = await module.derive(vectorBytes);
     check('project id (22 characters)', keys.id, 'Up4tgMk-kJmJl1MUMuC5yA');
 

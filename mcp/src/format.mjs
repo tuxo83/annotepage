@@ -17,7 +17,7 @@ export const FORMAT = 2;
 export const HKDF_SALT_STRING = 'annotepage/1';
 
 /** 32 bytes in base64url without padding. */
-export const SALT_LENGTH = 43;
+export const KEY_LENGTH = 43;
 
 /* 12 bytes in base64url without padding. A reader that counts anything else
    refuses the row instead of guessing. FORMAT.md section 3.3. */

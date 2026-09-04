@@ -1,15 +1,15 @@
-/* -- 18. Setup, and the salt one pastes ----------------------------------
+/* -- 18. Setup, and the key one pastes ----------------------------------
 
-   These screens are the only places where the salt is shown or typed in.
-   They are BLOCKING: as long as the salt is unknown, the tool shows neither
+   These screens are the only places where the key is shown or typed in.
+   They are BLOCKING: as long as the key is unknown, the tool shows neither
    an annotation button nor a panel of notes. There is nothing to annotate
-   without a salt -- not even in plain mode, where the page index is already
+   without a key -- not even in plain mode, where the page index is already
    an HMAC.
 
    None of these screens makes a network request. A consequence to be
    stated: a page carrying a tag with a project, on a site whose server is
-   not configured yet, will still show the "paste the salt" screen. That is
-   accepted: without a salt we cannot even ask for the list of notes, so we
+   not configured yet, will still show the "paste the key" screen. That is
+   accepted: without a key we cannot even ask for the list of notes, so we
    cannot check that the server answers. The tag, on the other hand, was put
    there by somebody. */
 
@@ -132,23 +132,23 @@ const serverConfig = (id) =>
     + '  origins  ' + location.origin + '\n'
     + '  mode     ' + MODE;
 
-/* -- The "paste the salt" screen ---------------------------------------- */
+/* -- The "paste the key" screen ---------------------------------------- */
 
 const openSaltScreen = () => {
-    const screen = blockingScreen(T('salt.title'), false);
-    screen.body.appendChild(create('p', 'ap-help', T('salt.help')));
-    screen.body.appendChild(create('p', 'ap-help', T('salt.origin_changed')));
+    const screen = blockingScreen(T('key.title'), false);
+    screen.body.appendChild(create('p', 'ap-help', T('key.help')));
+    screen.body.appendChild(create('p', 'ap-help', T('key.origin_changed')));
 
-    screen.body.appendChild(create('div', 'ap-label', T('salt.label')));
+    screen.body.appendChild(create('div', 'ap-label', T('key.label')));
     const field = create('input', 'ap-field');
     field.type = 'text';
     field.setAttribute('autocomplete', 'off');
     field.setAttribute('spellcheck', 'false');
-    field.setAttribute('maxlength', String(SALT_LENGTH + 8));
+    field.setAttribute('maxlength', String(KEY_LENGTH + 8));
     screen.body.appendChild(field);
 
     const actions = create('div', 'ap-actions');
-    const confirm = create('button', 'ap-primary', T('salt.confirm'));
+    const confirm = create('button', 'ap-primary', T('key.confirm'));
     confirm.type = 'button';
     actions.appendChild(confirm);
     screen.body.appendChild(actions);
@@ -158,30 +158,30 @@ const openSaltScreen = () => {
         if (previous) previous.remove();
         if (detail) {
             screen.body.insertBefore(
-                failureBlock({ title: T('salt.title'), detail: detail }), screen.body.firstChild);
+                failureBlock({ title: T('key.title'), detail: detail }), screen.body.firstChild);
         }
     };
 
     confirm.addEventListener('click', () => {
         const raw = normalize(field.value).replace(/\s+/g, '');
-        if (!raw) return say(T('salt.empty'));
-        const bytes = saltFromText(raw);
-        if (!bytes) return say(T('salt.shape'));
+        if (!raw) return say(T('key.empty'));
+        const bytes = keyFromText(raw);
+        if (!bytes) return say(T('key.shape'));
         say(null);
         confirm.disabled = true;
 
         /* The check happens HERE: we re-derive the project id and compare it
-           with the tag's. Equal, the salt is the right one. Nothing is sent
+           with the tag's. Equal, the key is the right one. Nothing is sent
            to the network and nothing is decrypted before this test -- which
-           is what saves us from carrying a checksum alongside the salt: the
+           is what saves us from carrying a checksum alongside the key: the
            project id already plays that part, and it is public. */
         derive(bytes).then((derived) => {
             confirm.disabled = false;
-            if (derived.id !== PROJECT) return say(T('salt.wrong'));
+            if (derived.id !== PROJECT) return say(T('key.wrong'));
             if (!writeSalt(PROJECT, raw)) {
                 // Storage refuses: we carry on for this page anyway, but we
                 // do not let anyone believe it is remembered.
-                say(T('salt.not_kept'));
+                say(T('key.not_kept'));
             }
             startWithSalt(raw, derived);
         }, () => {
@@ -208,11 +208,11 @@ const openSetupScreen = () => {
     generate.addEventListener('click', () => {
         generate.disabled = true;
         const fresh = generateSalt();
-        const bytes = saltFromText(fresh);
+        const bytes = keyFromText(fresh);
         derive(bytes).then((derived) => {
             empty(screen.body);
 
-            /* The warning comes BEFORE the salt, and before the button that
+            /* The warning comes BEFORE the key, and before the button that
                continues. It is spelled out in full, not in a footnote: it is
                the only secret of the project, and there is no recovery. */
             const warning = create('div', 'ap-error');
@@ -221,7 +221,7 @@ const openSetupScreen = () => {
             warning.appendChild(create('p', 'ap-error-detail', T('setup.warning')));
             screen.body.appendChild(warning);
 
-            copyBlock(screen.body, T('setup.salt'), fresh);
+            copyBlock(screen.body, T('setup.key'), fresh);
             copyBlock(screen.body, T('setup.project'), derived.id);
             copyBlock(screen.body, T('setup.tag'), tagToPaste(derived.id));
             copyBlock(screen.body, T('setup.server'), serverConfig(derived.id));
@@ -240,7 +240,7 @@ const openSetupScreen = () => {
             proceed.addEventListener('click', () => {
                 const kept = writeSalt(derived.id, fresh);
                 const done = create('p', 'ap-help',
-                    kept ? T('setup.done') : T('salt.not_kept'));
+                    kept ? T('setup.done') : T('key.not_kept'));
                 actions.replaceWith(done);
             });
             actions.appendChild(proceed);
@@ -260,7 +260,7 @@ const openSetupScreen = () => {
    reason said out loud rather than a tool that quietly does not appear.
 
    There is no field to correct here, and that is the difference with the
-   salt screen: the mistake is in the page's source, not in this browser. So
+   key screen: the mistake is in the page's source, not in this browser. So
    the screen names what has to change in the tag, and stops. */
 
 const openTagScreen = (detail) => {

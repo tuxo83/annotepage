@@ -186,33 +186,33 @@ ns.defaultLabels = {
     'marker.one': '1 note here',
     'marker.n': '{n} notes here',
 
-    /* -- The salt: the only secret, and it cannot be recovered ---------- */
-    'salt.title': 'The key of this project is needed',
-    'salt.help':
+    /* -- The key: the only secret, and it cannot be recovered ---------- */
+    'key.title': 'The key of this project is needed',
+    'key.help':
         'The notes of this project are encrypted in your browser. Without the '
         + 'project key, this browser can neither read them nor write any. Ask '
         + 'whoever installed the tool for it, and paste it below. It will be '
         + 'remembered by this browser, for this site.',
-    'salt.label': 'The project key (43 characters)',
-    'salt.confirm': 'Use this key',
-    'salt.empty': 'Paste the key before confirming.',
-    'salt.shape':
+    'key.label': 'The project key (43 characters)',
+    'key.confirm': 'Use this key',
+    'key.empty': 'Paste the key before confirming.',
+    'key.shape':
         'This is not a key: 43 characters are expected, from A-Z a-z 0-9 - _, '
         + 'with no space and no decorative dash. Copy it in one block.',
-    'salt.wrong':
+    'key.wrong':
         'This key is not the one for this project. Nothing was sent, nothing '
         + 'was decrypted. Check that you are pasting the key of the right '
         + 'project.',
-    'salt.origin_changed':
+    'key.origin_changed':
         'This key is remembered per browser AND per domain. The day staging '
         + 'becomes production, it has to be pasted once more on the new domain '
         + '-- the notes themselves do not move.',
-    'salt.not_kept':
+    'key.not_kept':
         'This browser refuses to remember the key (private browsing, or '
         + 'storage blocked). The tool works for this page, but the key will '
         + 'have to be pasted again on the next load.',
-    'salt.replace': 'Paste another key',
-    'salt.forget': 'Forget the key on this browser',
+    'key.replace': 'Paste another key',
+    'key.forget': 'Forget the key on this browser',
 
     /* -- A project whose key is IN the page ---------------------------
        Said where the notes are, at every draw, and not once at startup: it
@@ -261,7 +261,7 @@ ns.defaultLabels = {
         + 'it: not the server, not the author of the tool, nobody you can ask. '
         + 'KEY LOST = NOTES LOST, for good, with no recovery. Put it away now, '
         + 'where your team keeps its passwords, before continuing.',
-    'setup.salt': 'The project key -- keep it',
+    'setup.key': 'The project key -- keep it',
     'setup.project': 'The project id -- public, it goes into the page',
     'setup.tag': 'The tag to paste at the end of <body>, on the pages to annotate',
     'setup.server': 'To declare in the server configuration',

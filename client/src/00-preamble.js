@@ -65,7 +65,7 @@ let PROJECT = PROJECT_WELL_FORMED ? DECLARED_PROJECT : '';
    encrypted. The key is random, it lives in the page, and the page is the
    one thing the server never sees.
 
-   The SHAPE is not checked here: saltFromText() in 20-crypto is the single
+   The SHAPE is not checked here: keyFromText() in 20-crypto is the single
    judge of what a key looks like, and it lives in the section that owns the
    format. What is recorded here is whether the attribute was WRITTEN at all
    -- an empty data-key is a tag somebody meant to fill in, and it gets said
@@ -93,7 +93,7 @@ const MODE = read('mode').toLowerCase() === 'plain' ? 'plain' : 'encrypted';
    FORMAT.md section 4). So it is TIDINESS -- the tag can stay at the foot of
    every page of the site without the online documentation collecting the
    staging notes -- and NOT a security boundary: whoever has the project id
-   and the salt writes wherever they like. */
+   and the key writes wherever they like. */
 const PATH_PREFIX = read('path');
 
 /* The project origins. The real lock is the server's (FORMAT.md section

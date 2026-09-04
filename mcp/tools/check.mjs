@@ -11,7 +11,7 @@
  * hand with createHmac, and not with a copied value. A copied value attests
  * that the code does today what it did yesterday; a second implementation
  * attests that it does what the RFC says — and that is exactly the trap
- * FORMAT.md section 1.3 names, where our salt is taken for HKDF's "salt"
+ * FORMAT.md section 1.3 names, where our key is taken for HKDF's "salt"
  * instead of the input keying material. Both versions work, both encrypt, and
  * neither can read the other.
  */
@@ -19,7 +19,7 @@
 import { createHmac } from 'node:crypto';
 
 import { b64url, fromB64url, normalisedLines, indent, safeValue } from '../src/format.mjs';
-import { derive, saltFromText, seal, open, indexOfPath, normalisedPath } from '../src/crypto.mjs';
+import { derive, keyFromText, seal, open, indexOfPath, normalisedPath } from '../src/crypto.mjs';
 import { readExport, writeExport } from '../src/text-export.mjs';
 import { projectForCall, absentConfiguration, loadConfiguration, saveProject, chooseProject,
          siteToOrigin, ConfigError } from '../src/config.mjs';
@@ -52,8 +52,8 @@ const truthy = (condition, what) => {
 
 /* -- HKDF-SHA-256 (RFC 5869), written by hand ---------------------------- */
 
-const hkdf = (ikm, salt, info, length) => {
-    const prk = createHmac('sha256', salt).update(ikm).digest();
+const hkdf = (ikm, key, info, length) => {
+    const prk = createHmac('sha256', key).update(ikm).digest();
     let previous = Buffer.alloc(0);
     let out = Buffer.alloc(0);
     for (let n = 1; out.length < length; n += 1) {
@@ -65,7 +65,7 @@ const hkdf = (ikm, salt, info, length) => {
     return out.subarray(0, length);
 };
 
-const SALT_TEXT = b64url(new Uint8Array(32).map((v, i) => (i * 7 + 3) & 0xff));
+const KEY_TEXT = b64url(new Uint8Array(32).map((v, i) => (i * 7 + 3) & 0xff));
 
 /* -- 1. The groundwork --------------------------------------------------- */
 
@@ -87,18 +87,18 @@ await check('base64url: refusal of what is not base64url', () => {
     equal(fromB64url('ab cd'), null, 'a space is not base64url');
 });
 
-await check('salt: the shape is required, never cleaned', () => {
-    equal(saltFromText('too-short'), null, 'a short salt is refused');
-    equal(saltFromText(SALT_TEXT + 'x'), null, 'a long salt is refused');
-    equal(saltFromText(SALT_TEXT.slice(0, 42) + '+'), null, 'alphabet');
-    truthy(saltFromText(' ' + SALT_TEXT + ' ') !== null, 'edge spaces are allowed');
-    truthy(saltFromText(SALT_TEXT).length === 32, '32 bytes');
+await check('key: the shape is required, never cleaned', () => {
+    equal(keyFromText('too-short'), null, 'a short key is refused');
+    equal(keyFromText(KEY_TEXT + 'x'), null, 'a long key is refused');
+    equal(keyFromText(KEY_TEXT.slice(0, 42) + '+'), null, 'alphabet');
+    truthy(keyFromText(' ' + KEY_TEXT + ' ') !== null, 'edge spaces are allowed');
+    truthy(keyFromText(KEY_TEXT).length === 32, '32 bytes');
 });
 
 /* -- 2. The three derivations -------------------------------------------- */
 
 await check('derivation: identical to a second implementation of HKDF', async () => {
-    const bytes = saltFromText(SALT_TEXT);
+    const bytes = keyFromText(KEY_TEXT);
     const keys = await derive(bytes);
 
     const expectedId = hkdf(Buffer.from(bytes), Buffer.from('annotepage/1'),
@@ -107,16 +107,16 @@ await check('derivation: identical to a second implementation of HKDF', async ()
     equal(keys.id.length, 22, 'length of the id');
 
     /* The trap of FORMAT.md section 1.3, checked rather than described:
-       swapping the salt and the fixed string gives a DIFFERENT id. Both
+       swapping the key and the fixed string gives a DIFFERENT id. Both
        systems work; neither can read the other. */
     const swapped = hkdf(Buffer.from('annotepage/1'), Buffer.from(bytes),
                          Buffer.from('id'), 32);
     truthy(b64url(new Uint8Array(swapped).subarray(0, 16)) !== keys.id,
-        'our salt and HKDF salt are not interchangeable');
+        'our key and HKDF\'s salt are not interchangeable');
 });
 
 await check('page index: HMAC of the "index" subkey', async () => {
-    const bytes = saltFromText(SALT_TEXT);
+    const bytes = keyFromText(KEY_TEXT);
     const keys = await derive(bytes);
     const indexKey = hkdf(Buffer.from(bytes), Buffer.from('annotepage/1'),
                           Buffer.from('index'), 32);
@@ -126,7 +126,7 @@ await check('page index: HMAC of the "index" subkey', async () => {
 });
 
 await check('page index: no normalisation beyond format 1', async () => {
-    const keys = await derive(saltFromText(SALT_TEXT));
+    const keys = await derive(keyFromText(KEY_TEXT));
     const of = (c) => indexOfPath(keys.indexKey, normalisedPath(c));
     truthy(await of('/a') !== await of('/a/'), '"/a" and "/a/" are two pages');
     truthy(await of('/Contact') !== await of('/contact'), 'case matters');
@@ -141,7 +141,7 @@ const PROJECT = '7Qb1kZ3xNvA9dLpEqKf2Zt';
 const INDEX = '9dLpEqKf2Zt8ArC1vXbGhQ';
 
 await check('envelope: round trip and serialised shape', async () => {
-    const keys = await derive(saltFromText(SALT_TEXT));
+    const keys = await derive(keyFromText(KEY_TEXT));
     const object = { author: 'Camille', text: 'The link still points elsewhere.', empty: '' };
     const envelope = await seal(keys.encryptionKey, PROJECT, INDEX, 'note', object);
 
@@ -159,7 +159,7 @@ await check('envelope: round trip and serialised shape', async () => {
 });
 
 await check('envelope: two sealings give two nonces', async () => {
-    const keys = await derive(saltFromText(SALT_TEXT));
+    const keys = await derive(keyFromText(KEY_TEXT));
     const a = await seal(keys.encryptionKey, PROJECT, INDEX, 'note', { text: 'x' });
     const b = await seal(keys.encryptionKey, PROJECT, INDEX, 'note', { text: 'x' });
     truthy(a.split('.')[1] !== b.split('.')[1], 'nonce drawn at every encryption');
@@ -167,7 +167,7 @@ await check('envelope: two sealings give two nonces', async () => {
 });
 
 await check('envelope: the AAD refuses a moved note', async () => {
-    const keys = await derive(saltFromText(SALT_TEXT));
+    const keys = await derive(keyFromText(KEY_TEXT));
     const envelope = await seal(keys.encryptionKey, PROJECT, INDEX, 'note', { text: 'x' });
 
     const refuses = async (what, promise) => {
@@ -187,12 +187,12 @@ await check('envelope: the AAD refuses a moved note', async () => {
     await refuses('another role',
         open(keys.encryptionKey, PROJECT, INDEX, 'resolution', envelope));
 
-    const other = await derive(saltFromText(b64url(new Uint8Array(32).fill(9))));
-    await refuses('another salt', open(other.encryptionKey, PROJECT, INDEX, 'note', envelope));
+    const other = await derive(keyFromText(b64url(new Uint8Array(32).fill(9))));
+    await refuses('another key', open(other.encryptionKey, PROJECT, INDEX, 'note', envelope));
 });
 
 await check('envelope: a newer format is a FLAT refusal', async () => {
-    const keys = await derive(saltFromText(SALT_TEXT));
+    const keys = await derive(keyFromText(KEY_TEXT));
     const envelope = await seal(keys.encryptionKey, PROJECT, INDEX, 'note', { text: 'x' });
     try {
         await open(keys.encryptionKey, PROJECT, INDEX, 'note',
@@ -205,7 +205,7 @@ await check('envelope: a newer format is a FLAT refusal', async () => {
 });
 
 await check('envelope: invalid shapes', async () => {
-    const keys = await derive(saltFromText(SALT_TEXT));
+    const keys = await derive(keyFromText(KEY_TEXT));
     const bad = ['', 'x', 'ap2.too-short.abcd', 'ap2..', 'ap.a.b',
                  'ap2.AAAAAAAAAAAAAAAA.@@@'];
     for (const shape of bad) {
@@ -396,7 +396,7 @@ await check('values: a line ending does not cross a "key value" line', () => {
 /* -- 6. The end-to-end path ---------------------------------------------- */
 
 await check('end to end: an encrypted export reads back filled in', async () => {
-    const keys = await derive(saltFromText(SALT_TEXT));
+    const keys = await derive(keyFromText(KEY_TEXT));
     const index = await indexOfPath(keys.indexKey, '/en/contact.html');
 
     const payload = await seal(keys.encryptionKey, keys.id, index, 'note', {
@@ -442,7 +442,7 @@ await check('end to end: the decrypted path gives back the announced index', asy
        comes out of the envelope must give back the index the note is filed
        under. Without it, a reply could be sealed under an index whispered by
        the server, and nobody could read it. */
-    const keys = await derive(saltFromText(SALT_TEXT));
+    const keys = await derive(keyFromText(KEY_TEXT));
     const path = '/en/contact.html';
     const index = await indexOfPath(keys.indexKey, path);
     const payload = await seal(keys.encryptionKey, keys.id, index, 'note',
@@ -477,8 +477,8 @@ const refused = async (what, args, ...pieces) => {
 
 await check('call: api + key build a project whose id is DERIVED', async () => {
     const project = await projectForCall(NO_FILE,
-        { api: 'https://example.com/api.php', key: SALT_TEXT });
-    const keys = await derive(saltFromText(SALT_TEXT));
+        { api: 'https://example.com/api.php', key: KEY_TEXT });
+    const keys = await derive(keyFromText(KEY_TEXT));
     equal(project.id, keys.id, 'the id is the one the key derives');
     equal(project.api, 'https://example.com/api.php', 'the address of the call');
     equal(project.mode, 'encrypted', 'a key means encrypted');
@@ -490,13 +490,13 @@ await check('call: api + key build a project whose id is DERIVED', async () => {
 await check('call: half a project is a named refusal, never a fallback', async () => {
     await refused('api alone', { api: 'https://example.com/api.php' },
         '"api" without "key"', 'no falling back to the configuration file');
-    await refused('key alone', { key: SALT_TEXT },
+    await refused('key alone', { key: KEY_TEXT },
         '"key" without "api"', 'data-server and data-key');
 });
 
 await check('call: a key and a project name together, no winner picked', async () => {
     await refused('key + project', { api: 'https://example.com/api.php',
-        key: SALT_TEXT, project: 'review' },
+        key: KEY_TEXT, project: 'review' },
         'we do not pick a winner', 'nothing was written', 'derives the project id');
 });
 
@@ -504,15 +504,15 @@ await check('call: a malformed key is refused with its shape, and not echoed', a
     await refused('too short', { api: 'https://example.com/api.php', key: 'abc' },
         '43 characters', 'A-Z a-z 0-9 - _', 'Received: 3 characters');
     await refused('a space inside', { api: 'https://example.com/api.php',
-        key: SALT_TEXT.slice(0, 20) + ' ' + SALT_TEXT.slice(21) },
+        key: KEY_TEXT.slice(0, 20) + ' ' + KEY_TEXT.slice(21) },
         '43 characters');
-    await refused('an http-less address', { api: 'example.com/api.php', key: SALT_TEXT },
+    await refused('an http-less address', { api: 'example.com/api.php', key: KEY_TEXT },
         'must start with http:// or https://');
 });
 
 await check('call: an origin is canonicalised the way the server does', async () => {
     const of = async (origin) => (await projectForCall(NO_FILE,
-        { api: 'https://example.com/api.php', key: SALT_TEXT, origin })).origin;
+        { api: 'https://example.com/api.php', key: KEY_TEXT, origin })).origin;
     equal(await of('https://staging.example.com'), 'https://staging.example.com',
         'already canonical');
     equal(await of('HTTPS://Staging.Example.COM'), 'https://staging.example.com',
@@ -529,7 +529,7 @@ await check('call: what is not an origin is refused, never trimmed', async () =>
                        'https://example.com#a', 'example.com', 'ftp://example.com',
                        'https://user:secret@example.com']) {
         await refused('origin ' + bad, { api: 'https://example.com/api.php',
-            key: SALT_TEXT, origin: bad },
+            key: KEY_TEXT, origin: bad },
             'is not an origin: ' + bad, 'no path, no query string');
     }
 });
@@ -538,7 +538,7 @@ await check('call: an origin alone names no project', async () => {
     await refused('origin alone', { origin: 'https://example.com' },
         '"origin" without "api" and "key"', 'it does not name one');
     await refused('origin + project', { api: 'https://example.com/api.php',
-        key: SALT_TEXT, origin: 'https://example.com', project: 'review' },
+        key: KEY_TEXT, origin: 'https://example.com', project: 'review' },
         '"api", "key" and "origin"', 'we do not pick a winner');
 });
 
@@ -578,18 +578,10 @@ const withEnvironment = async (variables, body) => {
     }
 };
 
-/* A file, written where nothing else looks, read by the real loader. */
-const loadConfigurationOf = async (object) => {
-    const directory = mkdtempSync(joinPath(tmpdir(), 'annotepage-check-'));
-    const file = joinPath(directory, 'annotepage.json');
-    writeFileSync(file, JSON.stringify(object));
-    return withEnvironment({ ANNOTEPAGE_CONFIG: file }, () => loadConfiguration());
-};
-
 await check('environment: the key given in the command is a whole project', async () => {
     const configuration = await withEnvironment({
         ANNOTEPAGE_API: 'https://staging.example.com/api.php',
-        ANNOTEPAGE_KEY: SALT_TEXT,
+        ANNOTEPAGE_KEY: KEY_TEXT,
         ANNOTEPAGE_AUTHOR: 'Assistant',
         ANNOTEPAGE_ORIGIN: 'https://staging.example.com/',
     }, () => loadConfiguration());
@@ -601,52 +593,37 @@ await check('environment: the key given in the command is a whole project', asyn
     equal(project.origin, 'https://staging.example.com', 'the origin, trailing slash removed');
     equal(project.mode, 'encrypted', 'encrypted unless told otherwise');
     equal(project.read_only, false, 'and it may write');
-    equal(project.id, (await derive(saltFromText(SALT_TEXT))).id, 'the id derived from the key');
-    truthy(!JSON.stringify(configuration).includes(SALT_TEXT), 'the key is nowhere in what we return');
+    equal(project.id, (await derive(keyFromText(KEY_TEXT))).id, 'the id derived from the key');
+    truthy(!JSON.stringify(configuration).includes(KEY_TEXT), 'the key is nowhere in what we return');
 });
 
 await check('environment: a key with no address arms nothing', async () => {
     /* Alone it would silently borrow the address of a file written for another
        project, and read that one instead. */
     let message = '';
-    await withEnvironment({ ANNOTEPAGE_KEY: SALT_TEXT }, async () => {
+    await withEnvironment({ ANNOTEPAGE_KEY: KEY_TEXT }, async () => {
         try { await loadConfiguration(); } catch (e) { message = e.message; }
     });
     truthy(message.includes('No configuration found'), 'the file is what answers, and there is none');
-    truthy(!message.includes(SALT_TEXT), 'and the key is not printed back');
+    truthy(!message.includes(KEY_TEXT), 'and the key is not printed back');
 });
 
 await check('environment: it wins over a file, and says so', async () => {
     const directory = mkdtempSync(joinPath(tmpdir(), 'annotepage-check-'));
     const file = joinPath(directory, 'annotepage.json');
     writeFileSync(file, JSON.stringify({
-        projects: { other: { api: 'https://elsewhere.example.com/api.php', key: SALT_TEXT } },
+        projects: { other: { api: 'https://elsewhere.example.com/api.php', key: KEY_TEXT } },
     }));
     const configuration = await withEnvironment({
         ANNOTEPAGE_CONFIG: file,
         ANNOTEPAGE_API: 'https://staging.example.com/api.php',
-        ANNOTEPAGE_KEY: SALT_TEXT,
+        ANNOTEPAGE_KEY: KEY_TEXT,
     }, () => loadConfiguration());
     equal(configuration.projects.get('project').api, 'https://staging.example.com/api.php',
         'the environment answered');
     truthy(!configuration.projects.has('other'), 'and the file was not merged in');
     truthy(configuration.warnings.some((w) => w.includes(file) && w.includes('was NOT read')),
         'a warning names the file that stayed shut');
-});
-
-await check('environment: "key" and "salt" are the same field, disagreeing is refused', async () => {
-    const other = b64url(new Uint8Array(32).map((v, i) => (i * 11 + 5) & 0xff));
-    let message = '';
-    try {
-        await loadConfigurationOf({ projects: { review: {
-            api: 'https://staging.example.com/api.php', key: SALT_TEXT, salt: other } } });
-    } catch (e) { message = e.message; }
-    truthy(message.includes('BOTH "key" and "salt"'), 'refused rather than arbitrated');
-    /* And the old name alone still reads: a file written last month works. */
-    const old = await loadConfigurationOf({ projects: { review: {
-        api: 'https://staging.example.com/api.php', salt: SALT_TEXT } } });
-    equal(old.projects.get('review').id, (await derive(saltFromText(SALT_TEXT))).id,
-        '"salt" alone is still understood');
 });
 
 await check('environment: a malformed key is refused by the word the reader knows', async () => {
@@ -657,7 +634,7 @@ await check('environment: a malformed key is refused by the word the reader know
     }, async () => {
         try { await loadConfiguration(); } catch (e) { message = e.message; }
     });
-    truthy(message.includes('The key of'), 'it says key, not salt');
+    truthy(message.includes('The key of'), 'it says key, not key');
     truthy(!message.includes('salt'), 'the internal name is not shown to anybody');
 });
 
@@ -665,7 +642,7 @@ await check('environment: only "true" stops the writing', async () => {
     for (const [value, expected] of [['true', true], ['false', false], ['1', false], ['', false]]) {
         const configuration = await withEnvironment({
             ANNOTEPAGE_API: 'https://staging.example.com/api.php',
-            ANNOTEPAGE_KEY: SALT_TEXT,
+            ANNOTEPAGE_KEY: KEY_TEXT,
             ANNOTEPAGE_READ_ONLY: value,
         }, () => loadConfiguration());
         equal(configuration.projects.get('project').read_only, expected,
@@ -696,11 +673,11 @@ await check('save: a site becomes a project, named after itself', async () => {
     const written = await withEnvironment({}, () => saveProject(configuration, {
         site: 'https://staging.example.com/guide?x=1',
         api: 'https://staging.example.com/notes/api.php',
-        key: SALT_TEXT,
+        key: KEY_TEXT,
         path: file,
     }));
     equal(written.name, 'staging.example.com', 'the host is the name');
-    equal(written.id, (await derive(saltFromText(SALT_TEXT))).id, 'the id it derives');
+    equal(written.id, (await derive(keyFromText(KEY_TEXT))).id, 'the id it derives');
     equal(written.inUse, true, 'and it answers at once');
 
     const object = JSON.parse(readFileSync(file, 'utf8'));
@@ -721,7 +698,7 @@ await check('save: a second site joins the first, it does not evict it', async (
     const configuration = emptyConfiguration();
     await withEnvironment({}, async () => {
         await saveProject(configuration, { site: 'staging.example.com',
-            api: 'https://staging.example.com/notes/api.php', key: SALT_TEXT, path: file });
+            api: 'https://staging.example.com/notes/api.php', key: KEY_TEXT, path: file });
         await saveProject(configuration, { site: 'shop.example.com',
             api: 'https://shop.example.com/notes/api.php', key: KEY_TWO,
             author: 'Reviewer', path: file });
@@ -737,7 +714,7 @@ await check('save: another key on the same name is refused, not arbitrated', asy
     const file = inADirectory();
     const configuration = emptyConfiguration();
     const first = { site: 'staging.example.com',
-        api: 'https://staging.example.com/notes/api.php', key: SALT_TEXT, path: file };
+        api: 'https://staging.example.com/notes/api.php', key: KEY_TEXT, path: file };
     await withEnvironment({}, () => saveProject(configuration, first));
 
     let message = '';
@@ -748,13 +725,13 @@ await check('save: another key on the same name is refused, not arbitrated', asy
     truthy(message.includes('already declared'), 'refused');
     truthy(message.includes('nothing points at them any more'), 'and it says what it costs');
     equal(JSON.parse(readFileSync(file, 'utf8')).projects['staging.example.com'].key,
-        SALT_TEXT, 'the file was not touched');
+        KEY_TEXT, 'the file was not touched');
 
     /* Asked twice, it goes through: whoever passes "replace" has read why. */
     const again = await withEnvironment({}, () => saveProject(configuration,
         { ...first, key: KEY_TWO, replace: true }));
     equal(again.replaced, true, 'and it says it replaced something');
-    equal(again.id, (await derive(saltFromText(KEY_TWO))).id, 'the new id');
+    equal(again.id, (await derive(keyFromText(KEY_TWO))).id, 'the new id');
 
     /* The same key twice is not a replacement and needs no permission: an
        assistant repeating a call must not have to ask for one. */
@@ -787,7 +764,7 @@ await check('save: written correctly, and read by nothing', async () => {
     const configuration = emptyConfiguration();
     const written = await withEnvironment({
         ANNOTEPAGE_API: 'https://elsewhere.example.com/api.php',
-        ANNOTEPAGE_KEY: SALT_TEXT,
+        ANNOTEPAGE_KEY: KEY_TEXT,
     }, () => saveProject(configuration, { site: 'staging.example.com',
         api: 'https://staging.example.com/notes/api.php', key: KEY_TWO, path: file }));
     equal(written.inUse, false, 'the file was written and is not in use');

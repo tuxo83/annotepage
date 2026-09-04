@@ -74,7 +74,7 @@
  *    with ONE declared project -- there is then no ambiguity about who owns the
  *    rows. It is done once, at the moment the column appears;
  *  - `page_index`: the server CANNOT compute it. It is
- *    HMAC(index_key, path), and the key descends from the salt, which never
+ *    HMAC(index_key, path), and the key descends from the key, which never
  *    leaves the browser. That is the accepted price of the blind index. The
  *    backfill therefore happens in two steps, through the `backfill` action:
  *    the server enumerates the paths still without an index (it has them in the
@@ -933,7 +933,7 @@ class ApStore
      *
      * These are the format-1 rows: the path is there in the clear, the index did
      * not exist. The server enumerates them; it cannot compute their index,
-     * which descends from the salt.
+     * which descends from the key.
      *
      * @return array distinct paths
      */

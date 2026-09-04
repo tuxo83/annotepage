@@ -7,25 +7,25 @@ implement what is written here, and nothing else. When a sentence of this
 document and a line of code contradict each other, the code is wrong.
 
 Format 1 is the format of the original tool ("in-context notes", 1.2.0): no
-project, no salt, no encryption, the page in the clear. It is not abandoned —
+project, no key, no encryption, the page in the clear. It is not abandoned —
 it is the "plain mode" special case described below, and a database written by
 format 1 is read as it stands (§2.2).
 
 ---
 
-## 1. The salt, and everything derived from it
+## 1. The key, and everything derived from it
 
-### 1.1 The salt
+### 1.1 The key
 
-A **256-bit salt** is generated at install time, by `crypto.getRandomValues()`
+A **256-bit key** is generated at install time, by `crypto.getRandomValues()`
 over 32 bytes. There is no other acceptable source: not a timestamp, not a
-project name, not a password chosen by a human. A guessable salt makes
+project name, not a password chosen by a human. A guessable key makes
 everything else decorative.
 
 It never leaves the browser. The server does not receive it at any point, in
 any form, in any mode.
 
-**Lost salt = lost notes.** There is no recovery, no security question, no
+**Lost key = lost notes.** There is no recovery, no security question, no
 escrow third party: it is the only secret, and nobody else holds it. The
 install screen must spell this out, in full, before offering to continue, and
 not in a footnote.
@@ -35,40 +35,40 @@ Representation meant for a human who copies it by hand:
 taken from `A-Z a-z 0-9 - _`. No spaces, no grouping, no decorative dashes:
 everything that "helps reading" ends up copied wrong.
 
-The salt is kept in the browser's `localStorage`, under the key
-`annotepage/salt/<project_id>`. Naming it by project id is not cosmetic: two
+The key is kept in the browser's `localStorage`, under the key
+`annotepage/key/<project_id>`. Naming it by project id is not cosmetic: two
 projects reviewed from the same browser must not overwrite each other.
 
 An unpleasant consequence, to be stated: `localStorage` is **per origin**. The
-day staging becomes production, every reviewer has to paste the salt once more
+day staging becomes production, every reviewer has to paste the key once more
 on the new domain. The notes themselves do not move — and that is precisely
 what rule 1.3 buys.
 
-### 1.2 Checking a salt that was typed in
+### 1.2 Checking a key that was typed in
 
-When a reviewer pastes a salt, the client derives the project id from it
-(§1.3) and compares it with the one declared by the page. Equal: the salt is
-the right one. Different: the message is "this salt is not the salt of this
+When a reviewer pastes a key, the client derives the project id from it
+(§1.3) and compares it with the one declared by the page. Equal: the key is
+the right one. Different: the message is "this key is not the key of this
 project", shown **before** any network request and before any decryption.
 
-So there is no checksum and no verification code to carry alongside the salt:
+So there is no checksum and no verification code to carry alongside the key:
 the project id plays that part, it is already public, and one mechanism less
 is one mechanism less to implement wrong.
 
 ### 1.3 The three derivations
 
 One single function, **HKDF-SHA-256** (RFC 5869), applied three times to the
-same salt. That is what holds the promise "one single secret to manage".
+same key. That is what holds the promise "one single secret to manage".
 
 ```
-IKM        = the 32 bytes of the salt            (the secret)
-HKDF salt  = "annotepage/1"       in UTF-8       (fixed, public)
+IKM        = the 32 bytes of the key            (the secret)
+HKDF salt  = "annotepage/1"      in UTF-8       (fixed, public)
 info       = "id" | "encrypted" | "index"  in UTF-8
 L          = 32 bytes for each output
 ```
 
 Implementation trap, named here because it costs dearly: HKDF's `salt`
-parameter **is not our salt**. Our salt is the input keying material (IKM).
+parameter **is not our key**. Our key is the input keying material (IKM).
 HKDF's `salt` is the fixed, public string `annotepage/1`, which separates this
 tool from any other software one might one day trust with the same secret.
 Swapping them produces a system that works, that encrypts, and whose notes
@@ -77,13 +77,13 @@ become unreadable on the first reimplementation.
 In WebCrypto:
 
 ```js
-// The master key is the salt itself, imported as HKDF key material.
+// The master key is the project key itself, imported as HKDF input keying material.
 const master = await crypto.subtle.importKey(
-    'raw', saltBytes, 'HKDF', false, ['deriveBits', 'deriveKey']);
+    'raw', keyBytes, 'HKDF', false, ['deriveBits', 'deriveKey']);
 
 const params = (label) => ({
     name: 'HKDF', hash: 'SHA-256',
-    salt: utf8('annotepage/1'),   // NOT the salt: see above
+    salt: utf8('annotepage/1'),   // HKDF's salt, NOT our key: see above
     info: utf8(label),
 });
 
@@ -95,7 +95,7 @@ const cryptoKey  = await crypto.subtle.deriveKey(
 ```
 
 `cryptoKey` is generated **non-extractable**. That is hygiene, not a barrier:
-the salt sleeps in `localStorage` right next to it, and whoever reads one
+the key sleeps in `localStorage` right next to it, and whoever reads one
 rebuilds the other in three lines. It is written here so that nobody takes the
 `false` for a protection it is not.
 
@@ -111,7 +111,7 @@ can be copied by hand. 43 cannot.
 any form, derived forms included.
 
 **index_key** = the 32 bytes of `indexBytes`, imported as an HMAC-SHA-256 key.
-The specification says `page_index = HMAC(salt, path)`; we do not use the salt
+The specification says `page_index = HMAC(key, path)`; we do not use the key
 directly, we use a subkey that has no other use. Same decision, tightened: one
 key, one use, always.
 
@@ -483,7 +483,7 @@ each other and two that do not:
   done by `page_index`. One code path, one way to group. Two would have
   diverged by the second fix.
 
-Corollary of plain mode: losing the salt does not lose the notes there — they
+Corollary of plain mode: losing the key does not lose the notes there — they
 are readable in the database — but it loses the **grouping by page**, which
 cannot be recomputed. One can then still read everything, and find nothing
 back in context.
@@ -505,7 +505,7 @@ back in context.
 - apply a **path prefix**: it does not see the paths. Prefix scope is
   therefore checked **by the client**, before sending. It is a tidiness
   convenience, **not a security boundary** — whoever has the project id and
-  the salt writes where they like.
+  the key writes where they like.
 
 ---
 
@@ -604,10 +604,10 @@ The keys it cannot fill are **absent**, which, by the contract, means exactly
 "empty value". No `text` line is emitted: a `text` line followed by nothing
 would announce an empty remark, which would be false. A reader that receives
 this export therefore knows, unambiguously and with no special-case code, that
-it is missing the salt.
+it is missing the key.
 
 **The complete export in encrypted mode is produced by `annotepage-mcp`**,
-which has the salt: it reads `?action=text`, decrypts each envelope and emits
+which has the key: it reads `?action=text`, decrypts each envelope and emits
 the grammar above, **filled in**, with the same indents and the same keys. A
 tool that reads the export does not know — and does not have to know — which
 of the two producers wrote it.
@@ -622,7 +622,7 @@ meaning. Format-1 exports are therefore still valid as they stand, as a
 Filled in, it contains names and internal remarks. It has no business on an
 open site — that was true in format 1, it still is. What changes: in encrypted
 mode, the address `?action=text` returns nothing but the structure, and the
-genuinely readable document exists only on the machine that holds the salt.
+genuinely readable document exists only on the machine that holds the key.
 
 ---
 
@@ -746,7 +746,7 @@ writing noise into it and burning the relay's quota.
 **It is not a protection against XSS**, and it must never be presented as one.
 An XSS runs **inside** the target page, so with the legitimate origin: it goes
 through the lock without effort, and it has access to `localStorage` anyway,
-hence to the salt. An XSS on an annotated page compromises the notes of the
+hence to the key. An XSS on an annotated page compromises the notes of the
 project, full stop.
 
 ### 6.3 What the project id gives
@@ -755,7 +755,7 @@ The project id is a **bearer token**: whoever has it can read the rows of the
 project and write to it. There is no authentication, and that is accepted — it
 was already the case in format 1.
 
-- in **encrypted** mode, those rows are unusable without the salt. The token
+- in **encrypted** mode, those rows are unusable without the key. The token
   alone gives what §2.4 enumerates, nothing more;
 - in **plain** mode, those rows are readable. That is exactly why plain mode
   is reserved for self-hosting, where the API sits behind the same access
@@ -838,18 +838,18 @@ listed so that they do not close by accident.
    Not specified: envelopes are not padded. If it is ever done, it is a JSON
    padding field, so no format number change.
 
-2. **Salt rotation.** There is no mechanism. A leaked salt forces starting
+2. **Key rotation.** There is no mechanism. A leaked key forces starting
    from a fresh project, abandoning the notes. Bulk re-encryption assumes
-   somebody holds both the old and the new salt and rewrites every row — which
+   somebody holds both the old and the new key and rewrites every row — which
    contradicts the append-only model. To be settled before promising anything
    on this point.
 
-3. **How the salt reaches the second reviewer.** Out of band, through a
-   channel the tool does not provide. The URL fragment (`#salt=...`) is not
+3. **How the key reaches the second reviewer.** Out of band, through a
+   channel the tool does not provide. The URL fragment (`#key=...`) is not
    sent to the server and would be convenient, but it lands in the browser
    history and in everything that logs URLs. Not settled.
 
-4. **What an MCP server is allowed to do on its own.** It holds the salt, so
+4. **What an MCP server is allowed to do on its own.** It holds the key, so
    everything. May it mark a note resolved without a human confirming? Write a
    note of its own accord? The format allows it; the policy is not written.
 
@@ -867,5 +867,5 @@ listed so that they do not close by accident.
    simultaneous writes.
 
 8. **What happens when two projects declare the same origin.** Nothing forbids
-   it, nothing describes it. A page carrying two tags, two ids and two salts
+   it, nothing describes it. A page carrying two tags, two ids and two keys
    is neither planned for nor refused.
