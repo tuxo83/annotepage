@@ -47,7 +47,7 @@ function ap_config_defaults()
         'deployment' => 'relay',
 
         // THE PROJECTS. Key = project id (22 base64url characters, derived
-        // from the salt IN THE BROWSER: see FORMAT.md section 1.3). The server
+        // from the key IN THE BROWSER: see FORMAT.md section 1.3). The server
         // does not compute it, it recognises it.
         //
         //   'projects' => array(
@@ -80,7 +80,7 @@ function ap_config_defaults()
         //     it has to be -- and can write notes into that project.
         //
         // WHY THAT IS SURVIVABLE, AND WHERE IT IS NOT. The notes are encrypted
-        // with a salt this server never sees, so a stranger can insert bytes
+        // with a key this server never sees, so a stranger can insert bytes
         // but cannot read a word, and cannot write a note that DECRYPTS. What
         // they insert comes back to the reader as unreadable rows, counted and
         // shown as such -- a nuisance, not a disclosure. The real cost is

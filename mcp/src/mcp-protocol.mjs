@@ -3,7 +3,7 @@
  * WHY WITH NO LIBRARY. It is a decision, not laziness, and it has a price that
  * has to be written down:
  *
- *  - this package holds THE SALT. A dependency is third-party code running in
+ *  - this package holds THE KEY. A dependency is third-party code running in
  *    the same process as the project's only secret, and updating itself inside
  *    somebody else's dependency tree. The security decision that governs this
  *    project says the real risk of this architecture is the supply chain; we

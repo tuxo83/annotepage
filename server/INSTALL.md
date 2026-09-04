@@ -76,7 +76,7 @@ neither the zip nor the phar extension. There is no database to create, no
 ### One thing is still yours to do
 
 The generated configuration declares **no project**, and it cannot: a project
-id descends from a salt the browser generates and the server never receives.
+id descends from a key the browser generates and the server never receives.
 Add the tag to a page, open it, and the client's setup screen hands you the id
 and the block to paste under `projects`. Until then `?action=list` answers
 `active: false` and the panel stays quiet — which is the correct behaviour for
@@ -162,16 +162,16 @@ failing halfway.
 
 ## What the server does not know, and never will
 
-**The salt.** It is generated at setup, in the browser, over 256 bits. It does
+**The key.** It is generated at setup, in the browser, over 256 bits. It does
 not leave the browser: the server does not receive it at any point, in any form,
 in any mode. Nothing written in this document asks you to put it there.
 
-**Salt lost = notes lost.** There is no recovery, no security question, no escrow
+**Key lost = notes lost.** There is no recovery, no security question, no escrow
 third party. The server can do nothing about it, and that is the price of what
 it buys: a relay operator cannot read the notes it hosts.
 
 What the server does know is the **project id**: 22 characters, derived from the
-salt by HKDF, with no way back. It is public — it appears in the tag of every
+key by HKDF, with no way back. It is public — it appears in the tag of every
 annotated page — and it is what you write into the configuration.
 
 ---
@@ -269,7 +269,7 @@ existed pointing at its own database — flipping such a server to an empty
 SQLite file on an update would read as three months of review erased.
 
 The **project id** (`7Qb1kZ...`) is the one the client's setup screen shows after
-generating the salt. Copy it: the server does not compute it, it recognises it.
+generating the key. Copy it: the server does not compute it, it recognises it.
 The same id must appear on both sides — in this file and in the page's tag.
 
 Each database credential is written either in the clear or in the form
@@ -527,7 +527,7 @@ Two columns do not fill the same way:
   rows is known without ambiguity. It is done once, at the moment the column
   appears. So declare your project **before** the first call after the update;
 - **`page_index`**: the server **cannot** compute it. It is
-  `HMAC(index_key, path)`, and the key descends from the salt, which never leaves
+  `HMAC(index_key, path)`, and the key descends from the key, which never leaves
   the browser. That is the accepted price of the blind index.
 
 Until the index is set, the old notes **do come out** of `?action=text` but **do
@@ -544,7 +544,7 @@ POST api.php?action=backfill
      -> { "updated": 7, "remaining": 12 }
 ```
 
-The client computes the index of each path — it has the salt — and sends it back,
+The client computes the index of each path — it has the key — and sends it back,
 one path per request. The operation is **idempotent**: only the rows that do not
 have an index yet are touched, so a replayed backfill cannot rewrite the index of
 a recent note.
@@ -613,7 +613,7 @@ earth that sends that header -- the string is the same everywhere -- and three
 of them running the write budget down locked the real team out with
 `429 Too many writes on this project` for the length of the window. If you want
 the lock, declare only real domains, and use a SECOND project, with its own
-salt, for local work.
+key, for local work.
 
 **Your local notes and your staging notes are the same notes.** The page index
 is `HMAC(index_key, path)` -- the path alone, no scheme, no host, no port
@@ -624,10 +624,10 @@ is `HMAC(index_key, path)` -- the path alone, no scheme, no host, no port
 note survive a site going from staging to production, and it cannot be removed
 without removing that. Nothing in a note records where it was written, so you
 cannot sort them out afterwards. Decide which behaviour you want BEFORE handing
-the salt out.
+the key out.
 
 **Every developer who pulls the repository gets a blocking screen** asking for
-the salt, on every page, until somebody gives it to them. If that is not what
+the key, on every page, until somebody gives it to them. If that is not what
 you want in a dev build, `data-domains` makes the tag silent instead -- measured
 at zero requests and zero DOM nodes when the current host is not listed.
 
@@ -689,7 +689,7 @@ So: a stranger can write notes into your project.
 
 ### Why that is survivable
 
-They can write bytes; they cannot write a note that **decrypts**. The salt
+They can write bytes; they cannot write a note that **decrypts**. The key
 never reached this server, so what a stranger inserts comes back to the reader
 as unreadable rows -- counted, shown as such, and obviously not theirs. That is
 a nuisance, not a disclosure.
@@ -875,7 +875,7 @@ burning the relay's quota.
 **What it is not, and it must never be presented as such**: a protection against
 XSS. An XSS runs **inside** the target page, so with the legitimate origin: it
 goes through the lock without effort, and it has access to that origin's
-`localStorage` anyway, hence to the salt. An XSS on an annotated page compromises
+`localStorage` anyway, hence to the key. An XSS on an annotated page compromises
 the notes of the project, full stop.
 
 ---
@@ -958,7 +958,7 @@ That is a choice, not an oversight:
 
 - **no authentication.** The project id is a bearer token: whoever has it can
   read the project's rows and write to it. In encrypted mode those rows are
-  unusable without the salt. In plain mode they are readable — and that is
+  unusable without the key. In plain mode they are readable — and that is
   exactly why plain mode is reserved for self-hosting, where the API sits behind
   the same access restriction as the site under review. The two sentences close
   the loop: plain mode is impossible on a relay because a relay has no access
@@ -971,8 +971,8 @@ That is a choice, not an oversight:
 - **no pagination of `?action=text`.** A project with ten thousand notes returns
   a document nobody reads. No limits, no filter by status, no filter by date:
   `FORMAT.md` section 8.5 does not settle it;
-- **no salt rotation.** There is no mechanism, here or anywhere else. A leaked
-  salt forces starting from a fresh project.
+- **no key rotation.** There is no mechanism, here or anywhere else. A leaked
+  key forces starting from a fresh project.
 
 ---
 

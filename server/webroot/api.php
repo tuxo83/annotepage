@@ -48,7 +48,7 @@
  *        ALL the notes of the project, in structured text/plain. This is the
  *        address an assistant reads from outside. In encrypted mode it returns
  *        the STRUCTURAL export plus the envelopes: the genuinely readable
- *        document exists only on the machine that holds the salt.
+ *        document exists only on the machine that holds the key.
  *
  *   GET  api.php?action=diagnostic
  *        State of the server, in text/plain. No parameter, and above all no
@@ -62,7 +62,7 @@
  *        MAINTENANCE, refused in relay mode. It serves once, when taking over a
  *        database written by "in-context notes" 1.2.0: the server enumerates the
  *        page paths still without a blind index, the client computes each index
- *        (it has the salt, the server does not) and sends it back. See the
+ *        (it has the key, the server does not) and sends it back. See the
  *        header of internal/store.php for what the server can and cannot take
  *        over on its own.
  *        This action is not one of the format's five addresses: it is an
@@ -108,7 +108,7 @@
  *
  * WHAT THE PROJECT ID GIVES: everything. It is a bearer token, there is no
  * authentication, and that was already the case in format 1. In encrypted mode
- * the rows obtained are unusable without the salt; in plain mode they are
+ * the rows obtained are unusable without the key; in plain mode they are
  * readable, and that is exactly why plain mode is reserved for self-hosting.
  *
  * HEADERS: they are set by PHP's header(), never by a .htaccess. The server's
@@ -1014,7 +1014,7 @@ switch ($action) {
         $method = strtoupper(isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : '');
         if ($method !== 'POST') {
             /* State of the backfill: what is left to do, and for which paths.
-               The client computes each index -- it has the salt, the server never
+               The client computes each index -- it has the key, the server never
                will -- and sends them back one by one. */
             ap_respond_json(ap_response_envelope(array(
                 'project'  => $id,

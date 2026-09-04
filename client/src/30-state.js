@@ -19,10 +19,10 @@ let rafPending = false;
    it: a note skipped in silence is a remark that disappears. */
 let skipped = { newer: 0, unreadable: 0, unknown: 0 };
 
-/* The salt of this project, and everything derived from it. "keys" stays
-   null as long as the salt is unknown: no request, no decryption goes out
+/* The key of this project, and everything derived from it. "keys" stays
+   null as long as the key is unknown: no request, no decryption goes out
    before then. */
-let saltText = '';
+let keyText = '';
 let keys = null;            // { id, encryptionKey, indexKey }
 let PAGE_INDEX = '';        // blind index of the current page
 
@@ -38,20 +38,20 @@ const inTool = (n) => !!(host && n && (n === host || host.contains(n)));
 // the name is there to know who to talk to, not to prove who one is.
 const AUTHOR_KEY = 'annotepage/author';
 
-/* The salt is stored UNDER THE PROJECT ID. That naming is not cosmetic: two
+/* The key is stored UNDER THE PROJECT ID. That naming is not cosmetic: two
    projects reviewed from the same browser must not overwrite each other.
 
    An unpleasant consequence, to be stated: localStorage is PER ORIGIN. The
-   day staging becomes production, every reviewer has to paste the salt once
+   day staging becomes production, every reviewer has to paste the key once
    more on the new domain. The notes themselves do not move -- and that is
    exactly what the rule "the domain is not in the key" buys. */
-const saltKey = (project) => 'annotepage/salt/' + project;
+const keyKey = (project) => 'annotepage/key/' + project;
 
 const readSalt = (project) => {
     try {
-        return String(window.localStorage.getItem(saltKey(project)) || '').trim();
+        return String(window.localStorage.getItem(keyKey(project)) || '').trim();
     } catch (e) {
-        // Without storage the salt will be asked for on every visit: that is
+        // Without storage the key will be asked for on every visit: that is
         // less comfortable, it is not a failure.
         return '';
     }
@@ -59,10 +59,10 @@ const readSalt = (project) => {
 
 const writeSalt = (project, text) => {
     try {
-        window.localStorage.setItem(saltKey(project), text);
+        window.localStorage.setItem(keyKey(project), text);
         return true;
     } catch (e) {
-        // We return false so the screen can SAY it: a salt that is not kept
+        // We return false so the screen can SAY it: a key that is not kept
         // will have to be pasted again on every page, and it is better to
         // know that straight away than on the third time.
         return false;
@@ -71,7 +71,7 @@ const writeSalt = (project, text) => {
 
 const forgetSalt = (project) => {
     try {
-        window.localStorage.removeItem(saltKey(project));
+        window.localStorage.removeItem(keyKey(project));
     } catch (e) {
         // Nothing to do: there was no storage in the first place.
     }

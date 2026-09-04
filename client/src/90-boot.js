@@ -31,8 +31,8 @@ const reload = () =>
    The order matters: we ask the API BEFORE touching the DOM. If it does not
    answer what it should, the site never saw anything go by.
 
-   One exception, accepted: the setup and salt-pasting screens, which CANNOT
-   ask the API -- without a salt there is no page index to give it. They are
+   One exception, accepted: the setup and key-pasting screens, which CANNOT
+   ask the API -- without a key there is no page index to give it. They are
    declared (data-setup) or asked for by a tag that already carries a
    project: either way, somebody put that tag here on purpose. */
 
@@ -101,11 +101,11 @@ const speaksAtStartup = (r) =>
     r.cause === 'server' || r.cause === 'failure' || String(r.cause).indexOf('refused') === 0;
 
 /**
- * The salt is known and checked: we derive the page index, we ask the
+ * The key is known and checked: we derive the page index, we ask the
  * server, and the tool takes its normal shape.
  */
 function startWithSalt(text, derived) {
-    saltText = text;
+    keyText = text;
     keys = derived;
 
     return indexOfPath(keys.indexKey, pagePath())
@@ -115,7 +115,7 @@ function startWithSalt(text, derived) {
         })
         .then((first) => {
             if (!first.ok && !speaksAtStartup(first)) {
-                // Complete silence: no node, no pixel, no message. If a salt
+                // Complete silence: no node, no pixel, no message. If a key
                 // screen was open, it goes away with the rest.
                 withdraw();
                 return null;
@@ -189,7 +189,7 @@ const start = () => {
        day the tag changes. The interface then says so at every draw
        (PUBLIC_KEY, 60-ui). */
     if (KEY_DECLARED) {
-        const keyBytes = saltFromText(DECLARED_KEY);
+        const keyBytes = keyFromText(DECLARED_KEY);
         if (!keyBytes) {
             /* An attribute somebody wrote on purpose, and it is not a key.
                Staying silent here would be the behaviour of a tag carrying
@@ -228,7 +228,7 @@ const start = () => {
     }
 
     const text = readSalt(PROJECT);
-    const bytes = saltFromText(text);
+    const bytes = keyFromText(text);
     if (!bytes) {
         showScreen(openSaltScreen);
         return;
@@ -236,7 +236,7 @@ const start = () => {
 
     derive(bytes).then((derived) => {
         if (derived.id !== PROJECT) {
-            // The salt stored under this key does not derive this id: the
+            // The key stored under this key does not derive this id: the
             // tag has changed project, or the storage was tampered with. We
             // ask again, we do not guess.
             showScreen(openSaltScreen);

@@ -24,7 +24,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { b64url } from '../src/format.mjs';
-import { derive, saltFromText, seal, indexOfPath } from '../src/crypto.mjs';
+import { derive, keyFromText, seal, indexOfPath } from '../src/crypto.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -157,8 +157,8 @@ const run = (script, args, input, options) => new Promise((settle) => {
 
 /* -- The set-up ----------------------------------------------------------- */
 
-const SALT = b64url(new Uint8Array(32).map((v, i) => (i * 11 + 5) & 0xff));
-const keys = await derive(saltFromText(SALT));
+const KEY = b64url(new Uint8Array(32).map((v, i) => (i * 11 + 5) & 0xff));
+const keys = await derive(keyFromText(KEY));
 const index = await indexOfPath(keys.indexKey, '/en/contact.html');
 
 const state = {
@@ -189,7 +189,7 @@ writeFileSync(configFile, JSON.stringify({
     projects: {
         review: {
             api: 'http://127.0.0.1:' + port + '/api.php',
-            salt: SALT,
+            key: KEY,
             mode: 'encrypted',
             author: 'Assistant',
         },
@@ -223,8 +223,8 @@ await check('cli: "raw" returns what the server sends, without decrypting', asyn
 
 await check('cli: "id" returns what you need to build a curl URL', async () => {
     const { out } = await cli('id');
-    truthy(out.trim() === keys.id, 'id derived from the salt');
-    truthy(out.indexOf(SALT) === -1, 'and never the salt');
+    truthy(out.trim() === keys.id, 'id derived from the key');
+    truthy(out.indexOf(KEY) === -1, 'and never the key');
 });
 
 await check('cli: reply seals under the index of the parent note', async () => {
@@ -288,7 +288,7 @@ await check('cli: read-only cuts every write', async () => {
     const readOnly = join(folder, 'read-only.json');
     writeFileSync(readOnly, JSON.stringify({
         projects: { r: { api: 'http://127.0.0.1:' + port + '/api.php',
-                         salt: SALT, author: 'Assistant', read_only: true } },
+                         key: KEY, author: 'Assistant', read_only: true } },
     }), { mode: 0o600 });
     const { code, errors } = await run('annotepage.mjs',
         ['reply', '4', 'no', '--config', readOnly]);
@@ -301,7 +301,7 @@ await check('cli: a key that does not match the id is refused', async () => {
     const wrong = join(folder, 'wrong.json');
     writeFileSync(wrong, JSON.stringify({
         projects: { r: { api: 'http://127.0.0.1:' + port + '/api.php',
-                         salt: SALT, id: 'AAAAAAAAAAAAAAAAAAAAAA' } },
+                         key: KEY, id: 'AAAAAAAAAAAAAAAAAAAAAA' } },
     }), { mode: 0o600 });
     const { code, errors } = await run('annotepage.mjs', ['text', '--config', wrong]);
     truthy(code !== 0, 'the command fails');
@@ -310,11 +310,11 @@ await check('cli: a key that does not match the id is refused', async () => {
     contains(errors, 'No request was made', 'and it says so before any network');
 });
 
-await check('cli: a wrong salt is counted, it does not keep quiet', async () => {
-    const other = join(folder, 'other-salt.json');
+await check('cli: a wrong key is counted, it does not keep quiet', async () => {
+    const other = join(folder, 'other-key.json');
     writeFileSync(other, JSON.stringify({
         projects: { r: { api: 'http://127.0.0.1:' + port + '/api.php?force=' + state.project,
-                         salt: b64url(new Uint8Array(32).fill(3)) } },
+                         key: b64url(new Uint8Array(32).fill(3)) } },
     }), { mode: 0o600 });
     // The fake server answers "unknown project": that is the right behaviour,
     // and it is what this case checks — we do not return an empty list in
@@ -431,7 +431,7 @@ const bareDialogue = async (messages) => {
     return { answers: read, errors };
 };
 
-const HERE = { api: 'http://127.0.0.1:' + port + '/api.php', key: SALT };
+const HERE = { api: 'http://127.0.0.1:' + port + '/api.php', key: KEY };
 
 const bareCall = async (name, args) => {
     const { answers, errors } = await bareDialogue([
@@ -473,7 +473,7 @@ await check('mcp: the assistant writes the project down, and uses it in the same
         { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } },
         { jsonrpc: '2.0', id: 2, method: 'tools/call', params: {
             name: 'annotepage_save_project',
-            arguments: { site: 'staging.example.com', api: HERE.api, key: SALT, path: file } } },
+            arguments: { site: 'staging.example.com', api: HERE.api, key: KEY, path: file } } },
         { jsonrpc: '2.0', id: 3, method: 'tools/call', params: {
             name: 'annotepage_projects', arguments: { project: 'staging.example.com' } } },
     ]);
@@ -481,15 +481,15 @@ await check('mcp: the assistant writes the project down, and uses it in the same
     const saved = answers[1].result.content[0].text;
     contains(saved, 'project staging.example.com', 'named after the site');
     contains(saved, 'in use now, with no restart', 'and available at once');
-    truthy(!saved.includes(SALT), 'the key is not repeated back');
+    truthy(!saved.includes(KEY), 'the key is not repeated back');
 
     const listed = answers[2].result.content[0].text;
     contains(listed, 'staging.example.com', 'the next call in the SAME session sees it');
     contains(listed, 'key present', 'with its key');
-    truthy(!listed.includes(SALT), 'and still never the key itself');
+    truthy(!listed.includes(KEY), 'and still never the key itself');
 
     const object = JSON.parse(readFileSync(file, 'utf8'));
-    truthy(object.projects['staging.example.com'].key === SALT, 'the file holds it');
+    truthy(object.projects['staging.example.com'].key === KEY, 'the file holds it');
     truthy((statSync(file).mode & 0o777) === 0o600, 'and nobody else on the machine reads it');
 });
 
@@ -578,7 +578,7 @@ await check('mcp: "api" without "key" is refused, and names what is missing', as
 });
 
 await check('mcp: "key" without "api" is refused too', async () => {
-    const { text, isError } = await bareCall('annotepage_open_notes', { key: SALT });
+    const { text, isError } = await bareCall('annotepage_open_notes', { key: KEY });
     truthy(isError, 'refused');
     contains(text, '"key" without "api"', 'it names the half that is missing');
 });
@@ -594,11 +594,11 @@ await check('mcp: "key" and "project" together: refused, no winner picked', asyn
 
 await check('mcp: a malformed key is refused with its expected shape', async () => {
     const { text, isError } = await bareCall('annotepage_open_notes',
-        { api: HERE.api, key: SALT.slice(0, 20) + ' ' + SALT.slice(21) });
+        { api: HERE.api, key: KEY.slice(0, 20) + ' ' + KEY.slice(21) });
     truthy(isError, 'refused');
     contains(text, '43 characters', 'the expected length');
     contains(text, 'A-Z a-z 0-9 - _', 'the expected alphabet');
-    truthy(text.indexOf(SALT.slice(0, 20)) === -1, 'and the key is not echoed back');
+    truthy(text.indexOf(KEY.slice(0, 20)) === -1, 'and the key is not echoed back');
 });
 
 await check('mcp: with no configuration, a call WITHOUT api+key says which file', async () => {
@@ -614,7 +614,7 @@ await check('mcp: the projects tool reports the id a key derives, never the key'
         truthy(!isError, 'no error:\n' + text);
         contains(text, 'id ' + keys.id, 'the derived id');
         contains(text, 'written to disk no', 'and that nothing was kept');
-        truthy(text.indexOf(SALT) === -1, 'the key itself appears nowhere');
+        truthy(text.indexOf(KEY) === -1, 'the key itself appears nowhere');
     });
 
 /* -- Verdict -------------------------------------------------------------- */

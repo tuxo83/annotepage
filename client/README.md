@@ -27,25 +27,25 @@ described in `FORMAT.md`, at the root of the repository. When this file and
 
 ## Putting the tool on a site
 
-### 1. Generate the salt, and put it away
+### 1. Generate the key, and put it away
 
 Load the client once, on a page of the site, with `data-setup` and **without**
 `data-project`:
 
 ```html
-<script src="https://<your-cdn>/annotepage-client@2.2.0/dist/annotepage.js"
-        integrity="sha384-5wrAEkCKCLyEM3YJsVd6H7gFCOHt9f63XTDIM0Eu4fVYEAr3X4wgDWEDXkx/WVb/"
+<script src="https://<your-cdn>/annotepage-client@2.3.0/dist/annotepage.js"
+        integrity="sha384-oZAAGkI1KL5aAJCD+v7QPGqxcg5fzizz8hsnUHfNJPXeNVccDX251y5+EZRDCHEl"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-setup
         defer></script>
 ```
 
-The setup screen generates a **256-bit salt** and gives you four things to
-copy: the salt, the project id, the final tag, and the three lines to declare
+The setup screen generates a **256-bit key** and gives you four things to
+copy: the key, the project id, the final tag, and the three lines to declare
 on the server. No network request is made at that point.
 
-> **SALT LOST = NOTES LOST.** The salt is the only secret of the project. It
+> **KEY LOST = NOTES LOST.** The key is the only secret of the project. It
 > never leaves the browser, the server receives it in no form whatsoever, and
 > nobody can give it back to you. There is no recovery, no security question,
 > no escrow third party. Put it where your team keeps its passwords **before**
@@ -54,8 +54,8 @@ on the server. No network request is made at that point.
 ### 2. Paste the final tag, at the end of `<body>`
 
 ```html
-<script src="https://<your-cdn>/annotepage-client@2.2.0/dist/annotepage.js"
-        integrity="sha384-5wrAEkCKCLyEM3YJsVd6H7gFCOHt9f63XTDIM0Eu4fVYEAr3X4wgDWEDXkx/WVb/"
+<script src="https://<your-cdn>/annotepage-client@2.3.0/dist/annotepage.js"
+        integrity="sha384-oZAAGkI1KL5aAJCD+v7QPGqxcg5fzizz8hsnUHfNJPXeNVccDX251y5+EZRDCHEl"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"
@@ -66,7 +66,7 @@ on the server. No network request is made at that point.
 
 **`integrity` is not decorative.** As soon as the client goes to a CDN, the
 real risk of this architecture is the supply chain: a file swapped at the CDN's
-host runs in your page, with access to `localStorage` -- hence to the salt. The
+host runs in your page, with access to `localStorage` -- hence to the key. The
 SRI digest is what makes that swap useless. `crossorigin="anonymous"` goes with
 it: without it the browser does not check the digest of a cross-origin
 resource.
@@ -80,12 +80,12 @@ that is exactly its job.
 `document.currentScript`: the client could no longer read its own attributes
 and would stand down in silence.
 
-### 3. Declare the project on the server, and give the salt to the team
+### 3. Declare the project on the server, and give the key to the team
 
 The server receives the project id (public) and the list of allowed origins.
-The salt travels **out of band** -- the tool provides no channel for it. Each
+The key travels **out of band** -- the tool provides no channel for it. Each
 reviewer pastes it once: the tool shows them the pasting screen, checks that
-the salt really derives the id declared by the page, and remembers it in their
+the key really derives the id declared by the page, and remembers it in their
 browser.
 
 ## The tag attributes
@@ -190,7 +190,7 @@ it is.
 
 ## What the server never sees, and what it sees anyway
 
-It receives neither the salt, nor the key, nor the path of your pages: it
+It receives neither the key, nor the key, nor the path of your pages: it
 groups by **blind index**, an HMAC of the path that it cannot invert. It does
 see the number of projects and notes, the number of distinct pages, the time of
 every write, the shape of the threads, the approximate length of each remark,
@@ -203,7 +203,7 @@ remarks".
 The server's domain lock is an **anti-abuse** measure: it stops another site
 from consuming a project id found in the source of a page. **It is not a
 protection against XSS**: an XSS runs INSIDE the target page, so with the
-legitimate origin, and it has access to `localStorage`, hence to the salt.
+legitimate origin, and it has access to `localStorage`, hence to the key.
 
 The path prefix (`data-path`) is checked **by the client** -- the server does
 not see paths. It is **tidiness**, not a security boundary.
@@ -264,19 +264,19 @@ variables nor the theme of the host site.
 `textContent` everywhere, `innerHTML` nowhere: the text of a note is typed by a
 human and is never interpreted as markup.
 
-## The interface says "key", the format says "salt"
+## The interface says "key", the format says "key"
 
 Since 2.0.2 every string a person reads says **key** -- "The key of this
 project is needed", "The project key (43 characters)". Cryptographically that
 is what it is: 32 bytes of key material, from which HKDF derives the project
-id, the AES-256-GCM key and the blind-index key. A salt, by definition, is
+id, the AES-256-GCM key and the blind-index key. A key, by definition, is
 public; this is the only secret there is, and the word invited people to treat
 it as if it were not.
 
-What did NOT change, deliberately: the label KEYS are still `salt.title`,
-`salt.help` and so on -- renaming them would silently break every translation
+What did NOT change, deliberately: the label KEYS are still `key.title`,
+`key.help` and so on -- renaming them would silently break every translation
 file already written against them -- and `FORMAT.md`, the storage key
-`annotepage/salt/<project>`, and the MCP's `salt` configuration field are
+`annotepage/key/<project>`, and the MCP's `key` configuration field are
 unchanged, because those are a format and a contract rather than prose.
 
 ## Translating, or changing a word
@@ -329,7 +329,7 @@ something one can read.
 
 `npm test` cross-checks the format vectors against a second implementation of
 HKDF-SHA-256 written by hand from RFC 5869. That is what guarantees that the
-salt is the input keying material and `annotepage/1` the HKDF salt, and not the
+key is the input keying material and `annotepage/1` the HKDF salt, and not the
 other way round: both "work", only one is the format. The PHP server and the
 MCP package can copy these vectors to check that they speak the same format.
 
@@ -349,12 +349,12 @@ repository:
 src/00-preamble.js   reading the tag: server, project, scope, limits
 src/10-utils.js      labels, base64url, dates, versions
 src/15-labels.js     EVERY text shown, English by default
-src/20-crypto.js     salt, HKDF, blind index, AES-256-GCM envelope
+src/20-crypto.js     key, HKDF, blind index, AES-256-GCM envelope
 src/30-state.js      state, browser memory, scope
 src/40-api.js        the calls, the refusals, what goes out encrypted or plain
 src/50-anchors.js    finding the element of a note, or calling it orphaned
 src/60-ui.js         all the DOM, inside the shadow root
-src/70-setup.js      the two screens that show or ask for the salt
+src/70-setup.js      the two screens that show or ask for the key
 src/90-boot.js       the order of ignition, and the silences
 src/styles.css       confined styles, inlined by the build
 tools/build.mjs      the assembly, and the SRI digest
@@ -371,16 +371,16 @@ This is a choice, not an oversight:
 
 - **no authentication.** The name typed in is a convenience, not an identity.
   The project id is a bearer token: whoever has it can read and write. In
-  encrypted mode, what they read is useless without the salt;
+  encrypted mode, what they read is useless without the key;
 - **no moderation, and no deletion.** A note that is posted stays. The only
   state it can change is "resolved", and that state can be taken back;
-- **no salt rotation.** There is no mechanism: a leaked salt means starting
+- **no key rotation.** There is no mechanism: a leaked key means starting
   from a fresh project, abandoning the notes;
-- **no channel for handing the salt** to the second reviewer;
+- **no channel for handing the key** to the second reviewer;
 - **no masking of the length** of the remarks: the size of the envelope gives
   it away to within a few bytes.
 
-The salt is remembered **per browser and per origin**. The day staging becomes
+The key is remembered **per browser and per origin**. The day staging becomes
 production, every reviewer pastes it once more on the new domain -- the notes
 themselves do not move. That is exactly what the rule "the domain is not in the
 key" buys.

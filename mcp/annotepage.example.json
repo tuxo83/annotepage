@@ -22,7 +22,7 @@
       "_api": "The address of the PHP entry point, api.php included. The same one the browser uses.",
       "api": "https://staging.example.com/notes/api.php",
 
-      "_key": "The 43 characters shown by the setup screen, in the browser. No spaces, no decorative dashes. The project id is derived from it: do not write it here. The older name \"salt\" is still read.",
+      "_key": "The 43 characters shown by the setup screen, in the browser. No spaces, no decorative dashes. The project id is derived from it: do not write it here. The older name \"key\" is still read.",
       "key": "REPLACE-ME-43-characters-of-base64url-exactly",
 
       "_mode": "\"encrypted\" (default) or \"plain\". It is the project's mode, decided at setup.",

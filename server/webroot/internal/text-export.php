@@ -47,10 +47,10 @@
  * means exactly "empty value". No `text` line is emitted: a `text` line
  * followed by nothing would announce an empty remark, which would be false. A
  * reader that fetches this export therefore knows, unambiguously and with no
- * special-case code, that it is missing the salt.
+ * special-case code, that it is missing the key.
  *
  * The complete export in encrypted mode is produced by annotepage-mcp, which
- * has the salt. It has one single source for that: this address. That is why
+ * has the key. It has one single source for that: this address. That is why
  * the structural export ALSO emits the envelopes, under the keys `payload` and
  * `resolution-payload`. Without them the second producer would have nothing to
  * decrypt and the promise of section 5.3 would be empty. These are added keys,

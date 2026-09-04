@@ -97,7 +97,7 @@ Copy `annotepage.example.json` to `.annotepage.json` and fill it in:
 }
 ```
 
-The field used to be called `salt` and that name is still read, so a file
+The field used to be called `key` and that name is still read, so a file
 written before this version keeps working. Declaring both is refused rather
 than arbitrated: they are two names for one thing, and picking a winner would
 read half the notes of one project.

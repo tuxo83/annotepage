@@ -134,12 +134,12 @@ The public endpoint removes nine of them -- the hosting, the codebase, the
 database, the API URL, the deployment choice, the mode, the origins, the local
 config file, and the decision of where the server goes.
 
-**Eight remain, and all eight are the salt ceremony or optional attributes.**
+**Eight remain, and all eight are the key ceremony or optional attributes.**
 So the endpoint alone does not deliver "paste one tag and you are done". The
 shortest path still opens with: generate a 256-bit secret, store it where you
 keep passwords, there is no recovery.
 
-**Settled: the ceremony stays.** The salt remains an explicit prerequisite,
+**Settled: the ceremony stays.** The key remains an explicit prerequisite,
 generated and safeguarded before anything is written. Silent generation was
 considered and refused: it trades a risk nobody sees -- a reviewer clearing
 their browser having never saved the key -- against a shorter first minute,
@@ -153,10 +153,10 @@ do, and does not do today, is make the shape visible before the reader starts:
 - say the count up front -- three steps, and roughly how long, so the reader
   knows what they are entering rather than discovering it at 2.9 screens;
 - make step one feel like the thirty seconds it is. The setup screen already
-  generates the salt and hands over the four things to copy. The page spends
+  generates the key and hands over the four things to copy. The page spends
   62 words describing what that screen will tell the reader anyway;
-- keep the lost-salt warning at full strength, but out from BETWEEN the two
-  script tags. It belongs with the salt step or at the head of the section on
+- keep the lost-key warning at full strength, but out from BETWEEN the two
+  script tags. It belongs with the key step or at the head of the section on
   where the notes live -- never standing between the reader and the tag that
   runs the tool;
 - once the public endpoint exists, present it as what removes nine of the
@@ -315,7 +315,7 @@ Three behaviours go with it, and the first two already exist:
 - notes exist and the key in this browser derives a DIFFERENT project id: the
   client asks for the key. That is `start()` in 90-boot.js today;
 - a key is pasted that does not derive the declared id: refused, with nothing
-  sent and nothing decrypted. Today's `salt.wrong`;
+  sent and nothing decrypted. Today's `key.wrong`;
 - **new**: when the project is running on the public key, the tool says so
   where the notes are, every time, not once. "Encrypted, and the key of this
   project is public: anyone who can open this page can read these notes."
@@ -626,13 +626,13 @@ support message.
 
 ## A page of its own for the security rules
 
-The one thing that cannot be undone -- the salt is the key, nobody else has a
+The one thing that cannot be undone -- the key is the key, nobody else has a
 copy, losing it loses the notes -- is said in two anchors at the foot of
 install.html. That is the right size for the last section of an install page
 and the wrong size for the subject.
 
 What belongs on a page of its own, and is today scattered across FORMAT.md,
-INSTALL.md and the closing section of install.html: where the salt may and may
+INSTALL.md and the closing section of install.html: where the key may and may
 not live, what a shared relay learns anyway (the path of every annotated page,
 the sizes, the times), what `data-mode="plain"` costs and when it is
 acceptable, what a compromised CDN could do to a site carrying the short tag,
@@ -672,10 +672,10 @@ READMEs still carry it. Both are supported; neither is hidden.
 THE ARGUMENT THAT WAS MISSING WHEN THIS WAS DECIDED, raised by the owner the
 same day and written here because it points the other way.
 
-The salt does not only travel; it LIVES in the reviewer's browser, in the
+The key does not only travel; it LIVES in the reviewer's browser, in the
 localStorage of the annotated origin, for as long as the project exists. The
 client is third-party JavaScript running on that origin. So a compromised
-release does not read one note in flight -- it reads the salt, and with it
+release does not read one note in flight -- it reads the key, and with it
 every note of that project, past and future, on every site carrying the tag.
 FORMAT.md already says an XSS on an annotated page compromises the project
 "full stop"; a compromised client IS that XSS, delivered by us.
@@ -701,7 +701,7 @@ decision beside the tag on the landing page and on install.html#locked, and
 what it gives up is stated there rather than glossed over.
 
 What would remove the trade entirely, and is the real answer: the browser
-extension already described above. The salt would live in the extension rather
+extension already described above. The key would live in the extension rather
 than in the page's localStorage, out of reach of anything running on the site
 under review -- including an XSS, including a bad release of the client.
 
@@ -748,7 +748,7 @@ tools in this space work, which says the demand is real.
   visits, the owner decided it, and the project is the site's. An extension
   makes it a property of the READER: the notes follow the person, and the site
   owner never knows. Those are two different products with one protocol.
-- Every reviewer then needs the extension AND the salt, where the tag needed
+- Every reviewer then needs the extension AND the key, where the tag needed
   neither. The shortest path gets longer for a team, and shorter for a loner.
 - Page identity stops being obvious. The tag knows the site because it is in
   it; an extension has to decide what counts as "the same page" across
@@ -859,7 +859,7 @@ should.
 Found by three readers judging screenshots, unanimously, and it is a defect of
 the PRODUCT and not of our page: at 390px the "Annotate this page" pill sits over
 whatever is at the bottom right of the viewport. On annotepage.com it landed on
-the last line of the lost-salt warning -- the one sentence in the whole page
+the last line of the lost-key warning -- the one sentence in the whole page
 about permanent, unrecoverable loss -- and on the primary button.
 
 It does that on every site that installs the tool, and the site owner cannot see
