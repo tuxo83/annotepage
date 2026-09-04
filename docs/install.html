@@ -1114,8 +1114,10 @@ claude mcp add annotepage -- annotepage-mcp</code></pre>
 
         <p class="small dim">
             Any MCP client works &mdash; the command to register is
-            <code>annotepage-mcp</code> over stdio. It needs the project id and the salt,
-            and the salt never leaves the machine. The
+            <code>annotepage-mcp</code> over stdio. In an <a href="#modes">open project</a>
+            it reads the key off the page you name it. In a private one you give it the
+            key once, in its configuration file, and that file never leaves the machine.
+            The
             <a href="https://github.com/tuxo83/annotepage/blob/main/mcp/README.md">MCP README</a>
             has the tools, the commands, and how it is configured.
         </p>
