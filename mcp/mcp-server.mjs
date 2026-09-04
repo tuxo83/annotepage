@@ -3,7 +3,7 @@
  *
  * It does three things, in this order, and the order matters:
  *
- *  1. it loads the local configuration — the one that carries the salt —
+ *  1. it loads the local configuration — the one that carries the key —
  *     BEFORE opening the conversation. An MCP server that starts and then
  *     fails on every call gives an assistant that keeps retrying;
  *  2. it writes its warnings on STDERR, never on stdout. One byte too many on
@@ -11,7 +11,7 @@
  *  3. it serves.
  *
  * WE READ THE CONFIGURATION ONLY ONCE. Reloading on every call would be more
- * flexible and would mean that a salt changed mid-conversation changes, without
+ * flexible and would mean that a key changed mid-conversation changes, without
  * a word, the project the assistant writes into.
  *
  * A MISSING OR BROKEN CONFIGURATION NO LONGER STOPS THE SERVER, and that is a

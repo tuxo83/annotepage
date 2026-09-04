@@ -16,7 +16,7 @@
  * another:
  *
  *   newer       envelope of a newer format. Update the package.
- *   unreadable  wrong salt, note moved, damaged bytes. GCM does not say which
+ *   unreadable  wrong key, note moved, damaged bytes. GCM does not say which
  *               of the three, and that is intended.
  *   unknown     a mode this version does not know.
  */
@@ -105,12 +105,12 @@ const readableReasons = (counts) => {
             + '(update this package)');
     }
     if (counts.unreadable) {
-        pieces.push(counts.unreadable + ' impossible to decrypt: wrong salt, note '
+        pieces.push(counts.unreadable + ' impossible to decrypt: wrong key, note '
             + 'moved, or damaged bytes');
     }
     if (counts.noSalt) {
         pieces.push(counts.noSalt + ' encrypted, while the configuration of this '
-            + 'project carries no salt');
+            + 'project carries no key');
     }
     if (counts.unknown) {
         pieces.push(counts.unknown + ' carrying a mode this version does not know');
@@ -312,7 +312,7 @@ export const reply = async (project, state, id, text, signal) => {
         if (!project.keys) {
             throw new UsageError(
                 'Note ' + parent.id + ' is encrypted and the configuration of this '
-                + 'project carries no salt: there is nothing to seal a reply with.');
+                + 'project carries no key: there is nothing to seal a reply with.');
         }
         const index = await indexForWriting(project, parent);
         fields.payload = await seal(project.keys.encryptionKey, project.id, index,
@@ -362,7 +362,7 @@ export const markResolved = async (project, state, id, version, signal) => {
         if (!project.keys) {
             throw new UsageError(
                 'Note ' + id + ' is encrypted and the configuration of this project '
-                + 'carries no salt: the fixer\'s name would travel in the clear.');
+                + 'carries no key: the fixer\'s name would travel in the clear.');
         }
         const parent = found.parent || note;
         const index = await indexForWriting(project, parent);

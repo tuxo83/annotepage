@@ -12,8 +12,8 @@ Two programs, one library:
   job, or an assistant that has no MCP client.
 
 Notes are **encrypted in the browser**. The server that stores them cannot
-read a path, a name or a remark. This package holds the salt, so it is the
-only place the plaintext ever comes back -- which is also why the salt is
+read a path, a name or a remark. This package holds the key, so it is the
+only place the plaintext ever comes back -- which is also why the key is
 treated the way it is below.
 
 The exchange format and the security model are described in `FORMAT.md` at the
@@ -30,13 +30,44 @@ No dependencies. Node 18 or later.
 
 ## Configure
 
-There are **two** ways to tell this package which project it is talking to,
+There are **three** ways to tell this package which project it is talking to,
 and the right one depends on where that project's key lives.
 
-### 1. The configuration file -- for a project whose key is private
+### 1. In the command that plugs the server in -- for one private project
 
-This is the way for a project whose key is **not** written in its own page.
-The key stays on your machine and never travels through a conversation.
+Plugging an MCP server in is already a command, run once. The key rides in
+that command, so there is no second step and nothing to write by hand:
+
+```
+claude mcp add annotepage \
+  -e ANNOTEPAGE_API=https://staging.example.com/notes/api.php \
+  -e ANNOTEPAGE_KEY=the-43-characters-the-setup-screen-showed-you \
+  -e ANNOTEPAGE_AUTHOR=Assistant \
+  -- annotepage-mcp
+```
+
+| Variable | What it is |
+|---|---|
+| `ANNOTEPAGE_API` | the address of `api.php`, the one the browser uses. **It is what arms this path**: with no address, the variables are ignored and the file is read instead |
+| `ANNOTEPAGE_KEY` | the 43 characters of the project key |
+| `ANNOTEPAGE_AUTHOR` | the name replies are signed with. Required in order to write |
+| `ANNOTEPAGE_ORIGIN` | the site the notes are about, facing a relay (see below) |
+| `ANNOTEPAGE_MODE` | `plain` or `encrypted`. Encrypted unless said otherwise |
+| `ANNOTEPAGE_ID` | the project id, in plain mode with no key |
+| `ANNOTEPAGE_READ_ONLY` | `true`, exactly, cuts every write. Anything else leaves writing on |
+| `ANNOTEPAGE_PROJECT` | a name for it, if you would rather not read `project` in messages |
+
+The key stays on your machine, exactly as it would in a file, and it never
+enters the conversation. It does land in your shell history and in the MCP
+client's own configuration; if that bothers you, use the file below instead.
+
+**The environment wins over the file, and says so in a warning.** A variable
+was typed by whoever is running the server, now; a file was written some other
+day and forgotten. The other order would let a stale file quietly answer a
+question you have just answered yourself -- and the notes it reads would be
+another project's.
+
+### 2. The configuration file -- for several projects, or no key in a history
 
 Copy `annotepage.example.json` to `.annotepage.json` and fill it in:
 
@@ -46,7 +77,7 @@ Copy `annotepage.example.json` to `.annotepage.json` and fill it in:
   "projects": {
     "review": {
       "api": "https://staging.example.com/notes/api.php",
-      "salt": "the 43 characters the setup screen showed you",
+      "key": "the 43 characters the setup screen showed you",
       "author": "Assistant",
       "read_only": false
     }
@@ -54,16 +85,21 @@ Copy `annotepage.example.json` to `.annotepage.json` and fill it in:
 }
 ```
 
-> **This file contains the salt, which is to say every note there is.**
+The field used to be called `salt` and that name is still read, so a file
+written before this version keeps working. Declaring both is refused rather
+than arbitrated: they are two names for one thing, and picking a winner would
+read half the notes of one project.
+
+> **This file contains the key, which is to say every note there is.**
 > Whoever reads it reads everything. `chmod 600` it, add it to `.gitignore`,
 > and never paste it into a ticket or a conversation. There is no rotation: a
-> leaked salt means starting a fresh project and abandoning the notes already
+> leaked key means starting a fresh project and abandoning the notes already
 > written.
 
 Set `"read_only": true` when plugging an assistant onto a review you do not
 know yet. It cuts every write.
 
-### 2. `api` + `key` on the call -- for a project whose key is already public
+### 3. `api` + `key` on the call -- for a project whose key is already public
 
 Since client 2.1.0 a page can carry its own key: the `annotepage` tag at the
 end of the annotated document has `data-key` beside `data-server`, and such a
@@ -132,9 +168,10 @@ Refusals, and none of them is a fallback:
 
 Where to look, in order -- and the tool descriptions say the same, because
 that is where an assistant actually reads it: **the page first** (it carries
-both attributes), **then the configuration file** (the private projects), and
-**asking a human only as a last resort**, when the page cannot be reached and
-no configuration answers.
+both attributes), **then whatever the server was started with** (the
+environment, then the configuration file: the private projects), and **asking a
+human only as a last resort**, when the page cannot be reached and no
+configuration answers.
 
 ## Use it from the command line
 
@@ -161,6 +198,8 @@ Add the server to your MCP client. For Claude Code:
 ```
 claude mcp add annotepage -- annotepage-mcp
 ```
+
+A private project adds its key to that same command; see **Configure** above.
 
 The seven tools:
 

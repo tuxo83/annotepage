@@ -56,7 +56,7 @@ const HELP = `annotepage ` + version() + ` — read and answer review notes.
   annotepage reply <id> <text>
   annotepage resolve <id> <version>      empty version: write ""
   annotepage reopen <id>
-  annotepage id                 the project id derived from the salt
+  annotepage id                 the project id derived from the key
   annotepage raw                what the server sends, without decrypting
   annotepage diagnostic         the state of the server
   annotepage projects           what the configuration declares
@@ -68,7 +68,7 @@ Options:
                     ~/.config/annotepage/annotepage.json
 
 The configuration file carries the project SALT. It is never committed:
-whoever reads it reads every note, and there is no salt rotation.
+whoever reads it reads every note, and there is no key rotation.
 
 In plain mode this utility is not needed:
   curl '<api>?action=text&project=<id>'
@@ -76,7 +76,7 @@ already returns the same document. The MCP and this utility are additions.
 `;
 
 /* A twenty-line argument parser rather than a dependency. This package holds
-   the salt: every dependency is third-party code in the same process, and the
+   the key: every dependency is third-party code in the same process, and the
    project's security decision says the real risk is the supply chain. */
 const parse = (argv) => {
     const options = {};
@@ -141,7 +141,7 @@ const main = async () => {
             process.stdout.write('  id ' + p.id + '\n');
             process.stdout.write('  api ' + p.api + '\n');
             process.stdout.write('  mode ' + p.mode + '\n');
-            process.stdout.write('  salt ' + (p.keys ? 'present' : 'absent') + '\n');
+            process.stdout.write('  key ' + (p.keys ? 'present' : 'absent') + '\n');
             process.stdout.write('  author ' + (p.author || '(none)') + '\n');
             process.stdout.write('  writing ' + (p.read_only ? 'read only'
                 : (p.author ? 'allowed' : 'refused, for want of a name')) + '\n');
@@ -156,7 +156,7 @@ const main = async () => {
 
     if (command === 'id') {
         /* What you need in order to build a "curl" URL by hand. It is the id,
-           never the salt: one is a public bearer token, the other is every
+           never the key: one is a public bearer token, the other is every
            note there is. */
         process.stdout.write(project.id + '\n');
         return 0;

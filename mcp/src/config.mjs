@@ -1,4 +1,4 @@
-/* config.mjs — WHERE THE SALT SLEEPS ON THIS MACHINE.
+/* config.mjs — WHERE THE KEY SLEEPS ON THIS MACHINE.
  *
  * The salt is the project's only secret, and FORMAT.md section 1.1 says it
  * without detour: lost salt = lost notes, copied salt = read notes. In the
@@ -32,6 +32,15 @@
  * must not be one. We then ask for the project id directly, since it can no
  * longer be derived.
  *
+ *  4. THE FILE IS NOT THE ONLY WAY TO GIVE THE KEY, and it must not be the
+ *     one we ask for first. Plugging an MCP server in is already a command run
+ *     once -- `claude mcp add ... -- npx annotepage-mcp` -- so the key rides in
+ *     THAT command, as an environment variable, and there is no second step and
+ *     nothing to quit. See projectFromEnvironment below. It stays on the
+ *     operator's machine, exactly like the file, and it never enters the
+ *     conversation. The file remains, for several projects and for whoever
+ *     prefers not to have a key in a shell history.
+ *
  * AND THE FILE IS NO LONGER THE ONLY WAY IN. A project whose key is
  * written in its own page (data-key, FORMAT.md section 1.5) is public by
  * construction: the assistant reads the tag and passes the key per call, and
@@ -63,6 +72,53 @@ export const candidatePaths = (explicit) => {
         join(home, '.config', 'annotepage', 'annotepage.json'),
         join(home, '.annotepage.json'),
     ];
+};
+
+/**
+ * The project declared by the environment, or null.
+ *
+ * ANNOTEPAGE_API is what arms it: without an address there is no project, and
+ * a lone key would silently borrow the address of a file meant for another
+ * one. The rest is named exactly like the file's fields, so that a reader of
+ * one understands the other.
+ *
+ * We build the same shape the file produces and hand it to the same checks.
+ * Nothing is validated twice, and a variable that is wrong is refused with the
+ * message a wrong field would have got.
+ */
+const projectFromEnvironment = () => {
+    const value = (name) => {
+        const raw = process.env[name];
+        return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : undefined;
+    };
+    const api = value('ANNOTEPAGE_API');
+    if (api === undefined) return null;
+
+    const name = value('ANNOTEPAGE_PROJECT') || 'project';
+    const project = { api };
+    const key = value('ANNOTEPAGE_KEY');
+    if (key !== undefined) project.key = key;
+    for (const [field, variable] of [
+        ['id', 'ANNOTEPAGE_ID'],
+        ['mode', 'ANNOTEPAGE_MODE'],
+        ['author', 'ANNOTEPAGE_AUTHOR'],
+        ['origin', 'ANNOTEPAGE_ORIGIN'],
+    ]) {
+        const found = value(variable);
+        if (found !== undefined) project[field] = found;
+    }
+    /* Only the exact string turns writing off. Anything else -- "false", "0",
+       "no", a typo -- leaves the tool able to write, which is the state the
+       operator asked for by not asking for the other one. A read_only that
+       switches itself on for a misspelling would be discovered as a mute
+       assistant, and blamed on the server. */
+    if (value('ANNOTEPAGE_READ_ONLY') === 'true') project.read_only = true;
+
+    return {
+        path: 'the ANNOTEPAGE_ environment variables',
+        fromEnvironment: true,
+        object: { default_project: name, projects: { [name]: project } },
+    };
 };
 
 const readFile = (paths) => {
@@ -99,7 +155,7 @@ const permissionsWarning = (path) => {
     if ((state.mode & 0o077) === 0) return null;
     return 'The file ' + path + ' is readable by other accounts of this machine '
         + '(permissions ' + (state.mode & 0o777).toString(8) + ').\n'
-        + 'It contains the project salt, that is to say every note.\n'
+        + 'It contains the project key, that is to say every note.\n'
         + 'Fix with: chmod 600 ' + path;
 };
 
@@ -121,20 +177,43 @@ const requireText = (value, what, where) => {
  */
 export const loadConfiguration = async (explicit) => {
     const paths = candidatePaths(explicit);
-    const found = readFile(paths);
+    /* THE ENVIRONMENT WINS OVER THE FILE, and it is the only order that does
+       not surprise: a variable was typed by whoever is running this, now, in
+       the command that started the server. A file was written some other day
+       and forgotten. The other order would let a stale file quietly answer a
+       question the operator has just answered themselves -- and the notes it
+       reads would be another project's. We say when both exist. */
+    const fromEnvironment = projectFromEnvironment();
+    const found = fromEnvironment || readFile(paths);
 
     if (found === null) {
         throw new ConfigError(
-            'No configuration found. Looked for, in order:\n'
+            'No configuration found.\n\n'
+            + 'Either declare the project in the command that plugs this server in:\n'
+            + '  ANNOTEPAGE_API   the address of api.php, the one the browser uses\n'
+            + '  ANNOTEPAGE_KEY   the 43 characters of the project key\n'
+            + '  ANNOTEPAGE_AUTHOR  the name replies are signed with\n'
+            + '  ANNOTEPAGE_ORIGIN  the site the notes are about, facing a relay\n\n'
+            + 'Or write a file. Looked for, in order:\n'
             + paths.map((c) => '  ' + c).join('\n')
             + '\n\nStart from the annotepage.example.json template shipped with this '
-            + 'package.\nThe file contains the project salt: never commit it.');
+            + 'package.\nThe file contains the project key: never commit it.');
     }
 
     const { path, object } = found;
     const warnings = [];
-    const permissions = permissionsWarning(path);
-    if (permissions) warnings.push(permissions);
+    if (!found.fromEnvironment) {
+        const permissions = permissionsWarning(path);
+        if (permissions) warnings.push(permissions);
+    } else {
+        const file = readFile(paths);
+        if (file) {
+            warnings.push(
+                'ANNOTEPAGE_API is set, so the environment describes the project and '
+                + 'the file ' + file.path + ' was NOT read.\n'
+                + 'Unset the variable to go back to the file.');
+        }
+    }
 
     if (!object || typeof object !== 'object' || !object.projects
         || typeof object.projects !== 'object') {
@@ -183,14 +262,30 @@ export const loadConfiguration = async (explicit) => {
         let keys = null;
         let id;
 
-        if (raw.salt !== undefined && raw.salt !== null && String(raw.salt) !== '') {
-            const bytes = saltFromText(raw.salt);
+        /* "key" is the word everywhere a human reads: the setup screen shows a
+           key, the tag carries data-key, the page asks the reviewer for a key.
+           "salt" was the internal name and it survived in this file longer than
+           it should have. Both are accepted -- a configuration written last
+           month must keep working -- and disagreeing about them is refused
+           rather than arbitrated. */
+        if (raw.key !== undefined && raw.salt !== undefined
+            && String(raw.key).trim() !== String(raw.salt).trim()) {
+            throw new ConfigError(
+                where.charAt(0).toUpperCase() + where.slice(1)
+                + ' declares BOTH "key" and "salt", and they differ.\n'
+                + 'They are two names for the same thing. Keep "key" and delete the '
+                + 'other: choosing for you would read half the notes of one project.');
+        }
+        const declaredKey = raw.key !== undefined ? raw.key : raw.salt;
+
+        if (declaredKey !== undefined && declaredKey !== null && String(declaredKey) !== '') {
+            const bytes = saltFromText(declaredKey);
             if (bytes === null) {
                 throw new ConfigError(
-                    'The salt of ' + where + ' does not have the expected shape: 43 '
+                    'The key of ' + where + ' does not have the expected shape: 43 '
                     + 'characters taken from A-Z a-z 0-9 - _ , with no space and no '
                     + 'decorative dash.\n'
-                    + 'We do not "clean" it: a salt that is almost right gives a wrong '
+                    + 'We do not "clean" it: a key that is almost right gives a wrong '
                     + 'project id, and the error would then read as an unknown project.');
             }
             keys = await derive(bytes);
@@ -204,10 +299,10 @@ export const loadConfiguration = async (explicit) => {
             if (raw.id !== undefined && String(raw.id).trim() !== ''
                 && String(raw.id).trim() !== id) {
                 throw new ConfigError(
-                    'The salt of ' + where + ' does not produce the id declared next '
+                    'The key of ' + where + ' does not produce the id declared next '
                     + 'to it.\nDeclared id : ' + String(raw.id).trim()
-                    + '\nId of the salt : ' + id
-                    + '\nThis salt is not the salt of this project. No request was made.');
+                    + '\nId of the key : ' + id
+                    + '\nThis key is not the key of this project. No request was made.');
             }
         } else if (mode === 'plain') {
             /* Plain mode with no salt: read-only, and by "curl" if you like.
@@ -222,7 +317,7 @@ export const loadConfiguration = async (explicit) => {
             }
         } else {
             throw new ConfigError(
-                'The "salt" field is missing in ' + where + '.\n'
+                'The "key" field is missing in ' + where + '.\n'
                 + 'In encrypted mode it is indispensable: without it there is nothing '
                 + 'to read, and there is no recovery (FORMAT.md section 1.1).');
         }

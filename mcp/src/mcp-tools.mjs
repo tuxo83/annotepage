@@ -201,7 +201,7 @@ export const buildTools = (configuration) => {
                         && state.header.encryption !== 'no') {
                         return 'No open note on "' + wanted + '".\n'
                             + 'Careful: this project is encrypted and the configuration '
-                            + 'carries no salt, so the page paths are not readable. The '
+                            + 'carries no key, so the page paths are not readable. The '
                             + 'filter had nothing to compare.\n';
                     }
                 }
@@ -422,7 +422,7 @@ export const buildTools = (configuration) => {
                 + 'hosting the notes: PHP version, extensions, database reachable, '
                 + 'table present. Call it when another command fails without anyone '
                 + 'understanding why.\n\n'
-                + 'The salt never appears there, in any form, not even truncated. '
+                + 'The key never appears there, in any form, not even truncated. '
                 + 'What identifies a project is its id, which is already public — '
                 + 'so calling this with "api" and "key" reports the id THEY derive, '
                 + 'which is how a key is checked before anything is written.'
@@ -458,7 +458,7 @@ export const buildTools = (configuration) => {
                     out += '  id ' + p.id + '\n';
                     out += '  api ' + p.api + '\n';
                     out += '  mode ' + p.mode + '\n';
-                    out += '  salt ' + (p.keys ? 'present' : 'absent') + '\n';
+                    out += '  key ' + (p.keys ? 'present' : 'absent') + '\n';
                     out += '  author ' + (p.author || '(none: writing refused)') + '\n';
                     out += '  writing ' + (p.read_only ? 'read only'
                         : (p.author ? 'allowed' : 'refused, for want of a name')) + '\n';

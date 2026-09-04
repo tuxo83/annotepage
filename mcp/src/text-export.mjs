@@ -275,7 +275,7 @@ export const readExport = (text) => {
 
 /* -- Writing -------------------------------------------------------------
    What this package produces is, word for word, what the server would produce
-   if it had the salt. A tool that reads the export does not know — and does
+   if it had the key. A tool that reads the export does not know — and does
    not have to know — which of the two producers wrote it. That is FORMAT.md
    section 5.3, and it is why there is NO "produced by the MCP package" line
    here: it would be handy, and it would break the chapter's only promise. */
