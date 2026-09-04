@@ -219,9 +219,13 @@ h1 + .lead { margin-top: 1.15rem; }
 @media (min-width: 62rem) {
     .use-steps > li { grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); }
 }
-/* A second sentence is allowed in part 03 and nowhere else, because part 03
-   carries the one thing the rest of the site does not say. It is still one
-   idea per paragraph. */
+/* A SECOND SENTENCE IS THE EXCEPTION, AND IT NOW HAS TWO CASES. It was
+   allowed in part 03 alone, which carries the one thing the rest of the site
+   does not say. Secure mode adds the other: the assistant holds the key too,
+   and the question is CREATED by the first step and lands in this one --
+   sending the reader to another page for it would leave a hole exactly where
+   they notice it. Both are consequence first, in bold, then the mechanism.
+   Anywhere else, one sentence. */
 .use-steps .say + .say { margin-top: .7rem; }
 .use-steps .say b { color: var(--text); font-weight: 650; }
 
@@ -813,7 +817,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             </fieldset>
 
             <p class="dial-why">
-                They change what the three parts below show. Neither asks you to
+                They change what the steps below show. Neither asks you to
                 choose anything: you are already in one of these cases.
             </p>
         </div>
@@ -964,9 +968,9 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             <div>
                 <p class="cap"><span class="n"></span> You ask your assistant</p>
                 <p class="say">One line names the site. The rest is its own work.</p>
-                <p class="say if-secure">It reads the key from its own configuration, where you put it when
-                you <a href="/#install">plugged it in</a> &mdash; a key that is not in the page cannot be
-                read off it.</p>
+                <p class="say if-secure"><b>Your assistant has the key too.</b> You gave it
+                once, in its configuration, when you
+                <a href="install.html#assistant">plugged it in</a>.</p>
             </div>
 
             <figure class="fig">
@@ -1147,7 +1151,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 </main>
 
 <p class="wrap small dim" style="margin-top:2.5rem;">
-    The session in part 02 is an example of a Claude Code session, shortened. The
+    The terminal session above is an example of a Claude Code session, shortened. The
     name is used to say what the tool was, not to claim any endorsement.
 </p>
 
