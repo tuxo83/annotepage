@@ -322,12 +322,11 @@ second control costs the discipline.
 
 
 
-Not written yet, and deliberately: the landing page was validated first, then
-the usage page, and this one comes after them. What follows is decided, not
-open.
+Written now. What follows was decided before it was, and it is what the page
+does.
 
 **THE FIRST QUESTION IS "DO YOU WANT AUTOMATIC UPDATES", AND THE TAG COMES
-AFTER IT.** Today the page shows a tag and explains the locked variant beside
+AFTER IT.** Done: the dial reads *Updates itself* / *Pinned*. Today the page shows a tag and explains the locked variant beside
 it. That is backwards. There are two tags because there are two answers to one
 question nobody was asked:
 
@@ -398,6 +397,33 @@ What came out of it, and holds for anything else the pages share:
   whose pages have none;
 - removing a menu entry removes a route. Every page must still be linked from
   another one -- the check refuses a page nothing reaches.
+
+
+### Which options become a setting, and which do not
+
+The rule, given by the reader and worth keeping: **a setting at the top is one
+that changes a step or the content of a step.** An option that changes neither
+is not a setting -- it goes where a prerequisite goes, at the foot of the
+chapter it belongs to. A dial that changes nothing tells the reader the whole
+page depends on it.
+
+Measured against the three questions the installer itself asks:
+
+- *who the server answers for* -- a setting. Declared, there is a step to
+  declare the origin; open, there is not;
+- *who updates the server* -- a setting. Two of the three answers are a step,
+  with a different line in each; the third is no step at all;
+- *where the notes live*, SQLite or MySQL -- **not** a setting. Same upload,
+  same steps, same tag. It changes what you need ready before starting, so it
+  is at the foot of the chapter with PHP 7.4.
+
+And one on the page side: *who upgrades the client* -- a setting, because it
+changes the tag itself. A range and no digest, or one release and its
+`integrity`, and the page shows ONE tag either way.
+
+Not settings, and none of them ever will be: `allow_plain_http`,
+`client_ip_header`, `forward_root_to`, `diagnostic`, the rate limits and the
+per-project caps. They change a value in a configuration file, never a gesture.
 
 
 ## What must not be done
