@@ -134,6 +134,30 @@ ul.plain b { color: var(--text); }
 /* Two of them now, and the second is not decoration: see the <p> they sit in. */
 .cta + .cta { margin-left: 2.2rem; }
 
+/* -- the one warning on the page ----------------------------------------- */
+
+/* THE LANDING PAGE'S `.install-other`, TURNED INTO A WARNING. Same shape --
+   inline-flex so it hugs its own text instead of ruling a box across the
+   column, a mark, one sentence -- and the colour is the difference: that one
+   tells you what open mode means, this one tells you what cannot be undone.
+   Its rules are written here rather than shared for the reason the copy
+   button's are: sharing would mean editing the landing page, which is frozen.
+
+   IN THE CODE COLUMN, NOT THE SENTENCE ONE. The comment at the top of this
+   file refuses a bordered aside among the prose, and it is right: it would put
+   a third left edge on a page that has two. Beside the key, in the column that
+   already holds blocks with edges of their own, it adds none. */
+.warn-note {
+    display: inline-flex; align-items: baseline; gap: .5rem;
+    margin: 1.1rem 0 0; max-width: 46em;
+    padding: .55rem .85rem;
+    border: 1px solid var(--line-soft); border-left: 3px solid var(--warn);
+    border-radius: 8px; background: var(--bg-warn);
+    font-size: .88rem; color: var(--dim);
+}
+.warn-note .mk { color: var(--warn); }
+.warn-note b { color: var(--text); }
+
 /* -- Code snippets ------------------------------------------------------- */
 
 /* THE GROUND IS PINNED DARK IN BOTH THEMES, and the palette is the landing
@@ -1062,6 +1086,24 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                          was rebuilt to lose. -->
                     <p class="cap"><span class="n"></span> Paste the tag</p>
                     <p class="say">At the end of <code>&lt;body&gt;</code>.</p>
+                    <!-- WHERE THE VALUE IN THE TAG COMES FROM, IN ONE LINE.
+                         The reader was handed a key, or an id, with no account
+                         to have got it from and no form to have filled in --
+                         and a value that appears from nowhere is a value nobody
+                         trusts. Both were computed in this browser, a second
+                         ago; the id is derived from the key by HKDF-SHA-256 and
+                         the server recognises it rather than issuing it. The
+                         long version is FORMAT.md; this is the sentence that
+                         stops the question. -->
+                    <p class="say if-open">
+                        The key was drawn in this browser, just now, and sent
+                        nowhere.
+                    </p>
+                    <p class="say if-secure">
+                        The id is derived from the key, in this browser, just
+                        now &mdash; the server recognises it, it never issues
+                        it.
+                    </p>
                 </div>
                 <div>
                     <div class="snip">
@@ -1124,6 +1166,22 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                                 <button class="copy" type="button" data-copy="snip-key" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-key"><code id="key-code">&lt;43 characters, drawn in your browser&gt;</code></pre>
                             </div>
+
+                    <!-- THE ONE THING ON THIS PAGE THAT CANNOT BE UNDONE, SAID
+                         WHERE IT IS DONE. The questions at the foot of the page
+                         answer it for whoever reads that far; this key is
+                         handed over here, and here is where somebody decides
+                         whether to keep a copy.
+
+                         AND ONLY IN THIS MODE. In open mode the key is written
+                         in the tag, on a page anybody can read: it cannot be
+                         lost, and this step does not exist. -->
+                    <p class="warn-note">
+                        <span class="mk" aria-hidden="true">&#9888;</span>
+                        <span><b>Nothing on the page carries it.</b> Lose this key
+                        and the notes go with it &mdash; no recovery, no rotation.
+                        Put it where your team keeps its passwords, now.</span>
+                    </p>
                 </div>
             </li>
 
@@ -1227,22 +1285,21 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         </div>
                     </figure>
 
-                    <!-- AND THE THIRD PLACE, WHICH IS A SENTENCE AND NOT A
-                         BLOCK: what it costs is the only thing about it worth
-                         reading. It sat at the foot of the chapter, where open
-                         mode read it too -- offering to write a file that open
-                         mode does not need. It belongs to the step about the
-                         key, and goes when that step goes. -->
-                    <p class="fw-lead">Or in the command itself, and in your shell&rsquo;s history:</p>
-                    <div class="snip">
-                                <button class="copy" type="button" data-copy="snip-mcp-sec" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-mcp-sec"><code id="mcp-code"><span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">\</span>
-                      <span class="op">-e</span> ANNOTEPAGE_API=<span class="ap-api">https://api.annotepage.com/api.php</span> <span class="op">\</span>
-                      <span class="op">-e</span> ANNOTEPAGE_KEY=&lt;the key above&gt; <span class="op">\</span>
-                      <span class="op">-e</span> ANNOTEPAGE_AUTHOR=Assistant <span class="op">\</span>
-                      <span class="op">--</span> annotepage-mcp</code></pre>
-                            </div>
+                    <!-- AND NOT A COMMAND CARRYING THE KEY. `claude mcp add`
+                         with -e ANNOTEPAGE_API=... stood here as the shorter
+                         route, and it is a trap: those variables describe
+                         exactly ONE project, and mcp/src/config.mjs does not
+                         merge them with the file -- when ANNOTEPAGE_API is set
+                         the file is NOT READ AT ALL, with a warning nobody sees
+                         inside an assistant. So a reader who takes the short
+                         route, then reviews a second site, writes a file that
+                         is ignored until they think to unset a variable they
+                         set once, weeks ago.
 
+                         One route. The file holds one project or five with the
+                         same shape, and the key never enters a shell's history.
+                         The variables stay in the MCP for whoever runs it from
+                         a script; they are not a way to install it. -->
                     <p class="small dim">
                         Or let the assistant write it: easiest, and the key
                         crosses a provider&rsquo;s logs.
@@ -1457,7 +1514,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     var jsonCode  = document.getElementById('json-code');
     var askCode   = document.getElementById('ask-code');
     var cronCode  = document.getElementById('cron-code');
-    var mcpCode   = document.getElementById('mcp-code');
     var siteIn    = document.getElementById('site');
     var open      = document.getElementById('m-open');
     var shared    = document.getElementById('s-shared');
@@ -1475,7 +1531,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
        page no longer has would leave the placeholder sitting in the tag,
        ready to be copied. */
     if (!tagCode || !keyCode || !orgCode || !jsonCode || !cronCode
-        || !askCode || !mcpCode || !siteIn || !open || !shared || !pinned) return;
+        || !askCode || !siteIn || !open || !shared || !pinned) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
        Math.random would be guessable -- which is worse than no key at all,
@@ -1662,11 +1718,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             'connect to ' + site
             + ' with annotepage and fix what the reviewers flagged';
 
-        /* The command names the same address the tag does. It was a
-           <api.php> placeholder beside four blocks carrying the real thing,
-           which is the shape this page exists to get rid of. */
-        var mcpApi = mcpCode.querySelector('.ap-api');
-        if (mcpApi) mcpApi.textContent = api;
 
     }
 
