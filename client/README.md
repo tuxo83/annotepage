@@ -33,8 +33,8 @@ Load the client once, on a page of the site, with `data-setup` and **without**
 `data-project`:
 
 ```html
-<script src="https://<your-cdn>/annotepage-client@2.3.0/dist/annotepage.js"
-        integrity="sha384-oZAAGkI1KL5aAJCD+v7QPGqxcg5fzizz8hsnUHfNJPXeNVccDX251y5+EZRDCHEl"
+<script src="https://<your-cdn>/annotepage-client@2.4.0/dist/annotepage.js"
+        integrity="sha384-RbO8lASKNckSOum5Gm462DTZ8y6/+yR6ZFKyphrAe9Hf3x95tJ57eY/6GX4XfBJr"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-setup
@@ -54,8 +54,8 @@ on the server. No network request is made at that point.
 ### 2. Paste the final tag, at the end of `<body>`
 
 ```html
-<script src="https://<your-cdn>/annotepage-client@2.3.0/dist/annotepage.js"
-        integrity="sha384-oZAAGkI1KL5aAJCD+v7QPGqxcg5fzizz8hsnUHfNJPXeNVccDX251y5+EZRDCHEl"
+<script src="https://<your-cdn>/annotepage-client@2.4.0/dist/annotepage.js"
+        integrity="sha384-RbO8lASKNckSOum5Gm462DTZ8y6/+yR6ZFKyphrAe9Hf3x95tJ57eY/6GX4XfBJr"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"

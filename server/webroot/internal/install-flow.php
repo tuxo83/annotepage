@@ -662,6 +662,21 @@ function ap_i_config_text(array $values)
         $text .= "    'auto_update' => false,\n\n";
     }
 
+    if (!empty($values['update_token'])) {
+        $text .= "    // THE UPDATE ADDRESS, for a host with neither cron nor shell -- or\n";
+        $text .= "    // one whose cron can only fetch a URL. Calling\n";
+        $text .= "    //     ?action=update&token=<the value below>\n";
+        $text .= "    // fetches and installs the published version DURING that request\n";
+        $text .= "    // and answers with what it did. Whoever calls it waits; nobody\n";
+        $text .= "    // else is kept waiting, which is why it is allowed there and not\n";
+        $text .= "    // on the path a reader takes. At most one real check a day,\n";
+        $text .= "    // however often it is called; add &force=1 to check anyway.\n";
+        $text .= "    //\n";
+        $text .= "    // Empty this string and the action stops existing -- unknown, not\n";
+        $text .= "    // refused. Change it and the old address stops working at once.\n";
+        $text .= "    'update_token' => '" . $values['update_token'] . "',\n\n";
+    }
+
     if ($relay) {
         $text .= "    // WHERE A BARE VISIT GOES. Somebody who reaches a relay with no\n";
         $text .= "    // path has usually just read a project id in the source of a page\n";
@@ -933,10 +948,21 @@ function ap_i_run(array $options)
         $deployment = (isset($_POST['audience']) && $_POST['audience'] === 'anyone')
             ? 'relay' : 'self-hosted';
 
+        /* 32 bytes, base64url, from the same source as everything else that
+           must not be guessable. Generated HERE and shown once: the installer
+           is the only screen that will ever have a reason to print it. */
+        $updateToken = '';
+        if (!empty($_POST['update_url'])) {
+            $updateToken = rtrim(strtr(base64_encode(
+                function_exists('random_bytes') ? random_bytes(32)
+                    : openssl_random_pseudo_bytes(32)), '+/', '-_'), '=');
+        }
+
         $values = array(
-            'storage'     => $storage,
-            'deployment'  => $deployment,
-            'auto_update' => $autoUpdate,
+            'storage'      => $storage,
+            'deployment'   => $deployment,
+            'auto_update'  => $autoUpdate,
+            'update_token' => $updateToken,
             'version'     => ap_i_version($here),
             'installer'   => $selfName,
             'file'        => '',
@@ -1303,6 +1329,23 @@ function ap_i_run(array $options)
         echo '<p class="note bad">This server has no way out to HTTPS, so this option '
             . "cannot work here even if you tick it.</p>\n";
     }
+
+    /* THE QUESTION THE FIRST ONE DOES NOT ANSWER. Ticking auto_update above
+       buys nothing on a host whose PHP interface cannot hand the response to
+       the visitor before working -- `cgi-fcgi` is the common one, and it is
+       most of cheap hosting. Such a host declines the web path and points at
+       cron, and plenty of it has no cron either, or a cron that can only fetch
+       a URL. This is the answer for all of them, and it is one line to paste
+       into whatever scheduler exists. */
+    echo '<label class="choice"><input type="checkbox" name="update_url" value="1"'
+        . (!empty($_POST['update_url']) ? ' checked' : '')
+        . "> Give me an address a scheduler can call to update this server</label>\n";
+    echo '<p class="note">For a host with no cron and no shell, or one whose cron can '
+        . 'only fetch a URL. A secret is written into the configuration and the address '
+        . 'is shown once, on the next screen. Whoever calls it waits while the update '
+        . 'runs &mdash; that is allowed there and nowhere else, because they came for it '
+        . 'and nobody else is kept waiting. At most one real check a day, however often '
+        . "it is called.</p>\n";
     echo "</fieldset>\n";
 
     echo '<button type="submit">Install</button>' . "\n";

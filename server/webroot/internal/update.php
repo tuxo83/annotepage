@@ -929,6 +929,82 @@ function ap_update_deferred(array $config)
     }
 }
 
+/**
+ * The token that turns `?action=update` on, or null.
+ *
+ * NEVER THROWS and never says what it read. A token too short is treated as no
+ * token at all: the action simply does not exist, which is what a stranger
+ * should see either way.
+ */
+function ap_update_token(array $config)
+{
+    $token = isset($config['update_token']) ? trim((string) $config['update_token']) : '';
+    return strlen($token) >= 32 ? $token : null;
+}
+
+/**
+ * Runs the update IN this request, for a host that cannot do it any other way.
+ *
+ * THE VISITOR RULE IS NOT BROKEN HERE, IT DOES NOT APPLY. `ap_update_schedule`
+ * refuses to make somebody who came to read or write a note wait on a fetch to
+ * GitHub. Whoever calls this address came for the update and for nothing else;
+ * making them wait is the whole point of the call.
+ *
+ * THE DAILY GATE STILL HOLDS unless `force` is asked for, so an external
+ * scheduler set to every five minutes costs one fetch a day, not two hundred
+ * and eighty-eight.
+ *
+ * @return array the lines to print back
+ */
+function ap_update_on_demand(array $config, $force)
+{
+    @ignore_user_abort(true);
+    @set_time_limit(AP_UPDATE_BUDGET + 30);
+
+    if (!$force && !ap_update_due()) {
+        $state = ap_update_state();
+        return array(
+            'checked already today; nothing fetched',
+            'last check: ' . (isset($state['when']) ? $state['when'] : 'unknown'),
+            'last result: ' . (isset($state['result']) ? $state['result'] : 'unknown'),
+            'add &force=1 to check anyway',
+        );
+    }
+
+    /* The slot is claimed BEFORE the work, exactly as the deferred path does
+       it: two schedulers firing together must not both go and fetch, and a run
+       that dies halfway must not come straight back on the next call. */
+    ap_update_save_state(array(
+        'last_check' => time(),
+        'when'       => gmdate('Y-m-d\TH:i:sP'),
+        'result'     => 'started (on demand)',
+    ));
+
+    try {
+        $report = ap_update_run($config);
+    } catch (Exception $e) {
+        ap_log('on-demand update failed : ' . $e->getMessage());
+        ap_update_save_state(array(
+            'last_check' => time(),
+            'when'       => gmdate('Y-m-d\TH:i:sP'),
+            'result'     => 'failed with an unexpected error; see the PHP error log.',
+        ));
+        return array('failed with an unexpected error; see the PHP error log.');
+    }
+
+    ap_update_save_state(array(
+        'last_check' => time(),
+        'when'       => gmdate('Y-m-d\TH:i:sP'),
+        'published'  => $report['published'],
+        'changed'    => $report['changed'],
+        'result'     => $report['summary'],
+    ));
+    if ($report['changed']) {
+        ap_log('updated to ' . $report['published']);
+    }
+    return $report['lines'];
+}
+
 // --- The diagnostic -------------------------------------------------------
 
 /**
@@ -955,6 +1031,17 @@ function ap_update_diagnostic_lines(array $config)
           . 'needs the code directory writable by the PHP user (see '
           . 'update.code_writable below), which turns any file-writing bug on '
           . 'this account into permanent code execution.');
+
+    /* WHETHER THE URL EXISTS, NEVER THE TOKEN. An operator has to be able to
+       ask "is my update address armed?" from a distance, and that question is
+       answered by yes or no. Printing the token, or its length, would hand the
+       lever to whoever reads this page -- and this page has no authentication
+       and never had. */
+    $add('update.on_demand', ap_update_token($config) === null
+        ? 'off -- no update_token in the local configuration, so ?action=update '
+          . 'is unknown here'
+        : 'ARMED -- ?action=update&token=... runs the update during the request. '
+          . 'For a host with neither cron nor shell; the token is not shown.');
 
     $transport = ap_update_transport();
     $add('update.transport', $transport === null
