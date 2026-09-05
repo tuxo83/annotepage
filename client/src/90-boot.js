@@ -210,6 +210,9 @@ function proceed(first) {
 
 const start = () => {
     author = readAuthor();
+    // Read ONCE, here, and never again: the side is asked of the storage at
+    // startup like the name, not at every draw.
+    side = readSide();
 
     // Outside the project's scope: silence. So the tag can live in a
     // template shared by the whole site.

@@ -110,7 +110,18 @@ const buildUi = () => {
     const close = create('button', 'ap-link', T('panel.close'));
     close.type = 'button';
     close.addEventListener('click', () => leaveMode());
+    /* A REAL BUTTON, in the header, beside Close -- not a draggable title
+       bar. A title bar reads as a title and not as a handle; without
+       snapping, a dragged panel ends up crooked; and under a finger the drag
+       fights the page's own scrolling. Being a button, it is reachable from
+       the keyboard for free, which is why there is no shortcut for this:
+       onKey is a capturing document listener and would fire while somebody
+       is typing their remark in the textarea. */
+    const sideToggle = create('button', 'ap-link ap-side-toggle');
+    sideToggle.type = 'button';
+    sideToggle.addEventListener('click', () => moveSide());
     header.appendChild(title);
+    header.appendChild(sideToggle);
     header.appendChild(close);
     const instructions = create('div', 'ap-panel-instructions');
     instructions.appendChild(create('div', null, T('panel.instructions')));
@@ -136,10 +147,37 @@ const buildUi = () => {
         label: label,
         markers: markers,
         panel: panel,
+        sideToggle: sideToggle,
         body: body,
         footer: footer,
         form: form
     };
+
+    applySide();
+};
+
+/* -- The side the panel sits on ------------------------------------------
+   The class carries ONE name, deliberately: ".ap-left" weighs exactly as
+   much as ".ap-panel", so the narrow block further down the stylesheet --
+   where the panel is a bottom band and the side means nothing -- wins over
+   it by being written later. */
+
+const applySide = () => {
+    if (!ui) return;
+    if (side === 'left') ui.panel.classList.add('ap-left');
+    else ui.panel.classList.remove('ap-left');
+    ui.sideToggle.textContent = side === 'left'
+        ? T('panel.move_right') : T('panel.move_left');
+};
+
+const moveSide = () => {
+    writeSide(side === 'left' ? 'right' : 'left');
+    applySide();
+    /* The form is placed against the band the panel occupies, so the band
+       having moved, it has to be measured again -- otherwise the form stays
+       clamped away from an edge that is now free, and towards the one that
+       is not. */
+    if (target && document.contains(target)) positionForm(target);
 };
 
 /* -- 14. Highlight and markers ------------------------------------------- */
@@ -781,12 +819,46 @@ const positionForm = (el) => {
     }
     const width = form.offsetWidth || 340;
     const height = form.offsetHeight || 260;
-    let left = r.left;
-    if (left + width > window.innerWidth - 12) left = window.innerWidth - width - 12;
+
+    /* THE PANEL IS AN OBSTACLE, not a neighbour. In annotation mode the
+       layer takes every click, so a form drawn under the panel is a form
+       whose Send button cannot be pressed.
+
+       This is a defect that PREDATES the left/right choice, and it was
+       already there on the right: the only clamp was "window.innerWidth -
+       width - 12", which is a point INSIDE a panel sitting at right: 12.
+       Point at anything near the right edge and the form landed under the
+       panel. Moving the panel to the left would simply have mirrored it. So
+       the form is now clamped against the free strip beside the panel, on
+       whichever side that is. */
+    const band = panelBand();
+    let low = 8;
+    let high = window.innerWidth - width - 12;
+    if (band) {
+        if (side === 'left') low = Math.max(low, band.right + 8);
+        else high = Math.min(high, band.left - 8 - width);
+    }
+    let left = Math.min(Math.max(r.left, low), high);
+    /* Between 560 px -- where the panel becomes a band and this whole branch
+       stops running -- and roughly 720, no strip is wide enough for the
+       form. It then starts at the free edge, which keeps its beginning
+       reachable; there is no placement that does better on that width. */
+    if (high < low) left = low;
     let top = r.bottom + 8;
     if (top + height > window.innerHeight - 12) top = Math.max(8, r.top - height - 8);
     form.style.left = Math.max(8, left) + 'px';
     form.style.top = Math.max(8, top) + 'px';
+};
+
+/** The horizontal strip the panel takes, or null when it is not showing.
+    Measured rather than computed from the stylesheet: the width is capped by
+    max-width on a narrow window, and a value read from the CSS would be the
+    width the panel would have had. */
+const panelBand = () => {
+    if (!ui || !ui.panel.classList.contains('ap-open')) return null;
+    const r = ui.panel.getBoundingClientRect();
+    if (r.width === 0) return null;
+    return { left: r.left, right: r.right };
 };
 
 /** True on the screens where the panel and the form do not fit side by

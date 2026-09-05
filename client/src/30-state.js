@@ -12,6 +12,7 @@ let target = null;          // element being annotated
 let hovered = null;         // element under the pointer
 let currentFailure = null;  // { title, detail } shown in the panel
 let author = '';            // read at startup: see 90-boot
+let side = 'right';         // which edge the panel sits on: see readSide
 let timer = null;
 let rafPending = false;
 
@@ -45,6 +46,37 @@ const inTool = (n) => !!(host && n && (n === host || host.contains(n)));
 // A per-browser convenience, not an identity: nobody is authenticated, and
 // the name is there to know who to talk to, not to prove who one is.
 const AUTHOR_KEY = 'annotepage/author';
+
+/* The side the panel sits on. GLOBAL, exactly like the name above and
+   deliberately NOT under the project id: which edge a panel should sit on is
+   a fact about the screen and the hand in front of it, not about the project
+   being reviewed. Asking again on the next project would be asking the same
+   person the same question twice.
+
+   Two values and no third one. Annotation mode makes the layer take every
+   click, so every pixel of panel is a pixel of page that can no longer be
+   pointed at -- a panel that could sit anywhere would only move that loss
+   around, and would have to be moved back. */
+const SIDE_KEY = 'annotepage/side';
+
+function readSide() {
+    try {
+        return window.localStorage.getItem(SIDE_KEY) === 'left' ? 'left' : 'right';
+    } catch (e) {
+        // Without storage the panel starts on the right every visit: the
+        // choice still works, it is just not remembered.
+        return 'right';
+    }
+}
+
+function writeSide(value) {
+    side = value === 'left' ? 'left' : 'right';
+    try {
+        window.localStorage.setItem(SIDE_KEY, side);
+    } catch (e) {
+        // No consequence: only the memory of the side is lost.
+    }
+}
 
 /* The key is stored UNDER THE PROJECT ID. That naming is not cosmetic: two
    projects reviewed from the same browser must not overwrite each other.
