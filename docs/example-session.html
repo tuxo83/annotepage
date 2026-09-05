@@ -599,17 +599,26 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
    border as the session below it, so the reader is told without a word that
    these two pictures are the same computer.
 
-   THE SITES ARE THE ONLY THING LIT. Everything else -- the braces, the field
-   names, the addresses, the keys -- is dim, because what this figure is about
-   is the MAPPING: this site, that key. A file with one project would have said
-   "give it the key"; a file with two says the tool was built for somebody who
-   reviews several sites, without a sentence claiming it. */
+   ONE PROJECT IS LIT, THE OTHER IS NOT, and both are there. Lighting the site
+   names of both made the figure about the file; lighting one BLOCK makes it
+   about the three lines the reader has to write -- the site, its address, its
+   key -- and leaves the second project where it belongs, as the answer to a
+   question nobody has to ask out loud: yes, there can be more than one. The
+   sentence claiming that would have cost a line and said less.
+
+   NOBODY IS PUSHED BELOW AA TO DO IT. The second project keeps --t-dim, which
+   measures 6.5:1 on this ground; the hierarchy is made by lifting the first to
+   white, not by sinking the other into the background. */
 .cf-path { margin: 0 0 calc(.6rem * var(--ui)); color: var(--t-dim); }
 .cf-body {
     margin: 0; white-space: pre; overflow-x: auto;
     color: var(--t-dim); font: inherit;
 }
-.cf-body .site { color: var(--t-ident); }
+.cf-body .on { color: var(--t-text); }
+/* The blue is part of the lit block, not a decoration on every site name: the
+   second project's own name in blue went on pulling the eye across a figure
+   whose subject is the three lines above it. */
+.cf-body .on .site { color: var(--t-ident); }
 
 /* The terminal is a .frame.term from base.css: same ground, same border, same
    pair of rules round the input. What it needs on top is a session's shape --
@@ -1152,8 +1161,9 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         <li class="if-secure">
             <div>
                 <p class="cap"><span class="n"></span> You give it the key, once</p>
-                <p class="say">One file on your machine, one entry per site.</p>
-                <p class="say">The assistant reads it there. The key never goes through the conversation.</p>
+                <p class="say">One file, on the machine where your assistant runs.</p>
+                <p class="say"><b>The address is on your tag.</b> The key is the one your
+                setup screen gave you, and the one your reviewers paste.</p>
             </div>
 
             <figure class="fig">
@@ -1161,10 +1171,10 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                     <p class="cf-path">~/.config/annotepage/annotepage.json</p>
 <pre class="cf-body">{
   "projects": {
-    <span class="site">"staging.example.com"</span>: {
+    <span class="on"><span class="site">"staging.example.com"</span>: {
       "api": "https://staging.example.com/notes/api.php",
       "key": "W0iAHlP66ib&#x2026;65cRWkaw"
-    },
+    },</span>
     <span class="site">"shop.example.com"</span>: {
       "api": "https://shop.example.com/notes/api.php",
       "key": "Lm4tR9xQ2vC&#x2026;8sZKp1Ad"
