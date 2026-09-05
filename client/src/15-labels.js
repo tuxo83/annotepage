@@ -71,6 +71,19 @@ ns.defaultLabels = {
     'panel.escape': 'Press Escape to stop.',
     'panel.empty': 'Nobody has written a note on this page yet.',
     'panel.section_page': 'On this page',
+    /* -- What the whole project holds ------------------------------------
+       ASKED FOR, NOT SHOWN BY DEFAULT. The panel answers one question -- what
+       is on THIS page -- and a row of figures over it would answer a different
+       one before anybody asked. It is a line in the header that opens three
+       numbers, and it folds away again.
+
+       "Across the site" and not "in this project": the reviewer knows the site
+       they are looking at; the word project belongs to whoever installed it. */
+    'panel.stats_show': 'Across the site',
+    'panel.stats_hide': 'Hide the figures',
+    'panel.stats_notes': 'notes',
+    'panel.stats_open': 'still open',
+    'panel.stats_pages': 'pages',
     'panel.refresh': 'Refresh',
 
     /* -- Notes whose element cannot be found any more ------------------- */

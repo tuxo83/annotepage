@@ -120,7 +120,22 @@ const buildUi = () => {
     const sideToggle = create('button', 'ap-link ap-side-toggle');
     sideToggle.type = 'button';
     sideToggle.addEventListener('click', () => moveSide());
+    /* WHAT THE WHOLE SITE HOLDS, BEHIND ONE CLICK. The panel answers a single
+       question -- what is on THIS page -- and three figures laid over it would
+       answer a different one before anybody asked. A line in the header opens
+       them and folds them away again; it is not drawn at all when the server
+       did not send them, which is every server older than 2.5.0. */
+    const statsToggle = create('button', 'ap-link ap-stats-toggle');
+    statsToggle.type = 'button';
+    statsToggle.setAttribute('aria-expanded', 'false');
+    statsToggle.addEventListener('click', () => {
+        statsOpen = !statsOpen;
+        drawStats();
+    });
+    const stats = create('div', 'ap-panel-stats');
+
     header.appendChild(title);
+    header.appendChild(statsToggle);
     header.appendChild(sideToggle);
     header.appendChild(close);
     const instructions = create('div', 'ap-panel-instructions');
@@ -129,6 +144,7 @@ const buildUi = () => {
     const body = create('div', 'ap-panel-body');
     const footer = create('div', 'ap-panel-footer');
     panel.appendChild(header);
+    panel.appendChild(stats);
     panel.appendChild(instructions);
     panel.appendChild(body);
     panel.appendChild(footer);
@@ -148,12 +164,48 @@ const buildUi = () => {
         markers: markers,
         panel: panel,
         sideToggle: sideToggle,
+        statsToggle: statsToggle,
+        stats: stats,
         body: body,
         footer: footer,
         form: form
     };
 
     applySide();
+    drawStats();
+};
+
+/* -- What the whole project holds ----------------------------------------
+   THREE NUMBERS, AND ONLY IF THE SERVER SENT THEM. `totals` is null against a
+   server that does not know the field, and the control is then not drawn at
+   all: showing three zeros would make an old server look like an empty
+   project, and a tool that confuses those two teaches a reviewer to distrust
+   what it says.
+
+   The figures are the server's own count, not a count of what is on screen:
+   this page's notes are the ones the panel already lists, and the point of the
+   line is everything that is NOT on this page. */
+
+const drawStats = () => {
+    if (!ui) return;
+    const has = totals !== null;
+    ui.statsToggle.hidden = !has;
+    if (!has) { ui.stats.hidden = true; return; }
+    ui.statsToggle.textContent = statsOpen
+        ? T('panel.stats_hide') : T('panel.stats_show');
+    ui.statsToggle.setAttribute('aria-expanded', statsOpen ? 'true' : 'false');
+    ui.stats.hidden = !statsOpen;
+    if (!statsOpen) return;
+    empty(ui.stats);
+    const chiffre = (n, mot) => {
+        const box = create('div', 'ap-stat');
+        box.appendChild(create('span', 'ap-stat-n', String(n)));
+        box.appendChild(create('span', 'ap-stat-w', T(mot)));
+        return box;
+    };
+    ui.stats.appendChild(chiffre(totals.notes, 'panel.stats_notes'));
+    ui.stats.appendChild(chiffre(totals.open, 'panel.stats_open'));
+    ui.stats.appendChild(chiffre(totals.pages, 'panel.stats_pages'));
 };
 
 /* -- The side the panel sits on ------------------------------------------

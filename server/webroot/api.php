@@ -925,10 +925,20 @@ switch ($action) {
 
     case 'list':
         $index = ap_field_index($input, 'index', true);
+        /* THE WHOLE PROJECT'S SHAPE, ON THE CALL THE CLIENT ALREADY MAKES.
+           Three counts -- notes, still open, pages carrying one -- so the tool
+           can say what the site holds without a second request on every page
+           load. None of it requires reading a remark: `resolved_at` is this
+           server's own column and `page_index` is a blind index, so the count
+           of distinct pages says how many are under review and not which.
+
+           A client that does not know this field ignores it, which is what
+           every client before this release does. */
         ap_respond_json(ap_response_envelope(array(
             'project' => $id,
             'index'   => $index,
             'notes'   => $store->byPage($id, $index),
+            'totals'  => $store->projectTotals($id),
         )));
         break;
 

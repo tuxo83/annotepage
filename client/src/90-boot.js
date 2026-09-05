@@ -5,6 +5,10 @@ const redraw = () => {
     anchor();
     drawPanel();
     drawMarkers();
+    /* The figures come back with every list, so they follow a note written on
+       another tab as soon as this one refreshes -- and the control appears the
+       moment a server that sends them answers, without a reload. */
+    drawStats();
 };
 
 const reload = () =>
@@ -19,6 +23,7 @@ const reload = () =>
             redraw();
             return null;
         }
+        totals = readTotals(r.data);
         return readList(r.data).then((read) => {
             notes = read;
             currentFailure = null;
@@ -196,6 +201,7 @@ function proceed(first) {
         clearLayer();
         buildUi();
         if (first.ok) {
+            totals = readTotals(first.data);
             return readList(first.data).then((read) => {
                 notes = read;
                 redraw();

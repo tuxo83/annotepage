@@ -331,6 +331,19 @@ const openThread = (note) =>
             });
     });
 
+/* WHAT THE SERVER COUNTED, TAKEN ONLY IF ALL THREE ARE THERE AND ARE NUMBERS.
+   A server older than 2.5.0 sends no `totals`, and the panel shows no figures
+   rather than showing zeros -- an empty project and an old server look nothing
+   alike, and a tool that confuses them teaches a reviewer to distrust it. */
+const readTotals = (data) => {
+    const t = data && data.totals;
+    if (!t || typeof t !== 'object') return null;
+    const n = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.floor(v) : null);
+    const notes = n(t.notes), open = n(t.open), pages = n(t.pages);
+    if (notes === null || open === null || pages === null) return null;
+    return { notes: notes, open: open, pages: pages };
+};
+
 const readList = (data) => {
     skipped = { newer: 0, unreadable: 0, unknown: 0 };
     const raw = data && Array.isArray(data.notes) ? data.notes : [];
