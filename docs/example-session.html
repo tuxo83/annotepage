@@ -1097,92 +1097,7 @@ body:has(#m-secure:checked) .if-open   { display: none; }
 body:has(#d-live:checked)   .if-wait   { display: none; }
 body:has(#d-wait:checked)   .if-live   { display: none; }
 
-/* == THE LOOP, IN FOUR BOXES ==============================================
 
-   The last chapter shows the loop happening; this one is the same loop with
-   the pictures taken out. It comes AFTER them on purpose -- the page shows,
-   then it abstracts, which is the same order the landing page keeps.
-
-   WHAT THE DRAWING SAYS IS PARTLY WHAT IT DOES NOT DRAW. Four boxes at the
-   corners, four arrows along the edges, and the middle deliberately empty:
-   the two diagonals carry nothing. No sentence points that out, because a
-   diagram that needs a sentence to be read is the wrong diagram.
-
-   NO ANIMATION. Two figures already move on this page and they carry the
-   content; a third motion would compete with them for the same attention,
-   and this one has to hold on a printed page and with motion turned off.
-
-   REAL TEXT, NOT LABELS PAINTED INTO AN SVG. The boxes and the words on the
-   arrows are HTML: they wrap, they scale with the reader's font size, they
-   translate and they are read out in DOM order -- which is the order of the
-   loop, page, arrow, server, arrow, assistant, arrow, code, arrow. Only the
-   strokes are SVG, and those are the one thing here that carries no meaning
-   a screen reader could want, so they are `aria-hidden`. */
-
-/* On the FIGURES' axis, not a third one: the same two columns as a step, with
-   the first left empty. Below 62rem the steps stack and so does this. */
-main .wrap > .loop-row { max-width: none; }
-.loop-row { margin: clamp(1.4rem, 3.4vw, 2.4rem) 0 0; }
-@media (min-width: 62rem) {
-    .loop-row {
-        display: grid;
-        grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
-        gap: clamp(1rem, 3vw, 2.4rem);
-    }
-    .loop-frame { grid-column: 2; }
-}
-/* The page never scrolls sideways. If a very narrow viewport or a very large
-   font ever makes the square wider than its column, the square scrolls here
-   and the page does not. Measured at 375px: it does not come to that. */
-.loop-frame { overflow-x: auto; }
-.loop {
-    display: grid;
-    min-width: 17rem;
-    max-width: 32rem;
-    grid-template-columns: minmax(0, 1fr) minmax(4.4rem, .8fr) minmax(0, 1fr);
-    grid-template-areas:
-        "page top  srv"
-        "left .    right"
-        "code bot  asst";
-    gap: clamp(.45rem, 1.7vw, 1rem);
-    align-items: stretch;
-}
-.lp-page  { grid-area: page; }
-.lp-top   { grid-area: top; }
-.lp-srv   { grid-area: srv; }
-.lp-right { grid-area: right; }
-.lp-asst  { grid-area: asst; }
-.lp-bot   { grid-area: bot; }
-.lp-code  { grid-area: code; }
-.lp-left  { grid-area: left; }
-
-.lp-box {
-    display: flex; align-items: center; justify-content: center;
-    flex-wrap: wrap; gap: .35rem;
-    margin: 0; padding: .8rem .6rem;
-    border: 1px solid var(--line); border-radius: var(--radius);
-    background: var(--bg-soft); color: var(--text);
-    font-size: clamp(.82rem, 2.1vw, .95rem); font-weight: 650;
-    line-height: 1.35; text-align: center;
-}
-/* The mark that says what the server holds, and it is a mark rather than a
-   sentence: what arrives locked is stored locked, and the box that stores it
-   is the place to say so. --accent on --bg-soft, both themes measured. */
-/* The mark never leaves the word it marks. At 375px the server's name takes
-   two lines, and a padlock alone on a third one marks nothing. */
-.lp-hold { white-space: nowrap; }
-.lp-lock { display: inline-block; width: .78em; height: auto; vertical-align: -.06em; color: var(--accent); }
-
-.lp-arr {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: .3rem;
-    margin: 0; padding: .2rem 0;
-    color: var(--dim);
-    font-size: clamp(.72rem, 1.9vw, .8rem); line-height: 1.3; text-align: center;
-}
-.lp-arr svg { display: block; color: var(--dim); }
-.lp-h svg { width: 100%; max-width: 7rem; height: auto; }
-.lp-v svg { height: clamp(2.6rem, 8vw, 4rem); width: auto; }
 </style>
 </head>
 <body>
@@ -1775,61 +1690,7 @@ main .wrap > .loop-row { max-width: none; }
 
         </ol>
 
-<!-- == THE SAME LOOP, WITH THE PICTURES TAKEN OUT ======================
-     Placed after the three parts and before the way out, because the page
-     shows first and abstracts afterwards. A reader who has watched a remark
-     travel is the one this square is legible to.
 
-     The middle is empty and stays empty. -->
-        <h2 class="chapter">How the loop closes</h2>
-
-        <figure class="loop-row">
-            <div class="loop-frame">
-                <div class="loop">
-
-                    <p class="lp-box lp-page">The annotated page</p>
-
-                    <p class="lp-arr lp-h lp-top">
-                        <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M2 6H90" vector-effect="non-scaling-stroke"/>
-                            <path d="M84 2.5 90.5 6 84 9.5" vector-effect="non-scaling-stroke"/>
-                        </svg>
-                        <span>Encrypted note</span>
-                    </p>
-
-                    <p class="lp-box lp-srv"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></p>
-
-                    <p class="lp-arr lp-v lp-right">
-                        <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 2V90" vector-effect="non-scaling-stroke"/>
-                            <path d="M2.5 84 6 90.5 9.5 84" vector-effect="non-scaling-stroke"/>
-                        </svg>
-                        <span>Reads the notes</span>
-                    </p>
-
-                    <p class="lp-box lp-asst">The assistant</p>
-
-                    <p class="lp-arr lp-h lp-bot">
-                        <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M98 6H10" vector-effect="non-scaling-stroke"/>
-                            <path d="M16 2.5 9.5 6 16 9.5" vector-effect="non-scaling-stroke"/>
-                        </svg>
-                        <span>Writes the fix</span>
-                    </p>
-
-                    <p class="lp-box lp-code">Your code</p>
-
-                    <p class="lp-arr lp-v lp-left">
-                        <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 98V10" vector-effect="non-scaling-stroke"/>
-                            <path d="M2.5 16 6 9.5 9.5 16" vector-effect="non-scaling-stroke"/>
-                        </svg>
-                        <span>Deploy</span>
-                    </p>
-
-                </div>
-            </div>
-        </figure>
 
         <p class="see-more">
             <a class="more" href="install.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
