@@ -305,15 +305,15 @@
 }
 
 /* -- what the whole project holds ---------------------------------------
-   BETWEEN THE HEADER AND THE INSTRUCTIONS, and only when asked for. Three
-   figures on one row: they are a glance, not a table, and a table would ask to
-   be read. The row wraps rather than shrinking the numbers -- a panel is
-   narrow, and a count that has to be squinted at is worse than one more line. */
+   THE FIRST LINE OF THE FOOTER, on its own row. The footer is a flex row of
+   short things -- a name, two buttons -- so this takes the whole width and the
+   rest wraps under it. No ground and no border of its own: it is IN the footer,
+   not beside it. */
+.ap-panel-footer { flex-wrap: wrap; }
 .ap-panel-stats {
+    flex-basis: 100%;
     display: flex; flex-wrap: wrap; gap: 4px 18px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--ap-border);
-    background: var(--ap-bg-soft, transparent);
+    margin-bottom: 4px;
 }
 .ap-stat { display: inline-flex; align-items: baseline; gap: 5px; }
 /* The row says what it counts, once, and the three figures follow it. Without

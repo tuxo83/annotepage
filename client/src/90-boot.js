@@ -5,10 +5,6 @@ const redraw = () => {
     anchor();
     drawPanel();
     drawMarkers();
-    /* The figures come back with every list, so they follow a note written on
-       another tab as soon as this one refreshes -- and the control appears the
-       moment a server that sends them answers, without a reload. */
-    drawStats();
 };
 
 const reload = () =>

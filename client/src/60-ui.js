@@ -120,16 +120,6 @@ const buildUi = () => {
     const sideToggle = create('button', 'ap-link ap-side-toggle');
     sideToggle.type = 'button';
     sideToggle.addEventListener('click', () => moveSide());
-    /* WHAT THE WHOLE SITE HOLDS, ON ONE ROW UNDER THE HEADER. It was a fourth
-       link in that header opening a fold, and the header is 350px wide with
-       three controls in it already: "Review notes" and "Hide the figures" both
-       broke onto two lines. And the fold was answering a question nobody had
-       asked to be spared -- a count is one glance, not a section.
-
-       It is not drawn at all when the server did not send it, which is every
-       server older than 2.5.0. */
-    const stats = create('div', 'ap-panel-stats');
-
     header.appendChild(title);
     header.appendChild(sideToggle);
     header.appendChild(close);
@@ -139,7 +129,6 @@ const buildUi = () => {
     const body = create('div', 'ap-panel-body');
     const footer = create('div', 'ap-panel-footer');
     panel.appendChild(header);
-    panel.appendChild(stats);
     panel.appendChild(instructions);
     panel.appendChild(body);
     panel.appendChild(footer);
@@ -159,41 +148,44 @@ const buildUi = () => {
         markers: markers,
         panel: panel,
         sideToggle: sideToggle,
-        stats: stats,
         body: body,
         footer: footer,
         form: form
     };
 
     applySide();
-    drawStats();
 };
 
 /* -- What the whole project holds ----------------------------------------
+   IN THE FOOTER, WHICH IS WHERE THE PANEL ALREADY KEEPS ITS STANDING FACTS:
+   who you are, and what to do about the key. Three counts for the site are the
+   same kind of thing -- context, not content -- and under the header they sat
+   between the panel's title and its instructions, which is the path a reader
+   takes to the notes themselves.
+
    THREE NUMBERS, AND ONLY IF THE SERVER SENT THEM. `totals` is null against a
    server that does not know the field, and the row is then not drawn at all:
    showing three zeros would make an old server look like an empty project, and
    a tool that confuses those two teaches a reviewer to distrust what it says.
 
-   The figures are the server's own count, not a count of what is on screen:
-   this page's notes are the ones the panel already lists, and the point of the
-   line is everything that is NOT on this page. */
+   Drawn by drawPanel, with the rest of the footer: the footer is emptied at
+   every draw, so anything appended from elsewhere would land after the buttons
+   or not at all. */
 
-const drawStats = () => {
-    if (!ui) return;
-    ui.stats.hidden = (totals === null);
-    if (totals === null) return;
-    empty(ui.stats);
-    ui.stats.appendChild(create('span', 'ap-stat-label', T('panel.stats_label')));
+const statsRow = () => {
+    if (totals === null) return null;
+    const row = create('div', 'ap-panel-stats');
+    row.appendChild(create('span', 'ap-stat-label', T('panel.stats_label')));
     const chiffre = (n, mot) => {
         const box = create('span', 'ap-stat');
         box.appendChild(create('span', 'ap-stat-n', String(n)));
         box.appendChild(create('span', 'ap-stat-w', T(mot)));
         return box;
     };
-    ui.stats.appendChild(chiffre(totals.notes, 'panel.stats_notes'));
-    ui.stats.appendChild(chiffre(totals.open, 'panel.stats_open'));
-    ui.stats.appendChild(chiffre(totals.pages, 'panel.stats_pages'));
+    row.appendChild(chiffre(totals.notes, 'panel.stats_notes'));
+    row.appendChild(chiffre(totals.open, 'panel.stats_open'));
+    row.appendChild(chiffre(totals.pages, 'panel.stats_pages'));
+    return row;
 };
 
 /* -- The side the panel sits on ------------------------------------------
@@ -685,6 +677,9 @@ const modeBadge = () => {
 const drawPanel = () => {
     empty(ui.body);
     empty(ui.footer);
+
+    const chiffres = statsRow();
+    if (chiffres) ui.footer.appendChild(chiffres);
 
     ui.body.appendChild(modeBadge());
 
