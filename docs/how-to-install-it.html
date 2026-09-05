@@ -108,6 +108,22 @@ ul.plain li { margin: 0 0 .7rem; }
 ul.plain li:last-child { margin-bottom: 0; }
 ul.plain b { color: var(--text); }
 
+/* -- the questions ------------------------------------------------------- */
+
+/* A QUESTION IS A LINE OF ITS OWN, and that is the whole difference from the
+   list this replaces. Eight bolded openings running into their own answers
+   read as eight warnings; a question on its own line is something a reader
+   scans for, and stops at the one they came with.
+
+   A <dl>, because that is what a question and its answer are. The measure is
+   the page's, not the grid's: these are sentences. */
+.faq { margin: 1.4rem 0 0; }
+.faq dt {
+    margin: 1.5rem 0 0; font-weight: 650; color: var(--text);
+}
+.faq dt:first-child { margin-top: 0; }
+.faq dd { margin: .35rem 0 0; color: var(--dim); }
+
 /* -- The way back -------------------------------------------------------- */
 
 .cta {
@@ -1113,27 +1129,68 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     </div>
 </section>
 
-<!-- WHAT CANNOT BE UNDONE ================================================
-     LAST, AND SHORT. The anchors #data and #no-recovery are load-bearing --
-     the roadmap and the landing page cite them -- so they moved here with
-     the lines they name rather than being renamed. -->
+<!-- THE QUESTIONS ======================================================
+     EIGHT STATEMENTS BECAME EIGHT QUESTIONS, and the remark that asked for it
+     said why: the block was a list of consequences with the questions they
+     answer left out, so a reader had to guess what each line was warning them
+     about. "The mode is settled by the tag, and never after" is a sentence
+     nobody is looking for; "Can I switch from open to secure later?" is one
+     somebody has already asked themselves.
+
+     LAST, BECAUSE NONE OF IT IS A STEP. Everything above is done in order;
+     this is what a reader wants to know before starting and remembers after.
+
+     THE ANCHORS ARE LOAD-BEARING. #data, #no-recovery and #locked are cited by
+     the landing page and the roadmap, so they stayed on the lines they name
+     rather than being renamed with the block. -->
 <section id="data">
     <div class="wrap">
-        <h2>What you cannot undo</h2>
+        <h2>Questions people ask</h2>
 
-        <ul class="plain">
-            <li id="no-recovery"><b>Lose the key, lose the notes.</b> No recovery,
-            no rotation.</li>
-            <li><b>The key reads and writes.</b> There is no reader-only role.</li>
-            <li><b>The mode is settled by the tag</b>, and never after.</li>
-            <li><b>A classic script tag, or nothing.</b> A module leaves it silent.</li>
-            <li><b>The server sees</b> counts, times, sizes, IPs and your domain
-            &mdash; never your paths or your text.</li>
-            <li><b>No account, no moderation, no deletion, no notification.</b></li>
-            <li><b>Never declare <code>localhost:3000</code> in a domain list.</b>
-            It names every machine on earth.</li>
-            <li id="locked"><b>A wrong <code>integrity</code> digest fails silently.</b></li>
-        </ul>
+        <dl class="faq">
+            <!-- ONLY IN SECURE MODE. In open mode the key is written in the
+                 tag, on a page anybody can read: it cannot be lost, and a
+                 warning about losing it would be the page contradicting the
+                 dial two screens up. -->
+            <dt class="if-secure" id="no-recovery">What if I lose the key?</dt>
+            <dd class="if-secure">The notes go with it. There is no recovery and no
+            rotation &mdash; the key is what decrypts them, and the server has never
+            had it.</dd>
+
+            <dt>Can I let someone read the notes without writing any?</dt>
+            <dd>No. The key reads and writes; there is no reader-only role.</dd>
+
+            <dt>Can I switch from open to secure later?</dt>
+            <dd>For new notes, yes: change the tag. The notes already written keep
+            the mode they were written in, and nothing converts them.</dd>
+
+            <dt>Can I load it as a module?</dt>
+            <dd>No, and it fails quietly. The client reads
+            <code>document.currentScript</code> to find its own settings, and a
+            <code>type="module"</code> script does not have one: nothing appears,
+            and nothing is logged.</dd>
+
+            <dt>What does the notes server see?</dt>
+            <dd>Counts, times, sizes, IP addresses and your domain. Never your
+            paths, never your text &mdash; in secure mode it cannot read a line
+            it stores.</dd>
+
+            <dt>Is there an account, a moderator, a way to delete a note?</dt>
+            <dd>None of them, and no notification either. A project is a key and
+            the notes under it.</dd>
+
+            <dt>Can I try it on my own machine?</dt>
+            <dd>Yes: <code>localhost</code> is a secure context, so the browser
+            has the crypto it needs. But never declare
+            <code>localhost:3000</code> in a server's list of domains &mdash; that
+            name belongs to every machine on earth, so declaring it lets any of
+            them write to your project.</dd>
+
+            <dt id="locked">What if I pin the script with a wrong
+            <code>integrity</code> digest?</dt>
+            <dd>The browser refuses the file and the tool simply does not appear.
+            Nothing on the page says why.</dd>
+        </dl>
 
         <!-- THE ONLY WAY FROM HERE TO THE USAGE PAGE. It used to be the menu,
              which carried "A detailed usage example" on this page and something
