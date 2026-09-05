@@ -1345,7 +1345,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                                          success colour: the client draws a plain card
                                          until there is a resolution on it. -->
                                     <div class="nt nt-open">
-                                        <p class="nt-who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
+                                        <p class="nt-who"><b>Camille</b><span class="d-then"> &middot; Sep 1, 2026, 11:59 AM</span></p>
                                         <p class="nt-about">About: Download the calibration table</p>
                                         <p>On my phone this button label breaks onto two lines.</p>
                                     </div>
@@ -1601,7 +1601,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                             <p class="nt-sec">On this page</p>
                             <div class="nt nt-wait">
                                 <span class="nt-stamp nt-wait">Resolved, waiting to be deployed</span>
-                                <p class="nt-who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
+                                <p class="nt-who"><b>Camille</b><span class="d-then"> &middot; Sep 1, 2026, 11:59 AM</span></p>
                                 <p class="nt-about">About: Download the calibration table</p>
                             </div>
                         </div>
@@ -1683,13 +1683,13 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                                      the other's words. -->
                                 <p class="nt-hist">Hide the history</p>
                                 <div class="nt" id="g3-note">
-                                    <span class="nt-stamp">Resolved on Sep 1, 2026, 12:01 PM by Assistant</span>
-                                    <p class="nt-who"><b>Camille</b> &middot; Sep 1, 2026, 11:59 AM</p>
+                                    <span class="nt-stamp">Resolved<span class="d-now"> on Sep 1, 2026, 12:01 PM</span> by Assistant</span>
+                                    <p class="nt-who"><b>Camille</b><span class="d-then"> &middot; Sep 1, 2026, 11:59 AM</span></p>
                                     <p class="nt-about">About: Download the calibration table</p>
                                     <p>On my phone this button label breaks onto two lines.</p>
                                 </div>
                                 <div class="nt reply">
-                                    <p class="nt-who"><b>Assistant</b> &middot; Sep 1, 2026, 12:01 PM</p>
+                                    <p class="nt-who"><b>Assistant</b><span class="d-now"> &middot; Sep 1, 2026, 12:01 PM</span></p>
                                     <p>Measured before the change: the label needs 232px on one line and the button offers it 222px at a 360px viewport, so it wraps at 369px and below.</p>
                                 </div>
                             </div>
@@ -1764,6 +1764,39 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             });
         }(buttons[i]));
     }
+}());
+</script>
+
+<script>
+/* THE THREAD IS DATED TODAY, as the landing page's illustration already is.
+   These panels are DRAWN, not captured -- only the terminal below is a
+   capture, and its lines carry no date. A fixed September in a drawing reads
+   as an abandoned page within months.
+
+   The markup keeps a written date, so a reader with no JavaScript sees one
+   rather than a gap. Two minutes apart, because that is what the remark and
+   its answer are. */
+(function () {
+    var now = new Date();
+    var then = new Date(now.getTime() - 2 * 60000);
+    var fmt = function (d) {
+        try {
+            return ' \u00b7 ' + d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                 + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        } catch (e) { return null; }
+    };
+    var a = fmt(then), b = fmt(now);
+    if (!a || !b) return;
+    var set = function (sel, text) {
+        var n = document.querySelectorAll(sel);
+        for (var i = 0; i < n.length; i++) n[i].textContent = text;
+    };
+    set('.d-then', a);
+    set('.d-now', b);
+    /* The stamp reads "Resolved on <date> by Assistant", so it takes the same
+       value without the middle dot the two names use. */
+    var stamp = document.querySelectorAll('.nt-stamp .d-now');
+    for (var i = 0; i < stamp.length; i++) stamp[i].textContent = ' on' + b.slice(2);
 }());
 </script>
 
