@@ -229,6 +229,53 @@ the landing page, 208 on the usage page open / 235 secure, and not one sentence
 over 110 characters in any of the four states of its two dials. The tooling is
 `.outillage-test/ap4-prose.mjs` and `ap4-mesure.mjs`.
 
+## The setup page: what it is, decided
+
+Renamed `setup.html` -- of three chapters, two install nothing. `install.html`
+stays as a redirect; four internal links, the sitemap, a check and the anchors
+follow it.
+
+**THE ORDER IS SERVER, PAGE, ASSISTANT, and the reason is blocking.** A
+developer's own order is page first -- paste the tag, watch a note leave, plug
+the assistant in -- and it was argued for. It loses to this: somebody who has
+to stand up a server cannot do anything else until it is up. So the chapter
+that may block comes first, and the dial is what makes it cost one line for
+everybody else.
+
+**TWO DIALS, AT THE TOP, AND THEY REMOVE ROUTES.**
+
+    Your project        Open / Secure       the same words the usage page uses
+    The notes server    Shared / Your own   not "public", which is taken
+
+Choosing Shared collapses the whole server chapter to a sentence. That is the
+dial earning its place: it takes a variant away, it never adds one.
+
+**THE FRAMEWORK QUESTION IS NOT ONE OF THEM.** It only changes one block, in
+one chapter, so it lives there -- tabs beside the tag, not a third dial at the
+top of the page.
+
+**WHAT MUST GO**, measured: 3060 words of prose against the landing page's 232,
+45 sentences over 110 characters, 10 left edges against 2. The table of
+contents (ten links -- the rule that killed the footer), the eyebrow, the "One
+rule" chapter, the 226 words arguing for the short tag, the three cryptography
+columns, and everything paraphrasing INSTALL.md or the client README.
+
+Target: 250 to 400 visible words IN A GIVEN STATE. The dials do that work, not
+the writing.
+
+**WHAT CANNOT GO.** Key lost = notes lost, no recovery and no rotation. The key
+gives reading AND writing. The mode cannot be changed afterwards. The classic
+script tag rule and the one-line check -- the only thing on the page a reader
+can measure. What the server still sees. No account, no moderation, no
+deletion, no notification. A secure context is required. A declared
+`localhost:3000` accepts writes from every machine on earth. A wrong digest
+fails silently. A key given in a conversation has crossed a provider's logs.
+
+**AND THE TAG HAS TO BE COPYABLE.** The current one reads
+`data-project="<yours, from the landing page>"`: the one block on the page
+whose whole job is to be copied cannot be, and it sends the reader back to
+another page for a generator.
+
 ## The install page, when we get to it
 
 **THE LOOP DIAGRAM OPENS IT.** It was built on the usage page and it works
