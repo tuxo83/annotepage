@@ -501,16 +501,25 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
     border-bottom: 1px solid var(--line-soft);
     font-size: calc(.66rem * var(--ui)); color: var(--dim); line-height: 1.5;
 }
-/* And what the panel says about itself at every draw when the key is in the
-   page. It is not a startup message: it is a standing property of the
-   project, so it is drawn every time the panel is, which is what the client
-   does. `public.notice`, whole. */
-.nt-public {
-    margin: calc(.45rem * var(--ui)); padding: calc(.4rem * var(--ui)) calc(.5rem * var(--ui));
-    border: 1px solid var(--line-soft); border-left: 3px solid var(--accent);
-    border-radius: calc(6px * var(--ui));
-    font-size: calc(.6rem * var(--ui)); color: var(--dim); line-height: 1.55;
+/* WHICH MODE THE PROJECT RUNS IN, said by the panel at every draw and in
+   BOTH modes -- which is what makes the switch above visible down here. The
+   client draws exactly this: one word, `mode.public` or `mode.secure`, and
+   the sentence that explains it is asked for by hovering or by focusing the
+   badge. HERE IT IS A DRAWING: no focus, no tooltip, nothing to point at.
+   The figure shows the shape of the answer, the client gives the answer. */
+.nt-mode { margin: calc(.45rem * var(--ui)); }
+.nt-chip {
+    display: inline-block;
+    padding: calc(.1rem * var(--ui)) calc(.4rem * var(--ui)) calc(.14rem * var(--ui));
+    border: 1px solid var(--line-soft); border-radius: 999px;
+    font-size: calc(.52rem * var(--ui)); font-weight: 650;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--dim);
+    line-height: 1.5;
 }
+/* Public is the case that carries a consequence, so it is the one that is
+   coloured -- the accent, not an alarm colour: a key in the page is a choice
+   somebody made, not an incident. */
+.nt-chip-public { border-color: var(--accent); color: var(--accent); }
 /* The section heading of the list, `panel.section_page`, and the history
    toggle under it, `history.show` / `history.hide`. The toggle is drawn as
    the button it is; it is a picture, so it is not one. */
@@ -1281,7 +1290,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                      the highlight, the note form. Every line of text in it is a
                      string of the client -- `button.open`, `button.close`,
                      `panel.title`, `panel.instructions`, `panel.escape`,
-                     `public.notice`, `form.title`, `form.about`, `author.known`
+                     `mode.public`, `form.title`, `form.about`, `author.known`
                      and `author.change`, `form.send`, `form.cancel`,
                      `form.remaining` against the 4000-character limit,
                      `marker.one`, and in secure mode `key.title`, `key.help`,
@@ -1319,12 +1328,15 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                         <div class="nt-panel g-panel">
                             <div class="nt-bar">Review notes</div>
                             <p class="nt-instr">Click an element of the page to write a remark about it.<br>Press Escape to stop.</p>
-                            <!-- OPEN MODE ONLY, AND AT EVERY DRAW. The client
-                                 says this in the panel every time it draws it,
-                                 not once at startup: a public key is a standing
-                                 property of the project, and the half nobody
-                                 expects is the WRITE half. `public.notice`. -->
-                            <p class="nt-public if-open">End-to-end encrypted, and the key of this project is public: it is written into this page. Anyone who can open the page can read these notes AND write them &mdash; the key gives both, and this format has no reader-only role.</p>
+                            <!-- IN BOTH MODES, AND AT EVERY DRAW. The client
+                                 draws this badge in the panel every time it
+                                 draws it, not once at startup: which mode a
+                                 project runs in is a standing property of it.
+                                 Both branches are in the markup and the switch
+                                 above picks one, so the setting is visible
+                                 here too. `mode.public` / `mode.secure`. -->
+                            <p class="nt-mode if-open"><span class="nt-chip nt-chip-public">Public</span></p>
+                            <p class="nt-mode if-secure"><span class="nt-chip nt-chip-secure">Secure</span></p>
                             <div class="nt-body">
                                 <p class="nt-empty g-empty">Nobody has written a note on this page yet.</p>
                                 <div class="g-note">
@@ -2481,7 +2493,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
      describes. Served from this origin because jsDelivr's @2 still resolves to
      2.0.1, which ignores data-key -- same bytes, checked against the published
      bundle by tools/check-sri.mjs. -->
-<script src="/annotepage-client-2.9.0.js"
+<script src="/annotepage-client-2.10.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
         data-version="2026.9.5"

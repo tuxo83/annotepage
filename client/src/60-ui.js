@@ -589,26 +589,64 @@ const forgetForm = () => {
     return block;
 };
 
+/**
+ * WHICH MODE THIS PROJECT RUNS IN, SAID IN BOTH OF THEM.
+ *
+ * What was here before was a paragraph, drawn only when the key was in the
+ * page. It had the right content and the wrong shape, twice over:
+ *
+ *   - a reviewer in SECURE mode saw nothing at all, so the panel never told
+ *     them which of the two modes they were in. The one case that says
+ *     something is the case that is already the more alarming: silence was
+ *     doing the reassuring, and silence is also what a broken build looks
+ *     like;
+ *   - a paragraph that is on screen for ever gets skipped after the second
+ *     read. A word is read every time, because there is nothing to skip.
+ *
+ * So: one badge, same place, both modes, one word -- "Public" or "Secure",
+ * the site's own two words and not a third vocabulary. The sentence that
+ * explains it is asked for, and it is asked for BY POINTER OR BY KEYBOARD:
+ * the badge takes focus (tabindex) although it is not a button and does
+ * nothing when pressed, because a description reachable only by hovering is
+ * a description half the people who need it cannot reach. The text is tied
+ * to the badge with aria-describedby, so it is the badge's accessible
+ * description whether or not it is on screen -- a native title= would be
+ * neither of those things reliably.
+ *
+ * ENCRYPTION IS NOT ON THE BADGE. It is true in both modes, at all times, so
+ * a word that appears in both says nothing about either. It belongs to the
+ * sentence, which is where somebody asking "and what does that mean" is.
+ */
+const modeBadge = () => {
+    const isPublic = PUBLIC_KEY;
+    const block = create('div', 'ap-mode ' + (isPublic ? 'ap-mode-public' : 'ap-mode-secure'));
+
+    /* The id is drawn, because the panel is redrawn: two badges alive at the
+       same instant during a redraw must not both answer to one id, or the
+       description would resolve to the older one. Same trick, same reason as
+       the name field above. */
+    const id = 'ap-mode-' + Math.random().toString(36).slice(2, 8);
+
+    const chip = create('span', 'ap-mode-chip', T(isPublic ? 'mode.public' : 'mode.secure'));
+    chip.setAttribute('role', 'note');
+    chip.setAttribute('tabindex', '0');
+    chip.setAttribute('aria-describedby', id);
+
+    const tip = create('span', 'ap-mode-tip',
+        T(isPublic ? 'mode.public_detail' : 'mode.secure_detail'));
+    tip.id = id;
+    tip.setAttribute('role', 'tooltip');
+
+    block.appendChild(chip);
+    block.appendChild(tip);
+    return block;
+};
+
 const drawPanel = () => {
     empty(ui.body);
     empty(ui.footer);
 
-    /* THE PROJECT RUNS ON A KEY THAT IS IN THE PAGE, AND IT SAYS SO -- here,
-       where the notes are, at every draw and not once at startup.
-
-       It sits above everything else, failures included, because it is not an
-       event: it describes what the notes underneath ARE. A one-off message
-       at load time would be read by whoever happened to be looking, once,
-       and by nobody who opens this panel a week later.
-
-       The half that has to survive being skim-read is the WRITE half: the
-       key gives read and write, this format has no reader role, so a page
-       anybody can open is a page anybody can post to. */
-    if (PUBLIC_KEY) {
-        const notice = create('div', 'ap-public', T('public.notice'));
-        notice.setAttribute('role', 'note');
-        ui.body.appendChild(notice);
-    }
+    ui.body.appendChild(modeBadge());
 
     /* A NEWER CLIENT EXISTS, AND WE ARE NOT GOING TO FETCH IT. This copy is
        served by the site itself -- somebody took the file off a CDN on
@@ -616,7 +654,7 @@ const drawPanel = () => {
        BY a CDN never gets here: it replaced itself before the panel existed.
 
        Said at every draw and not once at load, for the same reason as the
-       notice above: a message shown at load time is read by whoever happened
+       badge above: a message shown at load time is read by whoever happened
        to be looking, and by nobody who opens this panel a week later. */
     if (upgradeAvailable) {
         const notice = create('div', 'ap-upgrade',
@@ -627,7 +665,7 @@ const drawPanel = () => {
 
     /* THE SERVER AND THIS CLIENT DO NOT SPEAK THE SAME PROTOCOL NUMBER, and
        that is a standing property of what is on screen, not an event: same
-       register as the two notices above, same place, at every draw
+       register as the badge and the notice above, same place, at every draw
        (40-api, section 8bis).
 
        Which of the two sentences is drawn is the whole asymmetry. A server

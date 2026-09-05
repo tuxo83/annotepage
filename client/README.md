@@ -34,7 +34,7 @@ Load the client once, on a page of the site, with `data-setup` and **without**
 
 ```html
 <script src="https://<your-cdn>/annotepage-client@2.5.0/dist/annotepage.js"
-        integrity="sha384-AoKEUi40eHALo8q+pBcFmYeJx5+6baVWGfpwR5xyCcw4bfUaP3lRKavPbClxuueS"
+        integrity="sha384-zopsMVKI88YIkKUGjIgfsajeAEnObuHRo3B1woLG1AabTT32SQmgywnWLkb6Z+6I"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-setup
@@ -55,7 +55,7 @@ on the server. No network request is made at that point.
 
 ```html
 <script src="https://<your-cdn>/annotepage-client@2.5.0/dist/annotepage.js"
-        integrity="sha384-AoKEUi40eHALo8q+pBcFmYeJx5+6baVWGfpwR5xyCcw4bfUaP3lRKavPbClxuueS"
+        integrity="sha384-zopsMVKI88YIkKUGjIgfsajeAEnObuHRo3B1woLG1AabTT32SQmgywnWLkb6Z+6I"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"
@@ -134,12 +134,28 @@ nothing decrypted, rather than guessing which of the two is the typo. A
 `data-key` that is not 43 base64url characters is refused the same way, and
 said on screen: somebody put that attribute there on purpose.
 
-When the key is public, the tool says so **in the panel, at every draw** -- not
-once at load time:
+**Which of the two a project runs in is said in the panel, at every draw** --
+in BOTH modes, and not once at load time. It is one badge, one word, above the
+notes:
 
-> End-to-end encrypted, and the key of this project is public: it is written
-> into this page. Anyone who can open the page can read these notes AND write
-> them -- the key gives both, and this format has no reader-only role.
+> `Public`   `Secure`
+
+It is not a button and there is nothing to press. Point at it, or reach it with
+Tab, and it gives the sentence -- the badge is focusable for exactly that
+reason, so the explanation is not reserved to whoever has a pointer:
+
+> **Public** -- End-to-end encrypted, and the key is in this page: anyone who
+> can open the page can read these notes AND write them. The key gives both --
+> this format has no reader-only role.
+
+> **Secure** -- End-to-end encrypted, and the key is not in this page: each
+> browser pastes it once, and the server never receives it.
+
+The encryption is not written on the badge itself: it holds in both modes, at
+all times, so a word that appears in both distinguishes nothing. It belongs to
+the sentence, where somebody asking the question is. All four texts are labels
+(`mode.public`, `mode.secure`, `mode.public_detail`, `mode.secure_detail`) and
+translate like the rest.
 
 ### What a public key actually opens, and it is not mainly reading
 
