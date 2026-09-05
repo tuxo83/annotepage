@@ -758,3 +758,76 @@
 .sc .copy[data-state="failed"] { color: var(--t-shimmer); border-color: var(--t-shimmer); }
 .sc .copy:focus-visible { outline: 2px solid var(--t-ident); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .sc .copy { transition: none; } }
+
+
+/* -- WHAT HAPPENS BETWEEN TWO STEPS ---------------------------------------
+   IT LIVED IN how-to-use-it.html, which was the only page with a passage
+   between two steps. The install page has one too now -- somebody has to
+   leave a note before there is anything to ask about -- and the rules are the
+   same rules. What stays on that page is the one line tied to its own dial:
+   the step after the marker comes up only when the marker is there. */
+
+/* -- THE THING THAT HAPPENS BETWEEN TWO STEPS -----------------------------
+
+   Not a step: a step is something the page then SHOWS, and there is nothing to
+   show here -- a deploy looks like whatever your pipeline looks like, which is
+   not ours to draw. But it is not nothing either, and leaving it out made the
+   remark seem to unstick itself.
+
+   So it is a marker on the page's own axis, between the two steps it sits
+   between, in the position the landing page gives the way out of a chapter --
+   and deliberately NOT that shape: no border, no fill, nothing that reads as
+   something to press. Four words and a turning arrow.
+
+   It is an <li> so that the list stays a list, and it does not take a number:
+   counter-increment is cancelled, so the step after it carries the number it
+   would have had. */
+.use-steps > li.between {
+    display: flex; grid-template-columns: none;
+    align-items: center; justify-content: flex-start;
+    counter-increment: none;
+    /* ON THE STEPS' OWN RAIL, NOT ON THE PAGE'S AXIS. Centred, it sat above
+       the column of pictures, 400px from anything anybody reads: somebody
+       skimming runs down the left edge, finds nothing there, and files the
+       line outside the sequence -- which is exactly what "it looks like a
+       comment" means. Put on that rail, the arrow takes the number's place and
+       the sentence takes the caption's, so it belongs to the run without
+       gaining an ounce of weight: size, colour and boldness are untouched.
+       The rail is the number's box (two monospace characters at .78rem, .92rem
+       wide) plus the caption's own .6rem gap. The arrow spends part of it; the
+       gap is what is left. Measured: text at 96.2px, the caption of the step
+       below at 96.2px, at every width -- both are in fixed rem. */
+    gap: calc(.92rem + .6rem - 1.15em);
+    /* A STEP LARGER THAN THE SENTENCES, and it is the only thing on the page
+       between the steps: at the sentences' own .95rem it read as a stray line
+       of one of them. */
+    color: var(--dim); font-size: 1.05rem; font-weight: 600;
+}
+/* AND IT IS CLOSER THAN A STEP IS, on both sides, because it belongs to the
+   passage rather than to either step. Measured at 1440px: 51 above the symbol,
+   51 below, and 126 from one step to the next where two ordinary steps sit 96
+   apart. It reads as punctuation between them, not as a third block. */
+.use-steps > li.between { margin-top: clamp(1.4rem, 3.6vw, 3.2rem); }
+/* DRAWN RATHER THAN TYPED, AND DRAWN BY US.
+
+   Typed first, as U+21BB: it came out of the body font at whatever weight that
+   font gives it -- thin, small, sitting on the baseline instead of the text's
+   middle. Then drawn, as a circular arrow, which was the wrong drawing: at
+   17px a circular arrow is the RETRY glyph in every icon set there is, and a
+   reader sees "reload", not "deploy". It is an arrow rising from a line now:
+   two strokes, no ambiguity, something pushed up and out.
+
+   AND THE COORDINATES ARE OURS, which is the whole licence question. The idea
+   -- an arrow over a line -- belongs to nobody. A `d` attribute copied out of
+   an icon set is that set's file, and its licence follows it: MIT and ISC ask
+   for their notice to be kept in the distribution, Font Awesome Free's SVGs
+   are CC BY and ask for visible attribution. Nothing is copied here, so this
+   repository owes nobody a notice.
+
+   NO ROTATION. Two figures already loop for ever on this page and they carry
+   the content; a third movement in the middle of a sentence would take
+   attention from them to punctuate. A straight arrow has nothing to turn. */
+.use-steps > li.between .ship {
+    flex: none; width: 1.15em; height: 1.15em;
+    color: var(--accent);
+}

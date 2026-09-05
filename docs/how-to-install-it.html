@@ -348,6 +348,43 @@ code:not(pre code) {
    legend of its own -- the line above it is the legend -- and it takes the
    cell's width, which is already the width of the block over it. */
 .dial-inline { max-width: none; margin-top: .6rem; }
+
+/* THE STEP AFTER THE MARKER COMES UP BY WHAT THE MARKER COSTS. base.css gives
+   the marker its own space above; without this the passage would be 51px clear
+   on one side and an ordinary step's distance on the other, which reads as the
+   marker belonging to the step below. Unconditional here: unlike the sibling
+   page, this marker is always there. */
+.use-steps > li.between + li { margin-top: clamp(1.4rem, 3.6vw, 3.2rem); }
+
+/* -- the installer's own screen, drawn ------------------------------------ */
+
+/* A .frame from base.css, like every other screenshot on this site, with the
+   chrome of a page rather than of a terminal: the installer is served over
+   http by the server being installed. Nothing here is an operating system's --
+   a title band with the name the installer itself prints, and nothing else. */
+.wiz { padding: 0; overflow: hidden; }
+.wiz-bar {
+    margin: 0; padding: .55rem .8rem;
+    border-bottom: 1px solid var(--line-soft); background: var(--bg-soft);
+    font-family: var(--mono); font-size: .78rem; font-weight: 600; color: var(--dim);
+}
+.wiz-body { padding: .9rem 1rem; }
+.wiz-q {
+    margin: 1.1rem 0 0; font-size: .78rem; font-weight: 650;
+    letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
+}
+.wiz-q:first-child { margin-top: 0; }
+.wiz-a { display: flex; flex-wrap: wrap; gap: .4rem; margin: .45rem 0 0; }
+/* The chips of the dials at the top of the page, one weight lighter: these are
+   not controls, they are what the installer will show. Nothing here is
+   clickable and nothing pretends to be. */
+.wiz-a span {
+    padding: .28rem .7rem; border: 1px solid var(--line); border-radius: 999px;
+    font-size: .82rem; color: var(--dim);
+}
+.wiz-a span.on {
+    border-color: var(--accent); background: var(--accent); color: var(--on-accent);
+}
 .dial { border: 0; margin: 0; padding: 0; min-width: 0; }
 .dial legend { padding: 0; font-size: .78rem; font-weight: 650; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); }
 .seg { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
@@ -1019,6 +1056,48 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 </div>
             </li>
 
+            <!-- WHAT THE UPLOADED FILE ACTUALLY IS, AND IT IS NOT A FILE TO
+                 EDIT. The step above says "open it" and stops, so a reader who
+                 has never seen it assumes a configuration waiting to be written
+                 by hand. It is a wizard: it downloads the release, hashes every
+                 file against the MANIFEST, asks three questions, writes the
+                 configuration, creates the storage and then FETCHES that
+                 storage's own URL to prove the web server refuses it.
+
+                 DRAWN, NOT PHOTOGRAPHED. The rest of this site draws what it
+                 shows -- a terminal, an editor, a file manager -- and this is
+                 our own screen, so a drawing of it cannot be accused of being
+                 anybody else's. The three legends are the installer's own,
+                 copied from server/webroot/internal/install-flow.php; the
+                 answers under them are what this page has already asked, which
+                 is the point of the step. -->
+            <li>
+                <div>
+                    <p class="cap"><span class="n"></span> Answer its three questions</p>
+                    <p class="say">
+                        It walks you through them, writes the configuration, and
+                        proves the browser cannot reach the notes before it
+                        finishes.
+                    </p>
+                    <p class="say">
+                        Two of the three are the answers you gave above.
+                    </p>
+                </div>
+                <div>
+                    <div class="frame wiz">
+                        <p class="wiz-bar" aria-hidden="true">annotepage &mdash; install</p>
+                        <div class="wiz-body">
+                            <p class="wiz-q">Who this server is for</p>
+                            <p class="wiz-a"><span class="on if-declared">One site, mine</span><span class="on if-any">Anyone &mdash; a relay</span></p>
+                            <p class="wiz-q">Storage</p>
+                            <p class="wiz-a"><span class="on">SQLite</span><span>MySQL</span></p>
+                            <p class="wiz-q">Keeping this server up to date</p>
+                            <p class="wiz-a"><span class="on if-cron">A shell cron</span><span class="on if-url">An address to call</span><span class="on if-self">It updates itself</span></p>
+                        </div>
+                    </div>
+                </div>
+            </li>
+
             <!-- AND NOT A THIRD STEP FOR THE ADDRESS IT PRINTS. That address is
                  the tag's data-server, and the tag in the next chapter already
                  carries it -- printing it twice would be the page repeating
@@ -1413,6 +1492,27 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         crosses a provider&rsquo;s logs.
                     </p>
                 </div>
+            </li>
+
+            <!-- WHAT HAS TO HAPPEN BEFORE THE LAST STEP MEANS ANYTHING, and
+                 it is not a step: nobody installing this does it, and there is
+                 nothing to show -- somebody annotating a page looks like
+                 whatever their page looks like. Asking an assistant to fix what
+                 the reviewers flagged, with nothing flagged, returns an empty
+                 export and reads as a broken install.
+
+                 The marker how-to-use-it.html puts between two steps, on the
+                 steps' own rail, taking no number: its rules moved into
+                 base.css to get here rather than being copied. Same arrow, same
+                 weight, same distance above and below. -->
+            <li class="between">
+                <svg class="ship" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true" focusable="false">
+                    <path d="M12 16V4m-5 5 5-5 5 5"/>
+                    <path d="M5 20h14"/>
+                </svg>
+                Somebody annotates the page.
             </li>
 
             <!-- AND WHAT PLUGGED IN IS FOR, WHICH IS THE LANDING PAGE'S OWN
