@@ -584,10 +584,23 @@
 
 /* -- Top bar ------------------------------------------------------------- */
 
+/* IT STAYS AT THE TOP. The site is four pages of long prose and the way
+   between them was three screens back up; the menu is the one thing on the page
+   that is useful at every scroll position.
+
+   z-index 10, and deliberately small: the annotated page carries the tool
+   itself, which draws in a shadow root high above everything here. A header
+   that outbid it would sit over the panel a reviewer is writing in.
+
+   AND THE ANCHORS MOVE DOWN BY WHAT THE BAR TAKES. Without scroll-margin-top,
+   `/#use` puts its heading exactly where the bar now is, so the reader lands on
+   a chapter whose title they cannot see. Measured: the bar is 53px. */
 .top {
+    position: sticky; top: 0; z-index: 10;
     border-bottom: 1px solid var(--line-soft);
     background: var(--bg);
 }
+[id] { scroll-margin-top: 4.5rem; }
 .top .wrap {
     display: flex; align-items: center; gap: 1rem;
     flex-wrap: wrap; padding-top: .85rem; padding-bottom: .85rem;

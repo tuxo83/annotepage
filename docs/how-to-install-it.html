@@ -352,10 +352,7 @@ code:not(pre code) {
 /* The field is above the row and takes the measure of a sentence, not a third
    of the box: it holds a domain name, and a domain name is short. */
 .dial-wide { margin: 1.3rem 0 0; max-width: 26rem; }
-/* The same field, inside a step's cell rather than in the settings box: no
-   legend of its own -- the line above it is the legend -- and it takes the
-   cell's width, which is already the width of the block over it. */
-.dial-inline { max-width: none; margin-top: .6rem; }
+
 
 /* THE STEP AFTER THE MARKER COMES UP BY WHAT THE MARKER COSTS. base.css gives
    the marker its own space above; without this the passage would be 51px clear
@@ -440,6 +437,10 @@ code:not(pre code) {
     margin-top: 1.3rem; padding-top: 1.3rem;
     border-top: 1px solid var(--line-soft);
 }
+/* Its field sits above its two dials, as the site field sits above the three
+   in the half over it: typing is one gesture and clicking another, and putting
+   them in one row is what made the first box wrap at every width. */
+.dials-2 .dial-wide { margin: 1rem 0 1.3rem; }
 .dial-when {
     margin: 0 0 1rem; font-size: .9rem; font-weight: 600; color: var(--dim);
 }
@@ -738,7 +739,7 @@ a.lp-box .lp-name::after {
             <a href="questions.html">FAQ</a>
             <a class="leave" href="https://github.com/tuxo83/annotepage"
                target="_blank" rel="noopener"
-               aria-label="GitHub, opens in a new tab">GitHub</a>
+               aria-label="The source, on GitHub, opens in a new tab">Source</a>
         </nav>
     </div>
 </header>
@@ -812,8 +813,19 @@ a.lp-box .lp-name::after {
                     <label><input type="radio" name="mode" id="m-open" checked> <span>Open</span></label>
                     <label><input type="radio" name="mode" id="m-secure"> <span>Secure</span></label>
                 </div>
+                <!-- IT SAYS WHAT IS CHOSEN, NOT WHAT THERE IS TO CHOOSE. This
+                     read "The key is in the tag, or each reviewer pastes it
+                     once" -- both answers, whichever was selected -- while
+                     three of the five dials swapped their line with the
+                     choice. A reader could not tell whether a line described
+                     their answer or listed the options, which is worse than
+                     either. All five swap now. -->
                 <p class="dial-say">
-                    The key is in the tag, or each reviewer pastes it once.
+                    <span class="if-open">The key is in the tag: anyone who can
+                    open the page can read these notes and write
+                    them.</span><span class="if-secure">The key is not on the
+                    page. Each reviewer pastes it once, in their own
+                    browser.</span>
                 </p>
             </fieldset>
 
@@ -828,9 +840,15 @@ a.lp-box .lp-name::after {
                     <label><input type="radio" name="srv" id="s-shared" checked> <span>Shared</span></label>
                     <label><input type="radio" name="srv" id="s-own"> <span>Your own</span></label>
                 </div>
+                <!-- AND "DISK" IS GONE. "Put one on your own disk" was read as
+                     a question rather than as an answer: whose disk, and what
+                     is put on it. What it meant is the thing the chapter below
+                     does -- one PHP file, on the hosting you already have. -->
                 <p class="dial-say">
-                    api.annotepage.com is free and already running, or put one
-                    on your own disk.
+                    <span class="if-shared">api.annotepage.com, free and already
+                    running. Nothing to install and nothing to
+                    maintain.</span><span class="if-own">One PHP file on hosting
+                    you already have. The notes never leave it.</span>
                 </p>
             </fieldset>
 
@@ -878,7 +896,30 @@ a.lp-box .lp-name::after {
              is what it is. A dial that changes no step would say the page
              depends on it, and it does not. -->
             <div class="dials-2 if-own">
-                <p class="dial-when">Running the notes server yourself asks two more:</p>
+                <p class="dial-when">Running the notes server yourself asks two more, and one address:</p>
+
+                <!-- THE ADDRESS, IN THE BOX WITH THE OTHER FIELD. It was in the
+                     server chapter, after the step that prints it, on the
+                     argument that it does not exist yet up here. True, and it
+                     put the only other typed answer three screens away from the
+                     first: the reader who has the address -- reinstalling, or
+                     adding a second site -- had to hunt for where to put it.
+
+                     PLACEHOLDER, NEVER A VALUE, and that is what makes it safe
+                     up here. Left empty the page falls back to the guess it
+                     used to write silently -- https://<your site>/notes/api.php
+                     -- which is right for most people and now reads as a
+                     suggestion. The step below says where the real one comes
+                     from. -->
+                <div class="dial dial-wide">
+                    <label class="dial-legend" for="srv">The API address</label>
+                    <input class="dial-in" id="srv" type="text" inputmode="url"
+                           autocomplete="off" spellcheck="false"
+                           placeholder="https://staging.example.com/notes/api.php">
+                    <p class="dial-say">
+                        Your installer prints it. Left empty, the blocks guess.
+                    </p>
+                </div>
 
                 <div class="dial-row dial-row-2">
                 <fieldset class="dial">
@@ -1076,6 +1117,10 @@ a.lp-box .lp-name::after {
                         Anywhere under your web root. Open it: its button
                         hashes the rest against the <code>MANIFEST</code>.
                     </p>
+                    <p class="say">
+                        It ends by printing your API address. <b>Put it in the
+                        field at the top</b> and the blocks below follow it.
+                    </p>
                 </div>
                 <div>
                     <div class="snip">
@@ -1083,36 +1128,6 @@ a.lp-box .lp-name::after {
 <pre id="snip-php"><code>https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php</code></pre>
                             </div>
 
-                    <!-- THE ADDRESS, ASKED AND NO LONGER GUESSED. The page was
-                         building it: https://<your site>/notes/api.php, from
-                         the field at the top, and putting that into the tag,
-                         the assistant's file, the scheduler's line and the
-                         command -- four blocks, plausible and wrong for anybody
-                         who installed in /annotepage/ or on a host of its own.
-                         The page even said so two lines up: "anywhere under
-                         your web root". It knew the address was not deducible
-                         and deduced it anyway.
-
-                         AND IT IS ASKED HERE, NOT AT THE TOP OF THE PAGE. The
-                         address does not exist yet up there: the installer
-                         prints it, and the installer is what the step above
-                         opens. A field before the upload asks a question nobody
-                         can answer.
-
-                         PLACEHOLDER, NEVER A VALUE. Left empty, the four blocks
-                         fall back to the guess -- which is right for most
-                         people and is now visibly a suggestion rather than an
-                         answer. -->
-                    <p class="sub-lead">The address it prints, when it is done:</p>
-                    <div class="dial dial-wide dial-inline">
-                        <input class="dial-in" id="srv" type="text" inputmode="url"
-                               autocomplete="off" spellcheck="false"
-                               aria-label="The API address your installer printed"
-                               placeholder="https://staging.example.com/notes/api.php">
-                        <p class="dial-say">
-                            Four blocks below use it. Left empty, they guess.
-                        </p>
-                    </div>
                 </div>
             </li>
 
@@ -1484,30 +1499,19 @@ return array(
              tag on a staging site behind a password needs the whole of it. It
              used to sit under the diagram as a grey line, which is where a
              caption goes, and it is not a caption. -->
-        <p class="note-aside is-info">
-            <span class="mk" aria-hidden="true">&#9432;</span>
-            <span><b>Behind a login is fine.</b> Neither the notes server nor the
-            assistant ever opens the page: the MCP talks to the notes API and to
-            nothing else, and the page is opened by the reviewers&rsquo; own
-            browsers, which are already signed in.</span>
-        </p>
+        <!-- TWO STANDING NOTES BECAME ONE LINE AND A LINK. One said the page
+             may sit behind a login, the other named the two CSP directives --
+             both true, both long, and neither is common: most sites serve no
+             policy and most readers never wonder about the login. They are two
+             cards on the FAQ, and this is the sentence that takes somebody
+             there when they need them, with the filter already applied.
 
-        <!-- IT DOES NOT GO WITHOUT SAYING, AND THE READER WAS RIGHT TO DOUBT.
-             The reviewer's browser has to be allowed to reach the API, and a
-             site that serves a Content-Security-Policy will stop it: the tag
-             loads, the panel opens, and nothing is ever saved. client/README.md
-             says what that looks like -- the tool stands down "in silence, as
-             if nothing were configured", which is the failure mode this page
-             warns about everywhere else. Two directives, named, because a
-             sentence saying "make sure your site allows it" would be a sentence
-             nobody can act on. -->
-        <p class="note-aside is-info">
-            <span class="mk" aria-hidden="true">&#9432;</span>
-            <span><b>If your site sets a Content-Security-Policy</b>, two
-            directives concern it: <code>script-src</code> for wherever the
-            client is served from, and <code>connect-src</code> for your notes
-            server. Without the second, the tool loads and saves nothing,
-            silently.</span>
+             THE FACT THE DRAWING NEEDS STAYS IN THE DRAWING: "Can sit behind a
+             login." is written inside the page's own box, three screens up. -->
+        <p class="small dim">
+            Nothing appearing? A module, a wrong <code>integrity</code> digest and
+            a Content-Security-Policy each stop it in silence &mdash;
+            <a href="questions.html?tag=when-nothing-appears">the three cases, answered</a>.
         </p>
     </div>
 </section>
