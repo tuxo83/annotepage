@@ -25,23 +25,16 @@ import { join } from 'node:path';
 
 const DIR = 'docs';
 
-/* A REDIRECT IS NOT A PAGE OF THE SITE, and it must not be made to wear the
-   frame. install.html became how-to-install-it.html, and a static host has
-   no 301 to give -- so what stays at the old address is four lines and a meta
-   refresh. Comparing
-   its header with the others would demand a menu on a document nobody reads
-   for longer than it takes to leave -- and the day the menu changed, the check
-   would fail on the one file with nothing to say.
-
-   Recognised by what it IS rather than by its name: any page whose head
-   carries an immediate `refresh` is on its way somewhere else. A page listed
-   here by name would let the next redirect be forgotten. */
-const isRedirect = (html) =>
-    /<meta\s+http-equiv=["']?refresh["']?[^>]*>/i.test(html);
-
-const PAGES = readdirSync(DIR).filter((f) => f.endsWith('.html'))
-    .filter((f) => !isRedirect(readFileSync(join(DIR, f), 'utf8')))
-    .sort();
+/* EVERY .html IN docs/ IS A PAGE OF THE SITE, and there is nothing here to
+   exclude. There were two redirects for a moment -- install.html and
+   example-session.html, left behind by a rename -- and the code that skipped
+   them lived here, recognising a page by its `refresh` tag rather than by its
+   name. They were removed: nothing links to those addresses, nobody has
+   bookmarked them, and this site has not been public long enough for either
+   to be true. The skipping went with them rather than staying as a comment
+   describing files that no longer exist. Whoever needs a redirect again adds
+   the rule back, with the reason of that day. */
+const PAGES = readdirSync(DIR).filter((f) => f.endsWith('.html')).sort();
 
 const bloc = (html, tag) => {
     const m = html.match(new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}>`));
