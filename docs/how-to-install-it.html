@@ -440,7 +440,13 @@ code:not(pre code) {
 /* Its field sits above its two dials, as the site field sits above the three
    in the half over it: typing is one gesture and clicking another, and putting
    them in one row is what made the first box wrap at every width. */
+/* WIDER THAN THE SITE FIELD, because it holds a different thing: a domain is
+   short, a full API address is not. `.dial-in` caps every field at 15rem, which
+   is 240px, and the address it offers as a placeholder needs 303 -- so it was
+   shown cut, which is the one thing a placeholder must not be. Measured, not
+   chosen: 22rem is 352px, and the cap is on this field alone. */
 .dials-2 .dial-wide { margin: 1rem 0 1.3rem; }
+.dials-2 .dial-in { max-width: 22rem; }
 .dial-when {
     margin: 0 0 1rem; font-size: .9rem; font-weight: 600; color: var(--dim);
 }
@@ -745,8 +751,13 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     background: var(--dim); opacity: 0;
     animation: lp-go 4.6s linear infinite;
 }
-.lp-h .lp-dot { top: calc(50% - 3px - .55rem); }
-.lp-v .lp-dot { left: calc(50% - 3px); }
+/* THE LINE'S OWN MIDDLE, MEASURED. This read `calc(50% - 3px - .55rem)`: the
+   arrow is a flex column of a drawing and a label, so its box centre is not the
+   line's, and .55rem was a guess at the difference. It was out by 1 to 2px --
+   enough to see, which is how it was reported. The script sets --lp-mid from
+   the drawing's real position, on load and on resize. */
+.lp-h .lp-dot { top: calc(var(--lp-mid, 50%) - 3px); }
+.lp-v .lp-dot { left: calc(var(--lp-mid, 50%) - 3px); }
 /* Each starts where the arrow starts, and the delay is its place in the tour. */
 .lp-top .lp-dot   { left: 0;  animation-name: lp-go-r; }
 .lp-right .lp-dot { top: 0;   animation-name: lp-go-d; animation-delay: 1.15s; }
@@ -783,9 +794,40 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     25%  { transform: translateY(calc(-1 * var(--lp-run, 60px))); opacity: 0; }
     100% { transform: translateY(calc(-1 * var(--lp-run, 60px))); opacity: 0; }
 }
+/* AND THE BOX ACKNOWLEDGES WHEN THE NOTE ARRIVES. Asked for, and it is better
+   than what it replaces: the highlight used to be a story of its own -- a timed
+   round saying the order of the chapters, which the numbers on the boxes
+   already say -- and it was read as an animation nobody could explain. Tied to
+   the dot it is not a second story, it is the same one arriving: the note
+   reaches the server, the server lights.
+
+   THE DELAYS ARE THE TOUR. The dot leaves the page at 0 and reaches the server
+   a quarter of a cycle later, the assistant at a half, the code at three
+   quarters, the page again at the end -- so each box lights one beat after the
+   one before it, in the direction the arrows point.
+
+   POINTING AT A BOX STILL WINS. An animation beats a plain declaration, so the
+   hover rules would lose to this while it runs; the whole figure stops
+   animating while a box is pointed at, which is also what somebody reaching for
+   one wants. */
+@keyframes lp-hit {
+    0%   { border-color: var(--line);   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+    4%   { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    14%  { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    26%  { border-color: var(--line);   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+    100% { border-color: var(--line);   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+.lp-box { animation: lp-hit 4.6s linear infinite; }
+.lp-srv  { animation-delay: 1.15s; }
+.lp-asst { animation-delay: 2.3s; }
+.lp-code { animation-delay: 3.45s; }
+.loop:has(a.lp-box:hover) .lp-box,
+.loop:has(a.lp-box:focus-visible) .lp-box { animation: none; }
+
 /* NOTHING TURNS BEHIND THE READER'S BACK. `data-seen` is set by the observer
    below, which already knows when the figure is on screen. */
-.loop:not([data-seen]) .lp-dot { animation-play-state: paused; }
+.loop:not([data-seen]) .lp-dot,
+.loop:not([data-seen]) .lp-box { animation-play-state: paused; }
 
 /* Stacked, the arrows are a glyph and there is nothing to travel along. */
 @media (max-width: 32.5rem) { .lp-dot { display: none; } }
@@ -2249,8 +2291,16 @@ return array(
             var dessin = fleches[f].querySelector('svg');
             if (!dessin) continue;
             var b = dessin.getBoundingClientRect();
-            var d = Math.round(fleches[f].classList.contains('lp-h') ? b.width : b.height);
+            var boite = fleches[f].getBoundingClientRect();
+            var horizontale = fleches[f].classList.contains('lp-h');
+            var d = Math.round(horizontale ? b.width : b.height);
             if (d > 0) fleches[f].style.setProperty('--lp-run', d + 'px');
+            /* Where the LINE is inside the arrow's box, which is not its middle:
+               the box holds the drawing and the label under it. */
+            var milieu = horizontale
+                ? (b.top - boite.top) + b.height / 2
+                : (b.left - boite.left) + b.width / 2;
+            fleches[f].style.setProperty('--lp-mid', Math.round(milieu * 10) / 10 + 'px');
         }
     };
     mesurer();
