@@ -254,7 +254,10 @@ h1 + .lead { margin-top: 1.15rem; }
     display: flex; grid-template-columns: none;
     align-items: center; justify-content: center; gap: .55rem;
     counter-increment: none;
-    color: var(--dim); font-size: .95rem; font-weight: 600;
+    /* A STEP LARGER THAN THE SENTENCES, and it is the only thing on the page
+       between the steps: at the sentences' own .95rem it read as a stray line
+       of one of them. */
+    color: var(--dim); font-size: 1.05rem; font-weight: 600;
 }
 /* AND IT IS CLOSER THAN A STEP IS, on both sides, because it belongs to the
    passage rather than to either step. Measured at 1440px: 51 above the symbol,
@@ -267,11 +270,26 @@ h1 + .lead { margin-top: 1.15rem; }
 body:has(#d-wait:checked) .use-steps > li.between + li {
     margin-top: clamp(1.4rem, 3.6vw, 3.2rem);
 }
-/* Drawn rather than typed. The character U+21BB comes out of the body font at
-   whatever weight and size that font gives it -- thin, small, and sitting on
-   the baseline instead of on the text's middle. Two paths, a stroke we choose,
-   and it centres on the words beside it. */
-.use-steps > li.between .turn {
+/* DRAWN RATHER THAN TYPED, AND DRAWN BY US.
+
+   Typed first, as U+21BB: it came out of the body font at whatever weight that
+   font gives it -- thin, small, sitting on the baseline instead of the text's
+   middle. Then drawn, as a circular arrow, which was the wrong drawing: at
+   17px a circular arrow is the RETRY glyph in every icon set there is, and a
+   reader sees "reload", not "deploy". It is an arrow rising from a line now:
+   two strokes, no ambiguity, something pushed up and out.
+
+   AND THE COORDINATES ARE OURS, which is the whole licence question. The idea
+   -- an arrow over a line -- belongs to nobody. A `d` attribute copied out of
+   an icon set is that set's file, and its licence follows it: MIT and ISC ask
+   for their notice to be kept in the distribution, Font Awesome Free's SVGs
+   are CC BY and ask for visible attribution. Nothing is copied here, so this
+   repository owes nobody a notice.
+
+   NO ROTATION. Two figures already loop for ever on this page and they carry
+   the content; a third movement in the middle of a sentence would take
+   attention from them to punctuate. A straight arrow has nothing to turn. */
+.use-steps > li.between .ship {
     flex: none; width: 1.15em; height: 1.15em;
     color: var(--accent);
 }
@@ -1148,11 +1166,11 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         </li>
 
         <li class="between if-wait">
-            <svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <svg class="ship" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true" focusable="false">
-                <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>
-                <path d="M20.5 3.5v5.5h-5.5"/>
+                <path d="M12 16V4m-5 5 5-5 5 5"/>
+                <path d="M5 20h14"/>
             </svg>
             You deploy the fix.
         </li>
