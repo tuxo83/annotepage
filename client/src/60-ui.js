@@ -483,6 +483,40 @@ const nameField = () => {
     return { block: block, field: field };
 };
 
+/**
+ * The question asked before the key is dropped.
+ *
+ * It is asked, and not merely announced afterwards, because from this button
+ * there is no way back: the tool cannot re-derive a key it has just removed,
+ * and neither can the server. It sits at the FOOT of the list, right above
+ * the link that opened it, so the answer appears where the question was
+ * clicked rather than at the top of a panel that may be scrolled elsewhere.
+ *
+ * What the sentence must not do is claim the notes are lost. They are not:
+ * they stay on the server, and the key brings them back. Overstating it
+ * would scare somebody out of a perfectly reasonable clean-up -- and the
+ * first time a reviewer forgot the key and found their notes again, they
+ * would stop believing the warnings that are true.
+ */
+const forgetForm = () => {
+    const block = create('div', 'ap-forget');
+    block.setAttribute('role', 'group');
+    block.appendChild(create('div', 'ap-section-title', T('key.forget')));
+    block.appendChild(create('p', 'ap-help', T('key.forget_confirm')));
+
+    const actions = create('div', 'ap-actions');
+    const confirm = create('button', 'ap-primary', T('key.forget'));
+    confirm.type = 'button';
+    confirm.addEventListener('click', () => forgetKey());
+    const cancel = create('button', 'ap-secondary', T('note.cancel'));
+    cancel.type = 'button';
+    cancel.addEventListener('click', () => block.remove());
+    actions.appendChild(confirm);
+    actions.appendChild(cancel);
+    block.appendChild(actions);
+    return block;
+};
+
 const drawPanel = () => {
     empty(ui.body);
     empty(ui.footer);
@@ -605,12 +639,33 @@ const drawPanel = () => {
     /* Not offered when the key comes from the tag: there is nothing stored
        to replace, and a key pasted here would be overruled by the tag on the
        next load -- while quietly leaving a copy in localStorage. */
+    /* And the same key gets forgotten from here, under the same condition
+       and for the same reason: this footer is where the panel already
+       answers "and what about MY browser" -- the name it remembers, the key
+       it remembers. Somebody handing back a borrowed laptop looks for it
+       next to the name, not in a settings screen this tool does not have.
+
+       The pair is deliberate: replacing a key and dropping it are the two
+       halves of the same question, and offering only the first is what
+       forced people to clear the storage by hand. */
     if (PROJECT && keyText && !PUBLIC_KEY) {
         const changeSalt = create('button', 'ap-link', T('key.replace'));
         changeSalt.type = 'button';
         changeSalt.title = T('key.origin_changed');
         changeSalt.addEventListener('click', () => openSaltScreen());
         ui.footer.appendChild(changeSalt);
+
+        const forget = create('button', 'ap-link', T('key.forget'));
+        forget.type = 'button';
+        forget.addEventListener('click', () => {
+            // One at a time: a second click on the link asks nothing new,
+            // it would just stack the same question.
+            if (ui.body.querySelector('.ap-forget')) return;
+            const block = forgetForm();
+            ui.body.appendChild(block);
+            block.scrollIntoView({ block: 'nearest' });
+        });
+        ui.footer.appendChild(forget);
     }
 
     const total = notes.length;

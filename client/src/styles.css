@@ -671,6 +671,20 @@
     border-top: 1px solid var(--ap-border);
 }
 
+/* The question asked before the key is dropped, at the foot of the list.
+   Framed like the resolution block -- it is the same shape of gesture, one
+   answers before something changes -- and set apart from the notes above it,
+   because it is not about a note. */
+.ap-forget {
+    margin-top: 1rem;
+    padding-top: .6rem;
+    border-top: 1px solid var(--ap-border);
+}
+
+.ap-forget .ap-actions {
+    margin-top: .5rem;
+}
+
 .ap-history-toggle {
     display: block; width: 100%; margin: 1rem 0 .25rem;
     padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;
