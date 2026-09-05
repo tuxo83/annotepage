@@ -563,3 +563,38 @@
     .nt-frame .pg { flex: 1 1 8rem; min-width: 0; }
     .nt-frame .nt-panel { flex: 0 1 calc(21.5rem * var(--ui)); min-width: 0; }
 }
+
+
+/* -- THE BAR AT THE TOP OF EVERY PAGE ------------------------------------
+   IT LIVED IN ALL THREE PAGES, copied by hand, and two of the copies had lost
+   the `.leave` rule -- so the GitHub link sat 17.6px closer to its neighbours
+   on the two pages nobody re-read. The HTML of the header is compared by
+   tools/check-shell.mjs; its CSS was not, and could not be while each page
+   carried its own. It is here now, once, and that is the check. */
+
+/* -- Top bar ------------------------------------------------------------- */
+
+.top {
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg);
+}
+.top .wrap {
+    display: flex; align-items: center; gap: 1rem;
+    flex-wrap: wrap; padding-top: .85rem; padding-bottom: .85rem;
+}
+.mark {
+    font-family: var(--mono); font-size: .95rem; font-weight: 600;
+    letter-spacing: -.02em; color: var(--text); text-decoration: none;
+}
+.mark::before {
+    content: ""; display: inline-block; vertical-align: -1px;
+    width: .62em; height: .62em; margin-right: .5em; border-radius: 2px;
+    background: var(--accent);
+}
+.top nav { margin-left: auto; display: flex; gap: 1.1rem; flex-wrap: wrap; }
+/* The one link that leaves the site, set apart from the two that do not. Four
+   entries that look alike behave three ways otherwise, and the difference is
+   only discovered by losing your place. */
+.top nav .leave { margin-left: 1.1rem; }
+.top nav a { font-size: .875rem; color: var(--dim); text-decoration: none; }
+.top nav a:hover { color: var(--text); text-decoration: underline; }

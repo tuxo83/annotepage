@@ -86,28 +86,6 @@ main .wrap > .use-steps { max-width: none; }
     clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
-/* -- Top bar ------------------------------------------------------------- */
-
-.top {
-    border-bottom: 1px solid var(--line-soft);
-    background: var(--bg);
-}
-.top .wrap {
-    display: flex; align-items: center; gap: 1rem;
-    flex-wrap: wrap; padding-top: .85rem; padding-bottom: .85rem;
-}
-.mark {
-    font-family: var(--mono); font-size: .95rem; font-weight: 600;
-    letter-spacing: -.02em; color: var(--text); text-decoration: none;
-}
-.mark::before {
-    content: ""; display: inline-block; vertical-align: -1px;
-    width: .62em; height: .62em; margin-right: .5em; border-radius: 2px;
-    background: var(--accent);
-}
-.top nav { margin-left: auto; display: flex; gap: 1.1rem; flex-wrap: wrap; }
-.top nav a { font-size: .875rem; color: var(--dim); text-decoration: none; }
-.top nav a:hover { color: var(--text); text-decoration: underline; }
 
 /* -- Sections ------------------------------------------------------------ */
 
@@ -137,6 +115,8 @@ ul.plain b { color: var(--text); }
     font-weight: 600; color: var(--accent); text-decoration: none;
 }
 .cta:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+/* Two of them now, and the second is not decoration: see the <p> they sit in. */
+.cta + .cta { margin-left: 2.2rem; }
 
 /* -- Code snippets ------------------------------------------------------- */
 
@@ -597,9 +577,11 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     <div class="wrap">
         <a class="mark" href="/">annotepage</a>
         <nav>
-            <a href="/">Home</a>
-            <a href="how-to-use-it.html">A detailed usage example</a>
-            <a href="https://github.com/tuxo83/annotepage">GitHub</a>
+            <a href="/#use">Use</a>
+            <a href="/#install">Install</a>
+            <a class="leave" href="https://github.com/tuxo83/annotepage"
+               target="_blank" rel="noopener"
+               aria-label="GitHub, opens in a new tab">GitHub</a>
         </nav>
     </div>
 </header>
@@ -1085,7 +1067,13 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <li id="locked"><b>A wrong <code>integrity</code> digest fails silently.</b></li>
         </ul>
 
+        <!-- THE ONLY WAY FROM HERE TO THE USAGE PAGE. It used to be the menu,
+             which carried "A detailed usage example" on this page and something
+             else on every other one; the menu is now identical everywhere and
+             names no page, so the way across has to be written where the reader
+             finishes. tools/check-shell.mjs refuses a page nothing links to. -->
         <p>
+            <a class="cta" href="how-to-use-it.html">See what using it looks like</a>
             <a class="cta" href="/">Back to the landing page</a>
         </p>
     </div>

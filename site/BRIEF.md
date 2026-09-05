@@ -342,6 +342,34 @@ Ask, then show ONE tag. Showing both, or showing the pinned one and explaining
 the other underneath, makes an install look like a decision about
 cryptography when it is a decision about who does the upgrading.
 
+## The menu, and the check that did not see it
+
+The menu is the SAME on every page: `Use` and `Install`, pointing at the
+landing page's two chapters with `/#use` and `/#install`, then `GitHub`. No
+entry names a page file, so no page can link to itself and none of the three
+needs an exception.
+
+It had drifted into three different menus -- `Use . Install . GitHub`,
+`Home . Install . GitHub`, `Home . A detailed usage example . GitHub` -- while
+`tools/check-shell.mjs` reported one shared header. The check replaced the
+whole `<nav>` with an empty tag before comparing, with a comment calling the
+menu "the one part of the header meant to differ". It compared everything
+except the thing that broke. Its CSS had drifted too, in a way no check could
+see: three hand-copied `.top` blocks, two of them missing the rule that sets
+the GitHub link apart.
+
+What came out of it, and holds for anything else the pages share:
+
+- the frame is compared WHOLE. The only exception is what sits after
+  `<!-- page-specific -->`;
+- a shared thing is stored once. The bar's CSS is in `base.css` now, not
+  copied into each page;
+- a check must say what it measured. This one announced "one footer" on a site
+  whose pages have none;
+- removing a menu entry removes a route. Every page must still be linked from
+  another one -- the check refuses a page nothing reaches.
+
+
 ## What must not be done
 
 No bullet-list "features" page. No comparison with the competitors. No
