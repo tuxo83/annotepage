@@ -683,6 +683,44 @@ class ApStore
      * line of the export header. An installation that changed its mind gives
      * `mixed`, and that is said rather than hidden.
      */
+    /**
+     * What a project holds, counted and nothing else. Same contract as the
+     * other store, and it has to be: api.php calls this on every `list`, and a
+     * method present on one store and missing on the other is a fatal error on
+     * whichever half of the installations chose that one -- which is what
+     * happened here before an end-to-end test caught it. SQLite is the
+     * installer's default; it would have been most of them.
+     *
+     * Three numbers no remark has to be read for: `resolved_at` is a column
+     * this server writes itself, and `page_index` is a blind index, so counting
+     * its distinct values says how many pages are under review without saying
+     * what any of them is. Replies are not notes: a thread with four answers is
+     * one remark.
+     *
+     * @return array{notes:int,open:int,pages:int}
+     */
+    public function projectTotals($project)
+    {
+        $this->ensureSchema();
+        $req = $this->pdo()->prepare(
+            'SELECT COUNT(*), '
+            . 'SUM(CASE WHEN "resolved_at" IS NULL THEN 1 ELSE 0 END), '
+            . 'COUNT(DISTINCT "page_index") '
+            . 'FROM "' . $this->table . '" '
+            . 'WHERE "project" = ? AND "reply_to" IS NULL');
+        $req->execute(array((string) $project));
+        $row = $req->fetch(PDO::FETCH_NUM);
+        if (!$row) {
+            return array('notes' => 0, 'open' => 0, 'pages' => 0);
+        }
+        return array(
+            'notes' => (int) $row[0],
+            /* SUM over no rows is NULL, not 0. */
+            'open'  => (int) $row[1],
+            'pages' => (int) $row[2],
+        );
+    }
+
     public function modeBreakdown($project)
     {
         $this->ensureSchema();

@@ -310,19 +310,22 @@
    be read. The row wraps rather than shrinking the numbers -- a panel is
    narrow, and a count that has to be squinted at is worse than one more line. */
 .ap-panel-stats {
-    display: flex; flex-wrap: wrap; gap: 6px 20px;
+    display: flex; flex-wrap: wrap; gap: 4px 18px;
     padding: 10px 14px;
     border-bottom: 1px solid var(--ap-border);
     background: var(--ap-bg-soft, transparent);
 }
-.ap-stat { display: flex; align-items: baseline; gap: 5px; }
+.ap-stat { display: inline-flex; align-items: baseline; gap: 5px; }
+/* The row says what it counts, once, and the three figures follow it. Without
+   it, "3 / 2 / 1" beside a panel about one page reads as being about that
+   page. */
+.ap-stat-label {
+    flex-basis: 100%; margin-bottom: 2px;
+    font-size: 11px; font-weight: 650; letter-spacing: .02em;
+    text-transform: uppercase; color: var(--ap-text-soft);
+}
 .ap-stat-n { font-size: 15px; font-weight: 650; color: var(--ap-text); }
 .ap-stat-w { font-size: 12px; color: var(--ap-text-soft); }
-/* The control that opens them sits between the title and the two buttons that
-   were already there, and is drawn like them: it is one of the header's
-   links, not a fourth kind of thing. */
-.ap-stats-toggle[hidden] { display: none; }
-
 .ap-panel-instructions {
     padding: 10px 14px;
     border-bottom: 1px solid var(--ap-border);

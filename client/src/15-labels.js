@@ -72,15 +72,13 @@ ns.defaultLabels = {
     'panel.empty': 'Nobody has written a note on this page yet.',
     'panel.section_page': 'On this page',
     /* -- What the whole project holds ------------------------------------
-       ASKED FOR, NOT SHOWN BY DEFAULT. The panel answers one question -- what
-       is on THIS page -- and a row of figures over it would answer a different
-       one before anybody asked. It is a line in the header that opens three
-       numbers, and it folds away again.
+       ONE ROW, ALWAYS, UNDER THE HEADER. A count is a glance, not a section:
+       it was a fold behind a fourth link in a 350px header, and both that link
+       and the title broke onto two lines.
 
        "Across the site" and not "in this project": the reviewer knows the site
        they are looking at; the word project belongs to whoever installed it. */
-    'panel.stats_show': 'Across the site',
-    'panel.stats_hide': 'Hide the figures',
+    'panel.stats_label': 'Across the site',
     'panel.stats_notes': 'notes',
     'panel.stats_open': 'still open',
     'panel.stats_pages': 'pages',
