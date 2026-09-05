@@ -78,6 +78,35 @@ h1 + .lead { margin-top: 1.15rem; }
    few questions is what makes the scroll legible. */
 .faq-group { margin: 2.6rem 0 0; font-size: 1.05rem; font-weight: 650; color: var(--text); }
 .faq-group:first-of-type { margin-top: 0; }
+/* A group with nothing left under it is not a heading, it is a gap with a name
+   on it. */
+.faq-group[hidden], .faq dt[hidden], .faq dd[hidden] { display: none; }
+
+.faq-tools { margin: 0 0 2.2rem; }
+.faq-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 .8rem; }
+/* The chips of the install page's dials, one weight lighter: these narrow a
+   list, they do not change what the page says. */
+.faq-tags button {
+    padding: .3rem .8rem; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--bg); color: var(--dim);
+    font: inherit; font-size: .85rem; cursor: pointer;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.faq-tags button[aria-pressed="true"] {
+    border-color: var(--accent); background: var(--accent); color: var(--on-accent);
+}
+.faq-tags button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.faq-find {
+    width: 100%; max-width: 24rem;
+    padding: .5rem .8rem;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--text);
+    font: inherit; font-size: .95rem;
+}
+.faq-find::placeholder { color: var(--dim); opacity: 1; }
+.faq-find:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-color: var(--accent); }
+.faq-none { margin: 1.4rem 0 0; color: var(--dim); }
+@media (prefers-reduced-motion: reduce) { .faq-tags button { transition: none; } }
 
 .cta {
     display: inline-block; margin-top: 2.2rem;
@@ -98,9 +127,10 @@ code {
     <div class="wrap">
         <a class="mark" href="/">annotepage</a>
         <nav>
+            <a href="/">Home</a>
             <a href="/#use">Use</a>
             <a href="/#install">Install</a>
-            <a href="questions.html" aria-current="page">Questions</a>
+            <a href="questions.html" aria-current="page">FAQ</a>
             <a class="leave" href="https://github.com/tuxo83/annotepage"
                target="_blank" rel="noopener"
                aria-label="GitHub, opens in a new tab">GitHub</a>
@@ -116,14 +146,27 @@ code {
     <div class="wrap">
         <h1>Questions people ask</h1>
         <p class="lead">
-            The ones that come before an install, and the ones that come after
-            it.
+            Everything you always wanted to know &mdash; including the two or
+            three you would rather learn here than later.
         </p>
     </div>
 </section>
 
 <section id="data">
     <div class="wrap">
+
+        <!-- FILTERING, AND IT IS THE GROUPS DOING IT. The four headings were
+             already the only navigation on the page; making them chips costs no
+             new vocabulary and gives the reader who knows what they are after a
+             way to cut twelve questions down to three. The field does the same
+             thing for a word the headings do not carry.
+
+             IT WORKS WITHOUT SCRIPT, AND IT SAYS SO BY EXISTING ONLY WITH ONE.
+             The controls are written by the script at the foot of this page:
+             a filter that cannot filter is a promise, and a page with no
+             JavaScript should show twelve questions rather than a dead row of
+             chips. Nothing here is required to read the page. -->
+        <div class="faq-tools" id="tools" hidden></div>
 
         <p class="faq-group">The key</p>
         <dl class="faq">
@@ -212,6 +255,124 @@ code {
 </section>
 
 </main>
+
+<!-- =====================================================================
+     FILTERING TWELVE QUESTIONS, AND IT WILL BE MORE THAN TWELVE.
+
+     The controls are built here rather than written in the markup, for one
+     reason: a filter that cannot filter is worse than none. A reader with no
+     JavaScript gets the whole page, in order, with nothing on it that looks
+     like a control and does nothing.
+
+     NO INDEX AND NO TAG ATTRIBUTES. The groups already exist as headings, and
+     the search reads the text that is on the page. A second list of tags kept
+     beside the questions would be a second copy to keep in step -- the failure
+     this repository spent a day finding in three other places.
+     ===================================================================== -->
+<script>
+(function () {
+    'use strict';
+
+    var hote = document.getElementById('tools');
+    var lot  = document.querySelector('#data .wrap');
+    if (!hote || !lot) return;
+
+    /* Every question, with the group it sits under and the text it can be
+       searched on. Read once, from the page itself. */
+    var groupes = [];
+    var items = [];
+    var courant = null;
+    var enfants = lot.children;
+    for (var i = 0; i < enfants.length; i++) {
+        var e = enfants[i];
+        if (e.classList.contains('faq-group')) {
+            courant = { titre: e.textContent.trim(), noeud: e, items: [] };
+            groupes.push(courant);
+        } else if (e.tagName === 'DL' && courant) {
+            var k = e.children;
+            for (var j = 0; j < k.length; j++) {
+                if (k[j].tagName !== 'DT') continue;
+                var rep = k[j].nextElementSibling;
+                var it = {
+                    dt: k[j],
+                    dd: (rep && rep.tagName === 'DD') ? rep : null,
+                    groupe: courant,
+                    mots: (k[j].textContent + ' ' + (rep ? rep.textContent : '')).toLowerCase()
+                };
+                courant.items.push(it);
+                items.push(it);
+            }
+        }
+    }
+    if (!items.length) return;
+
+    var choisi = null;
+    var cherche = '';
+
+    var vide = document.createElement('p');
+    vide.className = 'faq-none';
+    vide.hidden = true;
+    vide.textContent = 'Nothing here says that. Try another word, or clear the filter.';
+    lot.appendChild(vide);
+
+    var peindre = function () {
+        var vus = 0;
+        for (var g = 0; g < groupes.length; g++) {
+            var n = 0;
+            for (var x = 0; x < groupes[g].items.length; x++) {
+                var it = groupes[g].items[x];
+                var ok = (!choisi || choisi === groupes[g])
+                    && (!cherche || it.mots.indexOf(cherche) !== -1);
+                it.dt.hidden = !ok;
+                if (it.dd) it.dd.hidden = !ok;
+                if (ok) { n++; vus++; }
+            }
+            /* A heading with nothing under it is a gap with a name on it. */
+            groupes[g].noeud.hidden = (n === 0);
+        }
+        vide.hidden = (vus !== 0);
+    };
+
+    var tags = document.createElement('div');
+    tags.className = 'faq-tags';
+    var boutons = [];
+    var poser = function (titre, groupe) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = titre;
+        b.setAttribute('aria-pressed', groupe === null ? 'true' : 'false');
+        b.addEventListener('click', function () {
+            choisi = (choisi === groupe) ? null : groupe;
+            for (var q = 0; q < boutons.length; q++) {
+                boutons[q].b.setAttribute('aria-pressed',
+                    boutons[q].g === choisi ? 'true' : 'false');
+            }
+            peindre();
+        });
+        tags.appendChild(b);
+        boutons.push({ b: b, g: groupe });
+    };
+    poser('All', null);
+    for (var g2 = 0; g2 < groupes.length; g2++) poser(groupes[g2].titre, groupes[g2]);
+
+    var champ = document.createElement('input');
+    champ.type = 'search';
+    champ.className = 'faq-find';
+    champ.placeholder = 'Search these questions';
+    champ.setAttribute('aria-label', 'Search these questions');
+    /* `input`, so the list follows the typing: a filter that waits for Enter
+       is a form, and this is not one. Nothing is sent -- there is no code here
+       that sends anything. */
+    champ.addEventListener('input', function () {
+        cherche = champ.value.trim().toLowerCase();
+        peindre();
+    });
+
+    hote.appendChild(tags);
+    hote.appendChild(champ);
+    hote.hidden = false;
+}());
+</script>
 
 <!-- The tool, on this page, in open mode: the site is annotated with what it
      describes. Served from this origin, not the CDN: this file is compared byte
