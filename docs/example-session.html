@@ -545,14 +545,18 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
    the field would grow under the caret. */
 .g1[data-play] .fm-area .ch { visibility: hidden; }
 .g1[data-play] .fm-area .ch.on { visibility: visible; }
-.g1[data-play]:not([data-st="type"]) .caret { display: none; }
-/* AND IT DOES NOT BLINK THROUGH ITS OWN TYPING. The replay says this about its
-   own block cursor, three hundred lines down -- "a caret that blinks through
-   its own typing is the tell" -- and the rule was written there and not here.
-   A real caret sits solid while characters are arriving and starts blinking
-   when the hand stops, which is what `data-typed` marks. */
-.g1[data-play] .caret { animation: none; }
-.g1[data-play][data-typed] .caret { animation: term-cursor 1.06s steps(1) infinite; }
+/* AND THE CARET ONLY EXISTS ONCE THE HAND HAS STOPPED. It is the last node of
+   the paragraph, after every character, because the text is laid out whole
+   from the start and the characters are merely revealed -- so during the
+   typing it sat at the END OF A SENTENCE THAT WAS NOT WRITTEN YET, ahead of
+   what was being written, which is the one thing a text cursor never does.
+   Showing it only from `data-typed` costs nothing: what it is there for is the
+   beat between the last character and the press on Send. */
+.g1[data-play] .caret { display: none; animation: none; }
+.g1[data-play][data-st="type"][data-typed] .caret {
+    display: inline-block;
+    animation: term-cursor 1.06s steps(1) infinite;
+}
 
 /* == THE REPLAY ==========================================================
 
@@ -1402,6 +1406,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
     var AT = {
         rest: '.pill',        // the control that opens the tool
         elem: '.target',      // the button the remark will be about
+        area: '.fm-area',     // the field, which is entered by clicking in it
         send: '.fm-send'      // the Send it is reaching for when the figure holds
     };
     var moveTo = function (where) {
@@ -1433,6 +1438,9 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
        ------------------------------------------------------------------ */
     var FADE = 520;
     var TYPE_MS = 4000, HOLD = 5000, GAP = 1600, PASSES = Infinity;
+    /* When the first character appears: after the pointer has reached the
+       field and pressed in it, not when the form opens. */
+    var TYPE_AT = 5400;
 
     /* The key screen used to open this timeline in secure mode, four seconds
        before the gesture began. It is a step of its own now, above this one,
@@ -1459,17 +1467,26 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         list.push([o + 3200, function () { stage('hover'); }]);
         list.push([o + 4320, function () { g.setAttribute('data-press', ''); }]);
         list.push([o + 4400, function () { stage('form'); }]);
-        list.push([o + 4490, function () {
+        list.push([o + 4490, function () { g.removeAttribute('data-press'); }]);
+        /* THE FIELD IS ENTERED, IT IS NOT ARRIVED IN. The pointer used to
+           vanish the instant the form opened and reappear five seconds later
+           beside Send, with the remark already typed -- so nothing said how
+           the writing began, and the figure skipped the one gesture everybody
+           does: you click in the box. It moves there, presses, and only then
+           does the first character appear. */
+        list.push([o + 4560, function () { moveTo('area'); }]);
+        list.push([o + 5200, function () { g.setAttribute('data-press', ''); }]);
+        list.push([o + 5300, function () {
             g.removeAttribute('data-press'); g.removeAttribute('data-cursor');
         }]);
-        list.push([o + 5000, function () { stage('type'); }]);
-        list.push([o + 5000 + TYPE_MS + 600, function () {
+        list.push([o + TYPE_AT, function () { stage('type'); }]);
+        list.push([o + TYPE_AT + TYPE_MS + 600, function () {
             g.setAttribute('data-cursor', ''); moveTo('send');
         }]);
-        list.push([o + 5000 + TYPE_MS + 1500, function () {
+        list.push([o + TYPE_AT + TYPE_MS + 1500, function () {
             stage('sent'); g.removeAttribute('data-cursor');
         }]);
-        list.push([o + 5000 + TYPE_MS + 1500 + HOLD, function () { finish(); }]);
+        list.push([o + TYPE_AT + TYPE_MS + 1500 + HOLD, function () { finish(); }]);
         return list;
     };
 
@@ -1519,7 +1536,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         reset();
         list = cues();
         var o = 0;
-        typeFrom = o + 5000; typeTo = typeFrom + TYPE_MS;
+        typeFrom = o + TYPE_AT; typeTo = typeFrom + TYPE_MS;
         t0 = (window.performance && performance.now) ? performance.now() : Date.now();
         raf = requestAnimationFrame(tick);
     };
