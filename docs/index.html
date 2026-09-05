@@ -866,22 +866,6 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
            saying in six words what is on the other side. The shape says
            "somewhere to go" without a filled rectangle shouting it, and the
            label carries the meaning the plain link could not. */
-        .more {
-            display: inline-flex; align-items: baseline; gap: .45rem;
-            font-size: .95rem; font-weight: 600;
-            color: var(--accent); background: var(--bg);
-            border: 1px solid var(--accent); border-radius: 8px;
-            padding: .6rem 1.3rem;
-            text-decoration: none;
-            transition: background .18s ease, color .18s ease;
-        }
-        .more .arrow { font-size: .9em; transition: transform .18s ease; }
-        .more:hover { background: var(--accent); color: var(--on-accent); }
-        .more:hover .arrow { transform: translateX(2px); }
-        .more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-        @media (prefers-reduced-motion: reduce) {
-            .more .arrow { transition: none; }
-        }
 </style>
 <script type="application/ld+json">
 {

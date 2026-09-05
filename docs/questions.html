@@ -95,12 +95,21 @@ h1 + .lead { margin-top: 1.15rem; }
 /* The chip says the group, at the weight of a label and not of a control: it is
    not clickable here -- the filter above is the control, and two ways to do one
    thing is one too many. */
+/* THE QUESTION FIRST, THEN ITS TAGS, THEN THE ANSWER. The tag opened the card
+   -- an uppercase label above the heading -- and it was read as the card's
+   title, which put the question in the position of a subtitle to a word.
+
+   AND DRAWN AS TAGS. Set as a small uppercase line they were a label; as
+   outlined pills they are what they are, and they match the chips of the
+   filter above without pretending to be them: these do not click. */
+.qa-q { margin: 0; font-size: 1rem; font-weight: 650; color: var(--text); }
+.qa-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin: .55rem 0 0; }
 .qa-tag {
-    margin: 0; font-size: .72rem; font-weight: 650;
-    letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
+    padding: .1rem .5rem;
+    border: 1px solid var(--line); border-radius: 999px;
+    font-size: .72rem; color: var(--dim);
 }
-.qa-q { margin: .45rem 0 0; font-size: 1rem; font-weight: 650; color: var(--text); }
-.qa-a { margin: .5rem 0 0; color: var(--dim); }
+.qa-a { margin: .7rem 0 0; color: var(--dim); }
 
 .faq-tools { margin: 0 0 2.2rem; }
 .faq-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 .8rem; }
@@ -128,12 +137,14 @@ h1 + .lead { margin-top: 1.15rem; }
 .faq-none { margin: 1.4rem 0 0; color: var(--dim); }
 @media (prefers-reduced-motion: reduce) { .faq-tags button { transition: none; } }
 
-.cta {
-    display: inline-block; margin-top: 2.2rem;
-    font-weight: 600; color: var(--accent); text-decoration: none;
+/* Centred on the page's own axis, like the button that closes a chapter on
+   the two pages it is borrowed from, and wrapping rather than shrinking: two
+   outlined pills side by side need 520px, and this page is read at 375. */
+.see-out {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem;
+    margin: 2.2rem 0 0;
 }
-.cta:hover { text-decoration: underline; text-decoration-thickness: 2px; }
-.cta + .cta { margin-left: 2.2rem; }
+main .wrap > .see-out { max-width: none; }
 
 code {
     font-family: var(--mono); font-size: .9em;
@@ -169,6 +180,22 @@ code {
             Everything you always wanted to know &mdash; including the two or
             three you would rather learn here than later.
         </p>
+
+        <!-- THE WAY OUT, AT THE TOP. It was three plain links at the foot,
+             under fourteen cards: somebody who arrived here from a search, read
+             one answer and wanted the page it came from had to scroll past
+             everything they had not asked about. And they are the buttons the
+             other two pages already end their chapters with -- same shape, same
+             wording -- rather than a fourth kind of link.
+
+             The rules for that button moved into base.css to get here; they
+             were written twice, identically, on the landing page and the usage
+             page. Verified against HEAD before the move: same box, same ink, at
+             1280 and 600. -->
+        <p class="see-out">
+            <a class="more" href="how-to-use-it.html">See a detailed usage example<span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="more" href="how-to-install-it.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
+        </p>
     </div>
 </section>
 
@@ -189,24 +216,24 @@ code {
         <div class="faq-tools" id="tools" hidden></div>
 
         <div class="qa-grid" id="grid">
-            <article class="qa" data-tag="The key">
-                <p class="qa-tag">The key</p>
+                        <article class="qa" data-tags="Key">
                 <h3 class="qa-q" id="no-recovery">What if I lose the key?</h3>
+                <p class="qa-tags"><span class="qa-tag">Key</span></p>
                 <p class="qa-a">In secure mode, the notes go with it. There is no recovery and
             no rotation &mdash; the key is what decrypts them, and the server has
             never had it. In open mode the key is written in the tag, on a page
             anybody can read, so it cannot be lost.</p>
             </article>
 
-            <article class="qa" data-tag="The key">
-                <p class="qa-tag">The key</p>
+                        <article class="qa" data-tags="Key|Who can do what">
                 <h3 class="qa-q">Can I let someone read the notes without writing any?</h3>
+                <p class="qa-tags"><span class="qa-tag">Key</span><span class="qa-tag">Who can do what</span></p>
                 <p class="qa-a">No. The key reads and writes; there is no reader-only role.</p>
             </article>
 
-            <article class="qa" data-tag="The key">
-                <p class="qa-tag">The key</p>
+                        <article class="qa" data-tags="Key|Setting it up">
                 <h3 class="qa-q">Where does the key come from?</h3>
+                <p class="qa-tags"><span class="qa-tag">Key</span><span class="qa-tag">Setting it up</span></p>
                 <p class="qa-a">Your browser draws it, on the
             <a href="how-to-install-it.html#page">install page</a>, and sends it
             nowhere. The project id in the tag is derived from it and does not
@@ -214,31 +241,31 @@ code {
             issues one.</p>
             </article>
 
-            <article class="qa" data-tag="The notes, and what the server holds">
-                <p class="qa-tag">The notes, and what the server holds</p>
+                        <article class="qa" data-tags="Privacy|Your own server">
                 <h3 class="qa-q">What does the notes server see?</h3>
+                <p class="qa-tags"><span class="qa-tag">Privacy</span><span class="qa-tag">Your own server</span></p>
                 <p class="qa-a">Counts, times, sizes, IP addresses and your domain. Never your
             paths, never your text &mdash; in secure mode it cannot read a line
             it stores.</p>
             </article>
 
-            <article class="qa" data-tag="The notes, and what the server holds">
-                <p class="qa-tag">The notes, and what the server holds</p>
+                        <article class="qa" data-tags="Who can do what|Privacy">
                 <h3 class="qa-q">Is there an account, a moderator, a way to delete a note?</h3>
+                <p class="qa-tags"><span class="qa-tag">Who can do what</span><span class="qa-tag">Privacy</span></p>
                 <p class="qa-a">None of them, and no notification either. A project is a key and
             the notes under it.</p>
             </article>
 
-            <article class="qa" data-tag="The notes, and what the server holds">
-                <p class="qa-tag">The notes, and what the server holds</p>
+                        <article class="qa" data-tags="Key|Privacy">
                 <h3 class="qa-q">Can I switch from open to secure later?</h3>
+                <p class="qa-tags"><span class="qa-tag">Key</span><span class="qa-tag">Privacy</span></p>
                 <p class="qa-a">For new notes, yes: change the tag. The notes already written
             keep the mode they were written in, and nothing converts them.</p>
             </article>
 
-            <article class="qa" data-tag="The notes, and what the server holds">
-                <p class="qa-tag">The notes, and what the server holds</p>
+                        <article class="qa" data-tags="Privacy|Your site">
                 <h3 class="qa-q">Can the page sit behind a login?</h3>
+                <p class="qa-tags"><span class="qa-tag">Privacy</span><span class="qa-tag">Your site</span></p>
                 <p class="qa-a">Yes. Neither the notes server nor the assistant ever opens it:
             the MCP talks to the notes API and to nothing else, and the page is
             opened by the reviewers&rsquo; own browsers, which are already
@@ -248,9 +275,9 @@ code {
             
             
             
-            <article class="qa" data-tag="The tag">
-                <p class="qa-tag">The tag</p>
+                        <article class="qa" data-tags="Setting it up|Your site">
                 <h3 class="qa-q">Can I try it on my own machine?</h3>
+                <p class="qa-tags"><span class="qa-tag">Setting it up</span><span class="qa-tag">Your site</span></p>
                 <p class="qa-a">Yes: <code>localhost</code> is a secure context, so the browser
             has the crypto it needs. But never declare
             <code>localhost:3000</code> in a server&rsquo;s list of domains
@@ -258,18 +285,18 @@ code {
             lets any of them write to your project.</p>
             </article>
 
-            <article class="qa" data-tag="What it costs">
-                <p class="qa-tag">What it costs</p>
+                        <article class="qa" data-tags="Cost and licence">
                 <h3 class="qa-q">Is it free?</h3>
+                <p class="qa-tags"><span class="qa-tag">Cost and licence</span></p>
                 <p class="qa-a">Yes, and it is MIT. The shared notes server at
             <code>api.annotepage.com</code> is free to use with nothing to
             install; running your own is free too, and that is the whole
             list.</p>
             </article>
 
-            <article class="qa" data-tag="What it costs">
-                <p class="qa-tag">What it costs</p>
+                        <article class="qa" data-tags="Your own server|Cost and licence">
                 <h3 class="qa-q">Do I have to use your server?</h3>
+                <p class="qa-tags"><span class="qa-tag">Your own server</span><span class="qa-tag">Cost and licence</span></p>
                 <p class="qa-a">No. One PHP file installs your own, and the
             <a href="how-to-install-it.html#server">install page</a> takes you
             through it. The tag names whichever one you run.</p>
@@ -280,9 +307,9 @@ code {
                  a thing, and the two published packages were nowhere. Here they
                  are together -- and here rather than in a menu that unfolds,
                  because three links do not earn a control that opens. -->
-            <article class="qa" data-tag="What it costs">
-                <p class="qa-tag">What it costs</p>
+                        <article class="qa" data-tags="Cost and licence">
                 <h3 class="qa-q">Where is the source?</h3>
+                <p class="qa-tags"><span class="qa-tag">Cost and licence</span></p>
                 <p class="qa-a">All of it, MIT:
                 <a href="https://github.com/tuxo83/annotepage">github.com/tuxo83/annotepage</a>
                 &mdash; the client, the notes server, the MCP and this site. The two
@@ -293,25 +320,25 @@ code {
                 (what plugs an assistant onto it). The server is not a package:
                 it is one PHP file that fetches the rest.</p>
             </article>
-<article class="qa" data-tag="When nothing appears">
-                <p class="qa-tag">When nothing appears</p>
+            <article class="qa" data-tags="The tag|Nothing appears">
                 <h3 class="qa-q">Can I load it as a module?</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag</span><span class="qa-tag">Nothing appears</span></p>
                 <p class="qa-a">No, and it fails quietly. The client reads
             <code>document.currentScript</code> to find its own settings, and a
             <code>type="module"</code> script does not have one: nothing appears,
             and nothing is logged.</p>
             </article>
-<article class="qa" data-tag="When nothing appears">
-                <p class="qa-tag">When nothing appears</p>
+            <article class="qa" data-tags="The tag|Nothing appears">
                 <h3 class="qa-q" id="locked">What if I pin the script with a wrong <code>integrity</code> digest?</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag</span><span class="qa-tag">Nothing appears</span></p>
                 <p class="qa-a">The browser refuses the file and the tool simply does not
             appear. Nothing on the page says why. The
             <a href="how-to-install-it.html#page">install page</a> writes the
             digest for you when you ask for a pinned tag.</p>
             </article>
-<article class="qa" data-tag="When nothing appears">
-                <p class="qa-tag">When nothing appears</p>
+            <article class="qa" data-tags="The tag|Nothing appears">
                 <h3 class="qa-q">My site sets a Content-Security-Policy. What do I need?</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag</span><span class="qa-tag">Nothing appears</span></p>
                 <p class="qa-a">Two directives. <code>script-src</code> must allow wherever the
             client is served from, or it never loads;
             <code>connect-src</code> must allow your notes server, or
@@ -322,11 +349,6 @@ code {
             </article>
         </div>
 
-        <p>
-            <a class="cta" href="how-to-install-it.html">Install it</a>
-            <a class="cta" href="how-to-use-it.html">See what using it looks like</a>
-            <a class="cta" href="/">Back to the landing page</a>
-        </p>
     </div>
 </section>
 
@@ -353,13 +375,27 @@ code {
     var grille = document.getElementById('grid');
     if (!hote || !grille) return;
 
+    /* SEVERAL TAGS TO A CARD. One each came from the group headings this page
+       used to have, and they read as leftovers of a structure nobody could see
+       any more -- "The tag" over a question about a Content-Security-Policy.
+       A question about losing the key is about the key AND about privacy, and
+       saying so is the whole use of a tag.
+
+       The list of chips is the union, in the order the cards introduce them:
+       there is no second list of tag names anywhere, so none can go stale. */
     var cartes = [];
     var tags = [];
     var tous = grille.querySelectorAll('.qa');
     for (var i = 0; i < tous.length; i++) {
-        var t = tous[i].getAttribute('data-tag') || '';
-        cartes.push({ el: tous[i], tag: t, mots: tous[i].textContent.toLowerCase() });
-        if (tags.indexOf(t) === -1) tags.push(t);
+        var brut = (tous[i].getAttribute('data-tags') || '').split('|');
+        var mien = [];
+        for (var j = 0; j < brut.length; j++) {
+            var t = brut[j].trim();
+            if (!t) continue;
+            mien.push(t);
+            if (tags.indexOf(t) === -1) tags.push(t);
+        }
+        cartes.push({ el: tous[i], tags: mien, mots: tous[i].textContent.toLowerCase() });
     }
     if (!cartes.length) return;
 
@@ -395,7 +431,7 @@ code {
     var peindre = function () {
         var vus = 0;
         for (var k = 0; k < cartes.length; k++) {
-            var ok = (!choisi || choisi === cartes[k].tag)
+            var ok = (!choisi || cartes[k].tags.indexOf(choisi) !== -1)
                 && (!cherche || cartes[k].mots.indexOf(cherche) !== -1);
             cartes[k].el.hidden = !ok;
             if (ok) vus++;

@@ -848,3 +848,30 @@
     flex: none; width: 1.15em; height: 1.15em;
     color: var(--accent);
 }
+
+
+/* -- THE WAY OUT OF A PAGE ------------------------------------------------
+   IT WAS WRITTEN TWICE, IDENTICALLY, in index.html and how-to-use-it.html --
+   compared rule by rule before this move -- and the questions page wants it as
+   a third. Outlined and not filled: it is the way OUT of what has just been
+   read, and a filled button would compete with the thing being read.
+
+   The margins around it stay on each page: the landing page and the usage page
+   space it differently, and that is theirs to decide. */
+
+.more {
+    display: inline-flex; align-items: baseline; gap: .45rem;
+    font-size: .95rem; font-weight: 600;
+    color: var(--accent); background: var(--bg);
+    border: 1px solid var(--accent); border-radius: 8px;
+    padding: .6rem 1.3rem;
+    text-decoration: none;
+    transition: background .18s ease, color .18s ease;
+}
+.more .arrow { font-size: .9em; transition: transform .18s ease; }
+.more:hover { background: var(--accent); color: var(--on-accent); }
+.more:hover .arrow { transform: translateX(2px); }
+.more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+    .more .arrow { transition: none; }
+}

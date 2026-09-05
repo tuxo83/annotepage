@@ -249,22 +249,6 @@ body:has(#d-live:checked) .use-steps > li.between + li { margin-top: 0; }
    middle at 424px where the page's is 720. */
 main .wrap > .see-more { max-width: none; }
 .see-more { margin: clamp(3.6rem, 8.5vw, 7.2rem) 0 0; text-align: center; }
-.more {
-    display: inline-flex; align-items: baseline; gap: .45rem;
-    font-size: .95rem; font-weight: 600;
-    color: var(--accent); background: var(--bg);
-    border: 1px solid var(--accent); border-radius: 8px;
-    padding: .6rem 1.3rem;
-    text-decoration: none;
-    transition: background .18s ease, color .18s ease;
-}
-.more .arrow { font-size: .9em; transition: transform .18s ease; }
-.more:hover { background: var(--accent); color: var(--on-accent); }
-.more:hover .arrow { transform: translateX(2px); }
-.more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) {
-    .more .arrow { transition: none; }
-}
 
 /* The step after it comes up by the same amount -- but ONLY when the marker is
    actually there. It is `display: none` in the other branch, where the step

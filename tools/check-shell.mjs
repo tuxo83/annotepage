@@ -190,6 +190,35 @@ for (const name of PAGES) {
 
 if (bad) process.exit(1);
 
+/* A LINKED FILTER NAMES A TAG THAT EXISTS. questions.html reads `?tag=` and
+   presses the matching chip; the chips are built from the cards' own
+   `data-tags`, so nothing on that page can go stale. What CAN is a link from
+   another page naming a tag by its slug -- and it fails the way a filter fails,
+   which is by quietly showing everything, so the reader lands on fourteen cards
+   instead of three and never knows the link was aimed.
+
+   Measured while this was written: renaming a tag broke exactly that link, in
+   the same commit that renamed it. */
+const SLUG = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const etiquettes = new Set();
+for (const name of PAGES) {
+    const html = readFileSync(join(DIR, name), 'utf8');
+    for (const m of html.matchAll(/data-tags="([^"]+)"/g)) {
+        for (const t of m[1].split('|')) if (t.trim()) etiquettes.add(SLUG(t.trim()));
+    }
+}
+for (const name of PAGES) {
+    const html = readFileSync(join(DIR, name), 'utf8');
+    for (const m of html.matchAll(/questions\.html\?tag=([A-Za-z0-9-]+)/g)) {
+        if (etiquettes.has(m[1])) continue;
+        const line = html.slice(0, m.index).split('\n').length;
+        console.error(`${DIR}/${name}:${line}  links to ?tag=${m[1]}, which no card carries.`);
+        bad++;
+    }
+}
+
+if (bad) process.exit(1);
+
 /* SAY WHAT WAS MEASURED, not what was hoped. This line read "one header and
    one footer" on a site whose pages have no footer at all: the loop above skips
    the tag when no page carries it, and the message announced a comparison that
