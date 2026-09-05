@@ -445,10 +445,18 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
     min-width: 17rem;
     max-width: 32rem;
     grid-template-columns: minmax(0, 1fr) minmax(4.4rem, .8fr) minmax(0, 1fr);
+    /* THE BUBBLES SIT OUTSIDE THE SQUARE, AND THAT IS THE WHOLE REASON FOR
+       THESE TWO EXTRA ROWS. Put between the boxes and the arrows they would
+       have pushed the arrows off the boxes, and an arrow that no longer
+       touches what it leaves is a broken drawing. Above the top pair and
+       below the assistant, the square is untouched: same four boxes, same
+       four arrows, same empty middle. */
     grid-template-areas:
+        "psay .    ssay"
         "page top  srv"
         "left .    right"
-        "code bot  asst";
+        "code bot  asst"
+        ".    .    asay";
     gap: clamp(.45rem, 1.7vw, 1rem);
     align-items: stretch;
 }
@@ -460,6 +468,9 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 .lp-bot   { grid-area: bot; }
 .lp-code  { grid-area: code; }
 .lp-left  { grid-area: left; }
+.lp-say-page { grid-area: psay; }
+.lp-say-srv  { grid-area: ssay; }
+.lp-say-asst { grid-area: asay; }
 
 .lp-box {
     display: flex; align-items: center; justify-content: center;
@@ -498,14 +509,86 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 .lp-h svg { width: 100%; max-width: 7rem; height: auto; }
 .lp-v svg { height: clamp(2.6rem, 8vw, 4rem); width: auto; }
 
+/* == WHAT EACH PIECE ASKS FOR, WRITTEN ON THE PIECE =======================
+
+   THREE BUBBLES, AND THEY REPLACE A LINE THAT SAT ABOVE THE FIGURE. That
+   line -- a page you can edit, and a browser on https or localhost -- said
+   two requirements belonging to two different pieces, in one breath, before
+   the reader had met either. Each of them is now attached to the box it
+   constrains, and the third piece got the one it never had. "Your code" gets
+   none: nothing has to be true of it for this to work.
+
+   THEY ARE NEVER HIDDEN FROM A SCREEN READER, only faded. `visibility:
+   hidden` would take the two unlit ones out of the accessibility tree, so
+   what a reader on a screen reader got would depend on which second of the
+   cycle they arrived in. Opacity leaves all three in the tree, all the time,
+   and `pointer-events: none` keeps them out of the way of the boxes, which
+   are links.
+
+   AND THE SPACE IS RESERVED WHETHER OR NOT A BUBBLE IS IN IT. The rows exist
+   from the first frame, so nothing under the figure moves when the cycle
+   turns -- a diagram that shifts the page every three seconds is worse than
+   one that says nothing. */
+.lp-say {
+    position: relative;
+    align-self: end;
+    margin: 0 0 1rem;
+    padding: .5rem .55rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--dim);
+    font-size: clamp(.7rem, 1.8vw, .78rem);
+    line-height: 1.4;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease;
+}
+.lp-say-asst { align-self: start; margin: 1rem 0 0; }
+
+/* One curve, drawn once and mirrored: the two top bubbles hang over their
+   box, the assistant's hangs under its own. */
+.lp-hook {
+    position: absolute; width: 26px; height: 20px;
+    /* --dim, the ink the four arrows of the square are already drawn in: a
+       connector paler than that disappears on the dark theme, where --line is
+       a hairline meant for edges and not for strokes. */
+    color: var(--dim);
+}
+.lp-say-page .lp-hook { bottom: -1rem; left: 1.1rem; }
+.lp-say-srv  .lp-hook { bottom: -1rem; right: 1.1rem; transform: scaleX(-1); }
+.lp-say-asst .lp-hook { top: -1rem; right: 1.1rem; transform: scaleY(-1); }
+
+/* THE LIT BOX WEARS THE HOVER IT ALREADY HAD. A third look -- a fill, a
+   glow -- would teach a reader that the cycle means something other than
+   "this one, now". The ring is one pixel outside the border, and the focus
+   outline still stands 3px clear of it, so a keyboard is never left guessing
+   which box it is on. */
+.loop[data-lit="page"] .lp-page,
+.loop[data-lit="srv"]  .lp-srv,
+.loop[data-lit="asst"] .lp-asst {
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+.loop[data-lit="page"] .lp-say-page,
+.loop[data-lit="srv"]  .lp-say-srv,
+.loop[data-lit="asst"] .lp-say-asst { opacity: 1; }
+
 @media (max-width: 420px) {
     body { font-size: 16px; }
     .snip pre code { font-size: .72rem; }
     .snip pre { padding: .8rem .75rem; }
 }
 
+/* A READER WHO REFUSES MOTION LOSES NOTHING. The script below does not arm
+   at all, so no box is ever lit; the three bubbles are simply there, all of
+   them, from the first frame. The information the cycle exists to deliver is
+   not the cycle. */
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
+    .lp-say { opacity: 1; }
 }
 </style>
 <body>
@@ -540,16 +623,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <a href="/#install">How you install it</a>, at length, with every option.
         </p>
 
-        <!-- WHAT IT COSTS TO START, ABOVE THE FIGURE AND NOT UNDER IT.
-             Nothing is written under a figure on this site: a line sitting
-             there is read as a caption whatever it says, and this one is not
-             about the drawing -- it is the one requirement that can stop a
-             reader before any of the three chapters. -->
-        <p class="small dim">
-            A page you can edit, and a browser on <code>https</code> or
-            <code>localhost</code>.
-        </p>
-
         <!-- THE LOOP, BEFORE ANY OF THE ROUTES. The middle is empty and stays
              empty.
 
@@ -570,6 +643,16 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 
                     <a class="lp-box lp-page" href="#page">The annotated page</a>
 
+                    <!-- WHAT THE PAGE ASKS FOR, AND IT IS THE LINE THAT USED
+                         TO SIT ABOVE THE FIGURE. Both halves are the same
+                         requirement seen twice: a file you are allowed to add
+                         a tag to, and a secure context, without which the
+                         browser has no crypto.subtle to derive a key with.
+                         A LAN address is not one -- INSTALL.md says so, and
+                         says the tool announces it rather than failing
+                         quietly. -->
+                    <p class="lp-say lp-say-page">A page you can edit, on https or localhost.<svg class="lp-hook" viewBox="0 0 26 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1C4 10 21 8 21 17.5"/><path d="M17.8 13.6 21 17.9 24.2 13.6"/></svg></p>
+
                     <p class="lp-arr lp-h lp-top">
                         <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M2 6H90" vector-effect="non-scaling-stroke"/>
@@ -587,6 +670,20 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <a class="lp-box lp-srv if-own" href="#server"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></a>
                     <p class="lp-box lp-srv if-shared"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></p>
 
+                    <!-- WHAT THE SERVER ASKS FOR, AND IT IS NOT PHP 7.4.
+                         That one is where you install it, and the chapter
+                         below already carries it. What the DRAWING is about is
+                         this arrow: the reviewer's browser has to reach the
+                         API, so plain http gets a 308 to https, and a write
+                         from an origin the project never declared gets a 403
+                         in plain text. Both are in INSTALL.md.
+
+                         AND IT LEAVES WITH THE CHAPTER. On the shared server
+                         nobody declares anything and nobody installs
+                         anything, so `if-own` takes the bubble away and the
+                         cycle below turns on two boxes. -->
+                    <p class="lp-say lp-say-srv if-own">https, and the site&rsquo;s origin declared.<svg class="lp-hook" viewBox="0 0 26 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1C4 10 21 8 21 17.5"/><path d="M17.8 13.6 21 17.9 24.2 13.6"/></svg></p>
+
                     <p class="lp-arr lp-v lp-right">
                         <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M6 2V90" vector-effect="non-scaling-stroke"/>
@@ -596,6 +693,14 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     </p>
 
                     <a class="lp-box lp-asst" href="#assistant">The assistant</a>
+
+                    <!-- WHAT THE ASSISTANT ASKS FOR. Node 18 and no
+                         dependencies, from the MCP's README, and the key --
+                         which is the one requirement this drawing can show
+                         the point of: the server it reads from cannot decrypt
+                         a line, so the key is what turns the arrow above into
+                         readable remarks. -->
+                    <p class="lp-say lp-say-asst">Node 18, and the project key.<svg class="lp-hook" viewBox="0 0 26 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1C4 10 21 8 21 17.5"/><path d="M17.8 13.6 21 17.9 24.2 13.6"/></svg></p>
 
                     <p class="lp-arr lp-h lp-bot">
                         <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1280,6 +1385,120 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     siteIn.addEventListener('input', paint);
 
     fresh();
+}());
+</script>
+
+<!-- ===================================================================
+     THE CYCLE UNDER THE DRAWING.
+
+     ASKED FOR AS A LOOP, AND WHAT A LOOP COSTS WAS SAID BEFORE IT WAS BUILT:
+     something on the page moves for as long as the page is open, and a
+     reader trying to read the box it has just left has to wait for it to come
+     round. The owner kept it, so the three answers to that are built in
+     rather than argued about -- the reader who refuses motion never arms it,
+     the reader who points at a box stops it, and the reader who scrolls past
+     leaves nothing running behind them.
+
+     THE ORDER IS THE CHAPTERS' ORDER, NOT THE LOOP'S. The arrows already
+     draw the loop; what a reader at the top of an installation page does not
+     yet know is what they will be asked to do first. So it lights the server,
+     then the page, then the assistant -- the three sections below, in the
+     order they come -- and on the shared server the server chapter does not
+     exist, so neither does its turn.
+     =================================================================== -->
+<script>
+(function () {
+    'use strict';
+
+    var loop   = document.querySelector('.loop');
+    var shared = document.getElementById('s-shared');
+    if (!loop || !shared) return;
+
+    /* IT DOES NOT ARM, RATHER THAN ARMING AND STANDING STILL. A chain of
+       timers is not an animation and `animation: none` does not reach one --
+       the stylesheet says the same thing over the sibling page. What is left
+       is every bubble on screen, which is the whole point of them. */
+    var quiet = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (quiet && quiet.matches) return;
+
+    /* Long enough to read eight words and look at the box they belong to.
+       Shorter was tried on the sibling page's replay and the finding there
+       holds here: a figure that has to be watched twice has failed once. */
+    var HOLD = 3400;
+
+    var timer = null;
+    var at    = 0;
+    var held  = null;
+    var seen  = false;
+
+    var ring = function () {
+        return shared.checked ? ['page', 'asst'] : ['srv', 'page', 'asst'];
+    };
+
+    var stop = function () {
+        if (timer) { clearTimeout(timer); timer = null; }
+    };
+
+    var turn = function () {
+        var r = ring();
+        if (at >= r.length) at = 0;
+        loop.setAttribute('data-lit', r[at]);
+        at = (at + 1) % r.length;
+        timer = setTimeout(turn, HOLD);
+    };
+
+    var run = function () {
+        if (timer || held || !seen) return;
+        turn();
+    };
+
+    /* POINTING AT A BOX WINS, AND KEEPS WINNING WHILE IT IS POINTED AT. A
+       reader who reaches for a bubble is reaching for it now; a cycle that
+       carried on would take it away at the moment it was asked for. Focus
+       does the same thing, because the three boxes are links and a keyboard
+       reaches them in order. */
+    var grab = function (name) { held = name; stop(); loop.setAttribute('data-lit', name); };
+    var drop = function (name) { if (held !== name) return; held = null; run(); };
+
+    var pairs = [['.lp-page', 'page'], ['.lp-srv.if-own', 'srv'], ['.lp-asst', 'asst']];
+    for (var i = 0; i < pairs.length; i++) {
+        (function (box, name) {
+            if (!box) return;
+            box.addEventListener('mouseenter', function () { grab(name); });
+            box.addEventListener('mouseleave', function () { drop(name); });
+            box.addEventListener('focus', function () { grab(name); });
+            box.addEventListener('blur', function () { drop(name); });
+        }(loop.querySelector(pairs[i][0]), pairs[i][1]));
+    }
+
+    /* The dial can take the server's turn away under a pointer that is still
+       on it: the box it was holding is display:none now, and no mouseleave is
+       owed to an element that was never left. */
+    var dials = document.querySelectorAll('.dials input[name="srv"]');
+    for (var d = 0; d < dials.length; d++) {
+        dials[d].addEventListener('change', function () {
+            if (held === 'srv' && shared.checked) held = null;
+            at = 0;
+            if (!held) { stop(); turn(); }
+        });
+    }
+
+    /* NOTHING TURNS BEHIND THE READER'S BACK. Same observer as the figures on
+       the usage page, and it keeps observing rather than disconnecting: this
+       one has no end to reach, so leaving it running under a page the reader
+       has scrolled away from is a timer nobody will ever see. */
+    if (window.IntersectionObserver) {
+        var watch = new IntersectionObserver(function (entries) {
+            for (var k = 0; k < entries.length; k++) {
+                seen = entries[k].isIntersecting;
+                if (seen) run(); else stop();
+            }
+        }, { threshold: 0 });
+        watch.observe(loop);
+    } else {
+        seen = true;
+        run();
+    }
 }());
 </script>
 
