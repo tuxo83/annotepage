@@ -231,6 +231,22 @@ over 110 characters in any of the four states of its two dials. The tooling is
 
 ## The install page, when we get to it
 
+**THE LOOP DIAGRAM OPENS IT.** It was built on the usage page and it works
+there, but its real audience is not the reader discovering the tool -- it is
+the one asking "does the assistant see my site?", and that question is asked
+at the moment of installing, not at the moment of understanding. Four boxes,
+four arrows, and neither diagonal carrying anything: the absence of an arrow
+between the assistant and the page is what answers, without a sentence.
+
+**AND NO SECOND BUTTON ON THE LANDING PAGE.** The question came up -- a
+technical reader wants the flows, and "See every way to install it" does not
+promise them. Two buttons side by side would break the rule that page was
+validated under: one way out per chapter, no option on a first screen. If the
+button does not promise enough, the LABEL changes; a word costs nothing, a
+second control costs the discipline.
+
+
+
 Not written yet, and deliberately: the landing page was validated first, then
 the usage page, and this one comes after them. What follows is decided, not
 open.
