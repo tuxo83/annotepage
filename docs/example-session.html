@@ -842,6 +842,40 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
 #g1, #rp { transition: opacity .52s ease; }
 #g1[data-rewind], #rp[data-rewind] { opacity: .16; }
 
+/* AND THE RESTART IS SAID, NOT ONLY SHOWN. Reviewed on the live site: the
+   dim-and-return reads as a restart once you already know the figure loops,
+   and not before. So a badge appears in the middle of the frame for exactly as
+   long as the frame is dimmed, and disappears with it.
+
+   IT IS OUTSIDE THE FRAME IN THE MARKUP, and it has to be: opacity applies to
+   a whole subtree, so a badge inside the frame would fade to .16 along with
+   everything it is there to explain.
+
+   The circular arrow is the retry glyph of every icon set there is -- the
+   wrong drawing for a deploy, which is why the marker between two steps uses
+   an arrow out of a line, and exactly the right one here. Same two paths,
+   drawn by us, owed to nobody.
+
+   Nothing appears for a reader who asked for no motion: neither figure ever
+   rewinds there, so neither ever carries the attribute this hangs off. */
+.fig { position: relative; }
+.restart {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 2.9rem; height: 2.9rem;
+    display: grid; place-items: center;
+    border-radius: 999px;
+    background: var(--bg); border: 1px solid var(--line);
+    box-shadow: var(--shadow); color: var(--accent);
+    opacity: 0; transition: opacity .3s ease;
+    pointer-events: none;
+}
+.restart svg { width: 1.45rem; height: 1.45rem; }
+.fig > [data-rewind] ~ .restart { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .restart { transition: none; }
+}
+
 .replay {
     display: none; flex: none;
     font: 600 .85rem/1 var(--sans); color: var(--text);
@@ -1140,6 +1174,15 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                     <span class="cursor" id="g1-cursor"><svg viewBox="0 0 16 18" aria-hidden="true" focusable="false"><path class="a" d="M1.6 1.2 13 10.2H7.4l2.4 5.5-2.3 1-2.4-5.5-3.5 3.3z"/></svg></span>
                 </div>
 
+                <span class="restart" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
+                         focusable="false">
+                        <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>
+                        <path d="M20.5 3.5v5.5h-5.5"/>
+                    </svg>
+                </span>
+
                 <figcaption class="fig-foot">
                     <button type="button" class="replay" id="g1-again">Watch again</button>
                 </figcaption>
@@ -1265,6 +1308,15 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                     </div>
                     <div class="rp-hint" aria-hidden="true"><span class="busy">esc to interrupt</span><span class="idle">? for shortcuts</span></div>
                 </div>
+
+                <span class="restart" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
+                         focusable="false">
+                        <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>
+                        <path d="M20.5 3.5v5.5h-5.5"/>
+                    </svg>
+                </span>
 
                 <figcaption class="fig-foot">
                     <button type="button" class="replay" id="rp-again">Watch again</button>
