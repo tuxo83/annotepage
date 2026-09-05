@@ -219,6 +219,20 @@ h1 + .lead { margin-top: 1.15rem; }
     margin: 2.4rem 0 0; padding: 0; list-style: none;
 }
 .use-steps > li + li { margin-top: clamp(2.6rem, 7vw, 6rem); }
+/* A chapter stands further from what precedes it than two steps stand from
+   each other -- otherwise it reads as another step with a bigger font. */
+.chapter { margin: clamp(3.6rem, 8.5vw, 7.2rem) 0 0; }
+.wrap > .chapter:first-child { margin-top: 0; }
+.chapter + .use-steps { margin-top: clamp(1.4rem, 3.4vw, 2.4rem); }
+/* AND A HIDDEN STEP MUST NOT LEAVE ITS SPACE BEHIND. `li + li` is a DOM
+   relation, not a visual one: a step that is display:none is still the
+   previous sibling, so the first VISIBLE step of a chapter was inheriting a
+   margin meant to separate it from something nobody can see. Measured before
+   this rule: 96px of nothing above step 01 in open mode. The hiding is driven
+   by two switches and both are named here; there is no third. */
+body:has(#m-open:checked) .use-steps > li.if-secure + li,
+body:has(#d-live:checked) .use-steps > li.if-wait + li,
+body:has(#d-live:checked) .use-steps > li.between + li { margin-top: 0; }
 .use-steps > li {
     display: grid; gap: clamp(1rem, 3vw, 2.4rem);
     grid-template-columns: minmax(0, 1fr);
@@ -481,7 +495,11 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
 .g1[data-play][data-st="sent"] .g-empty { display: none; }
 /* COUNTED, NOT TYPED. Secure mode adds a step in front of the others, so a
    number written into the markup would read 01, 01, 02, 03. */
-.use-steps { counter-reset: step; }
+/* THE COUNTER BELONGS TO THE WALK, NOT TO A LIST. Three chapters means three
+   <ol>, and a reset on each of them would restart the numbering at every
+   chapter -- which would say the reader is starting again. They are not: it is
+   one loop, and 01 to 05 run through all three. */
+.walk .wrap { counter-reset: step; }
 .use-steps > li { counter-increment: step; }
 .use-steps .cap .n::before { content: counter(step, decimal-leading-zero); }
 
@@ -907,6 +925,13 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 
 <section class="walk" id="walk">
     <div class="wrap">
+        <!-- THREE CHAPTERS, AND THEY NAME WHO IS DOING IT. The steps were one
+             run of five, which read as one person's checklist -- and they are
+             not one person: the reviewers never leave their browser, the
+             assistant is spoken to by somebody else, and the last part is the
+             only place the two meet. The numbering does NOT restart: it is one
+             loop, and the chapters say who carries which stretch of it. -->
+        <h2 class="chapter">The people reviewing your page</h2>
         <ol class="use-steps">
 
 <!-- == THE KEY, IN SECURE MODE ONLY ================================
@@ -917,7 +942,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
      number. -->
 <li class="if-secure">
     <div>
-        <p class="cap"><span class="n"></span> They paste the project key</p>
+        <p class="cap"><span class="n"></span> The reviewers paste the key</p>
         <p class="say">Once, in their browser.</p>
     </div>
 
@@ -956,7 +981,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 <!-- == 01 ============================================================== -->
         <li>
             <div>
-                <p class="cap"><span class="n"></span> Somebody annotates the page</p>
+                <p class="cap"><span class="n"></span> A reviewer annotates the page</p>
                 <p class="say">They press the button, click what is wrong, and write a sentence about it.</p>
             </div>
 
@@ -1054,6 +1079,10 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                 </figcaption>
             </figure>
         </li>
+        </ol>
+
+        <h2 class="chapter">You and your assistant</h2>
+        <ol class="use-steps">
 
 <!-- == 02 ============================================================== -->
         <li>
@@ -1123,6 +1152,10 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                 </figcaption>
             </figure>
         </li>
+        </ol>
+
+        <h2 class="chapter">What comes back on the page</h2>
+        <ol class="use-steps">
 
 <!-- == 03 ============================================================== -->
         <!-- THE STEP THE WAIT ADDS, AND IT ONLY EXISTS IN THAT BRANCH.
