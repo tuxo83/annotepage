@@ -54,6 +54,9 @@ p:last-child { margin-bottom: 0; }
 
 .wrap { width: 100%; max-width: 85rem; margin: 0 auto; padding: 0 2rem; }
 main .wrap > * { max-width: 45rem; }
+/* The two things on this page that are not sentences: the grid, and the row of
+   controls over it. */
+main .wrap > .qa-grid, main .wrap > .faq-tools { max-width: none; }
 @media (max-width: 40rem) { .wrap { padding: 0 1.25rem; } }
 
 section { padding: clamp(2.6rem, 6vw, 4.2rem) 0; }
@@ -64,23 +67,40 @@ h1 + .lead { margin-top: 1.15rem; }
 .small { font-size: .9rem; }
 .dim { color: var(--dim); }
 
-/* A QUESTION IS A LINE OF ITS OWN. Eight bolded openings running into their own
-   answers read as eight warnings; a question on its own line is something a
-   reader scans for, and stops at the one they came with. A <dl>, because that
-   is what a question and its answer are. */
-.faq { margin: 1.4rem 0 0; }
-.faq dt { margin: 1.7rem 0 0; font-weight: 650; color: var(--text); }
-.faq dt:first-child { margin-top: 0; }
-.faq dd { margin: .35rem 0 0; color: var(--dim); }
+/* CARDS, AND THEY ARE WHAT MADE THE PAGE FIT ITS OWN WIDTH. Written as a
+   definition list, the questions took the measure a sentence gets -- 45rem on a
+   page 85rem wide -- and thirteen of them ran a very long way down a very
+   narrow column. A card carries its question as a heading, the group it belongs
+   to as a chip, and its answer; the grid puts two or three of them side by side
+   and the page stops being a ribbon.
 
-/* THE GROUPS ARE THE ONLY NAVIGATION. No table of contents: this page is meant
-   to be read down, or searched with the browser's own find. A heading every
-   few questions is what makes the scroll legible. */
-.faq-group { margin: 2.6rem 0 0; font-size: 1.05rem; font-weight: 650; color: var(--text); }
-.faq-group:first-of-type { margin-top: 0; }
-/* A group with nothing left under it is not a heading, it is a gap with a name
-   on it. */
-.faq-group[hidden], .faq dt[hidden], .faq dd[hidden] { display: none; }
+   THE GROUP HEADINGS GO WITH IT. Each card says which group it is in, so a
+   heading every four cards would say it twice -- and headings cannot survive a
+   grid that reflows anyway.
+
+   auto-fill and a 21rem floor: three across at 1280, two at 900, one below
+   ~48rem, and no card ever narrower than a readable line. */
+.qa-grid {
+    display: grid; gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
+    margin: 0;
+}
+.qa {
+    display: flex; flex-direction: column;
+    padding: 1.1rem 1.2rem;
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    background: var(--bg-soft);
+}
+.qa[hidden] { display: none; }
+/* The chip says the group, at the weight of a label and not of a control: it is
+   not clickable here -- the filter above is the control, and two ways to do one
+   thing is one too many. */
+.qa-tag {
+    margin: 0; font-size: .72rem; font-weight: 650;
+    letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
+}
+.qa-q { margin: .45rem 0 0; font-size: 1rem; font-weight: 650; color: var(--text); }
+.qa-a { margin: .5rem 0 0; color: var(--dim); }
 
 .faq-tools { margin: 0 0 2.2rem; }
 .faq-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 .8rem; }
@@ -128,8 +148,8 @@ code {
         <a class="mark" href="/">annotepage</a>
         <nav>
             <a href="/">Home</a>
-            <a href="/#use">Use</a>
-            <a href="/#install">Install</a>
+            <a href="how-to-use-it.html">Use</a>
+            <a href="how-to-install-it.html">Install</a>
             <a href="questions.html" aria-current="page">FAQ</a>
             <a class="leave" href="https://github.com/tuxo83/annotepage"
                target="_blank" rel="noopener"
@@ -168,92 +188,120 @@ code {
              chips. Nothing here is required to read the page. -->
         <div class="faq-tools" id="tools" hidden></div>
 
-        <p class="faq-group">The key</p>
-        <dl class="faq">
-            <dt id="no-recovery">What if I lose the key?</dt>
-            <dd>In secure mode, the notes go with it. There is no recovery and
+        <div class="qa-grid" id="grid">
+            <article class="qa" data-tag="The key">
+                <p class="qa-tag">The key</p>
+                <h3 class="qa-q" id="no-recovery">What if I lose the key?</h3>
+                <p class="qa-a">In secure mode, the notes go with it. There is no recovery and
             no rotation &mdash; the key is what decrypts them, and the server has
             never had it. In open mode the key is written in the tag, on a page
-            anybody can read, so it cannot be lost.</dd>
+            anybody can read, so it cannot be lost.</p>
+            </article>
 
-            <dt>Can I let someone read the notes without writing any?</dt>
-            <dd>No. The key reads and writes; there is no reader-only role.</dd>
+            <article class="qa" data-tag="The key">
+                <p class="qa-tag">The key</p>
+                <h3 class="qa-q">Can I let someone read the notes without writing any?</h3>
+                <p class="qa-a">No. The key reads and writes; there is no reader-only role.</p>
+            </article>
 
-            <dt>Where does the key come from?</dt>
-            <dd>Your browser draws it, on the
+            <article class="qa" data-tag="The key">
+                <p class="qa-tag">The key</p>
+                <h3 class="qa-q">Where does the key come from?</h3>
+                <p class="qa-a">Your browser draws it, on the
             <a href="how-to-install-it.html#page">install page</a>, and sends it
             nowhere. The project id in the tag is derived from it and does not
             lead back to it &mdash; the server recognises that id, it never
-            issues one.</dd>
-        </dl>
+            issues one.</p>
+            </article>
 
-        <p class="faq-group">The notes, and what the server holds</p>
-        <dl class="faq">
-            <dt>What does the notes server see?</dt>
-            <dd>Counts, times, sizes, IP addresses and your domain. Never your
+            <article class="qa" data-tag="The notes, and what the server holds">
+                <p class="qa-tag">The notes, and what the server holds</p>
+                <h3 class="qa-q">What does the notes server see?</h3>
+                <p class="qa-a">Counts, times, sizes, IP addresses and your domain. Never your
             paths, never your text &mdash; in secure mode it cannot read a line
-            it stores.</dd>
+            it stores.</p>
+            </article>
 
-            <dt>Is there an account, a moderator, a way to delete a note?</dt>
-            <dd>None of them, and no notification either. A project is a key and
-            the notes under it.</dd>
+            <article class="qa" data-tag="The notes, and what the server holds">
+                <p class="qa-tag">The notes, and what the server holds</p>
+                <h3 class="qa-q">Is there an account, a moderator, a way to delete a note?</h3>
+                <p class="qa-a">None of them, and no notification either. A project is a key and
+            the notes under it.</p>
+            </article>
 
-            <dt>Can I switch from open to secure later?</dt>
-            <dd>For new notes, yes: change the tag. The notes already written
-            keep the mode they were written in, and nothing converts them.</dd>
+            <article class="qa" data-tag="The notes, and what the server holds">
+                <p class="qa-tag">The notes, and what the server holds</p>
+                <h3 class="qa-q">Can I switch from open to secure later?</h3>
+                <p class="qa-a">For new notes, yes: change the tag. The notes already written
+            keep the mode they were written in, and nothing converts them.</p>
+            </article>
 
-            <dt>Can the page sit behind a login?</dt>
-            <dd>Yes. Neither the notes server nor the assistant ever opens it:
+            <article class="qa" data-tag="The notes, and what the server holds">
+                <p class="qa-tag">The notes, and what the server holds</p>
+                <h3 class="qa-q">Can the page sit behind a login?</h3>
+                <p class="qa-a">Yes. Neither the notes server nor the assistant ever opens it:
             the MCP talks to the notes API and to nothing else, and the page is
             opened by the reviewers&rsquo; own browsers, which are already
-            signed in.</dd>
-        </dl>
+            signed in.</p>
+            </article>
 
-        <p class="faq-group">The tag</p>
-        <dl class="faq">
-            <dt>Can I load it as a module?</dt>
-            <dd>No, and it fails quietly. The client reads
+            <article class="qa" data-tag="The tag">
+                <p class="qa-tag">The tag</p>
+                <h3 class="qa-q">Can I load it as a module?</h3>
+                <p class="qa-a">No, and it fails quietly. The client reads
             <code>document.currentScript</code> to find its own settings, and a
             <code>type="module"</code> script does not have one: nothing appears,
-            and nothing is logged.</dd>
+            and nothing is logged.</p>
+            </article>
 
-            <dt id="locked">What if I pin the script with a wrong
-            <code>integrity</code> digest?</dt>
-            <dd>The browser refuses the file and the tool simply does not
+            <article class="qa" data-tag="The tag">
+                <p class="qa-tag">The tag</p>
+                <h3 class="qa-q" id="locked">What if I pin the script with a wrong <code>integrity</code> digest?</h3>
+                <p class="qa-a">The browser refuses the file and the tool simply does not
             appear. Nothing on the page says why. The
             <a href="how-to-install-it.html#page">install page</a> writes the
-            digest for you when you ask for a pinned tag.</dd>
+            digest for you when you ask for a pinned tag.</p>
+            </article>
 
-            <dt>My site sets a Content-Security-Policy. What do I need?</dt>
-            <dd>Two directives. <code>script-src</code> must allow wherever the
+            <article class="qa" data-tag="The tag">
+                <p class="qa-tag">The tag</p>
+                <h3 class="qa-q">My site sets a Content-Security-Policy. What do I need?</h3>
+                <p class="qa-a">Two directives. <code>script-src</code> must allow wherever the
             client is served from, or it never loads;
             <code>connect-src</code> must allow your notes server, or
             <code>fetch</code> fails and the tool stands down in silence, as if
             nothing had been configured. <code>style-src</code> usually needs
             nothing: the stylesheet goes in as a constructed sheet, which is not
-            an inline sheet in the policy&rsquo;s sense.</dd>
+            an inline sheet in the policy&rsquo;s sense.</p>
+            </article>
 
-            <dt>Can I try it on my own machine?</dt>
-            <dd>Yes: <code>localhost</code> is a secure context, so the browser
+            <article class="qa" data-tag="The tag">
+                <p class="qa-tag">The tag</p>
+                <h3 class="qa-q">Can I try it on my own machine?</h3>
+                <p class="qa-a">Yes: <code>localhost</code> is a secure context, so the browser
             has the crypto it needs. But never declare
             <code>localhost:3000</code> in a server&rsquo;s list of domains
             &mdash; that name belongs to every machine on earth, so declaring it
-            lets any of them write to your project.</dd>
-        </dl>
+            lets any of them write to your project.</p>
+            </article>
 
-        <p class="faq-group">What it costs</p>
-        <dl class="faq">
-            <dt>Is it free?</dt>
-            <dd>Yes, and it is MIT. The shared notes server at
+            <article class="qa" data-tag="What it costs">
+                <p class="qa-tag">What it costs</p>
+                <h3 class="qa-q">Is it free?</h3>
+                <p class="qa-a">Yes, and it is MIT. The shared notes server at
             <code>api.annotepage.com</code> is free to use with nothing to
             install; running your own is free too, and that is the whole
-            list.</dd>
+            list.</p>
+            </article>
 
-            <dt>Do I have to use your server?</dt>
-            <dd>No. One PHP file installs your own, and the
+            <article class="qa" data-tag="What it costs">
+                <p class="qa-tag">What it costs</p>
+                <h3 class="qa-q">Do I have to use your server?</h3>
+                <p class="qa-a">No. One PHP file installs your own, and the
             <a href="how-to-install-it.html#server">install page</a> takes you
-            through it. The tag names whichever one you run.</dd>
-        </dl>
+            through it. The tag names whichever one you run.</p>
+            </article>
+        </div>
 
         <p>
             <a class="cta" href="how-to-install-it.html">Install it</a>
@@ -266,54 +314,35 @@ code {
 </main>
 
 <!-- =====================================================================
-     FILTERING TWELVE QUESTIONS, AND IT WILL BE MORE THAN TWELVE.
+     FILTERING THE CARDS.
 
      The controls are built here rather than written in the markup, for one
      reason: a filter that cannot filter is worse than none. A reader with no
-     JavaScript gets the whole page, in order, with nothing on it that looks
+     JavaScript gets every card, in order, with nothing on the page that looks
      like a control and does nothing.
 
-     NO INDEX AND NO TAG ATTRIBUTES. The groups already exist as headings, and
-     the search reads the text that is on the page. A second list of tags kept
-     beside the questions would be a second copy to keep in step -- the failure
-     this repository spent a day finding in three other places.
+     NO SECOND LIST OF TAGS. Each card already carries its group, in the markup
+     and on screen; the chips are read off the cards. A list kept beside them
+     would be a second copy to keep in step -- the failure this repository spent
+     a day finding in three other places.
      ===================================================================== -->
 <script>
 (function () {
     'use strict';
 
-    var hote = document.getElementById('tools');
-    var lot  = document.querySelector('#data .wrap');
-    if (!hote || !lot) return;
+    var hote  = document.getElementById('tools');
+    var grille = document.getElementById('grid');
+    if (!hote || !grille) return;
 
-    /* Every question, with the group it sits under and the text it can be
-       searched on. Read once, from the page itself. */
-    var groupes = [];
-    var items = [];
-    var courant = null;
-    var enfants = lot.children;
-    for (var i = 0; i < enfants.length; i++) {
-        var e = enfants[i];
-        if (e.classList.contains('faq-group')) {
-            courant = { titre: e.textContent.trim(), noeud: e, items: [] };
-            groupes.push(courant);
-        } else if (e.tagName === 'DL' && courant) {
-            var k = e.children;
-            for (var j = 0; j < k.length; j++) {
-                if (k[j].tagName !== 'DT') continue;
-                var rep = k[j].nextElementSibling;
-                var it = {
-                    dt: k[j],
-                    dd: (rep && rep.tagName === 'DD') ? rep : null,
-                    groupe: courant,
-                    mots: (k[j].textContent + ' ' + (rep ? rep.textContent : '')).toLowerCase()
-                };
-                courant.items.push(it);
-                items.push(it);
-            }
-        }
+    var cartes = [];
+    var tags = [];
+    var tous = grille.querySelectorAll('.qa');
+    for (var i = 0; i < tous.length; i++) {
+        var t = tous[i].getAttribute('data-tag') || '';
+        cartes.push({ el: tous[i], tag: t, mots: tous[i].textContent.toLowerCase() });
+        if (tags.indexOf(t) === -1) tags.push(t);
     }
-    if (!items.length) return;
+    if (!cartes.length) return;
 
     var choisi = null;
     var cherche = '';
@@ -322,62 +351,55 @@ code {
     vide.className = 'faq-none';
     vide.hidden = true;
     vide.textContent = 'Nothing here says that. Try another word, or clear the filter.';
-    lot.appendChild(vide);
+    grille.parentNode.insertBefore(vide, grille.nextSibling);
 
     var peindre = function () {
         var vus = 0;
-        for (var g = 0; g < groupes.length; g++) {
-            var n = 0;
-            for (var x = 0; x < groupes[g].items.length; x++) {
-                var it = groupes[g].items[x];
-                var ok = (!choisi || choisi === groupes[g])
-                    && (!cherche || it.mots.indexOf(cherche) !== -1);
-                it.dt.hidden = !ok;
-                if (it.dd) it.dd.hidden = !ok;
-                if (ok) { n++; vus++; }
-            }
-            /* A heading with nothing under it is a gap with a name on it. */
-            groupes[g].noeud.hidden = (n === 0);
+        for (var k = 0; k < cartes.length; k++) {
+            var ok = (!choisi || choisi === cartes[k].tag)
+                && (!cherche || cartes[k].mots.indexOf(cherche) !== -1);
+            cartes[k].el.hidden = !ok;
+            if (ok) vus++;
         }
         vide.hidden = (vus !== 0);
     };
 
-    var tags = document.createElement('div');
-    tags.className = 'faq-tags';
+    var rangee = document.createElement('div');
+    rangee.className = 'faq-tags';
     var boutons = [];
-    var poser = function (titre, groupe) {
+    var poser = function (titre, valeur) {
         var b = document.createElement('button');
         b.type = 'button';
         b.textContent = titre;
-        b.setAttribute('aria-pressed', groupe === null ? 'true' : 'false');
+        b.setAttribute('aria-pressed', valeur === null ? 'true' : 'false');
         b.addEventListener('click', function () {
-            choisi = (choisi === groupe) ? null : groupe;
+            choisi = (choisi === valeur) ? null : valeur;
             for (var q = 0; q < boutons.length; q++) {
                 boutons[q].b.setAttribute('aria-pressed',
-                    boutons[q].g === choisi ? 'true' : 'false');
+                    boutons[q].v === choisi ? 'true' : 'false');
             }
             peindre();
         });
-        tags.appendChild(b);
-        boutons.push({ b: b, g: groupe });
+        rangee.appendChild(b);
+        boutons.push({ b: b, v: valeur });
     };
     poser('All', null);
-    for (var g2 = 0; g2 < groupes.length; g2++) poser(groupes[g2].titre, groupes[g2]);
+    for (var g = 0; g < tags.length; g++) poser(tags[g], tags[g]);
 
     var champ = document.createElement('input');
     champ.type = 'search';
     champ.className = 'faq-find';
     champ.placeholder = 'Search these questions';
     champ.setAttribute('aria-label', 'Search these questions');
-    /* `input`, so the list follows the typing: a filter that waits for Enter
-       is a form, and this is not one. Nothing is sent -- there is no code here
+    /* `input`, so the grid follows the typing: a filter that waits for Enter is
+       a form, and this is not one. Nothing is sent -- there is no code here
        that sends anything. */
     champ.addEventListener('input', function () {
         cherche = champ.value.trim().toLowerCase();
         peindre();
     });
 
-    hote.appendChild(tags);
+    hote.appendChild(rangee);
     hote.appendChild(champ);
     hote.hidden = false;
 }());
