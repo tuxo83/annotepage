@@ -896,18 +896,27 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <a href="how-to-install-it.html" aria-current="page">Install</a>
             <a href="questions.html">FAQ</a>
             <!-- THE SOURCE IS THREE PLACES, AND THE MENU SAYS ONE. A single
-                 link named a host; what exists is the repository and two
-                 published packages, and somebody looking for "the source" wants
-                 whichever of the three they are after.
+                 link named a HOST; what exists is the repository and two
+                 published packages.
 
-                 <details>, so it costs no script: the disclosure, the keyboard
-                 handling and the open state are the element's own. It closes on
-                 its own summary rather than on a click anywhere, which is the
-                 one thing a script would add and not enough to add one for --
-                 following any of the three links leaves the page anyway. -->
-            <details class="drop">
-                <summary>Source</summary>
-                <div class="drop-menu">
+                 IT OPENS ON HOVER, IN PLACE, AND MOVES NOTHING. It was a
+                 <details> first -- an accordion, with a caret to say so -- and
+                 that is a control where a signpost was wanted: it changed the
+                 bar's shape, and it asked to be clicked before it would say
+                 what was under it. A panel that appears where the pointer
+                 already is needs no symbol to announce itself, and takes no
+                 room from anything.
+
+                 STILL A LINK, so it works with no pointer at all: the word goes
+                 to the repository, and `:focus-within` opens the panel for a
+                 keyboard, which then tabs through the three. On a touch screen
+                 there is no hover and the word simply follows its link -- the
+                 FAQ lists all three in a card for that case. -->
+            <span class="drop">
+                <a href="https://github.com/tuxo83/annotepage"
+                   target="_blank" rel="noopener"
+                   aria-label="The source, on GitHub, opens in a new tab">Source</a>
+                <span class="drop-menu">
                     <a href="https://github.com/tuxo83/annotepage"
                        target="_blank" rel="noopener"
                        aria-label="The repository, on GitHub, opens in a new tab">GitHub</a>
@@ -917,8 +926,8 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <a href="https://www.npmjs.com/package/annotepage-mcp"
                        target="_blank" rel="noopener"
                        aria-label="annotepage-mcp on npm, opens in a new tab">annotepage-mcp</a>
-                </div>
-            </details>
+                </span>
+            </span>
         </nav>
     </div>
 </header>
