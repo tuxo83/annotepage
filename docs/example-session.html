@@ -874,14 +874,26 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             </fieldset>
 
             <fieldset class="dial">
-                <legend>When your fix goes live</legend>
+                <legend>Putting the fix online</legend>
                 <div class="seg">
-                    <label><input type="radio" name="dep" id="d-live" checked> <span>As soon as you merge</span></label>
-                    <label><input type="radio" name="dep" id="d-wait"> <span>At your next release</span></label>
+                    <label><input type="radio" name="dep" id="d-live" checked> <span>By itself</span></label>
+                    <label><input type="radio" name="dep" id="d-wait"> <span>By hand</span></label>
                 </div>
+                <!-- NOT ONE WORD OF THE TRADE UP HERE. "merge", "release",
+                     "deploy" -- a reader who knows them loses half a second
+                     recognising their case, and a reader who does not is left
+                     in front of two buttons they cannot choose between. The
+                     word `deploy` exists on this page, further down, where a
+                     picture and a marker carry it. Here, the question is only
+                     whether the site puts a change online on its own.
+
+                     And the two labels are the length of the other dial's:
+                     "Open" and "Secure" are 4 and 6 characters, these are 9
+                     and 7. Two controls side by side, one of them with labels
+                     three times longer, stop reading as a pair. -->
                 <p class="dial-say">
-                    Your merge ships it, or you cut the release yourself. Waiting
-                    for one adds a step to the loop below.
+                    Your site publishes a change on its own, or somebody puts it
+                    online.
                 </p>
             </fieldset>
 
