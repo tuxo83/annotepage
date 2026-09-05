@@ -24,7 +24,24 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DIR = 'docs';
-const PAGES = readdirSync(DIR).filter((f) => f.endsWith('.html')).sort();
+
+/* A REDIRECT IS NOT A PAGE OF THE SITE, and it must not be made to wear the
+   frame. install.html became how-to-install-it.html, and a static host has
+   no 301 to give -- so what stays at the old address is four lines and a meta
+   refresh. Comparing
+   its header with the others would demand a menu on a document nobody reads
+   for longer than it takes to leave -- and the day the menu changed, the check
+   would fail on the one file with nothing to say.
+
+   Recognised by what it IS rather than by its name: any page whose head
+   carries an immediate `refresh` is on its way somewhere else. A page listed
+   here by name would let the next redirect be forgotten. */
+const isRedirect = (html) =>
+    /<meta\s+http-equiv=["']?refresh["']?[^>]*>/i.test(html);
+
+const PAGES = readdirSync(DIR).filter((f) => f.endsWith('.html'))
+    .filter((f) => !isRedirect(readFileSync(join(DIR, f), 'utf8')))
+    .sort();
 
 const bloc = (html, tag) => {
     const m = html.match(new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}>`));
@@ -36,7 +53,8 @@ const bloc = (html, tag) => {
    missing a DIFFERENT entry. They are taken out of all of them before the
    comparison, and checked separately -- which is the stricter reading anyway,
    since it catches a page linking to itself as well as one missing a sibling. */
-const INTERNAL = { 'index.html': '/', 'install.html': 'install.html',
+const INTERNAL = { 'index.html': '/',
+                   'how-to-install-it.html': 'how-to-install-it.html',
                    'example-session.html': 'example-session.html' };
 
 const normalise = (text) => {

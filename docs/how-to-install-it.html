@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setting annotepage up &mdash; the server, the tag, the assistant</title>
+<meta name="description" content="Three chapters, and two of them install nothing: where the notes are stored, the tag to paste on your pages with a key generated in your browser, and the command that plugs your assistant in.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://annotepage.com/how-to-install-it.html">
+<meta property="og:type"        content="article">
+<meta property="og:site_name"   content="annotepage">
+<meta property="og:url"         content="https://annotepage.com/how-to-install-it.html">
+<meta property="og:title"       content="Setting annotepage up">
+<meta property="og:description" content="The server, the tag, the assistant. Two dials at the top take the routes you are not in away.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/base.css">
+<style>
+/* ---------------------------------------------------------------------------
+   annotepage.com -- one hand-written page.
+   No dependency, no remote font, no third-party script, no external image.
+   Every colour is defined on bare :root; the dark block only REDEFINES.
+
+   WHAT THIS PAGE IS, AND WHY IT IS SHORTER THAN THE ONE IT REPLACES.
+   install.html carried 3060 words, 45 sentences over 110 characters and ten
+   left edges: every route for every reader, laid end to end, with a table of
+   contents on top to make the length navigable. The length was the defect;
+   the contents page was a symptom.
+
+   Two dials replace it, and they only ever take routes AWAY. A reader on the
+   shared server never reads the four steps of standing one up; a reader in
+   open mode never reads about pasting a key. Nothing here asks anybody to
+   decide anything -- both dials name a situation the reader is already in.
+   --------------------------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+}
+
+/* The page itself never scrolls sideways -- not because it is clipped, but
+   because nothing in it is wider than its column. What IS wide (the code, the
+   loop) scrolls inside its own frame. */
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin: 0; }
+h1 { font-size: clamp(2rem, 7vw, 3.1rem); font-weight: 700; }
+h2 { font-size: clamp(1.4rem, 4.4vw, 1.9rem); font-weight: 650; }
+p  { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
+/* TWO WIDTHS, AND THEY ARE DELIBERATELY NOT THE SAME NUMBER. The page column
+   is what a PICTURE gets; the measure is what a SENTENCE gets. Same pair of
+   numbers as the other two pages, for the same reason. */
+.wrap { width: 100%; max-width: 85rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
+main .wrap > * { max-width: var(--measure); }
+main .wrap > .loop-row,
+main .wrap > .dials { max-width: none; }
+main .wrap > .snip { max-width: 48rem; }
+
+.dim { color: var(--dim); }
+.small { font-size: .875rem; line-height: 1.55; }
+.vh {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* -- Top bar ------------------------------------------------------------- */
+
+.top {
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg);
+}
+.top .wrap {
+    display: flex; align-items: center; gap: 1rem;
+    flex-wrap: wrap; padding-top: .85rem; padding-bottom: .85rem;
+}
+.mark {
+    font-family: var(--mono); font-size: .95rem; font-weight: 600;
+    letter-spacing: -.02em; color: var(--text); text-decoration: none;
+}
+.mark::before {
+    content: ""; display: inline-block; vertical-align: -1px;
+    width: .62em; height: .62em; margin-right: .5em; border-radius: 2px;
+    background: var(--accent);
+}
+.top nav { margin-left: auto; display: flex; gap: 1.1rem; flex-wrap: wrap; }
+.top nav a { font-size: .875rem; color: var(--dim); text-decoration: none; }
+.top nav a:hover { color: var(--text); text-decoration: underline; }
+
+/* -- Sections ------------------------------------------------------------ */
+
+section { padding: clamp(3rem, 8vw, 5.5rem) 0; border-top: 1px solid var(--line-soft); }
+section:first-of-type { border-top: 0; }
+.hero { padding-top: clamp(1.6rem, 4vw, 2.6rem); }
+
+.lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; }
+h1 + .lead { margin-top: 1.15rem; }
+h2 + p, h2 + ul { margin-top: .9rem; }
+
+/* TWO LEFT EDGES AND NOT THREE. Every sentence, heading and list item starts
+   at the wrap's edge; the only other axis on the page is the inside of a code
+   block. That is why there is no callout box and no bordered aside here --
+   both of them indent a paragraph by their own padding, and install.html had
+   six paragraphs sitting on an edge of their own because of it. What used to
+   be a callout is a list item in bold now, on the page's own axis. */
+ul.plain { margin: 1rem 0 0; padding: 0; list-style: none; }
+ul.plain li { margin: 0 0 .7rem; }
+ul.plain li:last-child { margin-bottom: 0; }
+ul.plain b { color: var(--text); }
+
+/* -- The way back -------------------------------------------------------- */
+
+.cta {
+    display: inline-block; margin-top: 2.2rem;
+    font-weight: 600; color: var(--accent); text-decoration: none;
+}
+.cta:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+
+/* -- Code snippets ------------------------------------------------------- */
+
+/* THE GROUND IS PINNED DARK IN BOTH THEMES, and the palette is the landing
+   page's, token for token: what a reader is handed is a fragment of a file,
+   and a fragment of a file does not change colour because the reader's site
+   is set to light. Contrast measured on the rendered pixels there and
+   unchanged here, since neither the ground nor the ink depends on a theme. */
+:root {
+    --code-ground:    #1a1a1a;
+    --code-edge:      #4a5058;
+    --code-text:      #e6e6e6;
+    --code-name:      #7aa2f7;   /* <script>, npm, claude */
+    --code-att:       #e0af68;   /* data-server=, install, add */
+    --code-str:       #9ece6a;   /* "..." -- and the tick that says it copied */
+    --code-dim:       #9aa0a6;
+    --code-chip:      #262626;
+    --code-chip-line: #8a8f98;
+}
+
+.snip {
+    position: relative;            /* the copy button anchors to this */
+    margin: 1.3rem 0;
+    border: 1px solid var(--code-edge);
+    border-radius: var(--radius);
+    background: var(--code-ground);
+    color: var(--code-text);
+    overflow: hidden;
+}
+.snip .tg { color: var(--code-name); }
+.snip .at { color: var(--code-att); }
+.snip .st { color: var(--code-str); }
+.snip .op { color: var(--code-dim); }
+
+.copy {
+    position: absolute; top: .5rem; right: .5rem; z-index: 1;
+    display: grid; place-items: center;
+    width: 1.9rem; height: 1.9rem; padding: 0;
+    color: var(--code-dim); background: var(--code-chip);
+    border: 1px solid var(--code-chip-line); border-radius: 7px;
+    cursor: pointer;
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+}
+.copy svg {
+    width: 1.05rem; height: 1.05rem;
+    fill: none; stroke: currentColor; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.copy .i-done { display: none; }
+.copy:hover { color: var(--code-name); border-color: var(--code-name); }
+.copy[data-state="done"] { color: var(--code-ground); background: var(--code-str); border-color: var(--code-str); }
+.copy[data-state="done"] .i-copy { display: none; }
+.copy[data-state="done"] .i-done { display: block; }
+.copy[data-state="failed"] { color: var(--code-att); border-color: var(--code-att); }
+.copy:focus-visible { outline-color: var(--code-name); }
+
+.snip pre {
+    margin: 0;
+    /* Room on the right for the button, so a long line scrolls UNDER it
+       rather than stopping short of it. */
+    padding: .95rem 3rem .95rem 1rem;
+    overflow-x: auto;              /* the frame scrolls, never the page */
+    -webkit-overflow-scrolling: touch;
+}
+.snip pre code {
+    font-family: var(--mono);
+    font-size: .8rem;
+    line-height: 1.65;
+    white-space: pre;
+    display: block;
+    min-width: 0;
+}
+
+code:not(pre code) {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--bg-code); border: 1px solid var(--line-soft);
+    border-radius: 5px; padding: .08em .32em;
+}
+
+/* == THE TWO DIALS ======================================================== */
+
+/* THE COMPONENT IS THE USAGE PAGE'S, RULE FOR RULE. It is copied rather than
+   linked because base.css holds what the two pages DRAW -- panels, pills,
+   frames -- and each page keeps its own furniture; the day a third page wants
+   dials, the three copies move into the sheet together.
+
+   WHAT IS ALLOWED TO SIT HERE is the same test that let the usage page keep
+   two and kept the landing page at none: a dial must show the reader the case
+   they are ALREADY in, never ask them to arbitrate. Your project has a public
+   key or it has not. Your notes go to the free server or to your own disk.
+   Neither question is answered on this page, and neither ADDS a variant --
+   each one takes the other reader's route off the screen.
+
+   AND THE FRAMEWORK IS NOT ONE OF THEM. It changes one line, in one chapter,
+   so it lives there as tabs beside the tag. A dial at the top of the page
+   would advertise that the whole page depends on it. */
+.dials {
+    display: flex; flex-wrap: wrap; gap: 1.6rem 2.6rem;
+    margin: 2.2rem 0 0; padding: 1.1rem 1.2rem;
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    background: var(--bg-soft);
+}
+.dial { border: 0; margin: 0; padding: 0; min-width: 0; }
+.dial legend { padding: 0; font-size: .78rem; font-weight: 650; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); }
+.seg { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+/* The radio is real, and it is only visually replaced: the group keeps its
+   name, its arrow keys and its announcement. A pair of divs with a click
+   handler would keep none of them. */
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg label { cursor: pointer; }
+.seg span {
+    display: inline-block; padding: .34rem .8rem;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--bg); color: var(--dim);
+    font-size: .86rem; font-weight: 600;
+}
+.seg input:checked + span {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+}
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
+.dial-say { margin: .55rem 0 0; font-size: .85rem; color: var(--dim); max-width: 26em; }
+.dial-why { margin: .9rem 0 0; font-size: .9rem; color: var(--dim); }
+
+/* THE FIELD, AND IT IS NOT A THIRD DIAL. The two dials take routes away; this
+   takes EXAMPLES away -- it is asked once and answers in all three chapters,
+   in the tag's own address, in the origin the server has to be told, in the
+   assistant's file and in the sentence somebody types at the end.
+
+   IT IS DRAWN LIKE ITS NEIGHBOURS ON PURPOSE. Three controls in one strip,
+   one of them wearing a different border, would read as an afterthought
+   bolted onto the pair -- and it is not: it is the only one of the three whose
+   answer the reader cannot get from the page.
+
+   LEFT EMPTY IT IS NOT A HOLE. Everything falls back on staging.example.com,
+   the address the rest of the site already uses, so a reader who types nothing
+   still sees complete blocks and can still copy every one of them. A field
+   whose emptiness breaks the page is a field that has to be filled in, which
+   is a question, which is what this is not. */
+.dial-legend { display: block; font-size: .78rem; font-weight: 650; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); }
+.dial-in {
+    margin-top: .5rem; width: 100%; max-width: 15rem;
+    padding: .3rem .7rem;
+    font: inherit; font-size: .86rem;
+    color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 999px;
+}
+.dial-in::placeholder { color: var(--dim); opacity: 1; }
+.dial-in:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-color: var(--accent); }
+
+/* WHAT EACH DIAL REMOVES. No script: a radio and :has do it, so the page
+   answers the dials with JavaScript off as well as on. The tag block is the
+   one exception and the reason is in its own script -- a block that is COPIED
+   cannot be built by hiding half of itself. */
+body:has(#m-open:checked)   .if-secure { display: none; }
+body:has(#m-secure:checked) .if-open   { display: none; }
+body:has(#s-shared:checked) .if-own    { display: none; }
+body:has(#s-own:checked)    .if-shared { display: none; }
+
+/* == THE FRAMEWORK TABS =================================================== */
+
+/* Same radio-and-:has mechanism as the dials, and deliberately the same chip
+   as well: it is the same kind of control, and one page should not have two
+   drawings of one idea. What install.html had here was a twelve-row table,
+   which is eleven answers a reader does not want beside the one they do. */
+.tabs { display: flex; flex-wrap: wrap; gap: .35rem; margin: 1.1rem 0 0; }
+.tabs input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.tabs label { cursor: pointer; }
+.tabs span {
+    display: inline-block; padding: .22rem .62rem;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--bg); color: var(--dim);
+    font-size: .8rem; font-weight: 600;
+}
+.tabs input:checked + span {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+}
+.tabs input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* The answer sits on the page's own left edge, not inside a panel: a bordered
+   box would be a third axis for one line of text. */
+.fwp { margin: .9rem 0 0; font-size: .95rem; color: var(--dim); }
+.fwp > p { display: none; margin: 0; }
+body:has(#fw-html:checked)   .fw-html   { display: block; }
+body:has(#fw-astro:checked)  .fw-astro  { display: block; }
+body:has(#fw-next:checked)   .fw-next   { display: block; }
+body:has(#fw-nuxt:checked)   .fw-nuxt   { display: block; }
+body:has(#fw-svelte:checked) .fw-svelte { display: block; }
+body:has(#fw-rails:checked)  .fw-rails  { display: block; }
+body:has(#fw-dj:checked)     .fw-dj     { display: block; }
+body:has(#fw-laravel:checked) .fw-laravel { display: block; }
+body:has(#fw-symfony:checked) .fw-symfony { display: block; }
+body:has(#fw-wp:checked)     .fw-wp     { display: block; }
+
+/* == THE LOOP, IN FOUR BOXES ==============================================
+
+   FIRST ON THIS PAGE, and it was built on another one. Its audience is not
+   the reader discovering the tool -- that reader gets the gesture, shown --
+   it is the one asking whether the assistant reaches their site, and that
+   question is asked at the moment of installing.
+
+   WHAT THE DRAWING SAYS IS PARTLY WHAT IT DOES NOT DRAW. Four boxes at the
+   corners, four arrows along the edges, and the middle deliberately empty:
+   the two diagonals carry nothing. No sentence points that out, because a
+   diagram that needs a sentence to be read is the wrong diagram.
+
+   REAL TEXT, NOT LABELS PAINTED INTO AN SVG. The boxes and the words on the
+   arrows are HTML: they wrap, they scale with the reader's font size, they
+   translate and they are read out in DOM order -- which is the order of the
+   loop. Only the strokes are SVG, and those carry nothing a screen reader
+   could want, so they are aria-hidden. */
+.loop-row { margin: clamp(1.4rem, 3.4vw, 2.4rem) 0 0; }
+.loop { margin-left: auto; margin-right: auto; }
+/* The page never scrolls sideways. If a very narrow viewport or a very large
+   font ever makes the square wider than its column, the square scrolls here
+   and the page does not. Measured at 375px: it does not come to that. */
+.loop-frame { overflow-x: auto; }
+.loop {
+    display: grid;
+    min-width: 17rem;
+    max-width: 32rem;
+    grid-template-columns: minmax(0, 1fr) minmax(4.4rem, .8fr) minmax(0, 1fr);
+    grid-template-areas:
+        "page top  srv"
+        "left .    right"
+        "code bot  asst";
+    gap: clamp(.45rem, 1.7vw, 1rem);
+    align-items: stretch;
+}
+.lp-page  { grid-area: page; }
+.lp-top   { grid-area: top; }
+.lp-srv   { grid-area: srv; }
+.lp-right { grid-area: right; }
+.lp-asst  { grid-area: asst; }
+.lp-bot   { grid-area: bot; }
+.lp-code  { grid-area: code; }
+.lp-left  { grid-area: left; }
+
+.lp-box {
+    display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: .35rem;
+    margin: 0; padding: .8rem .6rem;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--bg-soft); color: var(--text);
+    font-size: clamp(.82rem, 2.1vw, .95rem); font-weight: 650;
+    line-height: 1.35; text-align: center;
+}
+/* The mark that says what the server holds, and it is a mark rather than a
+   sentence: what arrives locked is stored locked, and the box that stores it
+   is the place to say so. --accent on --bg-soft, both themes measured.
+   The mark never leaves the word it marks: at 375px the server's name takes
+   two lines, and a padlock alone on a third one marks nothing. */
+.lp-hold { white-space: nowrap; }
+.lp-lock { display: inline-block; width: .78em; height: auto; vertical-align: -.06em; color: var(--accent); }
+
+.lp-arr {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: .3rem;
+    margin: 0; padding: .2rem 0;
+    color: var(--dim);
+    font-size: clamp(.72rem, 1.9vw, .8rem); line-height: 1.3; text-align: center;
+}
+.lp-arr svg { display: block; color: var(--dim); }
+.lp-h svg { width: 100%; max-width: 7rem; height: auto; }
+.lp-v svg { height: clamp(2.6rem, 8vw, 4rem); width: auto; }
+
+@media (max-width: 420px) {
+    body { font-size: 16px; }
+    .snip pre code { font-size: .72rem; }
+    .snip pre { padding: .8rem .75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}
+</style>
+<body>
+
+<header class="top">
+    <div class="wrap">
+        <a class="mark" href="/">annotepage</a>
+        <nav>
+            <a href="/">Home</a>
+            <a href="example-session.html">A detailed usage example</a>
+            <a href="https://github.com/tuxo83/annotepage">GitHub</a>
+        </nav>
+    </div>
+</header>
+
+<!-- page-specific -->
+
+<main>
+
+<section class="hero" id="top">
+    <div class="wrap">
+        <h1>Setting it up</h1>
+        <p class="lead">
+            Three chapters, and two of them install nothing.
+        </p>
+
+        <!-- WHAT IT COSTS TO START, ABOVE THE FIGURE AND NOT UNDER IT.
+             Nothing is written under a figure on this site: a line sitting
+             there is read as a caption whatever it says, and this one is not
+             about the drawing -- it is the one requirement that can stop a
+             reader before any of the three chapters. -->
+        <p class="small dim">
+            A page you can edit, and a browser on <code>https</code> or
+            <code>localhost</code>.
+        </p>
+
+        <!-- THE LOOP, BEFORE ANY OF THE ROUTES, AND NOTHING WRITTEN UNDER IT.
+             The middle is empty and stays empty. -->
+        <figure class="loop-row">
+            <div class="loop-frame">
+                <div class="loop">
+
+                    <p class="lp-box lp-page">The annotated page</p>
+
+                    <p class="lp-arr lp-h lp-top">
+                        <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 6H90" vector-effect="non-scaling-stroke"/>
+                            <path d="M84 2.5 90.5 6 84 9.5" vector-effect="non-scaling-stroke"/>
+                        </svg>
+                        <span>Encrypted note</span>
+                    </p>
+
+                    <p class="lp-box lp-srv"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></p>
+
+                    <p class="lp-arr lp-v lp-right">
+                        <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 2V90" vector-effect="non-scaling-stroke"/>
+                            <path d="M2.5 84 6 90.5 9.5 84" vector-effect="non-scaling-stroke"/>
+                        </svg>
+                        <span>Reads the notes</span>
+                    </p>
+
+                    <p class="lp-box lp-asst">The assistant</p>
+
+                    <p class="lp-arr lp-h lp-bot">
+                        <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M98 6H10" vector-effect="non-scaling-stroke"/>
+                            <path d="M16 2.5 9.5 6 16 9.5" vector-effect="non-scaling-stroke"/>
+                        </svg>
+                        <span>Writes the fix</span>
+                    </p>
+
+                    <p class="lp-box lp-code">Your code</p>
+
+                    <p class="lp-arr lp-v lp-left">
+                        <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 98V10" vector-effect="non-scaling-stroke"/>
+                            <path d="M2.5 16 6 9.5 9.5 16" vector-effect="non-scaling-stroke"/>
+                        </svg>
+                        <span>Deploy</span>
+                    </p>
+
+                </div>
+            </div>
+        </figure>
+
+        <!-- THE DIALS, AT THE TOP, BEFORE ANY OF THE THREE CHAPTERS. -->
+        <div class="dials" id="modes">
+            <fieldset class="dial">
+                <legend>Your project</legend>
+                <div class="seg">
+                    <label><input type="radio" name="mode" id="m-open" checked> <span>Open</span></label>
+                    <label><input type="radio" name="mode" id="m-secure"> <span>Secure</span></label>
+                </div>
+                <p class="dial-say">
+                    The key is in the tag, or each reviewer pastes it once.
+                </p>
+            </fieldset>
+
+            <!-- "SHARED" AND NOT "PUBLIC". Public is taken, twice over: it is
+                 what the OTHER dial's open mode means for the notes, and it is
+                 what the server's own installer calls a relay answering about
+                 any project. Shared says the one thing meant here -- somebody
+                 else runs it, and everybody uses the same one. -->
+            <fieldset class="dial">
+                <legend>The notes server</legend>
+                <div class="seg">
+                    <label><input type="radio" name="srv" id="s-shared" checked> <span>Shared</span></label>
+                    <label><input type="radio" name="srv" id="s-own"> <span>Your own</span></label>
+                </div>
+                <p class="dial-say">
+                    The free one at api.annotepage.com, or one on your own disk.
+                </p>
+            </fieldset>
+
+            <div class="dial">
+                <label class="dial-legend" for="site">Your site</label>
+                <input class="dial-in" id="site" type="text" inputmode="url"
+                       autocomplete="off" spellcheck="false"
+                       placeholder="staging.example.com">
+                <p class="dial-say">
+                    It fills in the examples.
+                </p>
+            </div>
+
+            <p class="dial-why">
+                They take routes away. You are already in one of these cases.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- 1. THE SERVER =======================================================
+     FIRST, AND THE REASON IS BLOCKING. A developer's own order is the page
+     first -- paste the tag, watch a note leave, plug the assistant in -- and
+     it loses to this: somebody who has to stand a server up cannot do
+     anything else until it is up. So the chapter that CAN block comes first,
+     and the dial is what makes it cost one line for everybody else. -->
+<section id="server">
+    <div class="wrap">
+        <h2>Where the notes are stored</h2>
+
+        <p class="if-own">
+            <b>1.</b> Upload one PHP file anywhere under your web root.
+        </p>
+
+        <div class="snip if-own">
+            <button class="copy" type="button" data-copy="snip-php" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-php"><code>https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php</code></pre>
+        </div>
+
+        <p class="if-own">
+            <b>2.</b> Open it and press its button. It fetches the rest and hashes it
+            against the release&rsquo;s <code>MANIFEST</code>.
+        </p>
+
+        <p class="if-own">
+            <b>3.</b> Answer two questions. Both already carry the answer that works.
+        </p>
+
+        <!-- FOUR STEPS AND NOT FIVE. The address it prints is the tag's
+             data-server, and the tag below already carries it -- printing it
+             twice would be the page repeating itself, which is the rule that
+             emptied the old footer. What is left here is the one line the
+             server needs and nothing else says: the origin it will answer
+             from, which is the field at the top. -->
+        <p class="if-own">
+            <b>4.</b> Paste the line it prints into the tag below, then declare
+            your origin.
+        </p>
+
+        <div class="snip if-own">
+            <button class="copy" type="button" data-copy="snip-org" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-org"><code id="org-code"><span class="st">'origins'</span> =&gt; <span class="at">array</span>(<span class="st">'https://staging.example.com'</span>),</code></pre>
+        </div>
+
+        <p class="small dim if-own">
+            PHP 7.4 and <code>pdo_sqlite</code>. The rest is in
+            <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">INSTALL.md</a>.
+        </p>
+
+        <!-- ONE SENTENCE, AND IT IS THE WHOLE CHAPTER FOR MOST READERS. That
+             is the dial earning its place. -->
+        <p class="if-shared">
+            Nothing to do: <code>api.annotepage.com</code> is free, open to
+            everyone, and already running.
+        </p>
+    </div>
+</section>
+
+<!-- 2. THE PAGE ========================================================== -->
+<section id="page">
+    <div class="wrap">
+        <h2>The tag on your pages</h2>
+
+        <p>
+            At the end of <code>&lt;body&gt;</code>, in whichever file writes it.
+        </p>
+
+        <div class="tabs">
+            <label><input type="radio" name="fw" id="fw-html" checked> <span>Plain HTML</span></label>
+            <label><input type="radio" name="fw" id="fw-astro"> <span>Astro</span></label>
+            <label><input type="radio" name="fw" id="fw-next"> <span>Next.js</span></label>
+            <label><input type="radio" name="fw" id="fw-nuxt"> <span>Nuxt</span></label>
+            <label><input type="radio" name="fw" id="fw-svelte"> <span>SvelteKit</span></label>
+            <label><input type="radio" name="fw" id="fw-rails"> <span>Rails</span></label>
+            <label><input type="radio" name="fw" id="fw-dj"> <span>Django</span></label>
+            <label><input type="radio" name="fw" id="fw-laravel"> <span>Laravel</span></label>
+            <label><input type="radio" name="fw" id="fw-symfony"> <span>Symfony</span></label>
+            <label><input type="radio" name="fw" id="fw-wp"> <span>WordPress</span></label>
+        </div>
+
+        <div class="fwp">
+            <p class="fw-html"><code>index.html</code>, Angular included</p>
+            <p class="fw-astro"><code>src/layouts/*.astro</code></p>
+            <p class="fw-next"><code>app/layout.tsx</code>, or <code>pages/_document.tsx</code></p>
+            <p class="fw-nuxt"><code>nuxt.config.ts</code>, under <code>app.head.script</code></p>
+            <p class="fw-svelte"><code>src/app.html</code></p>
+            <p class="fw-rails"><code>app/views/layouts/application.html.erb</code></p>
+            <p class="fw-dj">your base template</p>
+            <p class="fw-laravel"><code>resources/views/layouts/app.blade.php</code></p>
+            <p class="fw-symfony"><code>templates/base.html.twig</code></p>
+            <p class="fw-wp"><code>footer.php</code>, or the <code>wp_footer</code> hook</p>
+        </div>
+
+        <!-- THE ONE BLOCK ON THIS PAGE WHOSE JOB IS TO BE COPIED, AND IT IS.
+             What stood here before read data-project="<yours, from the landing
+             page>": a tag that cannot be pasted, sending the reader to another
+             page for the generator. The key is drawn in this browser now, by
+             the same derivation the landing page runs and the same one
+             tools/check-landing-derivation.mjs proves against the MCP's.
+
+             WHY IT IS BUILT AND NOT HIDDEN AND SHOWN. The copy button reads
+             textContent, and textContent does not know what display:none is:
+             four static variants would put every one of them in the
+             clipboard. The dials repaint this block instead. -->
+        <div class="snip">
+            <button class="copy" type="button" data-copy="snip-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-tag"><code id="tag-code">&lt;<span class="tg">script</span> <span class="at">src</span>=<span class="st">"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"</span>
+        <span class="at">data-server</span>=<span class="st">"https://api.annotepage.com/api.php"</span>
+        <span class="at">data-key</span>=<span class="st">"&lt;43 characters, drawn in your browser&gt;"</span>
+        <span class="at">defer</span>&gt;&lt;/<span class="tg">script</span>&gt;</code></pre>
+        </div>
+
+        <p class="small dim if-secure">
+            Each reviewer pastes it once, in their own browser.
+        </p>
+
+        <div class="snip if-secure">
+            <button class="copy" type="button" data-copy="snip-key" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-key"><code id="key-code">&lt;43 characters, drawn in your browser&gt;</code></pre>
+        </div>
+
+        <!-- THE ONE THING ON THIS PAGE A READER CAN MEASURE, and it follows
+             the dial for the same reason everything else does: an open tag
+             carries data-key and no data-project, so the selector that is
+             true in one mode returns null in the other. A check that is
+             wrong in half the states teaches a reader to distrust the page. -->
+        <p>
+            The console says whether it landed: a tag, or <code>null</code>.
+        </p>
+
+        <div class="snip">
+            <button class="copy" type="button" data-copy="snip-check" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-check"><code id="check-code"><span class="tg">document</span>.<span class="at">querySelector</span>(<span class="st">'script[data-key]'</span>)</code></pre>
+        </div>
+    </div>
+</section>
+
+<!-- 3. THE ASSISTANT ===================================================== -->
+<section id="assistant">
+    <div class="wrap">
+        <h2>Plugging in your assistant</h2>
+
+        <p class="if-open">
+            <b>1. In the command.</b> The key is on the page, so there is
+            nothing to configure.
+        </p>
+
+        <div class="snip if-open">
+            <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
+<span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
+        </div>
+
+        <p class="if-secure">
+            <b>1. In the command.</b> The key rides in it, and never enters the
+            conversation.
+        </p>
+
+        <div class="snip if-secure">
+            <button class="copy" type="button" data-copy="snip-mcp-sec" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-mcp-sec"><code id="mcp-code"><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
+<span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">\</span>
+  <span class="op">-e</span> ANNOTEPAGE_API=<span class="ap-api">https://api.annotepage.com/api.php</span> <span class="op">\</span>
+  <span class="op">-e</span> ANNOTEPAGE_KEY=&lt;the key above&gt; <span class="op">\</span>
+  <span class="op">-e</span> ANNOTEPAGE_AUTHOR=Assistant <span class="op">\</span>
+  <span class="op">--</span> annotepage-mcp</code></pre>
+        </div>
+
+        <p>
+            <b>2. In a file</b> for several sites, <code>chmod 600</code> and gitignored.
+        </p>
+
+        <div class="snip">
+            <button class="copy" type="button" data-copy="snip-json" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-json"><code id="json-code"><span class="at">"api"</span>:    <span class="st">"https://staging.example.com/notes/api.php"</span>,
+<span class="at">"key"</span>:    <span class="st">"&lt;the key&gt;"</span>,
+<span class="at">"origin"</span>: <span class="st">"https://staging.example.com"</span></code></pre>
+        </div>
+
+        <p>
+            <b>3. Let the assistant write it.</b> Easiest, and the key crosses
+            a provider&rsquo;s logs.
+        </p>
+
+        <!-- AND WHAT PLUGGED IN IS FOR. The chapter used to stop at two
+             commands, which leaves a reader holding a configuration and no
+             idea what to type next. The site named in it is the reader's own,
+             from the field at the top. -->
+        <p>
+            Then, in one sentence:
+        </p>
+
+        <div class="snip">
+            <button class="copy" type="button" data-copy="snip-ask" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-ask"><code id="ask-code">connect to staging.example.com with annotepage and fix what the reviewers flagged</code></pre>
+        </div>
+    </div>
+</section>
+
+<!-- WHAT CANNOT BE UNDONE ================================================
+     LAST, AND SHORT. The anchors #data and #no-recovery are load-bearing --
+     the roadmap and the landing page cite them -- so they moved here with
+     the lines they name rather than being renamed. -->
+<section id="data">
+    <div class="wrap">
+        <h2>What you cannot undo</h2>
+
+        <ul class="plain">
+            <li id="no-recovery"><b>Lose the key, lose the notes.</b> No recovery,
+            no rotation.</li>
+            <li><b>The key reads and writes.</b> There is no reader-only role.</li>
+            <li><b>The mode is settled by the tag</b>, and never after.</li>
+            <li><b>A classic script tag, or nothing.</b> A module leaves it silent.</li>
+            <li><b>The server sees</b> counts, times, sizes, IPs and your domain
+            &mdash; never your paths or your text.</li>
+            <li><b>No account, no moderation, no deletion, no notification.</b></li>
+            <li><b>Never declare <code>localhost:3000</code> in a domain list.</b>
+            It names every machine on earth.</li>
+            <li id="locked"><b>A wrong <code>integrity</code> digest fails silently.</b></li>
+        </ul>
+
+        <p>
+            <a class="cta" href="/">Back to the landing page</a>
+        </p>
+    </div>
+</section>
+
+</main>
+
+<span class="vh" id="copy-status" role="status" aria-live="polite"></span>
+
+<script>
+/* The copy buttons. The text copied is the text of the block above, exactly:
+   textContent, so the escaped markup in the snippets comes back as the markup
+   you would paste.
+
+   The Clipboard API needs a secure context and a user gesture; both hold here.
+   The fallback exists for the case where it is refused anyway -- a copy button
+   that copies nothing, on a page selling simplicity, is the worst possible
+   admission. */
+(function () {
+    'use strict';
+
+    var status = document.getElementById('copy-status');
+
+    var textOf = function (id) {
+        var target = document.getElementById(id);
+        if (!target) return null;
+        /* Trailing newline removed: a paste that lands with a blank line at
+           the end is a paste somebody has to tidy up. */
+        return target.textContent.replace(/\s+$/, '');
+    };
+
+    /* The old way, kept because it is the only one that works when the
+       Clipboard API is refused. execCommand is deprecated, not gone. */
+    var copyByHand = function (text) {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.top = '0';
+        area.style.left = '0';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        area.setSelectionRange(0, text.length);
+        var done = false;
+        try { done = document.execCommand('copy'); } catch (e) { done = false; }
+        document.body.removeChild(area);
+        return done;
+    };
+
+    var timers = new WeakMap();
+
+    var announce = function (button, ok) {
+        button.setAttribute('aria-label', ok ? 'Copied' : 'Select and copy');
+        button.setAttribute('data-state', ok ? 'done' : 'failed');
+        status.textContent = ok
+            ? 'Copied to the clipboard.'
+            : 'Copying was refused: select the block and copy it by hand.';
+
+        clearTimeout(timers.get(button));
+        timers.set(button, setTimeout(function () {
+            button.setAttribute('aria-label', 'Copy');
+            button.removeAttribute('data-state');
+            status.textContent = '';
+        }, ok ? 1800 : 4000));
+    };
+
+    var buttons = document.querySelectorAll('button[data-copy]');
+    for (var i = 0; i < buttons.length; i++) {
+        (function (button) {
+            var id = button.getAttribute('data-copy');
+            /* A button whose target does not exist would copy nothing in
+               silence. It does not get to pretend: it goes away. */
+            if (textOf(id) === null) { button.hidden = true; return; }
+
+            button.addEventListener('click', function () {
+                var text = textOf(id);
+                if (text === null) { announce(button, false); return; }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function () {
+                        announce(button, true);
+                    }, function () {
+                        announce(button, copyByHand(text));
+                    });
+                } else {
+                    announce(button, copyByHand(text));
+                }
+            });
+        }(buttons[i]));
+    }
+}());
+</script>
+
+<script>
+(function () {
+    'use strict';
+
+    /* THE KEY IS GENERATED HERE, IN THE READER'S BROWSER, AND GOES NOWHERE.
+       Nothing on this page transmits except the annotepage client at the foot
+       of it, which is fetched and never told about this value -- so there is
+       no path by which the key below could reach us, or anyone.
+
+       It is the same computation the client's own setup screen performs, and
+       the same one the landing page runs. It happens here so that a reader can
+       obtain a project before installing anything, instead of being sent to
+       another page for a generator -- which is what the block this replaces
+       did, and it is why that block could not be copied. */
+
+    var tagCode   = document.getElementById('tag-code');
+    var keyCode   = document.getElementById('key-code');
+    var checkCode = document.getElementById('check-code');
+    var orgCode   = document.getElementById('org-code');
+    var jsonCode  = document.getElementById('json-code');
+    var askCode   = document.getElementById('ask-code');
+    var mcpCode   = document.getElementById('mcp-code');
+    var siteIn    = document.getElementById('site');
+    var open      = document.getElementById('m-open');
+    var shared    = document.getElementById('s-shared');
+
+    /* It must stop rather than half-run: a generator wired to elements the
+       page no longer has would leave the placeholder sitting in the tag,
+       ready to be copied. */
+    if (!tagCode || !keyCode || !checkCode || !orgCode || !jsonCode
+        || !askCode || !mcpCode || !siteIn || !open || !shared) return;
+
+    /* Without a secure context there is no WebCrypto, and a key drawn from
+       Math.random would be guessable -- which is worse than no key at all,
+       because it would look like one. We say so instead. */
+    if (!window.crypto || !window.crypto.subtle || !window.crypto.getRandomValues) {
+        return;
+    }
+
+    /* ---- BEGIN derivation: must agree with mcp/src/crypto.mjs.
+            tools/check-landing-derivation.mjs runs this against it. ---- */
+    var HKDF_SALT_STRING = 'annotepage/1';
+
+    function b64url(bytes) {
+        var s = '';
+        for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function projectIdFromSalt(keyBytes) {
+        var enc = new TextEncoder();
+        return window.crypto.subtle
+            .importKey('raw', keyBytes, 'HKDF', false, ['deriveBits'])
+            .then(function (master) {
+                return window.crypto.subtle.deriveBits({
+                    name: 'HKDF',
+                    hash: 'SHA-256',
+                    /* HKDF's "salt" is NOT our key: ours is the input keying
+                       material. Swapping the two yields a system that works
+                       and whose ids disagree with every other implementation. */
+                    salt: enc.encode(HKDF_SALT_STRING),
+                    info: enc.encode('id')
+                }, master, 256);
+            })
+            .then(function (bits) {
+                /* 16 bytes, not 32: this value is copied by hand into a tag
+                   and a configuration file. 22 characters can be; 43 cannot. */
+                return b64url(new Uint8Array(bits).subarray(0, 16));
+            });
+    }
+    /* ---- END derivation ---- */
+
+    var SHARED_API = 'https://api.annotepage.com/api.php';
+    var FALLBACK   = 'staging.example.com';
+
+    var current = { key: '', id: '' };
+
+    /* THE FIELD NEVER PRODUCES A HOLE, and the fallback is the address the
+       rest of the site already uses. A reader who types nothing reads finished
+       blocks and can copy every one of them; a reader who types gets their own
+       host in four places at once.
+
+       WHAT IS TAKEN OFF IT IS WHAT A PERSON PASTES: they paste an address bar,
+       so a scheme, a path, a query and any surrounding space all arrive with
+       the host. The host and its port are kept and the rest is dropped, rather
+       than refused -- a field that rejects what somebody just copied teaches
+       them to distrust it. Nothing here is parsed as markup: every value below
+       is written through textContent. */
+    function host() {
+        var raw = (siteIn.value || '').trim();
+        raw = raw.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+        raw = raw.split(/[\/?#]/)[0];
+        raw = raw.replace(/\s+/g, '');
+        return raw || FALLBACK;
+    }
+
+    /* Nodes rather than markup: this site never assigns HTML from a string,
+       and a generator is no reason to start. */
+    function piece(cls, text) {
+        var e = document.createElement('span');
+        if (cls) e.className = cls;
+        e.textContent = text;
+        return e;
+    }
+
+    function paint() {
+        var secure = !open.checked;
+        var site   = host();
+        var ownApi = 'https://' + site + '/notes/api.php';
+        var origin = 'https://' + site;
+        var api = shared.checked ? SHARED_API : ownApi;
+
+        while (tagCode.firstChild) tagCode.removeChild(tagCode.firstChild);
+        tagCode.appendChild(document.createTextNode('<'));
+        tagCode.appendChild(piece('tg', 'script'));
+        tagCode.appendChild(document.createTextNode(' '));
+        tagCode.appendChild(piece('at', 'src'));
+        tagCode.appendChild(document.createTextNode('='));
+        tagCode.appendChild(piece('st',
+            '"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"'));
+        tagCode.appendChild(document.createTextNode('\n        '));
+        tagCode.appendChild(piece('at', 'data-server'));
+        tagCode.appendChild(document.createTextNode('='));
+        tagCode.appendChild(piece('st', '"' + api + '"'));
+        tagCode.appendChild(document.createTextNode('\n        '));
+        /* NEVER BOTH. A tag carrying a key and an id that disagree is refused
+           by the client, and no winner is picked -- so the page must never be
+           able to hand one out. One attribute is written, not two with one
+           hidden. */
+        tagCode.appendChild(piece('at', secure ? 'data-project' : 'data-key'));
+        tagCode.appendChild(document.createTextNode('='));
+        tagCode.appendChild(piece('st', '"' + (secure ? current.id : current.key) + '"'));
+        tagCode.appendChild(document.createTextNode('\n        '));
+        tagCode.appendChild(piece('at', 'defer'));
+        tagCode.appendChild(document.createTextNode('></'));
+        tagCode.appendChild(piece('tg', 'script'));
+        tagCode.appendChild(document.createTextNode('>'));
+
+        keyCode.textContent = current.key;
+
+        /* The three other places the field answers in: the origin the server
+           has to be told, the assistant's file, and the sentence somebody
+           types at the end. One answer, four blocks. */
+        while (orgCode.firstChild) orgCode.removeChild(orgCode.firstChild);
+        orgCode.appendChild(piece('st', "'origins'"));
+        orgCode.appendChild(document.createTextNode(' => '));
+        orgCode.appendChild(piece('at', 'array'));
+        orgCode.appendChild(document.createTextNode('('));
+        orgCode.appendChild(piece('st', "'" + origin + "'"));
+        orgCode.appendChild(document.createTextNode('),'));
+
+        while (jsonCode.firstChild) jsonCode.removeChild(jsonCode.firstChild);
+        var rows = [['"api"',    '"' + ownApi + '"',  '    '],
+                    ['"key"',    '"<the key>"',       '    '],
+                    ['"origin"', '"' + origin + '"',  ' ']];
+        for (var r = 0; r < rows.length; r++) {
+            jsonCode.appendChild(piece('at', rows[r][0]));
+            jsonCode.appendChild(document.createTextNode(':' + rows[r][2]));
+            jsonCode.appendChild(piece('st', rows[r][1]));
+            if (r < rows.length - 1) jsonCode.appendChild(document.createTextNode(',\n'));
+        }
+
+        askCode.textContent =
+            'connect to ' + site
+            + ' with annotepage and fix what the reviewers flagged';
+
+        /* The command names the same address the tag does. It was a
+           <api.php> placeholder beside four blocks carrying the real thing,
+           which is the shape this page exists to get rid of. */
+        var mcpApi = mcpCode.querySelector('.ap-api');
+        if (mcpApi) mcpApi.textContent = api;
+
+        /* The check names the attribute the tag above actually carries. */
+        while (checkCode.firstChild) checkCode.removeChild(checkCode.firstChild);
+        checkCode.appendChild(piece('tg', 'document'));
+        checkCode.appendChild(document.createTextNode('.'));
+        checkCode.appendChild(piece('at', 'querySelector'));
+        checkCode.appendChild(document.createTextNode('('));
+        checkCode.appendChild(piece('st',
+            secure ? "'script[data-project]'" : "'script[data-key]'"));
+        checkCode.appendChild(document.createTextNode(')'));
+    }
+
+    function fresh() {
+        var key = new Uint8Array(32);
+        window.crypto.getRandomValues(key);
+        var text = b64url(key);
+        return projectIdFromSalt(key).then(function (id) {
+            current.key = text;
+            current.id = id;
+            paint();
+        });
+    }
+
+    var dials = document.querySelectorAll('.dials input[type="radio"]');
+    for (var i = 0; i < dials.length; i++) {
+        dials[i].addEventListener('change', paint);
+    }
+    /* input and not change: the blocks follow the typing, so the reader sees
+       their own address arrive rather than having to leave the field to find
+       out whether it took. Nothing is sent on either event -- there is no code
+       here that sends anything, which is what makes the claim checkable. */
+    siteIn.addEventListener('input', paint);
+
+    fresh();
+}());
+</script>
+
+<!-- The tool, on this page, in open mode: the site is annotated with what it
+     describes. Served from this origin because jsDelivr's @2 still resolves to
+     2.0.1, which ignores data-key -- same bytes, checked against the published
+     bundle by tools/check-sri.mjs. -->
+<script src="/annotepage-client-2.11.0.js"
+        data-server="https://api.annotepage.com/api.php"
+        data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
+        data-version="2026.9.5"
+        defer></script>
+
+</body>
+</html>
