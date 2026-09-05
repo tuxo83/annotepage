@@ -39,6 +39,50 @@ whole page, as an option, off by default.
 
 ---
 
+## The assistant's questions go in the thread, not in a terminal
+
+**Why.** An assistant that does not understand a remark asks its question in
+the operator's console — that is, to the person who did NOT write the remark.
+The reviewer is the one who knows what they meant, and they are the one who is
+not asked. The operator then plays messenger, or guesses.
+
+The tool descriptions now say to reply in the thread rather than ask in the
+console (mcp 2.5.0). That fixes who is asked. It does not fix what it costs
+the reviewer.
+
+**What is missing.** A free-text question in a thread asks somebody to come
+back, read, understand what is being asked, and write. Most will not. What
+would cost them one click is a reply that CARRIES ITS ANSWERS: "which of these
+did you mean?", two to four choices, and a comment field for whoever wants to
+say more.
+
+**Three difficulties, and the third is the one that decides.**
+
+1. **The format has no notion of a structured reply.** A reply is text inside
+   an encrypted envelope (FORMAT.md section 3). Choices mean either a new
+   field — a format number, and everything the runtime check now exists to
+   catch — or a convention encoded in the text that the client parses back.
+   The second keeps the format still and makes the client guess at prose,
+   which is how an export stops being readable by anything else.
+2. **Who may answer.** A note is written by whoever opens the page, and the
+   key gives writing to all of them. A question addressed to Camille can be
+   answered by anybody. That may be acceptable — it is a review, not a vote —
+   but it has to be said rather than discovered.
+3. **THERE IS NO NOTIFICATION, ON PURPOSE.** Nothing tells a reviewer that a
+   question is waiting; they see it when they next open the page. A question
+   nobody comes back to read is worse than no question: the assistant waits,
+   the operator waits, and the remark sits resolved-in-nobody's-mind. Any
+   design here has to answer "and if they never come back?" before it answers
+   anything else.
+
+**Lead.** The cheapest version that is not a lie: the assistant states its
+reading instead of asking — "I read this as the label wrapping below 380px;
+I fixed that" — and the reviewer reopens if it was wrong. Reopening is one
+button that already exists, it needs no format change, and it costs nothing
+when the reading was right, which is most of the time.
+
+---
+
 ## Product positioning — to be reflected in the site and the README
 
 Observed while examining neighbouring projects: cusdis, remark42, giscus,
