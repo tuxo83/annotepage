@@ -178,32 +178,6 @@ main .split-col > .claims { max-width: none; }
     clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
-/* -- Top bar ------------------------------------------------------------- */
-
-.top {
-    border-bottom: 1px solid var(--line-soft);
-    background: var(--bg);
-}
-.top .wrap {
-    display: flex; align-items: center; gap: 1rem;
-    flex-wrap: wrap; padding-top: .85rem; padding-bottom: .85rem;
-}
-.mark {
-    font-family: var(--mono); font-size: .95rem; font-weight: 600;
-    letter-spacing: -.02em; color: var(--text); text-decoration: none;
-}
-.mark::before {
-    content: ""; display: inline-block; vertical-align: -1px;
-    width: .62em; height: .62em; margin-right: .5em; border-radius: 2px;
-    background: var(--accent);
-}
-.top nav { margin-left: auto; display: flex; gap: 1.1rem; flex-wrap: wrap; }
-/* The one link that leaves the site, set apart from the two that do not. Four
-   entries that look alike behave three ways otherwise, and the difference is
-   only discovered by losing your place. */
-.top nav .leave { margin-left: 1.1rem; }
-.top nav a { font-size: .875rem; color: var(--dim); text-decoration: none; }
-.top nav a:hover { color: var(--text); text-decoration: underline; }
 
 /* -- Sections ------------------------------------------------------------ */
 
@@ -930,8 +904,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     <div class="wrap">
         <a class="mark" href="/">annotepage</a>
         <nav>
-            <a href="#use">Use</a>
-            <a href="#install">Install</a>
+            <a href="/#use">Use</a>
+            <a href="/#install">Install</a>
             <a class="leave" href="https://github.com/tuxo83/annotepage"
                target="_blank" rel="noopener"
                aria-label="GitHub, opens in a new tab">GitHub</a>

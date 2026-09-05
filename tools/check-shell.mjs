@@ -9,13 +9,12 @@
    "GitHub", and a link list that gained entries on one page and not the others.
    Nothing was broken; the site was simply three sites wearing one name.
 
-   So the frame is compared instead of generated. Two things must match on every
-   page, and the two exceptions are the ones a shared frame legitimately has:
+   So the frame is compared instead of generated. It is compared WHOLE, menu
+   included, and there is exactly one exception: what belongs to one page only
+   lives after a `<!-- page-specific -->` marker and is not compared. Anything
+   before it is the shared frame, to the byte.
 
-   - a page never links to itself. The entry is dropped, so the comparison drops
-     it too before looking;
-   - what belongs to one page only lives after a `<!-- page-specific -->`
-     marker, and is not compared. Anything before it is the shared frame.
+   There used to be a second exception, and it cost a bug. See below.
 
    This is not a template and does not want to be one: it says when the copies
    have drifted, and leaves the fixing to whoever knows why. */
@@ -41,27 +40,35 @@ const bloc = (html, tag) => {
     return m ? m[0] : null;
 };
 
-/* The three pages of the site. A page links to the other two and not to
-   itself, so comparing the lists as they stand can never match: each one is
-   missing a DIFFERENT entry. They are taken out of all of them before the
-   comparison, and checked separately -- which is the stricter reading anyway,
-   since it catches a page linking to itself as well as one missing a sibling. */
+/* The three pages of the site, by the address a menu would use to name one.
+   No menu names a page any more -- see the block above `normalise` -- so this
+   map feeds only the last check in the file, the one that refuses a menu entry
+   pointing at the page it sits on. It is kept for the day somebody puts page
+   names back in the menu: that day, all three pages get the same entry, the
+   header comparison stays happy, and one of them links to itself. */
 const INTERNAL = { 'index.html': '/',
                    'how-to-install-it.html': 'how-to-install-it.html',
                    'how-to-use-it.html': 'how-to-use-it.html' };
 
-const normalise = (text) => {
-    let out = text.split('<!-- page-specific -->')[0];
-    for (const href of Object.values(INTERNAL)) {
-        out = out.replace(
-            new RegExp(`\\s*<li><a href="${href.replace(/\//g, '\\/')}">[^<]*</a></li>`, 'g'), '');
-    }
-    /* The menu is the one part of the header meant to differ: each page points
-       at the others. Everything around it -- the wordmark, the wrapper -- is
-       shared, and that is what this compares. */
-    out = out.replace(/<nav>[\s\S]*?<\/nav>/, '<nav/>');
-    return out.replace(/\s+/g, ' ').trim();
-};
+/* THE MENU IS COMPARED. It used to be replaced by an empty tag before the
+   comparison -- "the one part of the header meant to differ", said the comment
+   that stood here -- and that is why this check reported one header across
+   three pages while the three menus read:
+
+       index.html               Use . Install . GitHub
+       how-to-use-it.html       Home . Install . GitHub
+       how-to-install-it.html   Home . A detailed usage example . GitHub
+
+   Three different menus, and the check that exists to catch exactly that was
+   throwing them away first. A check that passes over what it was written to
+   watch is worse than no check: it is a promise that nobody re-reads.
+
+   The rule it enforces now is the one that was decided and then drifted: the
+   menu is the SAME on every page -- Use and Install pointing at the landing
+   page's two chapters, then GitHub. No entry names a page, so no page can link
+   to itself, and none of the three needs an exception. */
+const normalise = (text) =>
+    text.split('<!-- page-specific -->')[0].replace(/\s+/g, ' ').trim();
 
 let bad = 0;
 for (const tag of ['header', 'footer']) {
@@ -91,11 +98,10 @@ for (const tag of ['header', 'footer']) {
     }
 }
 
-/* And the part the normalisation had to remove. The invariant is no longer
-   "every page reaches the other two": the landing page's menu deliberately
-   points INTO itself -- its two chapters are the page -- and reaches the
-   session through the button that ends the first one. What is left is the rule
-   that has no exception: a menu never links to the page it is on. */
+/* Nothing is removed before the comparison any more, so this is no longer the
+   part that had to be checked separately -- it is the part the comparison
+   cannot see. Three identical menus all naming a page would pass above and
+   still leave that page linking to itself. */
 for (const name of PAGES) {
     if (!(name in INTERNAL)) continue;
     const html = readFileSync(join(DIR, name), 'utf8');
@@ -106,5 +112,34 @@ for (const name of PAGES) {
     }
 }
 
+/* EVERY PAGE IS REACHED FROM ANOTHER ONE. This is the invariant the menu used
+   to carry by accident, and losing it is what made the fix above incomplete:
+   once no menu entry names a page, the only way from the install page to the
+   usage page was gone, and every check in this file still passed -- the three
+   headers were identical, which was the whole point. Identical and useless is
+   a state worth refusing.
+
+   A link in any OTHER page counts, wherever it sits: the site's own way out of
+   a page is the button that ends it, not the menu. */
+const ADRESSES = { 'index.html': ['/', 'index.html'] };
+for (const name of PAGES) if (!(name in ADRESSES)) ADRESSES[name] = [name, `/${name}`];
+for (const name of PAGES) {
+    const depuis = PAGES.filter((autre) => autre !== name
+        && ADRESSES[name].some((a) => new RegExp(`href="${a}(#[^"]*)?"`)
+            .test(readFileSync(join(DIR, autre), 'utf8'))));
+    if (!depuis.length) {
+        console.error(`${DIR}/${name}: no other page links to it.`);
+        bad++;
+    }
+}
+
 if (bad) process.exit(1);
-console.log(`shell: ${PAGES.length} page(s), one header and one footer`);
+
+/* SAY WHAT WAS MEASURED, not what was hoped. This line read "one header and
+   one footer" on a site whose pages have no footer at all: the loop above skips
+   the tag when no page carries it, and the message announced a comparison that
+   never ran. Same failure as the menu, one line further down. */
+const pieds = PAGES.filter((n) =>
+    bloc(readFileSync(join(DIR, n), 'utf8'), 'footer') !== null).length;
+console.log(`shell: ${PAGES.length} page(s), one header (menu included), `
+    + (pieds ? `one footer` : `no footer on any page`) + `.`);
