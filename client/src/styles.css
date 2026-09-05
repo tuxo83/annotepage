@@ -349,17 +349,122 @@
     color: var(--ap-text-soft);
 }
 
-/* The standing mention of a public key. Deliberately NOT the alert colours:
-   this is not a failure and it is on screen for ever -- an alarm that never
-   goes away stops being read. It is a fact about the project, stated in the
-   panel's own tone, and it stays at the top of every draw. */
-/* The public-key notice, the "a newer client exists" line and the "this
-   server speaks another format" line are the same object on screen: a
-   standing statement about what one is looking at, above the notes and above
-   the failures. One rule, so they cannot drift apart -- and the third one
-   joins it rather than inventing a colour, precisely because a protocol
-   disagreement is a fact about the project, not an incident. */
-.ap-public,
+/* ----------------------------------------------------------------------------
+   THE MODE BADGE: one word, drawn in both modes, at the top of every draw.
+
+   It replaced a paragraph that only the public mode ever drew. Two things
+   were wrong with that: secure mode said nothing, so the panel never told a
+   reviewer which of the two they were in; and a paragraph pinned to the top
+   for ever is skipped after the second reading, while a single word is not.
+
+   IT IS NOT A BUTTON AND MUST NOT LOOK LIKE ONE. No shadow, no pressed
+   state, cursor stays default: there is nothing to press. What it does have
+   is a focus ring, because it takes focus -- the description below has to be
+   reachable without a pointer, and that is the only reason it is focusable.
+   ---------------------------------------------------------------------------- */
+
+.ap-mode {
+    /* The frame the description is positioned against. It spans the width of
+       the panel body, so a description pinned to its two edges cannot spill
+       sideways out of a body that scrolls -- and a scrolling body clips both
+       axes, not just the one it scrolls. */
+    position: relative;
+    margin: 4px 0 10px;
+}
+
+.ap-mode-chip {
+    display: inline-block;
+    padding: 2px 9px 3px;
+    border: 1px solid var(--ap-border);
+    border-radius: 999px;
+    background: var(--ap-bg-soft);
+    color: var(--ap-text-soft);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: default;
+}
+
+/* The public badge is the one that carries a consequence, so it is the one
+   that is coloured -- in the tool's own accent, not in the alert colours: a
+   public key is a choice somebody made on purpose, not an incident. Secure
+   keeps the quiet frame: it is the case where nothing is being said. */
+/* The same ring as every other focusable thing in the panel. It is the only
+   visual proof, for somebody arriving by Tab, that this word is where their
+   focus went. */
+.ap-mode-chip:focus-visible {
+    outline: 2px solid var(--ap-accent);
+    outline-offset: 2px;
+}
+
+.ap-mode-public .ap-mode-chip {
+    border-color: var(--ap-accent);
+    background: var(--ap-accent-veil);
+    color: var(--ap-accent-dark);
+}
+
+/* The description. Hidden by DEFAULT and shown on demand, and hidden in a way
+   that leaves it readable to a screen reader: it is the badge's
+   aria-describedby target, and an accessible description is computed from the
+   referenced element whether or not it is painted. It is taken out of the
+   layout entirely (absolute) so that showing it moves not one pixel of the
+   list underneath -- a tooltip that pushes the notes down is a tooltip that
+   makes people lose their place. */
+.ap-mode-tip {
+    position: absolute;
+    z-index: 2;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--ap-border);
+    border-radius: var(--ap-radius);
+    background: var(--ap-bg-raised);
+    color: var(--ap-text);
+    box-shadow: var(--ap-shadow);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+    line-height: 1.45;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-3px);
+    transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s linear 0.12s;
+    pointer-events: none;
+}
+
+/* BOTH, and the keyboard one is not the afterthought: :focus-visible is what
+   makes the sentence reachable by somebody who never touches a pointer. */
+.ap-mode-chip:hover ~ .ap-mode-tip,
+.ap-mode-chip:focus-visible ~ .ap-mode-tip {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ap-mode-tip {
+        transform: none;
+        transition: none;
+    }
+    .ap-mode-chip:hover ~ .ap-mode-tip,
+    .ap-mode-chip:focus-visible ~ .ap-mode-tip {
+        transition: none;
+    }
+}
+
+/* The "a newer client exists" line and the "this server speaks another
+   format" line are the same object on screen: a standing statement about what
+   one is looking at, above the notes and above the failures. One rule, so
+   they cannot drift apart -- and the second one joins it rather than
+   inventing a colour, precisely because a protocol disagreement is a fact
+   about the project, not an incident.
+
+   Deliberately NOT the alert colours: neither is a failure, and an alarm that
+   never goes away stops being read. */
 .ap-upgrade,
 .ap-format {
     margin: 0 0 10px;

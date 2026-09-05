@@ -239,16 +239,37 @@ ns.defaultLabels = {
         + 'can still get hold of the key before confirming: nobody, not even '
         + 'the server, can hand it back.',
 
-    /* -- A project whose key is IN the page ---------------------------
-       Said where the notes are, at every draw, and not once at startup: it
-       is a standing property of the project, not an event. The write half
-       is the one nobody expects -- the key gives both, and this format has
-       no reader-only role. */
-    'public.notice':
-        'End-to-end encrypted, and the key of this project is public: it is '
-        + 'written into this page. Anyone who can open the page can read these '
-        + 'notes AND write them -- the key gives both, and this format has no '
-        + 'reader-only role.',
+    /* -- WHICH OF THE TWO MODES THIS PROJECT RUNS IN ------------------
+       One word, drawn in BOTH modes, where the notes are and at every draw.
+       It replaces a paragraph that only the public mode ever showed: a
+       reviewer in secure mode had no way of telling which of the two they
+       were in, and a mention that appears in one case only is read as an
+       alarm rather than as a state.
+
+       The two words are the site's own: "Public" and "Secure", not a third
+       vocabulary invented here.
+
+       ENCRYPTION IS NOT ON THE BADGE. It holds in both modes, always, so
+       repeating it on screen at every draw says nothing that distinguishes
+       anything -- it belongs to the sentence one asks for, below.
+
+       Those sentences are the whole explanation, and they are reachable by
+       pointer AND by keyboard: the badge is not a button, it is focusable
+       so that the description can be asked for without a mouse. */
+    'mode.public': 'Public',
+    'mode.secure': 'Secure',
+    /* The write half is the one nobody expects -- the key gives both, and
+       this format has no reader-only role. Shortened from the paragraph it
+       replaces, and not one claim lighter. */
+    'mode.public_detail':
+        'End-to-end encrypted, and the key is in this page: anyone who can '
+        + 'open the page can read these notes AND write them. The key gives '
+        + 'both -- this format has no reader-only role.',
+    /* The mirror answer, which had never been written down anywhere: what
+       the other mode actually costs the server. */
+    'mode.secure_detail':
+        'End-to-end encrypted, and the key is not in this page: each browser '
+        + 'pastes it once, and the server never receives it.',
 
     /* -- A newer client exists, and this copy is not going to fetch it -
        Shown ONLY when the file is served by the site itself: a copy served
