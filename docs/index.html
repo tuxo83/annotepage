@@ -1643,9 +1643,13 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
      annotated with the tool the site describes, which is the only test that
      catches what a fixture cannot.
 
-     Served from this origin rather than the CDN because jsDelivr's @2 still
-     resolves to 2.0.1, which ignores data-key. Same bytes either way: the SRI
-     check compares this file with the published bundle on every run.
+     Served from this origin, and no longer for the reason written here before:
+     that said jsDelivr's @2 still resolved to 2.0.1 and ignored data-key, which
+     was true when it was written and is not now -- @2 answers 2.11.0, fetched
+     and hashed to check. The reason that survives is better anyway: this file
+     is the bundle this repository ships, compared byte for byte by
+     tools/check-sri.mjs on every run, and the site makes no third-party request
+     to show its own tool working.
 
      The key is public by construction -- that is what open mode is -- and
      until the relay declares this project the client stands down in COMPLETE
