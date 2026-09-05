@@ -266,8 +266,20 @@ body:has(#d-live:checked) .use-steps > li.between + li { margin-top: 0; }
    would have had. */
 .use-steps > li.between {
     display: flex; grid-template-columns: none;
-    align-items: center; justify-content: center; gap: .55rem;
+    align-items: center; justify-content: flex-start;
     counter-increment: none;
+    /* ON THE STEPS' OWN RAIL, NOT ON THE PAGE'S AXIS. Centred, it sat above
+       the column of pictures, 400px from anything anybody reads: somebody
+       skimming runs down the left edge, finds nothing there, and files the
+       line outside the sequence -- which is exactly what "it looks like a
+       comment" means. Put on that rail, the arrow takes the number's place and
+       the sentence takes the caption's, so it belongs to the run without
+       gaining an ounce of weight: size, colour and boldness are untouched.
+       The rail is the number's box (two monospace characters at .78rem, .92rem
+       wide) plus the caption's own .6rem gap. The arrow spends part of it; the
+       gap is what is left. Measured: text at 96.2px, the caption of the step
+       below at 96.2px, at every width -- both are in fixed rem. */
+    gap: calc(.92rem + .6rem - 1.15em);
     /* A STEP LARGER THAN THE SENTENCES, and it is the only thing on the page
        between the steps: at the sentences' own .95rem it read as a stray line
        of one of them. */
@@ -892,26 +904,44 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             </fieldset>
 
             <fieldset class="dial">
-                <legend>Putting the fix online</legend>
+                <legend>How your site updates</legend>
                 <div class="seg">
-                    <label><input type="radio" name="dep" id="d-live" checked> <span>By itself</span></label>
-                    <label><input type="radio" name="dep" id="d-wait"> <span>By hand</span></label>
+                    <label><input type="radio" name="dep" id="d-live" checked> <span>Automatic</span></label>
+                    <label><input type="radio" name="dep" id="d-wait"> <span>Manual</span></label>
                 </div>
-                <!-- NOT ONE WORD OF THE TRADE UP HERE. "merge", "release",
-                     "deploy" -- a reader who knows them loses half a second
-                     recognising their case, and a reader who does not is left
-                     in front of two buttons they cannot choose between. The
-                     word `deploy` exists on this page, further down, where a
-                     picture and a marker carry it. Here, the question is only
-                     whether the site puts a change online on its own.
+                <!-- THE WORD IS SAID HERE, AND GLOSSED ON THE SPOT. It was
+                     avoided for a while -- "Putting the fix online", "By itself
+                     / By hand" -- on the argument that a reader who does not
+                     know the trade would be left in front of two buttons they
+                     could not choose between. Read by three people, that
+                     version failed for BOTH of them, in opposite directions: a
+                     developer read "by itself / by hand" as WHO WRITES THE FIX,
+                     the machine or a human, on a page whose whole subject is an
+                     assistant that writes fixes; and somebody who never ships
+                     anything read "by hand" as HER OWN hands, and concluded it
+                     was not her case. The labels named an actor where the
+                     question is about a moment.
 
-                     And the two labels are the length of the other dial's:
-                     "Open" and "Secure" are 4 and 6 characters, these are 9
-                     and 7. Two controls side by side, one of them with labels
-                     three times longer, stop reading as a pair. -->
+                     AND THIS CONTROL ASKS THE OWNER, not the reviewer. Camille
+                     is shown in the pictures, she is not questioned by them --
+                     nobody asks her how the site she is reviewing goes online.
+                     The landing page has already said the word to that owner,
+                     three screens earlier: "There is only the deploy left --
+                     and if your deploy is automatic, nothing at all." Withholding
+                     it here would hand it back four lines below, in a step, in
+                     the marker between two steps, and in the client's own stamp
+                     "Resolved, waiting to be deployed": two names for one thing,
+                     with the mapping left to the reader.
+
+                     "Automatic / Manual" answers the question without naming
+                     an actor, so there is nobody left to mistake for somebody
+                     else, and the line under it says the word and glosses it in
+                     the same breath -- it arrives defined, once. The question
+                     itself keeps out of the trade: "updates" is the thing a
+                     reader can observe on their own site, and it is the sentence
+                     below, not the heading, that owes them the vocabulary. -->
                 <p class="dial-say">
-                    Your site publishes a change on its own, or somebody puts it
-                    online.
+                    Your site deploys on its own, or somebody puts it online.
                 </p>
             </fieldset>
 
