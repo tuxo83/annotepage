@@ -55,7 +55,7 @@ const bloc = (html, tag) => {
    since it catches a page linking to itself as well as one missing a sibling. */
 const INTERNAL = { 'index.html': '/',
                    'how-to-install-it.html': 'how-to-install-it.html',
-                   'example-session.html': 'example-session.html' };
+                   'how-to-use-it.html': 'how-to-use-it.html' };
 
 const normalise = (text) => {
     let out = text.split('<!-- page-specific -->')[0];
