@@ -15,15 +15,21 @@ import { readFileSync } from 'node:fs';
 import { webcrypto } from 'node:crypto';
 import { keyFromText, derive } from '../mcp/src/crypto.mjs';
 
-/* TWO PAGES GENERATE A KEY NOW, and the second one is the reason this check
-   has to name them both. The setup page hands out the tag itself -- the block
-   whose whole job is to be copied -- so a drift there is a tag pasted into a
-   layout file naming a project the client never computes. Listing them is
-   deliberate: a glob would pass in silence the day somebody adds a third
-   generator with no markers in it. */
-const PAGES = ['docs/index.html', 'docs/how-to-install-it.html'];
+/* THREE GENERATORS NOW, AND THE THIRD IS NOT A PAGE. The setup page hands out
+   the tag itself -- the block whose whole job is to be copied -- so a drift
+   there is a tag pasted into a layout file naming a project the client never
+   computes. The WordPress plugin's settings screen draws the same key for
+   somebody who will never see a tag at all, which makes a drift there the
+   hardest of the three to notice: there is no block to compare by eye.
 
-const blocks = PAGES.map((path) => {
+   Listing them is deliberate: a glob would pass in silence the day somebody
+   adds a fourth generator with no markers in it. The extension is not the
+   criterion either -- what is read here is the block between the markers, and
+   a .js file has one exactly as a page does. */
+const GENERATORS = ['docs/index.html', 'docs/how-to-install-it.html',
+                    'wordpress/admin.js'];
+
+const blocks = GENERATORS.map((path) => {
     const page = readFileSync(path, 'utf8');
     const between = page.match(
         /---- BEGIN derivation[\s\S]*?----\s*\*\/([\s\S]*?)\/\*\s*---- END derivation/);
@@ -75,7 +81,7 @@ for (const [path, fromPage] of derivers) {
 
 if (bad) {
     console.error(`\n${bad} vector(s) disagree. The tag the site hands out would name a`);
-    console.error('project the client does not compute. Fix the page, not this check.');
+    console.error('project the client does not compute. Fix the generator, not this check.');
     process.exit(1);
 }
-console.log(`landing-derivation: ${derivers.length} page(s) x ${VECTORS.length} vectors, all agree with the mcp`);
+console.log(`landing-derivation: ${derivers.length} generator(s) x ${VECTORS.length} vectors, all agree with the mcp`);

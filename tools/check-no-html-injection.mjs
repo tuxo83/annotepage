@@ -18,7 +18,7 @@ import { execSync } from 'node:child_process';
    its siblings is how this rule usually fails. */
 const BANNED = /\b(innerHTML|outerHTML|insertAdjacentHTML|document\.write|dangerouslySetInnerHTML)\b/;
 
-const SHIPPED = /^(client\/src|client\/tools|mcp\/src|mcp\/tools|server)\/|^(client|mcp)\/[^/]+\.(mjs|js)$/;
+const SHIPPED = /^(client\/src|client\/tools|mcp\/src|mcp\/tools|server|wordpress)\/|^(client|mcp)\/[^/]+\.(mjs|js)$/;
 
 const files = execSync('git ls-files --cached --others --exclude-standard', { encoding: 'utf8' })
     .split('\n').filter(Boolean)
