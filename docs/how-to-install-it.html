@@ -361,7 +361,11 @@ body:has(#s-own:checked)    .if-shared { display: none; }
    as well: it is the same kind of control, and one page should not have two
    drawings of one idea. What install.html had here was a twelve-row table,
    which is eleven answers a reader does not want beside the one they do. */
-.tabs { display: flex; flex-wrap: wrap; gap: .35rem; margin: 1.1rem 0 0; }
+/* UNDER THE TAG, NOT OVER IT -- see the comment where they now sit. The lead
+   line is what makes them a lookup rather than a control: without it, a row of
+   ten names under a block of code reads as ten variants of that code. */
+.fw-lead { margin: 1.4rem 0 0; font-size: .9rem; font-weight: 600; color: var(--dim); }
+.tabs { display: flex; flex-wrap: wrap; gap: .35rem; margin: .6rem 0 0; }
 .tabs input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .tabs label { cursor: pointer; }
 .tabs span {
@@ -410,7 +414,6 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 .loop-row { margin: clamp(1.4rem, 3.4vw, 2.4rem) 0 0; }
 /* ABOVE the drawing, and drawn like the requirement line above it rather than
    like a title: it places the figure, it does not announce a section. */
-.loop-cap { margin: 0 0 .9rem; font-size: .875rem; line-height: 1.55; color: var(--dim); }
 /* AND THE ONE LINE UNDER IT KEEPS ITS DISTANCE. The figure carries no bottom
    margin -- nothing was ever written under it -- so the sentence landed on the
    bottom row of boxes and read as a fourth label. */
@@ -605,21 +608,89 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <a href="/#install">How you install it</a>, at length, with every option.
         </p>
 
+        <!-- THE DIALS, BEFORE EVERYTHING THEY CHANGE -- the drawing
+             included. They used to sit under the figure, which put the one
+             thing conditioned by them above the condition: a reader met the
+             server box, then found out it might not be theirs. Same order as
+             how-to-use-it.html now, and for the same reason: answer first,
+             read a page that already knows the answer. -->
+        <div class="dials" id="modes">
+            <fieldset class="dial">
+                <legend>Your project</legend>
+                <div class="seg">
+                    <label><input type="radio" name="mode" id="m-open" checked> <span>Open</span></label>
+                    <label><input type="radio" name="mode" id="m-secure"> <span>Secure</span></label>
+                </div>
+                <p class="dial-say">
+                    The key is in the tag, or each reviewer pastes it once.
+                </p>
+            </fieldset>
+
+            <!-- "SHARED" AND NOT "PUBLIC". Public is taken, twice over: it is
+                 what the OTHER dial's open mode means for the notes, and it is
+                 what the server's own installer calls a relay answering about
+                 any project. Shared says the one thing meant here -- somebody
+                 else runs it, and everybody uses the same one. -->
+            <fieldset class="dial">
+                <legend>The notes server</legend>
+                <div class="seg">
+                    <label><input type="radio" name="srv" id="s-shared" checked> <span>Shared</span></label>
+                    <label><input type="radio" name="srv" id="s-own"> <span>Your own</span></label>
+                </div>
+                <p class="dial-say">
+                    api.annotepage.com is free and already running, or put one
+                    on your own disk.
+                </p>
+            </fieldset>
+
+            <div class="dial">
+                <label class="dial-legend" for="site">Your site</label>
+                <input class="dial-in" id="site" type="text" inputmode="url"
+                       autocomplete="off" spellcheck="false"
+                       placeholder="staging.example.com">
+                <p class="dial-say">
+                    It fills in the examples.
+                </p>
+            </div>
+
+            <p class="dial-why">
+                They take routes away. You are already in one of these cases.
+            </p>
+        </div>
+
+    </div>
+</section>
+
+<!-- 0. WHAT GOES WHERE ==================================================
+     A CHAPTER, AND NOT A FIGURE WITH A LINE OVER IT. It was the second, and
+     the reader read it as the first thing to do and asked what it wanted from
+     them. It wants nothing done: it is where the three chapters under it come
+     from, and naming it "what to install, and where" says that before the
+     drawing has to.
+
+     IT IS NOT NUMBERED, and neither are the other three. The numbers on this
+     page belong to the steps INSIDE a chapter -- the things a reader performs
+     -- and a picture is not one of them. -->
+<section id="what">
+    <div class="wrap">
+        <h2>What to install, and where</h2>
+
         <!-- THE LOOP, BEFORE ANY OF THE ROUTES. The middle is empty and stays
              empty.
 
-             ONE LINE ABOVE IT, SAYING WHAT THE IMAGE IS AND NOT WHAT IT SHOWS.
-             The drawing has to keep making its own point -- that no arrow
-             reaches from the assistant to the page -- and a caption naming that
-             point would do the drawing's work for it. Four words placing the
-             figure, and nothing else.
+             AND IT NO LONGER HAS A CAPTION OF ITS OWN. "What talks to what."
+             sat above it in four words, which is what a figure gets when it
+             is a figure; the reader read it as a chapter and asked for one.
+             The heading of this section says the same thing and says it as a
+             promise -- what you install, and where it goes -- so the drawing
+             is the chapter's content rather than an illustration dropped in
+             before the chapters start.
 
              AND THE THREE BOXES THAT HAVE A CHAPTER ARE LINKS TO IT. "Your
              code" is not one: nothing on this page installs it. So the diagram
              also says where each piece goes, without being a table of
              contents. -->
         <figure class="loop-row">
-            <figcaption class="loop-cap">What talks to what.</figcaption>
             <div class="loop-frame">
                 <div class="loop">
 
@@ -719,51 +790,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             Your site can sit behind a login: only the reviewers&rsquo; own
             browsers ever open it.
         </p>
-
-        <!-- THE DIALS, AT THE TOP, BEFORE ANY OF THE THREE CHAPTERS. -->
-        <div class="dials" id="modes">
-            <fieldset class="dial">
-                <legend>Your project</legend>
-                <div class="seg">
-                    <label><input type="radio" name="mode" id="m-open" checked> <span>Open</span></label>
-                    <label><input type="radio" name="mode" id="m-secure"> <span>Secure</span></label>
-                </div>
-                <p class="dial-say">
-                    The key is in the tag, or each reviewer pastes it once.
-                </p>
-            </fieldset>
-
-            <!-- "SHARED" AND NOT "PUBLIC". Public is taken, twice over: it is
-                 what the OTHER dial's open mode means for the notes, and it is
-                 what the server's own installer calls a relay answering about
-                 any project. Shared says the one thing meant here -- somebody
-                 else runs it, and everybody uses the same one. -->
-            <fieldset class="dial">
-                <legend>The notes server</legend>
-                <div class="seg">
-                    <label><input type="radio" name="srv" id="s-shared" checked> <span>Shared</span></label>
-                    <label><input type="radio" name="srv" id="s-own"> <span>Your own</span></label>
-                </div>
-                <p class="dial-say">
-                    api.annotepage.com is free and already running, or put one
-                    on your own disk.
-                </p>
-            </fieldset>
-
-            <div class="dial">
-                <label class="dial-legend" for="site">Your site</label>
-                <input class="dial-in" id="site" type="text" inputmode="url"
-                       autocomplete="off" spellcheck="false"
-                       placeholder="staging.example.com">
-                <p class="dial-say">
-                    It fills in the examples.
-                </p>
-            </div>
-
-            <p class="dial-why">
-                They take routes away. You are already in one of these cases.
-            </p>
-        </div>
     </div>
 </section>
 
@@ -855,42 +881,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     <div class="wrap">
         <h2>Install the tag on the site</h2>
 
-        <!-- WHICH FILE IS NOT A STEP, IT IS A LOOKUP. The tabs answer one
-             question once, for the whole chapter, and they sit above the steps
-             rather than inside one: a control in the sentence column of a step
-             would be the only thing on the page that is both a gesture and a
-             question. What install.html had here was a twelve-row table, which
-             is eleven answers a reader does not want beside the one they do. -->
-        <p>
-            At the end of <code>&lt;body&gt;</code>.
-        </p>
-
-        <div class="tabs">
-            <label><input type="radio" name="fw" id="fw-html" checked> <span>Plain HTML</span></label>
-            <label><input type="radio" name="fw" id="fw-astro"> <span>Astro</span></label>
-            <label><input type="radio" name="fw" id="fw-next"> <span>Next.js</span></label>
-            <label><input type="radio" name="fw" id="fw-nuxt"> <span>Nuxt</span></label>
-            <label><input type="radio" name="fw" id="fw-svelte"> <span>SvelteKit</span></label>
-            <label><input type="radio" name="fw" id="fw-rails"> <span>Rails</span></label>
-            <label><input type="radio" name="fw" id="fw-dj"> <span>Django</span></label>
-            <label><input type="radio" name="fw" id="fw-laravel"> <span>Laravel</span></label>
-            <label><input type="radio" name="fw" id="fw-symfony"> <span>Symfony</span></label>
-            <label><input type="radio" name="fw" id="fw-wp"> <span>WordPress</span></label>
-        </div>
-
-        <div class="fwp">
-            <p class="fw-html"><code>index.html</code>, Angular included</p>
-            <p class="fw-astro"><code>src/layouts/*.astro</code></p>
-            <p class="fw-next"><code>app/layout.tsx</code>, or <code>pages/_document.tsx</code></p>
-            <p class="fw-nuxt"><code>nuxt.config.ts</code>, under <code>app.head.script</code></p>
-            <p class="fw-svelte"><code>src/app.html</code></p>
-            <p class="fw-rails"><code>app/views/layouts/application.html.erb</code></p>
-            <p class="fw-dj">your base template</p>
-            <p class="fw-laravel"><code>resources/views/layouts/app.blade.php</code></p>
-            <p class="fw-symfony"><code>templates/base.html.twig</code></p>
-            <p class="fw-wp"><code>footer.php</code>, or the <code>wp_footer</code> hook</p>
-        </div>
-
         <ol class="use-steps">
             <!-- THE ONE BLOCK ON THIS PAGE WHOSE JOB IS TO BE COPIED, AND IT IS.
                  What stood here before read data-project="<yours, from the
@@ -906,12 +896,13 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                  clipboard. The dials repaint this block instead. -->
             <li>
                 <div>
-                    <!-- NO SENTENCE UNDER THIS ONE, and that is the component
-                         earning its keep: the block beside it already says the
-                         key is drawn in this browser, in the one place a reader
-                         will look. A caption repeating what the code says is
-                         the paragraph this page was rebuilt to lose. -->
+                    <!-- THE ONLY SENTENCE HERE IS THE ONE THE CODE CANNOT SAY.
+                         A tag shows what to write; it cannot show where. The
+                         rest of the caption that stood here would have repeated
+                         the block beside it, which is the paragraph this page
+                         was rebuilt to lose. -->
                     <p class="cap"><span class="n"></span> Paste the tag</p>
+                    <p class="say">At the end of <code>&lt;body&gt;</code>.</p>
                 </div>
                 <div>
                     <div class="snip">
@@ -921,6 +912,42 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                             <span class="at">data-key</span>=<span class="st">"&lt;43 characters, drawn in your browser&gt;"</span>
                             <span class="at">defer</span>&gt;&lt;/<span class="tg">script</span>&gt;</code></pre>
                             </div>
+
+                    <!-- WHICH FILE, AND IT SITS UNDER THE TAG BECAUSE IT ONLY
+                         CHANGES THE LINE UNDER IT. It used to open the chapter,
+                         above the steps: ten framework names before the reader
+                         had seen the thing being installed, which reads as ten
+                         decisions rather than one lookup. The tag is the same
+                         in all ten. This answers the question that comes AFTER
+                         it -- I have the tag, where does it go in what I use --
+                         and it is a lookup, not a step, so it carries no
+                         number. -->
+                    <p class="fw-lead">Where it goes, in what you use:</p>
+            <div class="tabs">
+                <label><input type="radio" name="fw" id="fw-html" checked> <span>Plain HTML</span></label>
+                <label><input type="radio" name="fw" id="fw-astro"> <span>Astro</span></label>
+                <label><input type="radio" name="fw" id="fw-next"> <span>Next.js</span></label>
+                <label><input type="radio" name="fw" id="fw-nuxt"> <span>Nuxt</span></label>
+                <label><input type="radio" name="fw" id="fw-svelte"> <span>SvelteKit</span></label>
+                <label><input type="radio" name="fw" id="fw-rails"> <span>Rails</span></label>
+                <label><input type="radio" name="fw" id="fw-dj"> <span>Django</span></label>
+                <label><input type="radio" name="fw" id="fw-laravel"> <span>Laravel</span></label>
+                <label><input type="radio" name="fw" id="fw-symfony"> <span>Symfony</span></label>
+                <label><input type="radio" name="fw" id="fw-wp"> <span>WordPress</span></label>
+            </div>
+
+            <div class="fwp">
+                <p class="fw-html"><code>index.html</code>, Angular included</p>
+                <p class="fw-astro"><code>src/layouts/*.astro</code></p>
+                <p class="fw-next"><code>app/layout.tsx</code>, or <code>pages/_document.tsx</code></p>
+                <p class="fw-nuxt"><code>nuxt.config.ts</code>, under <code>app.head.script</code></p>
+                <p class="fw-svelte"><code>src/app.html</code></p>
+                <p class="fw-rails"><code>app/views/layouts/application.html.erb</code></p>
+                <p class="fw-dj">your base template</p>
+                <p class="fw-laravel"><code>resources/views/layouts/app.blade.php</code></p>
+                <p class="fw-symfony"><code>templates/base.html.twig</code></p>
+                <p class="fw-wp"><code>footer.php</code>, or the <code>wp_footer</code> hook</p>
+            </div>
                 </div>
             </li>
 
@@ -941,24 +968,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 </div>
             </li>
 
-            <!-- THE ONE THING ON THIS PAGE A READER CAN MEASURE, and it follows
-                 the dial for the same reason everything else does: an open tag
-                 carries data-key and no data-project, so the selector that is
-                 true in one mode returns null in the other. A check that is
-                 wrong in half the states teaches a reader to distrust the
-                 page. -->
-            <li>
-                <div>
-                    <p class="cap"><span class="n"></span> Check it landed</p>
-                    <p class="say">The console answers a tag, or <code>null</code>.</p>
-                </div>
-                <div>
-                    <div class="snip">
-                                <button class="copy" type="button" data-copy="snip-check" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-check"><code id="check-code"><span class="tg">document</span>.<span class="at">querySelector</span>(<span class="st">'script[data-key]'</span>)</code></pre>
-                            </div>
-                </div>
-            </li>
         </ol>
     </div>
 </section>
@@ -1185,7 +1194,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 
     var tagCode   = document.getElementById('tag-code');
     var keyCode   = document.getElementById('key-code');
-    var checkCode = document.getElementById('check-code');
     var orgCode   = document.getElementById('org-code');
     var jsonCode  = document.getElementById('json-code');
     var askCode   = document.getElementById('ask-code');
@@ -1197,7 +1205,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     /* It must stop rather than half-run: a generator wired to elements the
        page no longer has would leave the placeholder sitting in the tag,
        ready to be copied. */
-    if (!tagCode || !keyCode || !checkCode || !orgCode || !jsonCode
+    if (!tagCode || !keyCode || !orgCode || !jsonCode
         || !askCode || !mcpCode || !siteIn || !open || !shared) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
@@ -1340,15 +1348,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
         var mcpApi = mcpCode.querySelector('.ap-api');
         if (mcpApi) mcpApi.textContent = api;
 
-        /* The check names the attribute the tag above actually carries. */
-        while (checkCode.firstChild) checkCode.removeChild(checkCode.firstChild);
-        checkCode.appendChild(piece('tg', 'document'));
-        checkCode.appendChild(document.createTextNode('.'));
-        checkCode.appendChild(piece('at', 'querySelector'));
-        checkCode.appendChild(document.createTextNode('('));
-        checkCode.appendChild(piece('st',
-            secure ? "'script[data-project]'" : "'script[data-key]'"));
-        checkCode.appendChild(document.createTextNode(')'));
     }
 
     function fresh() {
