@@ -668,13 +668,30 @@ const drawPanel = () => {
         ui.footer.appendChild(forget);
     }
 
+    /* WHAT IS STILL IN FRONT OF THE READER, AND HOW MANY THERE HAVE BEEN.
+       The same test the panel uses to fold a note away, applied to the whole
+       list: resolved AND online has done its job, anything else is still
+       there. Orphans are counted with the rest -- they are shown, so they are
+       in front of somebody.
+
+       The single number is kept while nothing has been fixed yet: "3 notes"
+       says it better than "3 of 3", and that is the state a page spends its
+       first day in. */
     const total = notes.length;
-    ui.buttonCount.textContent = readableCount(
-        total, 'button.notes_zero', 'button.notes_one', 'button.notes_n');
+    let open = 0;
+    for (let i = 0; i < notes.length; i += 1) {
+        const n = notes[i];
+        if (!(n.resolved_at && alreadyDeployed(n.resolved_version))) open += 1;
+    }
+    ui.buttonCount.textContent = (total && open !== total)
+        ? T('button.notes_of', { open: open, total: total })
+        : readableCount(total, 'button.notes_zero', 'button.notes_one', 'button.notes_n');
     // The button carries the failure: someone who does not open it must be
     // able to see, at a glance, that something is wrong.
     ui.button.classList.toggle('ap-failed', !!currentFailure);
-    ui.button.title = currentFailure ? currentFailure.title : T('button.help');
+    ui.button.title = currentFailure ? currentFailure.title
+        : (total ? T('button.help_counts', { open: open, total: total })
+                 : T('button.help'));
 };
 
 /** Brings a note forward in the panel, without changing anything on the

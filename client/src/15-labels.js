@@ -50,6 +50,14 @@ ns.defaultLabels = {
     'button.notes_zero': '',
     'button.notes_one': '1 note',
     'button.notes_n': '{n} notes',
+    /* TWO NUMBERS, BECAUSE ONE OF THEM WAS THE WRONG ONE. The count said how
+       many notes the page carries, which on a page reviewed for a month is a
+       number nobody acts on -- and it kept growing as remarks were fixed. What
+       somebody opening the panel wants to know is how much is still in front
+       of them. The total stays beside it: it is the difference between "two
+       left" and "two, and nobody has looked yet". */
+    'button.notes_of': '{open} of {total}',
+    'button.help_counts': '{open} still to fix, {total} in all on this page',
 
     /* -- The panel ----------------------------------------------------- */
     'panel.title': 'Review notes',

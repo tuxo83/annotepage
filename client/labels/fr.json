@@ -5,6 +5,8 @@
   "button.notes_zero": "",
   "button.notes_one": "1 note",
   "button.notes_n": "{n} notes",
+  "button.notes_of": "{open} sur {total}",
+  "button.help_counts": "{open} encore à corriger, {total} en tout sur cette page",
   "panel.title": "Notes de relecture",
   "panel.close": "Fermer",
   "panel.instructions": "Cliquez sur un élément de la page pour écrire une remarque à son sujet.",
