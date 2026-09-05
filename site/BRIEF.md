@@ -231,11 +231,16 @@ over 110 characters in any of the four states of its two dials. The tooling is
 
 ## The two detail pages, and the setup one in particular
 
-**THE TWO DETAIL PAGES ARE NAMED AFTER THE CHAPTERS THEY UNFOLD**, word for
-word: `how-you-use-it.html` and `how-you-install-it.html`. The landing page's
-two chapters are called "How you use it" and "How you install it", and each of
-these pages is the long form of one of them -- so the address says which,
-without a word being invented for it. `example-session.html` and `install.html`
+**THE TWO DETAIL PAGES ARE NAMED AFTER THE CHAPTERS THEY UNFOLD**, : `how-to-use-it.html` and
+`how-to-install-it.html`. The landing page's two chapters are called "How you
+use it" and "How you install it", and each of these pages is the long form of
+one of them -- so the address says which, without a word being invented for it.
+
+`how-to-` and not `how-you-`, which was the first answer: in an address, "how
+to use it" is the phrase people type and search for, and "how you use it" is
+not. It costs one word of difference between the address and the heading it
+points at -- the page says "you" because it is about what the reader does, not
+about instructions -- and nobody reads a URL against a title letter by letter. `example-session.html` and `install.html`
 said neither that they were a pair nor whose long form they were.
 
 Not `use.html` / `install.html`: the menu already reads `Use . Install` and
