@@ -639,6 +639,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 .lp-lock { display: inline-block; width: .78em; height: auto; vertical-align: -.06em; color: var(--accent); }
 
 .lp-arr {
+    position: relative;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: .3rem;
     margin: 0; padding: .2rem 0;
@@ -735,6 +736,74 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
    at all, so no box is ever lit; the three bubbles are simply there, all of
    them, from the first frame. The information the cycle exists to deliver is
    not the cycle. */
+/* -- ONE THING GOES ROUND ------------------------------------------------
+
+   A NOTE MAKING THE TOUR, AND NOTHING ELSE MOVES. The boxes stopped moving when
+   the round was made to run once and park: the requirements are written in them
+   and never leave. What was lost with the loop is the one thing the drawing is
+   about -- that this is a cycle, and that it comes back. A dot travelling the
+   four arrows says it with no word added and no state hidden.
+
+   FOUR DOTS AND NOT ONE. A single element following the square would need a
+   path, and the square is a grid whose arrows are four separate boxes at four
+   sizes: the path would have to be recomputed at every width. Each arrow gets
+   its own dot instead, and they take turns -- 1.15s of travel each, invisible
+   for the other three quarters -- so what a reader sees is one dot going round.
+
+   IT IS SMALL AND IT IS --dim. Brighter, it would compete with the highlight
+   that runs once at the start; the two would read as two things being said at
+   once. And it stops when the figure is off screen, from the same observer that
+   already watches it: nothing turns behind the reader's back. */
+.lp-dot {
+    position: absolute; width: 6px; height: 6px; border-radius: 999px;
+    background: var(--dim); opacity: 0;
+    animation: lp-go 4.6s linear infinite;
+}
+.lp-h .lp-dot { top: calc(50% - 3px - .55rem); }
+.lp-v .lp-dot { left: calc(50% - 3px); }
+/* Each starts where the arrow starts, and the delay is its place in the tour. */
+.lp-top .lp-dot   { left: 0;  animation-name: lp-go-r; }
+.lp-right .lp-dot { top: 0;   animation-name: lp-go-d; animation-delay: 1.15s; }
+.lp-bot .lp-dot   { right: 0; animation-name: lp-go-l; animation-delay: 2.3s; }
+.lp-left .lp-dot  { bottom: 0; animation-name: lp-go-u; animation-delay: 3.45s; }
+
+/* 25% of the cycle travelling, the rest waiting its turn. The fade at each end
+   keeps a dot from appearing and vanishing on the spot. */
+@keyframes lp-go-r {
+    0%   { transform: translateX(0);    opacity: 0; }
+    3%   { opacity: 1; }
+    22%  { opacity: 1; }
+    25%  { transform: translateX(var(--lp-run, 100px)); opacity: 0; }
+    100% { transform: translateX(var(--lp-run, 100px)); opacity: 0; }
+}
+@keyframes lp-go-l {
+    0%   { transform: translateX(0);    opacity: 0; }
+    3%   { opacity: 1; }
+    22%  { opacity: 1; }
+    25%  { transform: translateX(calc(-1 * var(--lp-run, 100px))); opacity: 0; }
+    100% { transform: translateX(calc(-1 * var(--lp-run, 100px))); opacity: 0; }
+}
+@keyframes lp-go-d {
+    0%   { transform: translateY(0);    opacity: 0; }
+    3%   { opacity: 1; }
+    22%  { opacity: 1; }
+    25%  { transform: translateY(var(--lp-run, 60px)); opacity: 0; }
+    100% { transform: translateY(var(--lp-run, 60px)); opacity: 0; }
+}
+@keyframes lp-go-u {
+    0%   { transform: translateY(0);    opacity: 0; }
+    3%   { opacity: 1; }
+    22%  { opacity: 1; }
+    25%  { transform: translateY(calc(-1 * var(--lp-run, 60px))); opacity: 0; }
+    100% { transform: translateY(calc(-1 * var(--lp-run, 60px))); opacity: 0; }
+}
+/* NOTHING TURNS BEHIND THE READER'S BACK. `data-seen` is set by the observer
+   below, which already knows when the figure is on screen. */
+.loop:not([data-seen]) .lp-dot { animation-play-state: paused; }
+
+/* Stacked, the arrows are a glyph and there is nothing to travel along. */
+@media (max-width: 32.5rem) { .lp-dot { display: none; } }
+
 /* NARROW: THE SQUARE BECOMES A COLUMN. `min-width: 17rem` held the square
    together and, at 375px with a 20px root font, made it 340px inside a 335px
    frame -- the right-hand column was cut off inside a pane the page gave no
@@ -1043,6 +1112,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 
                     
                     <p class="lp-arr lp-h lp-top">
+                        <span class="lp-dot" aria-hidden="true"></span>
                         <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M2 6H90" vector-effect="non-scaling-stroke"/>
                             <path d="M84 2.5 90.5 6 84 9.5" vector-effect="non-scaling-stroke"/>
@@ -1061,6 +1131,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 
                     
                     <p class="lp-arr lp-v lp-right">
+                        <span class="lp-dot" aria-hidden="true"></span>
                         <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M6 2V90" vector-effect="non-scaling-stroke"/>
                             <path d="M2.5 84 6 90.5 9.5 84" vector-effect="non-scaling-stroke"/>
@@ -1072,6 +1143,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 
                     
                     <p class="lp-arr lp-h lp-bot">
+                        <span class="lp-dot" aria-hidden="true"></span>
                         <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M98 6H10" vector-effect="non-scaling-stroke"/>
                             <path d="M16 2.5 9.5 6 16 9.5" vector-effect="non-scaling-stroke"/>
@@ -1084,6 +1156,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <p class="lp-box lp-code"><span class="lp-name">Your code</span></p>
 
                     <p class="lp-arr lp-v lp-left">
+                        <span class="lp-dot" aria-hidden="true"></span>
                         <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M6 98V10" vector-effect="non-scaling-stroke"/>
                             <path d="M2.5 16 6 9.5 9.5 16" vector-effect="non-scaling-stroke"/>
@@ -2173,6 +2246,26 @@ return array(
     var quiet = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
     if (quiet && quiet.matches) return;
 
+    /* HOW FAR EACH DOT TRAVELS: THE ARROW'S OWN LENGTH, MEASURED. The arrows
+       are drawn at clamp() sizes -- the horizontal ones take the column's
+       width up to 7rem, the vertical ones 2.6 to 4rem -- so a distance written
+       into the stylesheet would be right at one width and wrong at every other,
+       and the dot would stop short of the box or run past it. Measured here,
+       and again when the window changes. */
+    var mesurer = function () {
+        var fleches = loop.querySelectorAll('.lp-arr');
+        for (var f = 0; f < fleches.length; f++) {
+            var dessin = fleches[f].querySelector('svg');
+            if (!dessin) continue;
+            var b = dessin.getBoundingClientRect();
+            var horizontale = fleches[f].classList.contains('lp-h');
+            var d = Math.round(horizontale ? b.width : b.height);
+            if (d > 0) fleches[f].style.setProperty('--lp-run', d + 'px');
+        }
+    };
+    mesurer();
+    window.addEventListener('resize', mesurer);
+
     /* Long enough to read eight words and look at the box they belong to.
        Shorter was tried on the sibling page's replay and the finding there
        holds here: a figure that has to be watched twice has failed once. */
@@ -2281,13 +2374,18 @@ return array(
         var watch = new IntersectionObserver(function (entries) {
             for (var k = 0; k < entries.length; k++) {
                 seen = entries[k].isIntersecting;
+                /* The dots are CSS and pause on this attribute; the round is a
+                   chain of timers and stops on its own. One signal, two
+                   mechanisms, and neither turns off screen. */
+                if (seen) loop.setAttribute('data-seen', '');
+                else loop.removeAttribute('data-seen');
                 if (seen) run(); else stop();
             }
-            if (done) watch.disconnect();
         }, { threshold: 0 });
         watch.observe(loop);
     } else {
         seen = true;
+        loop.setAttribute('data-seen', '');
         run();
     }
 }());
