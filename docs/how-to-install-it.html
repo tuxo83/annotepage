@@ -689,13 +689,40 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     box-shadow: 0 0 0 1px var(--accent);
 }
 
-/* AND THE CLICK IS SAID, NOT GUESSED. Three of the four boxes have been links
-   since the figure was drawn and nothing on them said so -- the reader who
-   asked for "the clickable side" was asking for a thing he already had and
-   could not see. A chevron, on the boxes that lead somewhere, and on no other:
-   it is a signpost, not a sentence, so the drawing gains no words. */
-a.lp-box .lp-name::after {
-    content: "\2009\203A"; color: var(--accent); font-weight: 400;
+/* WHAT IS INSTALLED, AND WHAT IS ONLY THERE. A chevron said "this one leads
+   somewhere" and that was too light to carry the difference the reader was
+   looking for: which of these four do I have to do something about. A numbered
+   chip does both -- it marks the box AND names the chapter it opens, in the
+   order the chapters come -- and the boxes with nothing to install carry
+   nothing at all, which is the answer stated rather than implied.
+
+   The number is written on the box, not counted: the chapters are three fixed
+   sections and the server's is the one that disappears, so a counter would
+   renumber the page on a dial and a reader would find "2. the tag" become
+   "1. the tag" for no reason they can see. */
+.lp-num {
+    display: inline-grid; place-items: center;
+    width: 1.35em; height: 1.35em; margin-right: .45em;
+    border-radius: 999px;
+    background: var(--accent); color: var(--on-accent);
+    font-family: var(--mono); font-size: .72em; font-weight: 700;
+    vertical-align: .06em;
+}
+/* Receding with its box, like everything else on it: an accent chip left at
+   full strength while the box behind it dimmed would be the brightest thing on
+   a figure whose point is elsewhere. Written as the recession is written --
+   "every box except the one being pointed at" -- so the two cannot disagree. */
+.loop[data-lit] .lp-box .lp-num,
+.loop:has(a.lp-box:hover) .lp-box:not(:hover) .lp-num,
+.loop:has(a.lp-box:focus-visible) .lp-box:not(:focus-visible) .lp-num {
+    background: var(--line); color: var(--bg);
+}
+.loop[data-lit="page"] .lp-page .lp-num,
+.loop[data-lit="srv"]  .lp-srv .lp-num,
+.loop[data-lit="asst"] .lp-asst .lp-num,
+.loop a.lp-box:hover .lp-num,
+.loop a.lp-box:focus-visible .lp-num {
+    background: var(--accent); color: var(--on-accent);
 }
 
 @media (max-width: 420px) {
@@ -1012,7 +1039,7 @@ a.lp-box .lp-name::after {
             <div class="loop-frame">
                 <div class="loop">
 
-                    <a class="lp-box lp-page" href="#page"><span class="lp-name">The annotated page</span><span class="lp-req">A page you can edit, on https or localhost. Can sit behind a login.</span></a>
+                    <a class="lp-box lp-page" href="#page"><span class="lp-name"><span class="lp-num if-own" aria-hidden="true">2</span><span class="lp-num if-shared" aria-hidden="true">1</span>The annotated page</span><span class="lp-req">A page you can edit, on https or localhost. Can sit behind a login.</span></a>
 
                     
                     <p class="lp-arr lp-h lp-top">
@@ -1029,7 +1056,7 @@ a.lp-box .lp-name::after {
                          is worse than no link. The box itself stays -- the
                          server is there in both routes, it is only the
                          installing of it that is not. -->
-                    <a class="lp-box lp-srv if-own" href="#server"><span class="lp-name"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></span><span class="lp-req">https, and the site&rsquo;s origin declared &mdash; or open to anyone.</span></a>
+                    <a class="lp-box lp-srv if-own" href="#server"><span class="lp-name"><span class="lp-num" aria-hidden="true">1</span><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></span><span class="lp-req">https, and the site&rsquo;s origin declared &mdash; or open to anyone.</span></a>
                     <p class="lp-box lp-srv if-shared"><span class="lp-name"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></span><span class="lp-req">Already running. Nothing to install, nothing to declare.</span></p>
 
                     
@@ -1041,7 +1068,7 @@ a.lp-box .lp-name::after {
                         <span>Reads the notes</span>
                     </p>
 
-                    <a class="lp-box lp-asst" href="#assistant"><span class="lp-name">The assistant</span><span class="lp-req">Node 18+, and the project key.</span></a>
+                    <a class="lp-box lp-asst" href="#assistant"><span class="lp-name"><span class="lp-num if-own" aria-hidden="true">3</span><span class="lp-num if-shared" aria-hidden="true">2</span>The assistant</span><span class="lp-req">Node 18+, and the project key.</span></a>
 
                     
                     <p class="lp-arr lp-h lp-bot">
@@ -1425,17 +1452,50 @@ return array(
                 <label><input type="radio" name="fw" id="fw-wp"> <span>WordPress</span></label>
             </div>
 
+            <!-- A FILE NAME IS NOT AN INSTRUCTION. These were ten paths and
+                 nothing else, and the reader asked the questions they left
+                 open: do I create that file or edit it, and does the tag go on
+                 one page or on all of them. Every one of these files already
+                 exists in a project of that kind, and every one of them is the
+                 layout every page passes through -- which is the whole reason
+                 these are the files named. Said, now, in each line.
+
+                 AND PLAIN HTML IS THE ONE THAT IS NOT A LAYOUT. Nothing shares
+                 anything there: the tag goes at the end of every page's body,
+                 and a reader who put it on index.html alone would find the tool
+                 on their home page and nowhere else. -->
             <div class="fwp">
-                <p class="fw-html"><code>index.html</code>, Angular included</p>
-                <p class="fw-astro"><code>src/layouts/*.astro</code></p>
-                <p class="fw-next"><code>app/layout.tsx</code>, or <code>pages/_document.tsx</code></p>
-                <p class="fw-nuxt"><code>nuxt.config.ts</code>, under <code>app.head.script</code></p>
-                <p class="fw-svelte"><code>src/app.html</code></p>
-                <p class="fw-rails"><code>app/views/layouts/application.html.erb</code></p>
-                <p class="fw-dj">your base template</p>
-                <p class="fw-laravel"><code>resources/views/layouts/app.blade.php</code></p>
-                <p class="fw-symfony"><code>templates/base.html.twig</code></p>
-                <p class="fw-wp"><code>footer.php</code>, or the <code>wp_footer</code> hook</p>
+                <p class="fw-html">No layout to edit: paste it before
+                <code>&lt;/body&gt;</code> in <b>every page</b> you want annotated,
+                not only <code>index.html</code>. If your pages share a footer
+                include, that is the one place to put it.</p>
+                <p class="fw-astro">Edit the layout your pages already use &mdash;
+                <code>src/layouts/*.astro</code> &mdash; before
+                <code>&lt;/body&gt;</code>.</p>
+                <p class="fw-next">Edit <code>app/layout.tsx</code>, inside
+                <code>&lt;body&gt;</code> and last. On the pages router,
+                <code>pages/_document.tsx</code>.</p>
+                <p class="fw-nuxt">No template to edit: declare it in
+                <code>nuxt.config.ts</code>, under <code>app.head.script</code>,
+                with <code>body: true</code>.</p>
+                <p class="fw-svelte">Edit <code>src/app.html</code>, the shell
+                every route is rendered into, before <code>&lt;/body&gt;</code>.</p>
+                <p class="fw-rails">Edit the layout every view already renders
+                into &mdash; <code>app/views/layouts/application.html.erb</code>
+                &mdash; before <code>&lt;/body&gt;</code>.</p>
+                <p class="fw-dj">Edit the base template your pages
+                <code>{% extends %}</code>, before <code>&lt;/body&gt;</code>.</p>
+                <p class="fw-laravel">Edit
+                <code>resources/views/layouts/app.blade.php</code>, the layout
+                your views extend, before <code>&lt;/body&gt;</code>.</p>
+                <p class="fw-symfony">Edit <code>templates/base.html.twig</code>,
+                the template every page extends, before
+                <code>&lt;/body&gt;</code>.</p>
+                <p class="fw-wp">Add it to your child theme&rsquo;s
+                <code>footer.php</code>, or hook it on <code>wp_footer</code>,
+                which survives a theme update. There is also
+                <a href="https://github.com/tuxo83/annotepage/tree/main/wordpress">a
+                plugin</a> that writes the tag and nothing else.</p>
             </div>
                 </div>
             </li>
@@ -1508,10 +1568,12 @@ return array(
 
              THE FACT THE DRAWING NEEDS STAYS IN THE DRAWING: "Can sit behind a
              login." is written inside the page's own box, three screens up. -->
-        <p class="small dim">
-            Nothing appearing? A module, a wrong <code>integrity</code> digest and
-            a Content-Security-Policy each stop it in silence &mdash;
-            <a href="questions.html?tag=nothing-appears">the three cases, answered</a>.
+        <p class="note-aside is-info">
+            <span class="mk" aria-hidden="true">&#9432;</span>
+            <span><b>Nothing appearing?</b> A module, a wrong
+            <code>integrity</code> digest and a Content-Security-Policy each stop
+            it in silence &mdash;
+            <a href="questions.html?tag=nothing-appears">the three cases, answered</a>.</span>
         </p>
     </div>
 </section>

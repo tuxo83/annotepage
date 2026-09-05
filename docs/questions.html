@@ -80,16 +80,21 @@ h1 + .lead { margin-top: 1.15rem; }
 
    auto-fill and a 21rem floor: three across at 1280, two at 900, one below
    ~48rem, and no card ever narrower than a readable line. */
+/* BIGGER AND WITH MORE AIR IN THEM. 21rem gave three columns at 1280 and a
+   card whose answer ran to seven tight lines; 26rem gives two, each wide enough
+   that most answers hold in three or four. The page is prose, and a column of
+   prose has a width -- these were narrower than the sentences they replaced. */
 .qa-grid {
-    display: grid; gap: 1rem;
-    grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
+    display: grid; gap: 1.2rem;
+    grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
     margin: 0;
 }
 .qa {
     display: flex; flex-direction: column;
-    padding: 1.1rem 1.2rem;
+    padding: 1.5rem 1.6rem;
     border: 1px solid var(--line-soft); border-radius: var(--radius);
     background: var(--bg-soft);
+    line-height: 1.65;
 }
 .qa[hidden] { display: none; }
 /* The chip says the group, at the weight of a label and not of a control: it is
@@ -102,14 +107,14 @@ h1 + .lead { margin-top: 1.15rem; }
    AND DRAWN AS TAGS. Set as a small uppercase line they were a label; as
    outlined pills they are what they are, and they match the chips of the
    filter above without pretending to be them: these do not click. */
-.qa-q { margin: 0; font-size: 1rem; font-weight: 650; color: var(--text); }
-.qa-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin: .55rem 0 0; }
+.qa-q { margin: 0; font-size: 1.05rem; font-weight: 650; line-height: 1.4; color: var(--text); }
+.qa-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin: .7rem 0 0; }
 .qa-tag {
     padding: .1rem .5rem;
     border: 1px solid var(--line); border-radius: 999px;
     font-size: .72rem; color: var(--dim);
 }
-.qa-a { margin: .7rem 0 0; color: var(--dim); }
+.qa-a { margin: .85rem 0 0; color: var(--dim); }
 
 .faq-tools { margin: 0 0 2.2rem; }
 .faq-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 .8rem; }
@@ -231,7 +236,28 @@ code {
                 <p class="qa-a">No. The key reads and writes; there is no reader-only role.</p>
             </article>
 
-                        <article class="qa" data-tags="Key|Setting it up">
+                        <!-- WHAT "ENCRYPTED" MEANS HERE, ASKED FOR AND KEPT SHORT. The
+                 page says the server cannot read a remark and never says what
+                 does the reading, which leaves the claim to be taken on trust.
+                 Four facts, no more: what is encrypted, with what, where the
+                 key is, and what the server therefore holds. The long version
+                 is FORMAT.md, and it is linked rather than summarised. -->
+            <article class="qa" data-tags="Key|Privacy">
+                <h3 class="qa-q">What exactly is encrypted, and by what?</h3>
+                <p class="qa-tags"><span class="qa-tag">Key</span><span class="qa-tag">Privacy</span></p>
+                <p class="qa-a">The remark, its author, the element it points at
+                and the page it is on &mdash; everything a reader wrote. Your
+                browser encrypts it with <b>AES-256-GCM</b>, using a key derived
+                from yours by HKDF-SHA-256, and sends the result. The key stays
+                in the browser: it travels in the tag or in a paste, never in a
+                request. What the server stores is a block of bytes it cannot
+                open, a project id, and a blind index saying which page &mdash;
+                which is how it can group notes without knowing a single path.
+                The exact scheme is in
+                <a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md">FORMAT.md</a>.</p>
+            </article>
+
+            <article class="qa" data-tags="Key|Setting it up">
                 <h3 class="qa-q">Where does the key come from?</h3>
                 <p class="qa-tags"><span class="qa-tag">Key</span><span class="qa-tag">Setting it up</span></p>
                 <p class="qa-a">Your browser draws it, on the
