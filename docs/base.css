@@ -622,6 +622,47 @@
 .top nav a { font-size: .875rem; color: var(--dim); text-decoration: none; }
 .top nav a:hover { color: var(--text); text-decoration: underline; }
 
+/* -- the one entry that opens ---------------------------------------------
+   A <details> drawn like the links beside it: same size, same ink, and the
+   marker removed, because a triangle in a row of five words is the only thing
+   in the bar that is not a word. The caret is drawn after the label instead,
+   and it turns when the thing opens.
+
+   The panel is positioned against the bar, not against the summary: a menu
+   hanging off a word would sit half off the screen on the narrow layouts where
+   the bar wraps. */
+.top nav .drop { position: relative; }
+.drop > summary {
+    list-style: none; cursor: pointer;
+    font-size: .875rem; color: var(--dim);
+}
+.drop > summary::-webkit-details-marker { display: none; }
+.drop > summary::after {
+    content: "\2009\25BE"; display: inline-block;
+    transition: transform .15s ease;
+}
+.drop[open] > summary::after { transform: rotate(180deg); }
+.drop > summary:hover { color: var(--text); }
+.drop > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* CLOSED MEANS GONE, AND IT HAS TO BE SAID. A <details> hides its contents by
+   a mechanism an absolutely positioned child escapes: measured with the element
+   closed, the panel was still 119px tall and still on screen. `display: none`
+   while it is shut, stated. */
+.drop:not([open]) .drop-menu { display: none; }
+.drop-menu {
+    position: absolute; right: 0; top: calc(100% + .5rem); z-index: 11;
+    display: flex; flex-direction: column; gap: .1rem;
+    min-width: 12rem; padding: .4rem;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--bg); box-shadow: var(--shot-shadow);
+}
+.top nav .drop-menu a {
+    padding: .35rem .55rem; border-radius: 6px;
+    color: var(--text); white-space: nowrap;
+}
+.top nav .drop-menu a:hover { background: var(--bg-soft); text-decoration: none; }
+@media (prefers-reduced-motion: reduce) { .drop > summary::after { transition: none; } }
+
 
 /* -- A FILE ON A DESKTOP, AS A PARTIAL SCREENSHOT -------------------------
    IT LIVED IN how-to-use-it.html, WHICH WAS THE ONLY PAGE THAT DREW IT. The

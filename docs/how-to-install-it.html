@@ -109,15 +109,19 @@ ul.plain li:last-child { margin-bottom: 0; }
 ul.plain b { color: var(--text); }
 
 
-/* -- The way back -------------------------------------------------------- */
+/* -- The way out ---------------------------------------------------------
+   THE BUTTON THE OTHER PAGES END THEIR CHAPTERS WITH, centred, rather than
+   three plain links in a row. They were `.cta` -- text with a colour -- and
+   read as a footnote at the foot of a page that ends on them. Same rules as
+   questions.html, which took them from base.css for the same reason.
 
-.cta {
-    display: inline-block; margin-top: 2.2rem;
-    font-weight: 600; color: var(--accent); text-decoration: none;
+   AND TWO, NOT THREE. "Back to the landing page" is what the wordmark and the
+   first menu entry both do, from every page: a third button repeating it makes
+   the two that go somewhere new harder to pick out. */
+.see-out {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem;
+    margin: 2.2rem 0 0;
 }
-.cta:hover { text-decoration: underline; text-decoration-thickness: 2px; }
-/* Two of them now, and the second is not decoration: see the <p> they sit in. */
-.cta + .cta { margin-left: 2.2rem; }
 
 /* -- a note standing beside the prose ------------------------------------- */
 
@@ -891,9 +895,30 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <a href="how-to-use-it.html">Use</a>
             <a href="how-to-install-it.html" aria-current="page">Install</a>
             <a href="questions.html">FAQ</a>
-            <a class="leave" href="https://github.com/tuxo83/annotepage"
-               target="_blank" rel="noopener"
-               aria-label="The source, on GitHub, opens in a new tab">Source</a>
+            <!-- THE SOURCE IS THREE PLACES, AND THE MENU SAYS ONE. A single
+                 link named a host; what exists is the repository and two
+                 published packages, and somebody looking for "the source" wants
+                 whichever of the three they are after.
+
+                 <details>, so it costs no script: the disclosure, the keyboard
+                 handling and the open state are the element's own. It closes on
+                 its own summary rather than on a click anywhere, which is the
+                 one thing a script would add and not enough to add one for --
+                 following any of the three links leaves the page anyway. -->
+            <details class="drop">
+                <summary>Source</summary>
+                <div class="drop-menu">
+                    <a href="https://github.com/tuxo83/annotepage"
+                       target="_blank" rel="noopener"
+                       aria-label="The repository, on GitHub, opens in a new tab">GitHub</a>
+                    <a href="https://www.npmjs.com/package/annotepage-client"
+                       target="_blank" rel="noopener"
+                       aria-label="annotepage-client on npm, opens in a new tab">annotepage-client</a>
+                    <a href="https://www.npmjs.com/package/annotepage-mcp"
+                       target="_blank" rel="noopener"
+                       aria-label="annotepage-mcp on npm, opens in a new tab">annotepage-mcp</a>
+                </div>
+            </details>
         </nav>
     </div>
 </header>
@@ -1888,10 +1913,9 @@ return array(
              else on every other one; the menu is now identical everywhere and
              names no page, so the way across has to be written where the reader
              finishes. tools/check-shell.mjs refuses a page nothing links to. -->
-        <p>
-            <a class="cta" href="questions.html">Questions people ask</a>
-            <a class="cta" href="how-to-use-it.html">See what using it looks like</a>
-            <a class="cta" href="/">Back to the landing page</a>
+        <p class="see-out">
+            <a class="more" href="how-to-use-it.html">See a detailed usage example<span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="more" href="questions.html">Questions people ask<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
     </div>
 </section>

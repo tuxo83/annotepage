@@ -80,15 +80,17 @@ h1 + .lead { margin-top: 1.15rem; }
 
    auto-fill and a 21rem floor: three across at 1280, two at 900, one below
    ~48rem, and no card ever narrower than a readable line. */
-/* BIGGER AND WITH MORE AIR IN THEM. 21rem gave three columns at 1280 and a
-   card whose answer ran to seven tight lines; 26rem gives two, each wide enough
-   that most answers hold in three or four. The page is prose, and a column of
-   prose has a width -- these were narrower than the sentences they replaced. */
+/* TWO COLUMNS, AND NEVER THREE. `auto-fill` with a 26rem floor gave two at
+   1280 and three at 1440, so the page changed shape on a wide screen and the
+   cards went back to being narrower than the sentences in them. Two is stated
+   now, and one below 56rem: a column of prose has a width, and a card is a
+   paragraph with a heading. */
 .qa-grid {
     display: grid; gap: 1.2rem;
-    grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 0;
 }
+@media (max-width: 56rem) { .qa-grid { grid-template-columns: minmax(0, 1fr); } }
 .qa {
     display: flex; flex-direction: column;
     padding: 1.5rem 1.6rem;
@@ -167,9 +169,30 @@ code {
             <a href="how-to-use-it.html">Use</a>
             <a href="how-to-install-it.html">Install</a>
             <a href="questions.html" aria-current="page">FAQ</a>
-            <a class="leave" href="https://github.com/tuxo83/annotepage"
-               target="_blank" rel="noopener"
-               aria-label="The source, on GitHub, opens in a new tab">Source</a>
+            <!-- THE SOURCE IS THREE PLACES, AND THE MENU SAYS ONE. A single
+                 link named a host; what exists is the repository and two
+                 published packages, and somebody looking for "the source" wants
+                 whichever of the three they are after.
+
+                 <details>, so it costs no script: the disclosure, the keyboard
+                 handling and the open state are the element's own. It closes on
+                 its own summary rather than on a click anywhere, which is the
+                 one thing a script would add and not enough to add one for --
+                 following any of the three links leaves the page anyway. -->
+            <details class="drop">
+                <summary>Source</summary>
+                <div class="drop-menu">
+                    <a href="https://github.com/tuxo83/annotepage"
+                       target="_blank" rel="noopener"
+                       aria-label="The repository, on GitHub, opens in a new tab">GitHub</a>
+                    <a href="https://www.npmjs.com/package/annotepage-client"
+                       target="_blank" rel="noopener"
+                       aria-label="annotepage-client on npm, opens in a new tab">annotepage-client</a>
+                    <a href="https://www.npmjs.com/package/annotepage-mcp"
+                       target="_blank" rel="noopener"
+                       aria-label="annotepage-mcp on npm, opens in a new tab">annotepage-mcp</a>
+                </div>
+            </details>
         </nav>
     </div>
 </header>
@@ -346,25 +369,25 @@ code {
                 (what plugs an assistant onto it). The server is not a package:
                 it is one PHP file that fetches the rest.</p>
             </article>
-            <article class="qa" data-tags="The tag|Nothing appears">
+            <article class="qa" data-tags="The tag on your page|Nothing appears">
                 <h3 class="qa-q">Can I load it as a module?</h3>
-                <p class="qa-tags"><span class="qa-tag">The tag</span><span class="qa-tag">Nothing appears</span></p>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
                 <p class="qa-a">No, and it fails quietly. The client reads
             <code>document.currentScript</code> to find its own settings, and a
             <code>type="module"</code> script does not have one: nothing appears,
             and nothing is logged.</p>
             </article>
-            <article class="qa" data-tags="The tag|Nothing appears">
+            <article class="qa" data-tags="The tag on your page|Nothing appears">
                 <h3 class="qa-q" id="locked">What if I pin the script with a wrong <code>integrity</code> digest?</h3>
-                <p class="qa-tags"><span class="qa-tag">The tag</span><span class="qa-tag">Nothing appears</span></p>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
                 <p class="qa-a">The browser refuses the file and the tool simply does not
             appear. Nothing on the page says why. The
             <a href="how-to-install-it.html#page">install page</a> writes the
             digest for you when you ask for a pinned tag.</p>
             </article>
-            <article class="qa" data-tags="The tag|Nothing appears">
+            <article class="qa" data-tags="The tag on your page|Nothing appears">
                 <h3 class="qa-q">My site sets a Content-Security-Policy. What do I need?</h3>
-                <p class="qa-tags"><span class="qa-tag">The tag</span><span class="qa-tag">Nothing appears</span></p>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
                 <p class="qa-a">Two directives. <code>script-src</code> must allow wherever the
             client is served from, or it never loads;
             <code>connect-src</code> must allow your notes server, or

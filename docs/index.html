@@ -892,9 +892,30 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             <a href="how-to-use-it.html">Use</a>
             <a href="how-to-install-it.html">Install</a>
             <a href="questions.html">FAQ</a>
-            <a class="leave" href="https://github.com/tuxo83/annotepage"
-               target="_blank" rel="noopener"
-               aria-label="The source, on GitHub, opens in a new tab">Source</a>
+            <!-- THE SOURCE IS THREE PLACES, AND THE MENU SAYS ONE. A single
+                 link named a host; what exists is the repository and two
+                 published packages, and somebody looking for "the source" wants
+                 whichever of the three they are after.
+
+                 <details>, so it costs no script: the disclosure, the keyboard
+                 handling and the open state are the element's own. It closes on
+                 its own summary rather than on a click anywhere, which is the
+                 one thing a script would add and not enough to add one for --
+                 following any of the three links leaves the page anyway. -->
+            <details class="drop">
+                <summary>Source</summary>
+                <div class="drop-menu">
+                    <a href="https://github.com/tuxo83/annotepage"
+                       target="_blank" rel="noopener"
+                       aria-label="The repository, on GitHub, opens in a new tab">GitHub</a>
+                    <a href="https://www.npmjs.com/package/annotepage-client"
+                       target="_blank" rel="noopener"
+                       aria-label="annotepage-client on npm, opens in a new tab">annotepage-client</a>
+                    <a href="https://www.npmjs.com/package/annotepage-mcp"
+                       target="_blank" rel="noopener"
+                       aria-label="annotepage-mcp on npm, opens in a new tab">annotepage-mcp</a>
+                </div>
+            </details>
         </nav>
     </div>
 </header>
