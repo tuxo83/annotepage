@@ -126,10 +126,53 @@ if (!served.filter(existsSync).length) {
     wrong++;
 }
 
+/* AND THE ADDRESS BESIDE THE DIGEST NAMES THE SAME VERSION. Everything above
+   asks "does this digest match the bundle" and nothing asked "does the file
+   this tag actually fetches". Measured while this was written: README.md told
+   readers to load annotepage-client-2.0.1.js -- which answers 404 -- with
+   2.11.0's digest under it, and client/README.md named 2.5.0 twice. Three
+   broken install tags, and every check in this file passed, because all three
+   digests were right. A digest is half of a pin; the other half is the URL,
+   and a pin whose halves disagree fails the way the FAQ describes: the browser
+   refuses the script, the page says nothing, the logs say nothing.
+
+   THE WINDOW AND NOT THE TAG. Matching `<script ...>` looked obvious and was
+   wrong: client/README.md writes `https://<your-cdn>/...`, and the `>` in that
+   placeholder ends the tag before the digest is reached -- so the two broken
+   pins in that file went unseen by the first version of this check. What is
+   read instead is the text AROUND each digest, which no placeholder can cut.
+
+   Only a version written near a digest is checked. An address in prose, in a
+   changelog, in an example of an older release, names what it names. */
+let pins = 0;
+for (const file of files) {
+    if (file === HISTORY) continue;
+    let text;
+    try { text = readFileSync(file, 'utf8'); } catch { continue; }
+    for (const m of text.matchAll(/sha384-[A-Za-z0-9+/=]+/g)) {
+        const around = text.slice(Math.max(0, m.index - 400), m.index + 400);
+        for (const v of around.matchAll(/annotepage-client[-@]([\d]+\.[\d]+\.[\d]+)/g)) {
+            if (v[1] === pkgVersion) continue;
+            const line = text.slice(0, m.index).split('\n').length;
+            console.error(`${file}:${line}  pinned tag names ${v[1]}, `
+                + `the digest beside it is ${pkgVersion}'s.`);
+            pins++;
+        }
+    }
+}
+
+if (pins) {
+    console.error(`\n${pins} pin(s) name a version the digest does not describe.`);
+    console.error('A browser fetches the URL and checks it against the digest:');
+    console.error('they have to be the same release, or the script is refused in silence.');
+    process.exit(1);
+}
+
 if (wrong) {
     console.error(`\nexpected ${expected}`);
     console.error(`${wrong} of ${found} digests do not match ${BUNDLE}.`);
     console.error('Rebuild the client, then copy the digest it prints.');
     process.exit(1);
 }
-console.log(`sri: ${found} digest(s) and ${served.filter(existsSync).length} served copy, all matching ${BUNDLE}`);
+console.log(`sri: ${found} digest(s), each pinned to ${pkgVersion}, and `
+    + `${served.filter(existsSync).length} served copy, all matching ${BUNDLE}`);
