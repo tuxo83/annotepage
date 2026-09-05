@@ -547,7 +547,16 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
      and the dial is what makes it cost one line for everybody else. -->
 <section id="server">
     <div class="wrap">
-        <h2>Where the notes are stored</h2>
+        <!-- THE THREE TITLES ARE ONE SENTENCE SAID THREE TIMES: install the
+             THING on the PLACE. They read as a series because they are one,
+             and a reader counting what is left to do can count it from the
+             headings alone.
+
+             AND THE FIRST ONE TURNS WITH THE DIAL, because on the shared
+             server there is nothing to install and a heading promising work
+             that does not exist is the fear this page was rebuilt to remove. -->
+        <h2 class="if-shared">No server to install</h2>
+        <h2 class="if-own">Install the app on your server</h2>
 
         <p class="if-own">
             <b>1.</b> Upload one PHP file anywhere under your web root.
@@ -600,7 +609,7 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 <!-- 2. THE PAGE ========================================================== -->
 <section id="page">
     <div class="wrap">
-        <h2>The tag on your pages</h2>
+        <h2>Install the tag on your site</h2>
 
         <p>
             At the end of <code>&lt;body&gt;</code>, in whichever file writes it.
@@ -679,7 +688,7 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 <!-- 3. THE ASSISTANT ===================================================== -->
 <section id="assistant">
     <div class="wrap">
-        <h2>Plugging in your assistant</h2>
+        <h2>Install the MCP for your assistant</h2>
 
         <p class="if-open">
             <b>1. In the command.</b> The key is on the page, so there is
