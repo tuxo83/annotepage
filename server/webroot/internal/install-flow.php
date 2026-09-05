@@ -147,6 +147,29 @@ function ap_i_version($here)
 }
 
 /**
+ * Can this PHP interface hand the response to the visitor and keep working?
+ *
+ * The same three cases as ap_update_release_visitor() in update.php, asked
+ * WITHOUT doing it. Written once because two screens depend on the answer --
+ * the form, which ticks the URL option for the operator when it is no, and the
+ * last screen, which does not offer `auto_update` at all when it is no. A
+ * third copy of this test is a third thing to forget the day the list grows.
+ */
+function ap_i_can_defer()
+{
+    return PHP_SAPI === 'cli'
+        || function_exists('fastcgi_finish_request')
+        || function_exists('litespeed_finish_request');
+}
+
+/** The absolute path of internal/update.php, for the cron line to paste. */
+function ap_i_update_script($here)
+{
+    $real = realpath($here);
+    return ($real === false ? $here : str_replace('\\', '/', $real)) . '/internal/update.php';
+}
+
+/**
  * The URL of the directory this file sits in, with a trailing slash.
  *
  * Built from what the request itself carries. HTTP_HOST is written by the
@@ -653,6 +676,12 @@ function ap_i_config_text(array $values)
         $text .= "    // any file-writing bug anywhere on this account becomes permanent\n";
         $text .= "    // code execution. Setting this back to false does NOT undo it: the\n";
         $text .= "    // permission stays until somebody takes it away.\n";
+        $text .= "    //\n";
+        $text .= "    // It is the LAST of the three ways to keep this server current, and\n";
+        $text .= "    // it is worth going back to one of the other two: `php\n";
+        $text .= "    // internal/update.php` from cron, with the code directory writable\n";
+        $text .= "    // by YOU, or the update address below for a cron that can only\n";
+        $text .= "    // fetch a URL. Either of those leaves this key false.\n";
         $text .= "    'auto_update' => true,\n\n";
     } else {
         $text .= "    // Automatic updates are OFF, which is the safe state: this server\n";
@@ -736,6 +765,7 @@ function ap_i_head($title)
         . "         font: 16px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }\n"
         . "  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }\n"
         . "  h2 { font-size: 1.05rem; margin: 2.25rem 0 .5rem; }\n"
+        . "  h3 { font-size: .95rem; margin: 1.75rem 0 .4rem; }\n"
         . "  p.lede { margin: 0 0 2rem; opacity: .8; }\n"
         . "  table { border-collapse: collapse; width: 100%; }\n"
         . "  td { padding: .45rem .5rem .45rem 0; vertical-align: top;\n"
@@ -1222,6 +1252,122 @@ function ap_i_run(array $options)
             . 'origins &mdash; and change it back when you are done. No credential '
             . "value ever appears there, under either value.</p>\n";
 
+        // --- KEEPING IT UP TO DATE. THREE WAYS, RANKED, WITH THE REAL PATH AND
+        // THE REAL URL OF THIS INSTALLATION. An example is a thing to adapt, and
+        // the adaptation is where it goes wrong -- on the machines this tool
+        // targets, whose operator has a control panel and no shell, "replace
+        // /path/to with your path" is where the update stops being set up at all.
+        //
+        // WHAT IS SHOWN IS CUT TO WHAT THIS HOST CAN DO. By now we know the PHP
+        // interface, whether anything can get out to HTTPS, and whether a token
+        // was written. Offering the third way on a `cgi-fcgi` host would be
+        // offering a key that is read and declined on every write.
+        //
+        // THE TOKEN IS PRINTED HERE AND NOWHERE ELSE. Not in ?action=diagnostic,
+        // which has no authentication and answers whoever asks; not in a log.
+        // Whoever loses it writes a new one into config-local.php by hand.
+        $updateToken = isset($updateToken) ? $updateToken : '';
+        $autoUpdateOn = isset($autoUpdate) ? (bool) $autoUpdate : false;
+        $canDefer = ap_i_can_defer();
+        $updateScript = ap_i_update_script($here);
+        $reach = ap_i_fetch($outboundUrl, 4);
+        $canReach = $reach['status'] !== null;
+
+        echo '<h2>Keeping it up to date</h2>' . "\n";
+        echo '<p>Once a day is enough. A release is not an emergency, and a run '
+            . 'with nothing to fetch costs one version check and stops there. '
+            . "Three ways, best first &mdash; you need one of them.</p>\n";
+        if (!$canReach) {
+            echo '<p class="note bad">This server could not reach the outside over '
+                . 'HTTPS just now, so nothing below can fetch anything until that is '
+                . 'fixed. A shell with <code>curl</code> may still get out where PHP '
+                . "cannot; the lines are here for when it does.</p>\n";
+        }
+
+        echo '<h3>1. Cron, from a shell &mdash; use this one</h3>' . "\n";
+        echo '<p>It is the best of the three for one reason: the code directory stays '
+            . 'writable by <strong>you</strong> and never by the web server, so no '
+            . 'request to this site can rewrite this code whatever goes wrong in it. '
+            . 'Nothing to turn on and nothing to keep secret. Run it once by hand to '
+            . "watch it work, then give cron this line:</p>\n";
+        echo '<pre>php ' . ap_i_h($updateScript) . "\n\n"
+            . '17 4 * * * php ' . ap_i_h($updateScript) . " &gt;/dev/null</pre>\n";
+        echo '<p>Any minute of any hour does; that one is no better than another. It '
+            . 'exits 0 when there was nothing to do &mdash; which is most nights &mdash; '
+            . 'and 1 only when something really failed, so a scheduler that reports '
+            . 'failures has something to report on. Drop the <code>&gt;/dev/null</code> '
+            . "and it mails you the result of every run instead.</p>\n";
+
+        echo '<h3>2. Cron that can only fetch a URL</h3>' . "\n";
+        if ($updateToken !== '') {
+            echo '<p>Much shared hosting has a scheduler that takes an address and '
+                . 'nothing else. This is the address, and <strong>this screen is the '
+                . 'only place it will ever appear</strong> &mdash; it is not in '
+                . '<code>?action=diagnostic</code> and not in any log. Copy it before '
+                . "you leave this page.</p>\n";
+            echo '<pre>' . ap_i_h($serverUrl . '?action=update&token=' . $updateToken)
+                . "</pre>\n";
+            echo '<p>Paste that into the panel. From a crontab, the same thing:</p>' . "\n";
+            echo '<pre>17 4 * * * curl -fsS \''
+                . ap_i_h($serverUrl . '?action=update&token=' . $updateToken)
+                . "' &gt;/dev/null</pre>\n";
+            echo '<p>Whoever calls it waits while the update runs and is answered with '
+                . 'what it did &mdash; allowed at that address and nowhere else, because '
+                . 'they came for it and no reader of a page is kept waiting. At most one '
+                . 'real check a day however often it is called; add '
+                . '<code>&amp;force=1</code> to check anyway. To retire the address, '
+                . 'empty <code>update_token</code> in '
+                . '<code>internal/config-local.php</code> and it stops existing &mdash; '
+                . "unknown, not refused.</p>\n";
+        } else {
+            echo '<p>Much shared hosting has a scheduler that takes an address and '
+                . 'nothing else. You did not ask for one, so none was written. To have '
+                . 'it, put a secret of 32 characters or more in '
+                . "<code>internal/config-local.php</code>:</p>\n";
+            echo '<pre>\'update_token\' => \'32 characters or more, of your own\',</pre>'
+                . "\n";
+            echo '<p>and <code>' . ap_i_h($serverUrl)
+                . '?action=update&amp;token=&lt;that secret&gt;</code> then runs the '
+                . 'update during the request and answers with what it did. Until such a '
+                . 'key exists the action does not exist either &mdash; unknown, not '
+                . "refused.</p>\n";
+        }
+
+        if (!$canDefer) {
+            echo '<h3>3. Letting the server update itself &mdash; impossible here</h3>'
+                . "\n";
+            echo '<p>This PHP interface (<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot '
+                . 'hand the response to the visitor before doing more work, and somebody '
+                . 'who came to read or write a note must never wait on a fetch to GitHub. '
+                . 'So <code>auto_update</code> is read and declined here on every write, '
+                . 'ticked or not. That is the ordinary case on shared hosting, and it is '
+                . "why the address above exists.</p>\n";
+            if ($autoUpdateOn) {
+                echo '<p class="note bad">It is on in the configuration just written, '
+                    . 'and it will do nothing but be declined. Set '
+                    . '<code>\'auto_update\' => false</code> in '
+                    . '<code>internal/config-local.php</code>, and do not give the web '
+                    . "server write access to this directory.</p>\n";
+            }
+        } else {
+            echo '<h3>3. Letting the server update itself &mdash; last resort</h3>' . "\n";
+            echo '<p>Only if neither of the two above exists on this host. It costs '
+                . 'something the others do not: the code directory has to be '
+                . '<strong>writable by the user PHP runs as</strong>, and from that '
+                . 'moment any bug anywhere on this account that can write a file &mdash; '
+                . 'in this code, in a neighbouring application, in a plugin nobody '
+                . 'remembers installing &mdash; stops being a defacement and becomes '
+                . 'permanent code execution. Setting the key back to <code>false</code> '
+                . 'does not undo it: the permission stays until somebody takes it '
+                . "away.</p>\n";
+            echo '<pre>\'auto_update\' => true,</pre>' . "\n";
+            echo '<p>in <code>internal/config-local.php</code>'
+                . ($autoUpdateOn ? ' &mdash; already written there, because you asked for '
+                    . 'it on the form.' : ', where it is currently <code>false</code>.')
+                . ' The check then happens on a write, at most once a day, never on a '
+                . "read, and only after the reader already has their answer.</p>\n";
+        }
+
         echo '<h2>Now delete this file</h2>' . "\n";
         echo '<p>It has done its job. It refuses to act while the configuration exists, '
             . 'but an installer that stays reachable and writable on a live server is a '
@@ -1313,58 +1459,61 @@ function ap_i_run(array $options)
     echo '<p><label>Password<br><input type="password" name="password"></label></p>' . "\n";
     echo "</details>\n</fieldset>\n";
 
-    echo "<fieldset>\n<legend>Automatic updates</legend>\n";
-    echo '<label class="choice"><input type="checkbox" name="auto_update" value="1"'
-        . (!empty($_POST['auto_update']) ? ' checked' : '')
-        . "> Let this server fetch and install its own updates</label>\n";
-    echo '<p class="note">Leave it off. Turning it on means the code directory must be '
-        . 'writable by the user PHP runs as, and from that moment any bug anywhere on this '
-        . 'account that can write a file &mdash; in this code, in a neighbouring '
-        . 'application, in a plugin nobody remembers installing &mdash; stops being a '
-        . 'defacement and becomes permanent code execution. Turning the key back off does '
-        . 'not undo it: the permission stays until somebody takes it away. '
-        . '<code>php internal/update.php</code> does the same job from a shell or from '
-        . 'cron, with the directory writable by you and not by the web server.</p>' . "\n";
-    if (!$outbound) {
-        echo '<p class="note bad">This server has no way out to HTTPS, so this option '
-            . "cannot work here even if you tick it.</p>\n";
-    }
+    /* THREE WAYS, AND THEY ARE NOT EQUAL. Two checkboxes side by side said
+       "pick one" and the honest answer is "pick the first, which is not a
+       checkbox at all". The order below is the order of preference, and the
+       last screen prints the exact line for each with this installation's own
+       path and address in it. */
+    echo "<fieldset>\n<legend>Keeping this server up to date</legend>\n";
+    echo '<p>Best, and nothing to tick: <code>php internal/update.php</code> '
+        . 'from cron, once a day. The code directory then stays writable by you and never '
+        . 'by the web server, so no request to this site can rewrite this code. The next '
+        . 'screen gives you that line with the real path already in it. The two boxes '
+        . "below are for a host that cannot do that.</p>\n";
 
-    /* THE QUESTION THE FIRST ONE DOES NOT ANSWER. Ticking auto_update above
-       buys nothing on a host whose PHP interface cannot hand the response to
-       the visitor before working -- `cgi-fcgi` is the common one, and it is
-       most of cheap hosting. Such a host declines the web path and points at
-       cron, and plenty of it has no cron either, or a cron that can only fetch
-       a URL. This is the answer for all of them, and it is one line to paste
-       into whatever scheduler exists. */
-    /* PRE-TICKED WHERE IT IS THE ONLY WAY, AND THE HOST IS ASKED, NOT GUESSED
-       AT. The opportunistic path needs an interface that can hand the response
-       to the visitor before working: php-fpm and LiteSpeed can, `cgi-fcgi` and
-       the rest cannot, and on those the checkbox above buys nothing at all.
-       Somebody installing on such a host should not have to know that to end
-       up with a working server -- so the box is already ticked, and the note
-       says which interface answered. */
-    $canDefer = PHP_SAPI === 'cli'
-        || function_exists('fastcgi_finish_request')
-        || function_exists('litespeed_finish_request');
+    /* PRE-TICKED WHERE IT IS THE ONLY WAY LEFT, AND THE HOST IS ASKED, NOT
+       GUESSED AT. The opportunistic path below needs an interface that can
+       hand the response to the visitor before working: php-fpm and LiteSpeed
+       can, `cgi-fcgi` and the rest cannot, and that is most of cheap hosting.
+       Somebody installing there should not have to know it to end up with a
+       server that gets its updates -- so the box is already ticked, and the
+       note says which interface answered. */
+    $canDefer = ap_i_can_defer();
     $wantsUrl = ($method === 'POST') ? !empty($_POST['update_url']) : !$canDefer;
 
     echo '<label class="choice"><input type="checkbox" name="update_url" value="1"'
         . ($wantsUrl ? ' checked' : '')
-        . "> Give me an address a scheduler can call to update this server</label>\n";
+        . "> <strong>Second best</strong> &mdash; give me an address a scheduler can "
+        . "call, for a cron that can only fetch a URL</label>\n";
+    echo '<p class="note">For a host with no shell, or whose scheduler takes an address '
+        . 'and nothing else. A secret is written into the configuration and the address '
+        . 'is shown once, on the next screen and nowhere else. Whoever calls it waits '
+        . 'while the update runs &mdash; that is allowed there and nowhere else, because '
+        . 'they came for it and no reader of a page is kept waiting. At most one real '
+        . "check a day, however often it is called.</p>\n";
+
+    echo '<label class="choice"><input type="checkbox" name="auto_update" value="1"'
+        . (!empty($_POST['auto_update']) ? ' checked' : '')
+        . "> <strong>Last resort</strong> &mdash; let this server fetch and install its "
+        . "own updates from a web request</label>\n";
+    echo '<p class="note">Leave it off if either of the two above is open to you. It is '
+        . 'last because of what it costs: the code directory must be writable by the user '
+        . 'PHP runs as, and from that moment any bug anywhere on this account that can '
+        . 'write a file &mdash; in this code, in a neighbouring application, in a plugin '
+        . 'nobody remembers installing &mdash; stops being a defacement and becomes '
+        . 'permanent code execution. Setting the key back to false does not undo it: the '
+        . 'permission stays until somebody takes it away.</p>' . "\n";
     if (!$canDefer) {
-        echo '<p class="note bad">This PHP interface (<code>' . ap_i_h(PHP_SAPI)
-            . '</code>) cannot hand the response to the visitor before doing more '
-            . 'work, and a visitor must never wait on a fetch to GitHub. The option '
-            . 'above therefore does nothing here, whether you tick it or not: THIS is '
-            . "the one that works on this host, and it is ticked for you.</p>\n";
+        echo '<p class="note bad">And it cannot work at all here: this PHP interface '
+            . '(<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot hand the response to the '
+            . 'visitor before doing more work, and a visitor must never wait on a fetch '
+            . 'to GitHub, so the key is read and declined on every write. The box above '
+            . "is the one that works on this host, and it is ticked for you.</p>\n";
     }
-    echo '<p class="note">For a host with no cron and no shell, or one whose cron can '
-        . 'only fetch a URL. A secret is written into the configuration and the address '
-        . 'is shown once, on the next screen. Whoever calls it waits while the update '
-        . 'runs &mdash; that is allowed there and nowhere else, because they came for it '
-        . 'and nobody else is kept waiting. At most one real check a day, however often '
-        . "it is called.</p>\n";
+    if (!$outbound) {
+        echo '<p class="note bad">This server has no way out to HTTPS, so nothing here '
+            . "can fetch anything until that is fixed.</p>\n";
+    }
     echo "</fieldset>\n";
 
     echo '<button type="submit">Install</button>' . "\n";
