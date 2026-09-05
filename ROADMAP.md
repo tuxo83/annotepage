@@ -628,13 +628,13 @@ support message.
 
 The one thing that cannot be undone -- the key is the key, nobody else has a
 copy, losing it loses the notes -- is said in two anchors at the foot of
-install.html. That is the right size for the last section of an install page
-and the wrong size for the subject.
+how-to-install-it.html. That is the right size for the last section of an
+install page and the wrong size for the subject.
 
 What belongs on a page of its own, and is today scattered across FORMAT.md,
-INSTALL.md and the closing section of install.html: where the key may and may
-not live, what a shared relay learns anyway (the path of every annotated page,
-the sizes, the times), what `data-mode="plain"` costs and when it is
+INSTALL.md and the closing section of how-to-install-it.html: where the key
+may and may not live, what a shared relay learns anyway (the path of every
+annotated page, the sizes, the times), what `data-mode="plain"` costs and when it is
 acceptable, what a compromised CDN could do to a site carrying the short tag,
 and what changes when the server is your own.
 
@@ -642,11 +642,12 @@ It also gives the tag's third line somewhere to point: the owner asked for the
 warning to lead somewhere written for it, not for a paragraph borrowed from a
 longer explanation.
 
-Not started. install.html#no-recovery and install.html#data hold the line until
-then, and they are accurate -- they are just not a security page. (They lived
+Not started. how-to-install-it.html#no-recovery and #data hold the line
+until then, and they are accurate -- they are just not a security page. (They lived
 on how-it-works.html until 2026-09-03; that page was deleted, three of its four
 sections being already said on the landing page, the session page or the
-install page, and this one moved to install.html rather than being dropped.)
+install page, and this one moved to what is now how-to-install-it.html
+rather than being dropped.)
 
 ## The tag on the landing page floats, and gives up SRI to do it -- SETTLED
 
@@ -661,13 +662,14 @@ day it does -- silently, the script simply never runs.
 The floating tag was chosen because the realistic failure of the pinned one is
 that it rots: a free tool with no update channel, pasted once into a layout
 file, still serving a version nobody has looked at in two years while a fix
-sits on npm. What it gives up is real and is written on install.html rather
-than glossed over: a compromised npm account or CDN would run whatever it
-served on every page carrying the tag, and this client reads the notes in the
-clear in the browser.
+sits on npm. What it gives up is real and is written on
+how-to-install-it.html rather than glossed over: a compromised npm account or
+CDN would run whatever it served on every page carrying the tag, and this
+client reads the notes in the clear in the browser.
 
-The locked form is documented at install.html#locked with its digest, and the
-READMEs still carry it. Both are supported; neither is hidden.
+The locked form is documented in client/README.md, with its digest;
+how-to-install-it.html#locked says in one line that a wrong digest fails
+silently. Both are supported; neither is hidden.
 
 THE ARGUMENT THAT WAS MISSING WHEN THIS WAS DECIDED, raised by the owner the
 same day and written here because it points the other way.
@@ -697,7 +699,8 @@ to edit a digest and a version number. A pinned tag means a fix reaches
 nobody, which is the failure that actually happens to a free tool.
 
 So the floating tag stays, the absence of `integrity` is now written as a
-decision beside the tag on the landing page and on install.html#locked, and
+decision beside the tag on the landing page and on
+how-to-install-it.html#locked, and
 what it gives up is stated there rather than glossed over.
 
 What would remove the trade entirely, and is the real answer: the browser
