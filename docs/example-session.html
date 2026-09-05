@@ -226,6 +226,33 @@ h1 + .lead { margin-top: 1.15rem; }
    sending the reader to another page for it would leave a hole exactly where
    they notice it. Both are consequence first, in bold, then the mechanism.
    Anywhere else, one sentence. */
+
+/* -- THE THING THAT HAPPENS BETWEEN TWO STEPS -----------------------------
+
+   Not a step: a step is something the page then SHOWS, and there is nothing to
+   show here -- a deploy looks like whatever your pipeline looks like, which is
+   not ours to draw. But it is not nothing either, and leaving it out made the
+   remark seem to unstick itself.
+
+   So it is a marker on the page's own axis, between the two steps it sits
+   between, in the position the landing page gives the way out of a chapter --
+   and deliberately NOT that shape: no border, no fill, nothing that reads as
+   something to press. Four words and a turning arrow.
+
+   It is an <li> so that the list stays a list, and it does not take a number:
+   counter-increment is cancelled, so the step after it carries the number it
+   would have had. */
+.use-steps > li.between {
+    display: block; grid-template-columns: none;
+    counter-increment: none;
+    margin: calc(-1 * clamp(1rem, 2.8vw, 2.4rem)) 0;
+    text-align: center;
+    color: var(--dim); font-size: .95rem; font-weight: 600;
+}
+.use-steps > li.between .turn {
+    display: inline-block; margin-right: .5rem;
+    color: var(--accent); font-weight: 400;
+}
 .use-steps .say + .say { margin-top: .7rem; }
 .use-steps .say b { color: var(--text); font-weight: 650; }
 
@@ -1096,6 +1123,10 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                     </div>
                 </div>
             </figure>
+        </li>
+
+        <li class="between if-wait">
+            <span class="turn" aria-hidden="true">&#x21BB;</span>You deploy the fix.
         </li>
 
         <li>
