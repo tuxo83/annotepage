@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Questions people ask &mdash; annotepage</title>
+<meta name="description" content="What people ask before putting annotepage on a site: what happens if the key is lost, what the server sees, what cannot be undone, and what it costs.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://annotepage.com/questions.html">
+<meta property="og:type"        content="article">
+<meta property="og:site_name"   content="annotepage">
+<meta property="og:url"         content="https://annotepage.com/questions.html">
+<meta property="og:title"       content="Questions people ask">
+<meta property="og:description" content="One page for the questions that come before an install, and the ones that come after it.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/base.css">
+<style>
+/* ---------------------------------------------------------------------------
+   annotepage.com -- one hand-written page.
+   No dependency, no remote font, no third-party script, no external image.
+
+   WHY THIS IS A PAGE AND NOT A SECTION. It was eight questions at the foot of
+   how-to-install-it.html, and the reader who asked for them asked for this in
+   the same breath: there will be many, and a chapter that grows without limit
+   at the bottom of an install page turns that page into a reference nobody
+   finishes. Here it can grow, and the menu can point at it.
+
+   THE THREE ANCHORS MOVED WITH THE LINES THEY NAME. #data, #no-recovery and
+   #locked are cited from ROADMAP.md; the citations were updated in the same
+   commit. An anchor that moves house without leaving a forwarding note is a
+   dead link somebody finds a year later.
+   --------------------------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+}
+
+/* -- page-specific ------------------------------------------------------- */
+
+h1 { margin: 0; font-size: clamp(1.9rem, 6vw, 3rem); font-weight: 700; letter-spacing: -.02em; }
+h2 { margin: 0; font-size: clamp(1.4rem, 4.4vw, 1.9rem); font-weight: 650; }
+p  { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
+.wrap { width: 100%; max-width: 85rem; margin: 0 auto; padding: 0 2rem; }
+main .wrap > * { max-width: 45rem; }
+@media (max-width: 40rem) { .wrap { padding: 0 1.25rem; } }
+
+section { padding: clamp(2.6rem, 6vw, 4.2rem) 0; }
+section + section { border-top: 1px solid var(--line-soft); }
+.hero { padding-top: clamp(1.6rem, 4vw, 2.6rem); }
+.lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; }
+h1 + .lead { margin-top: 1.15rem; }
+.small { font-size: .9rem; }
+.dim { color: var(--dim); }
+
+/* A QUESTION IS A LINE OF ITS OWN. Eight bolded openings running into their own
+   answers read as eight warnings; a question on its own line is something a
+   reader scans for, and stops at the one they came with. A <dl>, because that
+   is what a question and its answer are. */
+.faq { margin: 1.4rem 0 0; }
+.faq dt { margin: 1.7rem 0 0; font-weight: 650; color: var(--text); }
+.faq dt:first-child { margin-top: 0; }
+.faq dd { margin: .35rem 0 0; color: var(--dim); }
+
+/* THE GROUPS ARE THE ONLY NAVIGATION. No table of contents: this page is meant
+   to be read down, or searched with the browser's own find. A heading every
+   few questions is what makes the scroll legible. */
+.faq-group { margin: 2.6rem 0 0; font-size: 1.05rem; font-weight: 650; color: var(--text); }
+.faq-group:first-of-type { margin-top: 0; }
+
+.cta {
+    display: inline-block; margin-top: 2.2rem;
+    font-weight: 600; color: var(--accent); text-decoration: none;
+}
+.cta:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+.cta + .cta { margin-left: 2.2rem; }
+
+code {
+    font-family: var(--mono); font-size: .9em;
+    padding: .1em .35em; border-radius: 4px;
+    background: var(--bg-soft); color: var(--text);
+}
+</style>
+<body>
+
+<header class="top">
+    <div class="wrap">
+        <a class="mark" href="/">annotepage</a>
+        <nav>
+            <a href="/#use">Use</a>
+            <a href="/#install">Install</a>
+            <a href="questions.html" aria-current="page">Questions</a>
+            <a class="leave" href="https://github.com/tuxo83/annotepage"
+               target="_blank" rel="noopener"
+               aria-label="GitHub, opens in a new tab">GitHub</a>
+        </nav>
+    </div>
+</header>
+
+<!-- page-specific -->
+
+<main>
+
+<section class="hero" id="top">
+    <div class="wrap">
+        <h1>Questions people ask</h1>
+        <p class="lead">
+            The ones that come before an install, and the ones that come after
+            it.
+        </p>
+    </div>
+</section>
+
+<section id="data">
+    <div class="wrap">
+
+        <p class="faq-group">The key</p>
+        <dl class="faq">
+            <dt id="no-recovery">What if I lose the key?</dt>
+            <dd>In secure mode, the notes go with it. There is no recovery and
+            no rotation &mdash; the key is what decrypts them, and the server has
+            never had it. In open mode the key is written in the tag, on a page
+            anybody can read, so it cannot be lost.</dd>
+
+            <dt>Can I let someone read the notes without writing any?</dt>
+            <dd>No. The key reads and writes; there is no reader-only role.</dd>
+
+            <dt>Where does the key come from?</dt>
+            <dd>Your browser draws it, on the
+            <a href="how-to-install-it.html#page">install page</a>, and sends it
+            nowhere. The project id in the tag is derived from it and does not
+            lead back to it &mdash; the server recognises that id, it never
+            issues one.</dd>
+        </dl>
+
+        <p class="faq-group">The notes, and what the server holds</p>
+        <dl class="faq">
+            <dt>What does the notes server see?</dt>
+            <dd>Counts, times, sizes, IP addresses and your domain. Never your
+            paths, never your text &mdash; in secure mode it cannot read a line
+            it stores.</dd>
+
+            <dt>Is there an account, a moderator, a way to delete a note?</dt>
+            <dd>None of them, and no notification either. A project is a key and
+            the notes under it.</dd>
+
+            <dt>Can I switch from open to secure later?</dt>
+            <dd>For new notes, yes: change the tag. The notes already written
+            keep the mode they were written in, and nothing converts them.</dd>
+
+            <dt>Can the page sit behind a login?</dt>
+            <dd>Yes. Neither the notes server nor the assistant ever opens it:
+            the MCP talks to the notes API and to nothing else, and the page is
+            opened by the reviewers&rsquo; own browsers, which are already
+            signed in.</dd>
+        </dl>
+
+        <p class="faq-group">The tag</p>
+        <dl class="faq">
+            <dt>Can I load it as a module?</dt>
+            <dd>No, and it fails quietly. The client reads
+            <code>document.currentScript</code> to find its own settings, and a
+            <code>type="module"</code> script does not have one: nothing appears,
+            and nothing is logged.</dd>
+
+            <dt id="locked">What if I pin the script with a wrong
+            <code>integrity</code> digest?</dt>
+            <dd>The browser refuses the file and the tool simply does not
+            appear. Nothing on the page says why. The
+            <a href="how-to-install-it.html#page">install page</a> writes the
+            digest for you when you ask for a pinned tag.</dd>
+
+            <dt>Can I try it on my own machine?</dt>
+            <dd>Yes: <code>localhost</code> is a secure context, so the browser
+            has the crypto it needs. But never declare
+            <code>localhost:3000</code> in a server&rsquo;s list of domains
+            &mdash; that name belongs to every machine on earth, so declaring it
+            lets any of them write to your project.</dd>
+        </dl>
+
+        <p class="faq-group">What it costs</p>
+        <dl class="faq">
+            <dt>Is it free?</dt>
+            <dd>Yes, and it is MIT. The shared notes server at
+            <code>api.annotepage.com</code> is free to use with nothing to
+            install; running your own is free too, and that is the whole
+            list.</dd>
+
+            <dt>Do I have to use your server?</dt>
+            <dd>No. One PHP file installs your own, and the
+            <a href="how-to-install-it.html#server">install page</a> takes you
+            through it. The tag names whichever one you run.</dd>
+        </dl>
+
+        <p>
+            <a class="cta" href="how-to-install-it.html">Install it</a>
+            <a class="cta" href="how-to-use-it.html">See what using it looks like</a>
+            <a class="cta" href="/">Back to the landing page</a>
+        </p>
+    </div>
+</section>
+
+</main>
+
+<!-- The tool, on this page, in open mode: the site is annotated with what it
+     describes. Served from this origin, not the CDN: this file is compared byte
+     for byte with the published bundle by tools/check-sri.mjs, and the site
+     makes no third-party request to show its own tool working. (The reason
+     written here before -- jsDelivr's @2 resolving to 2.0.1 -- was true when it
+     was written; @2 answers 2.11.0 now.) -->
+<script src="/annotepage-client-2.11.0.js"
+        data-server="https://api.annotepage.com/api.php"
+        data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
+        data-version="2026.9.5"
+        defer></script>
+
+</body>
+</html>
