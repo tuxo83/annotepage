@@ -1810,9 +1810,11 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 </script>
 
 <!-- The tool, on this page, in open mode: the site is annotated with what it
-     describes. Served from this origin because jsDelivr's @2 still resolves to
-     2.0.1, which ignores data-key -- same bytes, checked against the published
-     bundle by tools/check-sri.mjs. -->
+     describes. Served from this origin, not the CDN: this file is compared byte
+     for byte with the published bundle by tools/check-sri.mjs, and the site
+     makes no third-party request to show its own tool working. (The reason
+     written here before -- jsDelivr's @2 resolving to 2.0.1 -- was true when it
+     was written; @2 answers 2.11.0 now.) -->
 <script src="/annotepage-client-2.11.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
