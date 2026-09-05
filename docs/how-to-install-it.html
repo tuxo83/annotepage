@@ -427,10 +427,12 @@ body:has(#u-cron:checked)  .if-self, body:has(#u-url:checked)  .if-self { displa
    as well: it is the same kind of control, and one page should not have two
    drawings of one idea. What install.html had here was a twelve-row table,
    which is eleven answers a reader does not want beside the one they do. */
-/* UNDER THE TAG, NOT OVER IT -- see the comment where they now sit. The lead
-   line is what makes them a lookup rather than a control: without it, a row of
-   ten names under a block of code reads as ten variants of that code. */
-.fw-lead { margin: 1.4rem 0 0; font-size: .9rem; font-weight: 600; color: var(--dim); }
+/* A LABEL OVER A BLOCK, and it is what turns a control into a lookup: without
+   it, a row of ten framework names under a block of code reads as ten variants
+   of that code. Named `sub-lead` and not `fw-lead` since the server chapter
+   uses it too -- a class named after the first thing it labelled is a comment
+   that goes wrong the second time. */
+.sub-lead { margin: 1.4rem 0 0; font-size: .9rem; font-weight: 600; color: var(--dim); }
 .tabs { display: flex; flex-wrap: wrap; gap: .35rem; margin: .6rem 0 0; }
 .tabs input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .tabs label { cursor: pointer; }
@@ -1044,6 +1046,64 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             </li>
         </ol>
 
+        <!-- AND THE FILE BEHIND ALL OF IT, WHICH IS NOT A STEP. Nothing above
+             requires opening it: the installer writes it, and the two lines the
+             steps show are the two anybody edits by hand. But a reader who
+             wants a second origin, a relay, a plain-mode project or database
+             credentials read from outside the web root has nowhere to look, and
+             the answer is one commented file -- so it is shown rather than
+             named, in the same two windows how-to-use-it.html uses for the
+             assistant's own configuration.
+
+             THE TEMPLATE IS THE DOCUMENTATION. config-local.example.php is 227
+             lines of which most are comments, and it is the thing to link to:
+             a page that paraphrased it would be a second copy going stale. -->
+        <p class="sub-lead">Everything else is one file, and it is commented:</p>
+
+        <figure class="fig">
+            <div class="sc">
+                <div class="sc-win sc-fm" aria-hidden="true">
+                    <p class="sc-bar">
+                        <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M2.6 15.4V4.6h4.6l1.7 2h8.5v8.8a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1z"/></svg>
+                        <span>internal</span>
+                    </p>
+                    <p class="sc-path"><span>annotepage</span><span>&#8250;</span><span>internal</span></p>
+                    <p class="sc-row on">
+                        <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
+                        <span>config-local.php</span>
+                    </p>
+                </div>
+
+                <div class="sc-win sc-ed">
+                    <p class="sc-bar">
+                        <svg class="sc-ic" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
+                        <span>config-local.php</span>
+                    </p>
+                    <div class="sc-sheet">
+                        <button class="copy" type="button" data-copy="cfg-body" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre class="sc-body" id="cfg-body">return array(
+    'active'     =&gt; true,
+    'deployment' =&gt; <span class="val">'self-hosted'</span>,
+    'projects'   =&gt; array(
+        <span class="site">'7Qb1kZ3xNvA9dLpEqKf2Zt'</span> =&gt; array(
+            'origins' =&gt; array(<span class="val">'https://staging.example.com'</span>),
+            'mode'    =&gt; <span class="val">'encrypted'</span>,
+        ),
+    ),
+);</pre>
+                    </div>
+                </div>
+            </div>
+        </figure>
+
+        <p class="small dim">
+            Copy
+            <a href="https://github.com/tuxo83/annotepage/blob/main/server/webroot/internal/config-local.example.php">config-local.example.php</a>
+            over it and adapt: a second origin, a relay serving several projects,
+            plain mode, or database credentials read from a file outside the web
+            root. It only needs to carry what differs from the defaults.
+        </p>
+
         <!-- THE THIRD QUESTION THE INSTALLER ASKS, WHERE IT BELONGS. It
              changes no step above, so it is not a dial; it changes what you
              need to have ready before starting, which is what this line is
@@ -1123,7 +1183,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                          it -- I have the tag, where does it go in what I use --
                          and it is a lookup, not a step, so it carries no
                          number. -->
-                    <p class="fw-lead">Where it goes, in what you use:</p>
+                    <p class="sub-lead">Where it goes, in what you use:</p>
             <div class="tabs">
                 <label><input type="radio" name="fw" id="fw-html" checked> <span>Plain HTML</span></label>
                 <label><input type="radio" name="fw" id="fw-astro"> <span>Astro</span></label>
