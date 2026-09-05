@@ -977,80 +977,139 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     <div class="wrap">
         <h2>Install the MCP on the assistant</h2>
 
-        <!-- TWO STEPS, AND THE THREE PLACES THE KEY CAN LIVE ARE NOT THREE OF
-             THEM. They are one gesture done one of three ways, and numbering
-             them 01 02 03 would say a reader has three things to set up. The
-             command and the file are the two that can be copied, so they stand
-             in the same cell, one under the other; the third is a sentence
-             under the chapter, because what it costs is the only thing about it
-             worth reading. -->
+        <!-- THREE STEPS, AND THE SPLIT IS THE REMARK. It was two: "Plug it
+             in", carrying two commands AND a configuration file AND the three
+             places a key can live, and then "Then ask it". Installing a program
+             and telling it a secret are not one gesture -- one is the same in
+             every project, the other is the only thing on this page a reader
+             can get wrong.
+
+             AND THE MIDDLE ONE ONLY EXISTS IN SECURE MODE. In open mode the key
+             is in the tag the assistant can read, so there is nothing to hand
+             over: the dial takes the whole step away rather than leaving an
+             empty one. The chapter runs 01 02 in open, 01 02 03 in secure, and
+             the numbers are counted rather than written. -->
         <ol class="use-steps">
             <li>
                 <div>
-                    <p class="cap"><span class="n"></span> Plug it in</p>
-                    <p class="say if-open">
-                        Two commands. The key is on the page, so there is
-                        nothing to configure.
-                    </p>
-                    <p class="say if-secure">
-                        Two commands. The key rides in them, never in the
-                        conversation.
-                    </p>
+                    <p class="cap"><span class="n"></span> Install it</p>
                     <p class="say">
-                        Or a file, for several sites: <code>chmod 600</code>,
-                        gitignored.
+                        One command to install it, one to plug it into your
+                        assistant.
+                    </p>
+                    <p class="say if-open">
+                        The key is on the page, so that is all there is.
                     </p>
                 </div>
                 <div>
-                    <div class="snip if-open">
+                    <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
 <span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
                             </div>
-                    <div class="snip if-secure">
+                </div>
+            </li>
+
+            <!-- THE SAME FILE how-to-use-it.html DRAWS, AND THE SAME DRAWING.
+                 That page shows a reviewer's machine with the file open on the
+                 desktop; this one shows the same two windows with the reader's
+                 own site and the key this page just generated. Its rules moved
+                 into base.css to get here -- see the comment over them -- so
+                 there is one figure and not two that will drift.
+
+                 THE FILE IS THE ROUTE, AND THE COMMAND IS THE ALTERNATIVE. A
+                 key typed into a shell is in that shell's history; a file at
+                 600 is not. So the file is drawn and the command is a line
+                 under it, which is the reverse of what this chapter did. -->
+            <li class="if-secure">
+                <div>
+                    <p class="cap"><span class="n"></span> Give it the key</p>
+                    <p class="say">
+                        One file, on the machine where your assistant runs.
+                    </p>
+                    <p class="say">
+                        <b>The address is on your tag.</b> The key is the one
+                        your reviewers paste.
+                    </p>
+                </div>
+                <div>
+                    <figure class="fig">
+                        <div class="sc">
+                            <div class="sc-win sc-fm" aria-hidden="true">
+                                <p class="sc-bar">
+                                    <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M2.6 15.4V4.6h4.6l1.7 2h8.5v8.8a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1z"/></svg>
+                                    <span>annotepage</span>
+                                </p>
+                                <p class="sc-path"><span>~</span><span>&#8250;</span><span>.config</span><span>&#8250;</span><span>annotepage</span></p>
+                                <p class="sc-row on">
+                                    <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
+                                    <span>annotepage.json</span>
+                                </p>
+                            </div>
+
+                            <div class="sc-win sc-ed">
+                                <p class="sc-bar">
+                                    <svg class="sc-ic" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
+                                    <span>annotepage.json</span>
+                                </p>
+                                <div class="sc-sheet">
+                                    <button class="copy" type="button" data-copy="json-code" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre class="sc-body" id="json-code">{
+  "projects": {
+    <span class="site">"staging.example.com"</span>: {
+      "api":    <span class="val">"https://api.annotepage.com/api.php"</span>,
+      "key":    <span class="val">"&lt;the key&gt;"</span>,
+      "origin": <span class="val">"https://staging.example.com"</span>
+    }
+  }
+}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </figure>
+
+                    <!-- AND THE THIRD PLACE, WHICH IS A SENTENCE AND NOT A
+                         BLOCK: what it costs is the only thing about it worth
+                         reading. It sat at the foot of the chapter, where open
+                         mode read it too -- offering to write a file that open
+                         mode does not need. It belongs to the step about the
+                         key, and goes when that step goes. -->
+                    <p class="fw-lead">Or in the command itself, and in your shell&rsquo;s history:</p>
+                    <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-mcp-sec" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-mcp-sec"><code id="mcp-code"><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
-<span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">\</span>
+<pre id="snip-mcp-sec"><code id="mcp-code"><span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">\</span>
                       <span class="op">-e</span> ANNOTEPAGE_API=<span class="ap-api">https://api.annotepage.com/api.php</span> <span class="op">\</span>
                       <span class="op">-e</span> ANNOTEPAGE_KEY=&lt;the key above&gt; <span class="op">\</span>
                       <span class="op">-e</span> ANNOTEPAGE_AUTHOR=Assistant <span class="op">\</span>
                       <span class="op">--</span> annotepage-mcp</code></pre>
                             </div>
-                    <div class="snip">
-                                <button class="copy" type="button" data-copy="snip-json" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-json"><code id="json-code"><span class="at">"api"</span>:    <span class="st">"https://staging.example.com/notes/api.php"</span>,
-<span class="at">"key"</span>:    <span class="st">"&lt;the key&gt;"</span>,
-<span class="at">"origin"</span>: <span class="st">"https://staging.example.com"</span></code></pre>
-                            </div>
+
+                    <p class="small dim">
+                        Or let the assistant write it: easiest, and the key
+                        crosses a provider&rsquo;s logs.
+                    </p>
                 </div>
             </li>
 
-            <!-- AND WHAT PLUGGED IN IS FOR. The chapter used to stop at two
-                 commands, which leaves a reader holding a configuration and no
-                 idea what to type next. The site named in it is the reader's
-                 own, from the field at the top. -->
+            <!-- AND WHAT PLUGGED IN IS FOR, WHICH IS THE LANDING PAGE'S OWN
+                 CROP, shape for shape: the .frame.term from base.css, the
+                 working line above the input, the sentence with a copy button
+                 on it. That page ends its install chapter with exactly this,
+                 for exactly this reason -- a reader who has installed a thing
+                 and been told nothing to type has not been shown how to use
+                 it. The site named in it is theirs, from the field at the top. -->
             <li>
                 <div>
-                    <!-- AND NO SENTENCE HERE EITHER: the line beside it is the
-                         sentence, with the reader's own site already in it.
-                         "Then", because it is what the two commands above were
-                         for -- the chapter used to stop at them and leave a
-                         reader holding a configuration. -->
                     <p class="cap"><span class="n"></span> Then ask it</p>
+                    <p class="say">One sentence, with the address of your site.</p>
                 </div>
-                <div>
-                    <div class="snip">
-                                <button class="copy" type="button" data-copy="snip-ask" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-ask"><code id="ask-code">connect to staging.example.com with annotepage and fix what the reviewers flagged</code></pre>
-                            </div>
+                <div class="frame term">
+                    <button class="copy" type="button" data-copy="ask-code" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                    <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
+                    <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-code">connect to staging.example.com with annotepage and fix what the reviewers flagged</span><span class="cur"></span></div>
                 </div>
             </li>
         </ol>
-
-        <p class="small dim">
-            Or let the assistant write it: easiest, and the key crosses a
-            provider&rsquo;s logs.
-        </p>
     </div>
 </section>
 
@@ -1327,16 +1386,29 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
         orgCode.appendChild(piece('st', "'" + origin + "'"));
         orgCode.appendChild(document.createTextNode('),'));
 
+        /* THE FILE, IN THE SHAPE how-to-use-it.html DRAWS IT: a projects
+           map keyed by the site, because that is what makes "name the site"
+           enough for the assistant to pick a key. Painted with .site and .val
+           rather than the .at/.st of the code blocks -- it is inside the
+           editor window, and the window has its own two tints. */
         while (jsonCode.firstChild) jsonCode.removeChild(jsonCode.firstChild);
-        var rows = [['"api"',    '"' + ownApi + '"',  '    '],
+        /* `api`, NOT `ownApi`. This row read ownApi in every state, so with
+           the server dial on Shared the file told the assistant to talk to
+           https://<your site>/notes/api.php -- an address nobody installed
+           anything at. The tag two chapters up has always used `api`; this
+           block is the same answer and has to name the same server. */
+        var rows = [['"api"',    '"' + api + '"',  '    '],
                     ['"key"',    '"<the key>"',       '    '],
                     ['"origin"', '"' + origin + '"',  ' ']];
+        jsonCode.appendChild(document.createTextNode('{\n  "projects": {\n    '));
+        jsonCode.appendChild(piece('site', '"' + site + '"'));
+        jsonCode.appendChild(document.createTextNode(': {\n'));
         for (var r = 0; r < rows.length; r++) {
-            jsonCode.appendChild(piece('at', rows[r][0]));
-            jsonCode.appendChild(document.createTextNode(':' + rows[r][2]));
-            jsonCode.appendChild(piece('st', rows[r][1]));
-            if (r < rows.length - 1) jsonCode.appendChild(document.createTextNode(',\n'));
+            jsonCode.appendChild(document.createTextNode('      ' + rows[r][0] + ':' + rows[r][2]));
+            jsonCode.appendChild(piece('val', rows[r][1]));
+            jsonCode.appendChild(document.createTextNode(r < rows.length - 1 ? ',\n' : '\n'));
         }
+        jsonCode.appendChild(document.createTextNode('    }\n  }\n}'));
 
         askCode.textContent =
             'connect to ' + site
