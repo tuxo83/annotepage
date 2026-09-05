@@ -614,7 +614,26 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
    NOBODY IS PUSHED BELOW AA TO DO IT. The second project keeps --t-dim, which
    measures 6.5:1 on this ground; the hierarchy is made by lifting the first to
    white, not by sinking the other into the background. */
-.cf-path { margin: 0 0 calc(.6rem * var(--ui)); color: var(--t-dim); }
+/* IT IS IN A FOLDER, AND THE PICTURE SAYS SO. A path on one line above the
+   content is a caption; a rail with the folder open beside the file is what
+   somebody actually looks at when they go and write this file. The rail is
+   three lines and it stops there -- a full tree would be a drawing of an
+   editor, and we do not have one to be faithful to. */
+.cf-grid { display: grid; gap: calc(.9rem * var(--ui)); }
+@media (min-width: 62rem) {
+    .cf-grid {
+        /* 13.5 and not 12: the file name is 4 spaces of indent plus 15
+           characters, and at 12 it ran into the rule beside it. */
+        grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr);
+        gap: calc(1.1rem * var(--ui));
+    }
+    .cf-tree {
+        border-right: 1px solid var(--t-border);
+        padding-right: calc(1.1rem * var(--ui));
+    }
+}
+.cf-tree { margin: 0; color: var(--t-dim); white-space: pre; }
+.cf-tree .open { color: var(--t-text); }
 .cf-body {
     margin: 0; white-space: pre; overflow-x: auto;
     color: var(--t-dim); font: inherit;
@@ -887,6 +906,23 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
    asked for no motion -- in that case nothing plays unless they press it. */
 [data-done] ~ .fig-foot .replay,
 [data-quiet] ~ .fig-foot .replay { display: inline-block; }
+/* THE COPY BUTTON IS NOT A REPLAY: it is always there, because what it copies
+   is always there. Same shape, so the strip reads as one kind of thing.
+   It lives in the caption and NOT in the frame, because the frame is
+   aria-hidden -- a control inside it would be a control nobody using a screen
+   reader could reach. */
+.fig-foot .copy {
+    display: inline-block; flex: none;
+    font: 600 .85rem/1 var(--sans); color: var(--text);
+    background: var(--bg-soft); border: 1px solid var(--control-line);
+    border-radius: 999px; padding: .5rem .95rem; cursor: pointer;
+}
+.fig-foot .copy:hover { border-color: var(--accent); color: var(--accent); }
+.fig-foot .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.fig-foot:has(.copy) { margin-top: .95rem; }
+@media (min-width: 48rem) {
+    .fig-foot:has(.copy) { margin-top: 1.7rem; }
+}
 [data-done] ~ .fig-foot,
 [data-quiet] ~ .fig-foot { margin-top: .95rem; }
 @media (min-width: 48rem) {
@@ -1230,20 +1266,29 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 
             <figure class="fig">
                 <div class="frame term ui-large" aria-hidden="true">
-                    <p class="cf-path">~/.config/annotepage/annotepage.json</p>
+                    <div class="cf-grid">
+<pre class="cf-tree">~/.config/
+  annotepage/
+    <span class="open">annotepage.json</span></pre>
 <pre class="cf-body">{
   "projects": {
     <span class="on"><span class="site">"staging.example.com"</span>: {
       "api": "https://staging.example.com/notes/api.php",
-      "key": "W0iAHlP66ib&#x2026;65cRWkaw"
+      "key": "W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw"
     },</span>
     <span class="site">"shop.example.com"</span>: {
       "api": "https://shop.example.com/notes/api.php",
-      "key": "Lm4tR9xQ2vC&#x2026;8sZKp1Ad"
+      "key": "CzBVep_E6Q4zWH2ix-wRNluApcrvFDleg6jN8hc8YYY"
     }
   }
 }</pre>
+                    </div>
                 </div>
+
+                <figcaption class="fig-foot">
+                    <button type="button" class="copy" id="cf-copy"
+                            data-said="Copied">Copy the file</button>
+                </figcaption>
             </figure>
         </li>
 
@@ -1473,6 +1518,60 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         </ol>
     </div>
 </section>
+
+<script>
+/* COPY WHAT IS ON SCREEN, NOT A SECOND COPY OF IT. The button reads the
+   figure's own text, so the two can never drift apart -- a snippet kept beside
+   the picture it illustrates is a snippet that will one day illustrate
+   something else. The key it carries is this project's PUBLISHED demo key,
+   the same one the first step shows: nothing private is on this page. */
+(function () {
+    var button = document.getElementById('cf-copy');
+    if (!button) return;
+    var body = document.querySelector('.cf-body');
+    if (!body) { button.remove(); return; }
+
+    var said = button.getAttribute('data-said');
+    var was = button.textContent;
+    var back = 0;
+
+    var tell = function (word) {
+        button.textContent = word;
+        if (back) clearTimeout(back);
+        back = setTimeout(function () { button.textContent = was; }, 1800);
+    };
+
+    button.addEventListener('click', function () {
+        var text = body.textContent;
+        /* The modern call needs a secure context and a permission; the old one
+           needs neither and works where it does not. We try both rather than
+           telling somebody their browser is wrong. */
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () { tell(said); },
+                                                     function () { legacy(text); });
+        } else {
+            legacy(text);
+        }
+    });
+
+    function legacy(text) {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.left = '-9999px';
+        document.body.appendChild(area);
+        area.select();
+        var done = false;
+        try { done = document.execCommand('copy'); } catch (e) { done = false; }
+        document.body.removeChild(area);
+        /* SAY NOTHING RATHER THAN LIE. A button that reports success on a
+           browser that refused is worse than one that does nothing: the reader
+           pastes and gets whatever was there before. */
+        if (done) tell(said);
+    }
+}());
+</script>
 
 </main>
 

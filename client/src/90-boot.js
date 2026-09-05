@@ -147,6 +147,46 @@ function startWithSalt(text, derived) {
         });
 }
 
+/**
+ * THE OTHER WAY ROUND: the key leaves this browser.
+ *
+ * The exact undoing of startWithSalt, and it is written next to it for that
+ * reason -- the state a key brings in is the state its removal has to take
+ * back out. Anything left behind here is a note decrypted with a key the
+ * tool now claims not to have.
+ *
+ * What actually leaves is ONE entry, `annotepage/key/<project>`: this
+ * project, this origin. Another project reviewed from the same browser keeps
+ * its own key, and so does this project on another domain -- localStorage is
+ * per origin, and forgetting cannot reach further than it (30-state).
+ *
+ * Nothing is deleted anywhere else. The notes stay on the server, encrypted;
+ * pasting the key again brings the whole page back. That is what the
+ * confirmation says, and it is the whole reason it can be said calmly.
+ */
+const forgetKey = () => {
+    forgetSalt(PROJECT);
+
+    // Annotation mode holds listeners on `document` and `window` and a
+    // repeating timer, none of which sit on the host: leaving the mode is
+    // what takes them down. It has to happen while `ui` still exists.
+    if (ui && mode) leaveMode();
+
+    keyText = '';
+    keys = null;
+    PAGE_INDEX = '';
+    notes = [];
+    anchored = [];
+    orphans = [];
+    historyOpen = false;
+    currentFailure = null;
+    skipped = { newer: 0, unreadable: 0, unknown: 0 };
+
+    // And the tool is back where it was before the key was pasted: the
+    // screen that asks for it. openSaltScreen clears the layer it replaces.
+    openSaltScreen();
+};
+
 /** Everything the tool does once it has decided to stay. */
 function proceed(first) {
     // From here on the tool EXISTS, and will no longer keep quiet

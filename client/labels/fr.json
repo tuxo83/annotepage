@@ -83,6 +83,7 @@
   "key.not_kept": "Ce navigateur refuse de retenir la clé (navigation privée, ou stockage bloqué). L’outil fonctionne pour cette page, mais la clé sera à recoller au prochain chargement.",
   "key.replace": "Coller une autre clé",
   "key.forget": "Oublier la clé sur ce navigateur",
+  "key.forget_confirm": "Ce navigateur cessera de retenir la clé de ce projet : l’outil la redemandera ici, et sur toutes les pages de ce site. Les notes ne sont pas touchées — elles restent sur le serveur, chiffrées, et reviennent dès que la clé est recollée. Assurez-vous de pouvoir encore vous procurer la clé avant de valider : personne, pas même le serveur, ne peut la redonner.",
   "public.notice": "Chiffré de bout en bout, et la clé de ce projet est publique : elle est écrite dans cette page. Quiconque peut ouvrir la page peut lire ces notes ET en écrire — la clé donne les deux, et ce format n’a pas de rôle lecteur seul.",
   "upgrade.available": "Un client annotepage plus récent existe : {version}. Cette page exécute la version {current}, servie par le site lui-même — rien n’a été chargé pour la remplacer, et le moment de mettre à jour le fichier appartient au propriétaire.",
   "tag.title": "Cette balise annotepage est inutilisable telle quelle",

@@ -213,6 +213,18 @@ ns.defaultLabels = {
         + 'have to be pasted again on the next load.',
     'key.replace': 'Paste another key',
     'key.forget': 'Forget the key on this browser',
+    /* Asked BEFORE, because the gesture cannot be taken back from here --
+       and it says what is really lost, which is the convenience and not the
+       notes. Announcing "your notes will be lost" would be a lie that stops
+       somebody from cleaning up a shared machine; saying nothing at all
+       would strand whoever no longer has the key anywhere else. */
+    'key.forget_confirm':
+        'This browser will stop keeping the key of this project: the tool '
+        + 'will ask for it again here, and on every page of this site. The '
+        + 'notes are not touched -- they stay on the server, encrypted, and '
+        + 'they come back as soon as the key is pasted again. Make sure you '
+        + 'can still get hold of the key before confirming: nobody, not even '
+        + 'the server, can hand it back.',
 
     /* -- A project whose key is IN the page ---------------------------
        Said where the notes are, at every draw, and not once at startup: it
