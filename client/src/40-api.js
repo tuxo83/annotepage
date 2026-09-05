@@ -12,8 +12,81 @@
    This function never rejects and never writes to the console: it returns a
    cause, and the caller decides whether we keep quiet or speak. */
 
+/* -- 8bis. THE FORMAT THE SERVER ANNOUNCES, AND WHAT WE DO ABOUT IT ------
+   The three components -- this client, the MCP package, the server -- speak
+   ONE protocol number, and nothing at build time can hold them together once
+   they are deployed: this file comes from a CDN, the server is updated by
+   whoever runs it, on their own day. tools/check-versions.mjs makes the three
+   agree IN THE REPOSITORY; it has never seen a deployment.
+
+   So they are compared HERE, at runtime, on the only thing that crosses the
+   wire: the `format` the server writes into the envelope of every answer
+   (api.php, AP_FORMAT). It has been sent since format 2 and nobody read it.
+
+   WHAT A DISAGREEMENT COSTS, AND WHY IT IS SILENT: the server accepts the
+   write, stores an envelope it does not know how to read back, and the only
+   symptom is a reader that quietly skips rows. Nothing fails, nothing is
+   logged, and the remark is gone by the time anybody goes looking.
+
+   THE TWO DIRECTIONS ARE NOT SYMMETRICAL, and that asymmetry IS the decision:
+
+     SERVER NEWER THAN US -- we can guarantee nothing: neither that we read
+     what is there, nor that what we write can be read back. We say it, and we
+     REFUSE TO WRITE. A wrong envelope is the damage that cannot be taken
+     back, because nothing is ever deleted in this tool; showing a page we may
+     be reading incompletely is taken back by reloading.
+
+     SERVER OLDER THAN US -- we still know how to read it. Format 1 rows are
+     read by this client today (openNote, below), and that is exactly what the
+     per-row rule buys (FORMAT.md section 7). Mention only, no refusal.
+
+   IT IS A STATE, NOT AN ALARM. The mention is drawn in the panel at every
+   draw, in the register of the public-key notice: it describes what one is
+   looking AT, it is not an event that has just happened.
+
+   EVERY DOUBT IS A SILENCE, exactly as for the announced client version
+   (80-upgrade). The number comes off the network from a server we do not own:
+   absent, not a number, out of shape, equal to ours -- carry on, say nothing.
+   It is matched against a shape before it is compared, and it is only ever
+   COMPARED: nothing here is concatenated anywhere. */
+
+const FORMAT_SHAPE = /^(0|[1-9][0-9]{0,3})$/;
+
+/* 0 means "nothing readable was announced", which is also the state of a
+   server too old to send the field at all. Nothing is said then: a number we
+   do not have is not a disagreement. */
+let serverFormat = 0;
+
+const readAnnouncedFormat = (data) => {
+    if (!data || typeof data !== 'object') return;
+    const announced = data.format;
+    // A JSON number, as api.php sends it. A string is accepted too: an
+    // intermediary that re-encodes the envelope is not a reason to go blind.
+    if (typeof announced !== 'number' && typeof announced !== 'string') return;
+    const text = String(announced);
+    if (!FORMAT_SHAPE.test(text)) return;
+    serverFormat = parseInt(text, 10);
+};
+
+/** The server speaks a format we do not: this copy must not write. */
+const serverIsNewer = () => serverFormat > FORMAT;
+
+/** The server speaks an older one: we read it, and we say so. */
+const serverIsOlder = () => serverFormat > 0 && serverFormat < FORMAT;
+
 const call = (action, body) => {
     if (!API) return Promise.resolve({ ok: false, cause: 'inactive' });
+
+    /* THE SINGLE CHOKE POINT OF THE REFUSAL. Every write this client makes
+       goes through here -- a note, a reply, a resolution, and whatever is
+       added tomorrow -- and a check written at the three call sites instead
+       of this one is the check the fourth call site forgets. A READ is never
+       refused: what we cannot read is already counted and said (readFailure
+       below), and refusing to read would hide notes rather than protect
+       them. */
+    if (body && serverIsNewer()) {
+        return Promise.resolve({ ok: false, cause: 'format-newer' });
+    }
 
     const options = {
         method: body ? 'POST' : 'GET',
@@ -51,6 +124,10 @@ const call = (action, body) => {
                 } catch (e) {
                     return { ok: false, cause: 'nonjson' };
                 }
+                /* Read from EVERY answer, not just the first: a server
+                   updated while a page stayed open all afternoon says so on
+                   its next answer, and the panel follows it. */
+                readAnnouncedFormat(data);
                 // The tool is dropped in here but not configured: it SAYS so
                 // with a 200, so as not to leave the browser an error to log.
                 // We stand down, as on a 404.
@@ -96,6 +173,14 @@ const call = (action, body) => {
 const failureFrom = (result, title) => {
     if (result.ok) return null;
     const say = (key) => ({ title: T(title), detail: T(key, { code: result.code }) });
+    /* Nothing left this browser. The message names BOTH numbers, because
+       "incompatible" sends somebody hunting, and two numbers say in one line
+       which of the two ends is behind. */
+    if (result.cause === 'format-newer') {
+        return { title: T(title),
+                 detail: T('format.write_refused',
+                           { server: serverFormat, ours: FORMAT }) };
+    }
     if (result.cause === 'server') return { title: T(title), detail: result.message };
     if (result.cause === 'network') return say('error.network');
     if (result.cause === 'refused') return say('error.refused');

@@ -21,6 +21,8 @@ import { createHmac } from 'node:crypto';
 import { b64url, fromB64url, normalisedLines, indent, safeValue } from '../src/format.mjs';
 import { derive, keyFromText, seal, open, indexOfPath, normalisedPath } from '../src/crypto.mjs';
 import { readExport, writeExport } from '../src/text-export.mjs';
+import { announcedFormat, reply, markResolved, reopen, UsageError } from '../src/notes.mjs';
+import { FORMAT } from '../src/format.mjs';
 import { projectForCall, absentConfiguration, loadConfiguration, saveProject, chooseProject,
          siteToOrigin, ConfigError } from '../src/config.mjs';
 import { mkdtempSync, writeFileSync, readFileSync, statSync } from 'node:fs';
@@ -781,6 +783,127 @@ await check('site: what a person types becomes an origin, or nothing', async () 
         'a port that is not the default stays');
     equal(siteToOrigin('ftp://example.com'), null, 'another scheme is not a site');
     equal(siteToOrigin(''), null, 'and nothing is nothing');
+});
+
+
+/* -- 6. The protocol number, compared AT RUNTIME -------------------------
+
+   check-versions.mjs makes the client, this package and the server agree in
+   the REPOSITORY. Nothing used to compare them once deployed — and deployment
+   is where they come apart: this package comes from npm, the server is updated
+   by whoever runs it. The export header has carried a `format` line since
+   format 2; these checks are what reads it.
+
+   The whole point is that a disagreement is SILENT: the server accepts the
+   write, stores an envelope it cannot read back, and the only symptom is a
+   reader that skips rows. So "nothing was written" is checked by watching
+   fetch itself, not by trusting the absence of an error. */
+
+const exportWithFormat = (n) => SERVER_EXPORT.replace('format 2', 'format ' + n);
+
+const stateOf = (text) => {
+    const read = readExport(text);
+    for (const note of read.notes) if (!note.replies) note.replies = [];
+    return { header: read.header, notes: read.notes, counts: {}, footer: {} };
+};
+
+const WRITING_PROJECT = {
+    id: PROJECT,
+    name: 'check',
+    api: 'https://server.invalid/annotepage/api.php',
+    author: 'Claude',
+    keys: null,
+    read_only: false,
+};
+
+/* fetch is replaced, never reached. A check that let a real request out would
+   depend on a network and would stop proving anything the day it is offline. */
+const watchingFetch = async (body) => {
+    const calls = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = async (url, options) => {
+        calls.push({ url: String(url), method: (options && options.method) || 'GET' });
+        return new Response(JSON.stringify({ ok: true, id: 99, format: FORMAT }),
+                            { status: 200, headers: { 'content-type': 'application/json' } });
+    };
+    try {
+        return { calls, thrown: await body().then(() => null, (e) => e) };
+    } finally {
+        globalThis.fetch = original;
+    }
+};
+
+await check('format: the announced number is read, and doubt reads as zero', () => {
+    equal(announcedFormat(stateOf(exportWithFormat(3))), 3, 'a newer server');
+    equal(announcedFormat(stateOf(exportWithFormat(1))), 1, 'an older server');
+    equal(announcedFormat(stateOf(SERVER_EXPORT)), FORMAT, 'the same format');
+    equal(announcedFormat({ header: {} }), 0, 'a server that announces nothing');
+    equal(announcedFormat({ header: { format: 'tomorrow' } }), 0, 'not a number');
+    equal(announcedFormat({ header: { format: '2.1' } }), 0, 'a number with a dot');
+    equal(announcedFormat({ header: { format: '007' } }), 0, 'a leading zero');
+    equal(announcedFormat(null), 0, 'no state at all');
+});
+
+await check('format: a newer server is a FLAT refusal on every write', async () => {
+    const state = stateOf(exportWithFormat(3));
+    const writes = [
+        ['reply', () => reply(WRITING_PROJECT, state, 4, 'a remark')],
+        ['mark resolved', () => markResolved(WRITING_PROJECT, state, 4, '1.5.0')],
+        ['reopen', () => reopen(WRITING_PROJECT, state, 4)],
+    ];
+    for (const [what, run] of writes) {
+        const { calls, thrown } = await watchingFetch(run);
+        truthy(thrown instanceof UsageError, what + ': refused as a usage error');
+        equal(calls.length, 0, what + ': NOTHING left this process');
+        const message = String(thrown.message);
+        truthy(message.includes('format 3'), what + ': the server number is named');
+        truthy(message.includes('format ' + FORMAT), what + ': our number is named');
+        truthy(message.includes('Nothing was written'), what + ': it says nothing was written');
+    }
+});
+
+await check('format: an older server, and an equal one, are not refused', async () => {
+    for (const announced of [1, FORMAT]) {
+        const state = stateOf(exportWithFormat(announced));
+        const { calls, thrown } = await watchingFetch(
+            () => reply(WRITING_PROJECT, state, 4, 'a remark'));
+        equal(thrown, null, 'format ' + announced + ': no refusal');
+        equal(calls.length, 1, 'format ' + announced + ': the write went out');
+        equal(calls[0].method, 'POST', 'format ' + announced + ': as a POST');
+    }
+});
+
+await check('format: a server that announces nothing is not refused', async () => {
+    /* A server too old to send the line at all. A number we do not have is not
+       a disagreement, and refusing on an absence would break every deployment
+       that predates the field. */
+    const state = stateOf(SERVER_EXPORT.replace('format 2\n', ''));
+    const { calls, thrown } = await watchingFetch(
+        () => reply(WRITING_PROJECT, state, 4, 'a remark'));
+    equal(thrown, null, 'no refusal on an absent number');
+    equal(calls.length, 1, 'the write went out');
+});
+
+await check('format: a setting of this configuration is named before a server', async () => {
+    /* The format check runs LAST, after read_only and after the author, and
+       that order is not arbitrary: a project deliberately set read-only, told
+       "update your package", sends somebody chasing a version number over a
+       setting they chose themselves. */
+    const state = stateOf(exportWithFormat(3));
+    const readOnly = await watchingFetch(
+        () => reply(Object.assign({}, WRITING_PROJECT, { read_only: true }),
+                    state, 4, 'a remark'));
+    truthy(String(readOnly.thrown.message).includes('read-only'),
+        'the setting is what is named');
+    truthy(!String(readOnly.thrown.message).includes('format 3'),
+        'and the server is not');
+    equal(readOnly.calls.length, 0, 'and nothing left this process either');
+
+    const anonymous = await watchingFetch(
+        () => reply(Object.assign({}, WRITING_PROJECT, { author: '' }),
+                    state, 4, 'a remark'));
+    truthy(String(anonymous.thrown.message).includes('author'),
+        'a missing author is named before the server too');
 });
 
 /* -- Verdict ------------------------------------------------------------- */

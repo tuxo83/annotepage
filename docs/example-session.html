@@ -614,6 +614,81 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
    NOBODY IS PUSHED BELOW AA TO DO IT. The second project keeps --t-dim, which
    measures 6.5:1 on this ground; the hierarchy is made by lifting the first to
    white, not by sinking the other into the background. */
+/* -- the file, as a partial screenshot -----------------------------------
+
+   REVIEWED TWICE ON THE LIVE SITE, and the second remark is the one that
+   settled it: a rail of folder names beside a listing was still a diagram.
+   What was asked for is what somebody actually sees when they go and write
+   this file -- an explorer with the file selected, an editor with it open,
+   and the button to take it INSIDE the window, where every editor puts it.
+
+   ONE PROJECT, not two. The second was there to say "there can be several"
+   without a sentence; the same remark says it read as clutter in a picture
+   whose job is to show one file being written. The sentence beside it can
+   carry that when it needs to.
+
+   The copy button is the landing page's, shape for shape: the two-square
+   icon, the tick when it lands, the chip anchored top-right of the window it
+   belongs to. Its rules are repeated here rather than shared, because sharing
+   them would mean editing the landing page, which is frozen. */
+.sc { padding: 0; overflow: hidden; }
+.sc-win { display: grid; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 62rem) {
+    /* 16 and not 14: the selected file is six spaces of indent plus fifteen
+       characters, and at 14 its last letters went under the divider. */
+    .sc-win { grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); }
+}
+.sc-side {
+    background: #141414; border-bottom: 1px solid var(--t-border);
+    padding: calc(.7rem * var(--ui)) calc(.8rem * var(--ui));
+    color: var(--t-dim);
+}
+@media (min-width: 62rem) {
+    .sc-side { border-bottom: 0; border-right: 1px solid var(--t-border); }
+}
+.sc-side p { margin: 0; white-space: pre; line-height: 1.9; }
+.sc-side .on {
+    color: var(--t-text); background: #2b2b2b;
+    margin: 0 calc(-.8rem * var(--ui)); padding: 0 calc(.8rem * var(--ui));
+}
+.sc-edit { position: relative; min-width: 0; }
+.sc-tab {
+    border-bottom: 1px solid var(--t-border);
+    padding: calc(.55rem * var(--ui)) calc(.8rem * var(--ui));
+    color: var(--t-text);
+}
+.sc-tab span { border-bottom: 2px solid var(--t-tool); padding-bottom: calc(.5rem * var(--ui)); }
+.sc-body {
+    margin: 0; padding: calc(.8rem * var(--ui));
+    white-space: pre; overflow-x: auto;
+    color: var(--t-dim); font: inherit;
+}
+.sc-body .site { color: var(--t-ident); }
+.sc-body .val { color: var(--t-text); }
+
+/* The copy button, anchored to the editor pane it belongs to. */
+.sc .copy {
+    position: absolute; top: calc(.5rem * var(--ui)); right: calc(.5rem * var(--ui)); z-index: 1;
+    display: grid; place-items: center;
+    width: calc(1.6rem * var(--ui)); height: calc(1.6rem * var(--ui)); padding: 0;
+    color: var(--t-dim); background: #2b2b2b;
+    border: 1px solid var(--t-border); border-radius: 7px; cursor: pointer;
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+}
+.sc .copy svg {
+    width: calc(.9rem * var(--ui)); height: calc(.9rem * var(--ui));
+    fill: none; stroke: currentColor; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.sc .copy .i-done { display: none; }
+.sc .copy:hover { color: var(--t-ident); border-color: var(--t-ident); }
+.sc .copy[data-state="done"] { color: var(--t-ground); background: var(--t-ok); border-color: var(--t-ok); }
+.sc .copy[data-state="done"] .i-copy { display: none; }
+.sc .copy[data-state="done"] .i-done { display: block; }
+.sc .copy[data-state="failed"] { color: var(--t-shimmer); border-color: var(--t-shimmer); }
+.sc .copy:focus-visible { outline: 2px solid var(--t-ident); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .sc .copy { transition: none; } }
+
 /* IT IS IN A FOLDER, AND THE PICTURE SAYS SO. A path on one line above the
    content is a caption; a rail with the folder open beside the file is what
    somebody actually looks at when they go and write this file. The rail is
@@ -1265,30 +1340,32 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             </div>
 
             <figure class="fig">
-                <div class="frame term ui-large" aria-hidden="true">
-                    <div class="cf-grid">
-<pre class="cf-tree">~/.config/
-  annotepage/
-    <span class="open">annotepage.json</span></pre>
-<pre class="cf-body">{
+                <div class="frame term ui-large sc">
+                    <div class="sc-win">
+                        <div class="sc-side" aria-hidden="true">
+                            <p>~/</p>
+                            <p>  .config/</p>
+                            <p>    annotepage/</p>
+                            <p class="on">      annotepage.json</p>
+                        </div>
+
+                        <div class="sc-edit">
+                            <p class="sc-tab" aria-hidden="true"><span>annotepage.json</span></p>
+                            <button class="copy" type="button" data-copy="sc-json" aria-label="Copy the file">
+                                <svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg>
+                                <svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg>
+                            </button>
+<pre class="sc-body" id="sc-json">{
   "projects": {
-    <span class="on"><span class="site">"staging.example.com"</span>: {
-      "api": "https://staging.example.com/notes/api.php",
-      "key": "W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw"
-    },</span>
-    <span class="site">"shop.example.com"</span>: {
-      "api": "https://shop.example.com/notes/api.php",
-      "key": "CzBVep_E6Q4zWH2ix-wRNluApcrvFDleg6jN8hc8YYY"
+    <span class="site">"staging.example.com"</span>: {
+      "api": <span class="val">"https://staging.example.com/notes/api.php"</span>,
+      "key": <span class="val">"W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw"</span>
     }
   }
 }</pre>
+                        </div>
                     </div>
                 </div>
-
-                <figcaption class="fig-foot">
-                    <button type="button" class="copy" id="cf-copy"
-                            data-said="Copied">Copy the file</button>
-                </figcaption>
             </figure>
         </li>
 
@@ -1520,41 +1597,27 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 </section>
 
 <script>
-/* COPY WHAT IS ON SCREEN, NOT A SECOND COPY OF IT. The button reads the
-   figure's own text, so the two can never drift apart -- a snippet kept beside
-   the picture it illustrates is a snippet that will one day illustrate
-   something else. The key it carries is this project's PUBLISHED demo key,
-   the same one the first step shows: nothing private is on this page. */
+/* THE COPY BUTTON, SAME MECHANISM AS THE LANDING PAGE'S: a target named by
+   `data-copy`, the text read from the element itself so the picture and what
+   you paste cannot drift apart, and three states on the button rather than a
+   sentence somewhere else.
+
+   IT SAYS NOTHING RATHER THAN LIE. A button that reports success on a browser
+   that refused is worse than one that does nothing: the reader pastes and gets
+   whatever was there before. The refusal has its own state. */
 (function () {
-    var button = document.getElementById('cf-copy');
-    if (!button) return;
-    var body = document.querySelector('.cf-body');
-    if (!body) { button.remove(); return; }
+    var buttons = document.querySelectorAll('button[data-copy]');
+    var back = null;
 
-    var said = button.getAttribute('data-said');
-    var was = button.textContent;
-    var back = 0;
-
-    var tell = function (word) {
-        button.textContent = word;
+    var say = function (button, state) {
+        button.setAttribute('data-state', state);
         if (back) clearTimeout(back);
-        back = setTimeout(function () { button.textContent = was; }, 1800);
+        back = setTimeout(function () {
+            button.removeAttribute('data-state');
+        }, state === 'done' ? 1800 : 4000);
     };
 
-    button.addEventListener('click', function () {
-        var text = body.textContent;
-        /* The modern call needs a secure context and a permission; the old one
-           needs neither and works where it does not. We try both rather than
-           telling somebody their browser is wrong. */
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(function () { tell(said); },
-                                                     function () { legacy(text); });
-        } else {
-            legacy(text);
-        }
-    });
-
-    function legacy(text) {
+    var byHand = function (text) {
         var area = document.createElement('textarea');
         area.value = text;
         area.setAttribute('readonly', '');
@@ -1565,10 +1628,27 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         var done = false;
         try { done = document.execCommand('copy'); } catch (e) { done = false; }
         document.body.removeChild(area);
-        /* SAY NOTHING RATHER THAN LIE. A button that reports success on a
-           browser that refused is worse than one that does nothing: the reader
-           pastes and gets whatever was there before. */
-        if (done) tell(said);
+        return done;
+    };
+
+    for (var i = 0; i < buttons.length; i++) {
+        (function (button) {
+            var target = document.getElementById(button.getAttribute('data-copy'));
+            /* A button whose target does not exist would copy nothing in
+               silence. It does not get to pretend: it goes away. */
+            if (!target) { button.hidden = true; return; }
+
+            button.addEventListener('click', function () {
+                var text = target.textContent;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(
+                        function () { say(button, 'done'); },
+                        function () { say(button, byHand(text) ? 'done' : 'failed'); });
+                } else {
+                    say(button, byHand(text) ? 'done' : 'failed');
+                }
+            });
+        }(buttons[i]));
     }
 }());
 </script>
@@ -2242,7 +2322,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
      describes. Served from this origin because jsDelivr's @2 still resolves to
      2.0.1, which ignores data-key -- same bytes, checked against the published
      bundle by tools/check-sri.mjs. -->
-<script src="/annotepage-client-2.6.0.js"
+<script src="/annotepage-client-2.7.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
         data-version="2026.9.5"

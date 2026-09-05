@@ -21,6 +21,7 @@
  *   unknown     a mode this version does not know.
  */
 
+import { FORMAT } from './format.mjs';
 import { readExport, writeExport } from './text-export.mjs';
 import { open, seal, indexOfPath, normalisedPath, EnvelopeError } from './crypto.mjs';
 import {
@@ -201,6 +202,65 @@ export const findNote = (state, id) => {
 /* -- Writing ------------------------------------------------------------- */
 
 /**
+ * The protocol number the server announced, or 0 when it announced nothing
+ * readable.
+ *
+ * It rides on the `format` line of the export header, which api.php has
+ * written since format 2 and which nothing read until now. A number we do not
+ * have is not a disagreement: 0 says exactly that, and nothing is said about
+ * it.
+ *
+ * The header comes off the network from a server we do not own, so the value
+ * is a string until it is proved to be a small whole number, and it is only
+ * ever COMPARED.
+ */
+export const announcedFormat = (state) => {
+    const raw = state && state.header ? state.header.format : undefined;
+    if (raw === undefined || raw === null) return 0;
+    const text = String(raw).trim();
+    if (!/^(0|[1-9][0-9]{0,3})$/.test(text)) return 0;
+    return parseInt(text, 10);
+};
+
+/**
+ * THE PROTOCOL NUMBERS DISAGREE, AND ONLY ONE DIRECTION IS A REFUSAL.
+ *
+ * tools/check-versions.mjs makes the client, this package and the server agree
+ * IN THE REPOSITORY, at build time. It has never seen a deployment — and a
+ * deployment is exactly where they come apart: this package is installed from
+ * npm, the server is updated by whoever runs it, on their own day.
+ *
+ * A SERVER AHEAD OF US is a FLAT REFUSAL, the same refusal and for the same
+ * reason as an envelope carrying a higher number (crypto.mjs): one does not
+ * guess at a protocol one does not know. We cannot promise that what we seal
+ * at format FORMAT is something that server reads back, and if it is not, the
+ * reply is stored, unreadable, for ever — nothing is ever erased in this tool.
+ * Refusing costs a message; writing costs a remark nobody will read.
+ *
+ * A SERVER BEHIND US is not refused. The export is read anyway (FORMAT.md
+ * section 7: a higher number on an export is read, unknown keys ignored) and
+ * so is an older one; writing keeps working, because the row carries its own
+ * number. That asymmetry is the same one the browser client applies.
+ *
+ * The message NAMES BOTH NUMBERS. "Incompatible" sends somebody hunting
+ * through three components; two numbers say in one line which end is behind,
+ * and therefore what to update.
+ */
+const requireFormat = (state) => {
+    const announced = announcedFormat(state);
+    if (announced <= FORMAT) return;
+    throw new UsageError(
+        'This server speaks annotepage format ' + announced + '; this package '
+        + 'speaks format ' + FORMAT + '.\n'
+        + 'Nothing was written, and this is a flat refusal rather than a warning: '
+        + 'a reply or a resolution sealed at format ' + FORMAT + ' may be one this '
+        + 'server cannot read back, and nothing is ever erased in this tool.\n'
+        + 'Update annotepage-mcp to a version that speaks format ' + announced
+        + ', then write again. Reading is unaffected: the notes above were read '
+        + 'as they are.');
+};
+
+/**
  * This package's write policy. FORMAT.md section 8.4 leaves the question open:
  * "what an MCP server is allowed to do on its own" is not written, and the
  * format allows all of it. Here is what is settled HERE, and it binds only
@@ -221,9 +281,12 @@ export const findNote = (state, id) => {
  *    speak;
  *  - nothing is ever erased. That is the tool's rule since format 1 and it has
  *    no exception here: marking resolved and reopening are the only two state
- *    changes.
+ *    changes;
+ *  - a server AHEAD of this package's format number cuts every write, flatly.
+ *    See requireFormat just above: that one is not a policy of this package, it
+ *    is the format's own rule applied where it can still be applied.
  */
-const requireWrite = (project) => {
+const requireWrite = (project, state) => {
     if (project.read_only) {
         throw new UsageError(
             'The project "' + project.name + '" is declared read-only in the '
@@ -237,6 +300,11 @@ const requireWrite = (project) => {
             + 'signs, a voice that does not sign casts doubt on the whole thread.\n'
             + 'Add "author": "..." to the configuration of this project.');
     }
+    /* LAST, and on purpose. read_only and the missing author are settings this
+       configuration chose: naming them first tells somebody about their own
+       file. The format disagreement is a discovery about a server, and it is
+       worth saying only once the write was going to happen anyway. */
+    requireFormat(state);
 };
 
 /**
@@ -285,7 +353,7 @@ const indexForWriting = async (project, parent) => {
  * single thread depth.
  */
 export const reply = async (project, state, id, text, signal) => {
-    requireWrite(project);
+    requireWrite(project, state);
 
     const clean = String(text == null ? '' : text).trim();
     if (clean === '') {
@@ -342,7 +410,7 @@ export const reply = async (project, state, id, text, signal) => {
  * what it is buying.
  */
 export const markResolved = async (project, state, id, version, signal) => {
-    requireWrite(project);
+    requireWrite(project, state);
 
     const found = findNote(state, id);
     if (!found) throw new UsageError('No note ' + id + ' in this project.');
@@ -390,7 +458,7 @@ export const markResolved = async (project, state, id, version, signal) => {
  * touched.
  */
 export const reopen = async (project, state, id, signal) => {
-    requireWrite(project);
+    requireWrite(project, state);
 
     const found = findNote(state, id);
     if (!found) throw new UsageError('No note ' + id + ' in this project.');
