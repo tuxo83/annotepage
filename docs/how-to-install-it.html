@@ -573,7 +573,12 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 .loop {
     display: grid;
     min-width: 17rem;
-    max-width: 32rem;
+    /* WIDER, BECAUSE THE BOXES NOW HOLD SENTENCES. At 32rem a box was 171px
+       with 9.6px of side padding, and its requirement wrapped to three lines of
+       11.8px type -- measured, and it read as text pushed into a corner. The
+       figure was using 42% of a 1216px column to do it. 40rem gives the boxes
+       room without letting the square grow into a banner. */
+    max-width: 40rem;
     grid-template-columns: minmax(0, 1fr) minmax(4.4rem, .8fr) minmax(0, 1fr);
     /* THE SQUARE, AND NOTHING AROUND IT. Two extra rows used to hold the
        requirement bubbles outside the boxes; they were 138 of the figure's 410
@@ -599,8 +604,8 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 
 .lp-box {
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: .3rem;
-    margin: 0; padding: .7rem .6rem;
+    align-items: center; justify-content: center; gap: .45rem;
+    margin: 0; padding: .95rem 1rem;
     border: 1px solid var(--line); border-radius: var(--radius);
     background: var(--bg-soft); color: var(--text);
     line-height: 1.35; text-align: center;
@@ -613,8 +618,8 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
    under the name needs no connector: it is already in the thing it describes.
    Inherits its colour, so it recedes and lights with the box. */
 .lp-req {
-    font-size: clamp(.68rem, 1.7vw, .74rem); font-weight: 400;
-    line-height: 1.4; opacity: .82;
+    font-size: clamp(.7rem, 1.7vw, .78rem); font-weight: 400;
+    line-height: 1.55; opacity: .82;
 }
 /* The mark that says what the server holds, and it is a mark rather than a
    sentence: what arrives locked is stored locked, and the box that stores it
@@ -873,7 +878,7 @@ a.lp-box .lp-name::after {
              is what it is. A dial that changes no step would say the page
              depends on it, and it does not. -->
             <div class="dials-2 if-own">
-                <p class="dial-when">Running it yourself asks two more:</p>
+                <p class="dial-when">Running the notes server yourself asks two more:</p>
 
                 <div class="dial-row dial-row-2">
                 <fieldset class="dial">
@@ -933,6 +938,19 @@ a.lp-box .lp-name::after {
 <section id="what">
     <div class="wrap">
         <h2>What to install, and where</h2>
+        <!-- HOW MANY, BEFORE WHAT. The drawing has four boxes and only two or
+             three of them are things anybody installs -- "Your code" is not,
+             and neither is a notes server somebody else runs. A reader counting
+             boxes counts wrong, and the count is the first thing they want. It
+             follows the dial, like everything else on this page. -->
+        <p class="lead if-shared">
+            <b>Two things to install</b>, and the drawing says where each one
+            goes.
+        </p>
+        <p class="lead if-own">
+            <b>Three things to install</b>, and the drawing says where each one
+            goes.
+        </p>
 
         <!-- THE LOOP, BEFORE ANY OF THE ROUTES. The middle is empty and stays
              empty.
@@ -982,7 +1000,7 @@ a.lp-box .lp-name::after {
                         <span>Reads the notes</span>
                     </p>
 
-                    <a class="lp-box lp-asst" href="#assistant"><span class="lp-name">The assistant</span><span class="lp-req">Node 18, and the project key.</span></a>
+                    <a class="lp-box lp-asst" href="#assistant"><span class="lp-name">The assistant</span><span class="lp-req">Node 18+, and the project key.</span></a>
 
                     
                     <p class="lp-arr lp-h lp-bot">
@@ -1258,6 +1276,16 @@ a.lp-box .lp-name::after {
                                     <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
                                     <span>config-local.php</span>
                                 </p>
+                                <!-- AND THE TEMPLATE, IN THE FOLDER, UNSELECTED.
+                                     It was named in a sentence under the figure,
+                                     which is the one place a reader looking at a
+                                     file manager does not look. It ships in that
+                                     directory; the listing says so by showing
+                                     it. -->
+                                <p class="sc-row">
+                                    <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
+                                    <span>config-local.example.php</span>
+                                </p>
                             </div>
 
                             <div class="sc-win sc-ed">
@@ -1272,9 +1300,8 @@ return array(
     'active'     =&gt; <span class="val">true</span>,
     'deployment' =&gt; <span class="val">'self-hosted'</span>,
 
-    <span class="cm">// THE PROJECTS. Empty until you have one, and</span>
-    <span class="cm">// you will the first time somebody opens an</span>
-    <span class="cm">// annotated page.</span>
+    <span class="cm">// THE PROJECTS. The installer leaves this empty:</span>
+    <span class="cm">// the id is drawn in a browser, afterwards.</span>
     'projects' =&gt; array(),
 );</pre>
                                 </div>
@@ -1283,22 +1310,22 @@ return array(
                     </figure>
 
                     <p class="small dim">
-                        The whole of it, commented:
-                        <a href="https://github.com/tuxo83/annotepage/blob/main/server/webroot/internal/config-local.example.php">config-local.example.php</a>.
+                        The second file in that folder is the
+                        <a href="https://github.com/tuxo83/annotepage/blob/main/server/webroot/internal/config-local.example.php">commented template</a>:
+                        every key, with what it costs written beside it.
                     </p>
                 </div>
             </li>
         </ol>
 
-        <!-- THE THIRD QUESTION THE INSTALLER ASKS, WHERE IT BELONGS. It
-             changes no step above, so it is not a dial; it changes what you
-             need to have ready before starting, which is what this line is
-             for. -->
+        <!-- WHAT YOU NEED BEFORE STARTING, AND ONLY THAT. This also
+             described the installer's storage question -- which file, or which
+             database -- and that question is drawn two steps up now, in the
+             screen that asks it. What is left is the one thing no step shows:
+             what has to be true of the machine before any of this runs. -->
         <p class="small dim">
-            PHP 7.4 and <code>pdo_sqlite</code>. The installer also asks where the
-            notes go: a file it creates and checks the web server refuses to
-            serve, or a MySQL you already have &mdash; have its host, name, user
-            and password to hand for that one. The rest is in
+            PHP 7.4, with <code>pdo_sqlite</code> or <code>pdo_mysql</code>. For
+            MySQL, have its host, name, user and password to hand. The rest is in
             <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">INSTALL.md</a>.
         </p>
 
