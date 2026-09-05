@@ -1491,6 +1491,24 @@ return array(
             nothing else, and the page is opened by the reviewers&rsquo; own
             browsers, which are already signed in.</span>
         </p>
+
+        <!-- IT DOES NOT GO WITHOUT SAYING, AND THE READER WAS RIGHT TO DOUBT.
+             The reviewer's browser has to be allowed to reach the API, and a
+             site that serves a Content-Security-Policy will stop it: the tag
+             loads, the panel opens, and nothing is ever saved. client/README.md
+             says what that looks like -- the tool stands down "in silence, as
+             if nothing were configured", which is the failure mode this page
+             warns about everywhere else. Two directives, named, because a
+             sentence saying "make sure your site allows it" would be a sentence
+             nobody can act on. -->
+        <p class="note-aside is-info">
+            <span class="mk" aria-hidden="true">&#9432;</span>
+            <span><b>If your site sets a Content-Security-Policy</b>, two
+            directives concern it: <code>script-src</code> for wherever the
+            client is served from, and <code>connect-src</code> for your notes
+            server. Without the second, the tool loads and saves nothing,
+            silently.</span>
+        </p>
     </div>
 </section>
 

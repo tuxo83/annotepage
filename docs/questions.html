@@ -224,6 +224,15 @@ code {
             <a href="how-to-install-it.html#page">install page</a> writes the
             digest for you when you ask for a pinned tag.</dd>
 
+            <dt>My site sets a Content-Security-Policy. What do I need?</dt>
+            <dd>Two directives. <code>script-src</code> must allow wherever the
+            client is served from, or it never loads;
+            <code>connect-src</code> must allow your notes server, or
+            <code>fetch</code> fails and the tool stands down in silence, as if
+            nothing had been configured. <code>style-src</code> usually needs
+            nothing: the stylesheet goes in as a constructed sheet, which is not
+            an inline sheet in the policy&rsquo;s sense.</dd>
+
             <dt>Can I try it on my own machine?</dt>
             <dd>Yes: <code>localhost</code> is a secure context, so the browser
             has the crypto it needs. But never declare
