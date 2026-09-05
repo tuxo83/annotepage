@@ -257,10 +257,17 @@
    pixel of page that can no longer be pointed at. A floating panel would
    only move that loss around.
 
-   "bottom" IS NOT REDECLARED, on purpose: the floating button stays in the
-   bottom-right corner on both sides -- it is the tool's only visible trace at
-   rest, and an anchor that moved would stop being one -- so the panel keeps
-   the same 72 px of clearance above it either way.
+   "bottom" IS NOT REDECLARED, on purpose: the panel keeps the same 72 px of
+   clearance above the floating button either way, and that clearance is the
+   same on both sides because the button moves WITH it.
+
+   AND THE BUTTON MOVES WITH IT, which was decided the other way first. The
+   argument for leaving it was that it is the tool's only visible trace at
+   rest, so an anchor that moved would stop being one. The owner's answer,
+   and it is the better one: "move left" is asked of the TOOL, not of half of
+   it. A panel on one edge and the control that opens it on the other makes
+   the eye cross the whole window for one gesture, and somebody who set the
+   side set it for the tool.
 
    TWO THINGS THIS RULE DEPENDS ON, both fragile:
      - it is written with ONE class, so it weighs exactly what ".ap-panel"
@@ -272,6 +279,14 @@
 .ap-left {
     right: auto;
     left: 12px;
+}
+/* The button follows, and it is put on the LAYER and not on the panel: the
+   button is not inside the panel, so the side has to be readable from a
+   common ancestor. Same offset mirrored, same bottom -- only the edge
+   changes. */
+.ap-layer.ap-left-side .ap-button {
+    right: auto;
+    left: 16px;
 }
 
 .ap-panel-header {

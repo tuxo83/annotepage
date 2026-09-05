@@ -166,6 +166,12 @@ const applySide = () => {
     if (!ui) return;
     if (side === 'left') ui.panel.classList.add('ap-left');
     else ui.panel.classList.remove('ap-left');
+    /* AND THE FLOATING BUTTON GOES WITH IT. It is not inside the panel, so
+       the side is carried by the layer, which is the ancestor they share.
+       Moving only the panel would put the control that opens it on the
+       opposite edge from the thing it opens. */
+    if (side === 'left') ui.layer.classList.add('ap-left-side');
+    else ui.layer.classList.remove('ap-left-side');
     ui.sideToggle.textContent = side === 'left'
         ? T('panel.move_right') : T('panel.move_left');
 };
