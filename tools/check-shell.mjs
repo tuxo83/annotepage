@@ -48,7 +48,8 @@ const bloc = (html, tag) => {
    header comparison stays happy, and one of them links to itself. */
 const INTERNAL = { 'index.html': '/',
                    'how-to-install-it.html': 'how-to-install-it.html',
-                   'how-to-use-it.html': 'how-to-use-it.html' };
+                   'how-to-use-it.html': 'how-to-use-it.html',
+                   'questions.html': 'questions.html' };
 
 /* THE MENU IS COMPARED. It used to be replaced by an empty tag before the
    comparison -- "the one part of the header meant to differ", said the comment
@@ -67,8 +68,17 @@ const INTERNAL = { 'index.html': '/',
    menu is the SAME on every page -- Use and Install pointing at the landing
    page's two chapters, then GitHub. No entry names a page, so no page can link
    to itself, and none of the three needs an exception. */
+/* ONE ATTRIBUTE IS TAKEN OUT BEFORE COMPARING, AND IT IS CHECKED SEPARATELY
+   RATHER THAN FORGIVEN. `aria-current="page"` is per-page by definition: the
+   menu names four pages, and on each of them one entry is the one you are
+   already on. Removing it here without looking would be the mistake this file
+   was rewritten to undo -- so the loop further down asserts that it sits on the
+   right entry, on every page, and nowhere else. Normalising and verifying are
+   the same act; normalising alone is a promise nobody re-reads. */
 const normalise = (text) =>
-    text.split('<!-- page-specific -->')[0].replace(/\s+/g, ' ').trim();
+    text.split('<!-- page-specific -->')[0]
+        .replace(/ aria-current="page"/g, '')
+        .replace(/\s+/g, ' ').trim();
 
 let bad = 0;
 for (const tag of ['header', 'footer']) {
@@ -98,16 +108,52 @@ for (const tag of ['header', 'footer']) {
     }
 }
 
-/* Nothing is removed before the comparison any more, so this is no longer the
-   part that had to be checked separately -- it is the part the comparison
-   cannot see. Three identical menus all naming a page would pass above and
-   still leave that page linking to itself. */
+/* AND THE OTHER HALF OF THAT REMOVAL. The menu names a page now -- it did not
+   before, which is why the rule here used to be the flat "a menu never links to
+   the page it is on". That rule cannot survive an entry a reader is meant to
+   see marked as current, so it is replaced by the stricter one it was standing
+   in for:
+
+     - a menu entry pointing at the page it sits on MUST carry
+       aria-current="page". An entry that quietly links to where you already are
+       is the dead link the old rule was about;
+     - no OTHER entry may carry it. Marked on the wrong entry, it tells a screen
+       reader the reader is somewhere they are not;
+     - a page the menu does not name carries none at all.
+
+   The landing page is that last case: its two entries are anchors into itself,
+   `/#use` and `/#install`, and neither names a page. */
 for (const name of PAGES) {
-    if (!(name in INTERNAL)) continue;
-    const html = readFileSync(join(DIR, name), 'utf8');
-    const head = bloc(html, 'header') || '';
-    if (head.includes(`<a href="${INTERNAL[name]}"`)) {
-        console.error(`${DIR}/${name}: its menu links to the page it is on.`);
+    const head = bloc(readFileSync(join(DIR, name), 'utf8'), 'header') || '';
+    /* THE MENU, AND NOT THE WHOLE HEADER. The wordmark beside it links to `/`
+       on every page, the landing page included, and that is the convention
+       everywhere: the mark goes home, from home too. And an href with a
+       FRAGMENT is not a destination -- the landing page's own `/#use` scrolls
+       within the page it is on, which is what an anchor is for. What this looks
+       at is a menu entry naming a page, plainly, with nothing after it. */
+    const nav = (head.match(/<nav>[\s\S]*?<\/nav>/) || [''])[0];
+    const liens = [...nav.matchAll(/<a\s([^>]*)>/g)].map((m) => m[1]);
+    const soi = liens.filter((a) => a.includes(`href="${INTERNAL[name]}"`));
+    const marques = liens.filter((a) => a.includes('aria-current="page"'));
+
+    if (name in INTERNAL) {
+        for (const a of soi) {
+            if (!a.includes('aria-current="page"')) {
+                console.error(`${DIR}/${name}: its menu links to the page it is on `
+                    + `without aria-current="page".`);
+                bad++;
+            }
+        }
+    }
+    for (const a of marques) {
+        if (!soi.includes(a)) {
+            console.error(`${DIR}/${name}: aria-current="page" on an entry that is `
+                + `not this page.`);
+            bad++;
+        }
+    }
+    if (marques.length > 1) {
+        console.error(`${DIR}/${name}: ${marques.length} entries marked as the current page.`);
         bad++;
     }
 }

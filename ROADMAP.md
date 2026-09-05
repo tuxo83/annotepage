@@ -686,7 +686,7 @@ It also gives the tag's third line somewhere to point: the owner asked for the
 warning to lead somewhere written for it, not for a paragraph borrowed from a
 longer explanation.
 
-Not started. how-to-install-it.html#no-recovery and #data hold the line
+Not started. questions.html#no-recovery and #data hold the line
 until then, and they are accurate -- they are just not a security page. (They lived
 on how-it-works.html until 2026-09-03; that page was deleted, three of its four
 sections being already said on the landing page, the session page or the
@@ -712,7 +712,7 @@ CDN would run whatever it served on every page carrying the tag, and this
 client reads the notes in the clear in the browser.
 
 The locked form is documented in client/README.md, with its digest;
-how-to-install-it.html#locked says in one line that a wrong digest fails
+questions.html#locked says in one line that a wrong digest fails
 silently. Both are supported; neither is hidden.
 
 THE ARGUMENT THAT WAS MISSING WHEN THIS WAS DECIDED, raised by the owner the
@@ -744,7 +744,7 @@ nobody, which is the failure that actually happens to a free tool.
 
 So the floating tag stays, the absence of `integrity` is now written as a
 decision beside the tag on the landing page and on
-how-to-install-it.html#locked, and
+questions.html#locked, and
 what it gives up is stated there rather than glossed over.
 
 What would remove the trade entirely, and is the real answer: the browser
