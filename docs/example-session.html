@@ -236,7 +236,12 @@ body:has(#d-live:checked) .use-steps > li.between + li { margin-top: 0; }
 .use-steps > li {
     display: grid; gap: clamp(1rem, 3vw, 2.4rem);
     grid-template-columns: minmax(0, 1fr);
-    align-items: start;
+    /* CENTRED AGAINST THE PICTURE, as the landing page's first chapter is --
+       its three steps measure text and figure on the same middle, to the
+       pixel. Top-aligned, a sentence of three lines beside a 500px frame
+       hangs from the ceiling of a mostly empty column, and the two halves of
+       one step stop looking like one step. */
+    align-items: center;
 }
 @media (min-width: 62rem) {
     .use-steps > li { grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); }
