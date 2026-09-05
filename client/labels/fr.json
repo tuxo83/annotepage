@@ -9,6 +9,8 @@
   "button.help_counts": "{open} encore à corriger, {total} en tout sur cette page",
   "panel.title": "Notes de relecture",
   "panel.close": "Fermer",
+  "panel.move_left": "Déplacer à gauche",
+  "panel.move_right": "Déplacer à droite",
   "panel.instructions": "Cliquez sur un élément de la page pour écrire une remarque à son sujet.",
   "panel.escape": "Touche Échap pour arrêter.",
   "panel.empty": "Personne n’a encore écrit de note sur cette page.",

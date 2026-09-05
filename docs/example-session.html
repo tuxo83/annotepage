@@ -254,6 +254,40 @@ body:has(#d-live:checked) .use-steps > li.between + li { margin-top: 0; }
    they notice it. Both are consequence first, in bold, then the mechanism.
    Anywhere else, one sentence. */
 
+/* -- the way out of the page ----------------------------------------------
+
+   THE SAME BUTTON THE LANDING PAGE ENDS ITS CHAPTERS WITH, and it is here for
+   the reason the reader gave: somebody who has just watched how the thing is
+   used, and liked it, goes looking for how to install it. Leaving them at the
+   bottom of a page with nowhere to go is asking them to find the menu.
+
+   Outlined and not filled, centred on the page's own axis: it is the way OUT
+   of what they have just read, and the centre is where a reader looks for
+   that. The rules are repeated here rather than shared, for the same reason
+   the copy button's are: sharing them would mean editing the landing page,
+   which is frozen. */
+/* It is a <p>, so it would take the prose measure and centre itself inside
+   a narrow column instead of on the page. Measured before this line: its
+   middle at 424px where the page's is 720. */
+main .wrap > .see-more { max-width: none; }
+.see-more { margin: clamp(3.6rem, 8.5vw, 7.2rem) 0 0; text-align: center; }
+.more {
+    display: inline-flex; align-items: baseline; gap: .45rem;
+    font-size: .95rem; font-weight: 600;
+    color: var(--accent); background: var(--bg);
+    border: 1px solid var(--accent); border-radius: 8px;
+    padding: .6rem 1.3rem;
+    text-decoration: none;
+    transition: background .18s ease, color .18s ease;
+}
+.more .arrow { font-size: .9em; transition: transform .18s ease; }
+.more:hover { background: var(--accent); color: var(--on-accent); }
+.more:hover .arrow { transform: translateX(2px); }
+.more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+    .more .arrow { transition: none; }
+}
+
 /* -- THE THING THAT HAPPENS BETWEEN TWO STEPS -----------------------------
 
    Not a step: a step is something the page then SHOWS, and there is nothing to
@@ -956,19 +990,34 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
 .restart {
     position: absolute; left: 50%; top: 50%;
     transform: translate(-50%, -50%);
-    width: 2.9rem; height: 2.9rem;
-    display: grid; place-items: center;
+    display: flex; align-items: center; gap: .6rem;
+    padding: .55rem 1.05rem .55rem .8rem;
     border-radius: 999px;
     background: var(--bg); border: 1px solid var(--line);
-    box-shadow: var(--shadow); color: var(--accent);
+    box-shadow: var(--shadow);
+    color: var(--dim); font: 600 .95rem/1 var(--sans);
     opacity: 0; transition: opacity .3s ease;
-    pointer-events: none;
+    pointer-events: none; white-space: nowrap;
 }
-.restart svg { width: 1.45rem; height: 1.45rem; }
+.restart svg { flex: none; width: 1.25rem; height: 1.25rem; color: var(--accent); }
 .fig > [data-rewind] ~ .restart { opacity: 1; }
-@media (prefers-reduced-motion: reduce) {
-    .restart { transition: none; }
+
+/* IT HAS TO BE READ, NOT GLIMPSED. Reviewed on the live site: a badge that
+   appears and goes inside a second is not understood, it is only noticed. So
+   three things, and the three of them are the answer to that one remark: the
+   gap between two passes goes from 1.6s to 2.6s, the badge SAYS the word
+   instead of leaving a glyph to carry it alone, and the arrow turns once --
+   one turn, at the speed of the pause, not a spinner. A spinner would say
+   "wait"; this says "it is going round again", which is the truth.
+
+   The turn is an animation, so the page's own reduced-motion rule stops it
+   with everything else -- and there, no figure ever rewinds, so nothing of
+   this is ever on screen anyway. */
+@keyframes ap-restart-turn {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
+.fig > [data-rewind] ~ .restart svg { animation: ap-restart-turn 1.6s ease-in-out; }
 
 .replay {
     display: none; flex: none;
@@ -1292,6 +1341,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                         <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>
                         <path d="M20.5 3.5v5.5h-5.5"/>
                     </svg>
+                    Playing it again
                 </span>
 
                 <figcaption class="fig-foot">
@@ -1437,6 +1487,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                         <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>
                         <path d="M20.5 3.5v5.5h-5.5"/>
                     </svg>
+                    Playing it again
                 </span>
 
                 <figcaption class="fig-foot">
@@ -1593,6 +1644,10 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         </li>
 
         </ol>
+
+        <p class="see-more">
+            <a class="more" href="install.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
+        </p>
     </div>
 </section>
 
@@ -1752,7 +1807,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
        the key is asked for once, and then this is the same tool.
        ------------------------------------------------------------------ */
     var FADE = 520;
-    var TYPE_MS = 4000, HOLD = 5000, GAP = 1600, PASSES = Infinity;
+    var TYPE_MS = 4000, HOLD = 5000, GAP = 2600, PASSES = Infinity;
     /* When the first character appears: after the pointer has reached the
        field and pressed in it, not when the form opens. */
     var TYPE_AT = 5400;
@@ -1915,7 +1970,24 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         return;
     }
 
-    settled();
+    /* AND IT WAITS IN THE STATE IT IS ABOUT TO LEAVE, NOT IN THE ONE IT ENDS
+       IN. `settled()` shows the finished gesture -- the note sent, the panel
+       holding it -- which is right for a reader who asked for no motion, and
+       wrong as the opening frame of something about to start: the figure
+       showed the answer, then jumped back to the question. Reviewed on the
+       live site in exactly those words: "it should start as if there were no
+       note". So the first frame is the page before anybody touched it. */
+    var atRest = function () {
+        g.setAttribute('data-play', '');
+        stage('rest');
+        pill.textContent = 'Annotate this page';
+        for (var k = 0; k < cells.length; k++) cells[k].className = 'ch';
+        typed = 0; count(0);
+        g.removeAttribute('data-cursor');
+        g.removeAttribute('data-typed');
+        moveTo('rest');
+    };
+    atRest();
 
     /* A BEAT BEFORE THE FIRST MOVE, AND ONLY THE FIRST. Reviewed on the live
        site: the figure started the instant it came into view, so a reader who
@@ -2146,7 +2218,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
        wall clock does not, and pause and replay come for free. */
     var t0 = 0, cue = 0, typed = 0, raf = 0;
     var FADE = 520;
-    var CYCLES = Infinity, GAP = 1500, cycle = 0, armed = false;
+    var CYCLES = Infinity, GAP = 2600, cycle = 0, armed = false;
 
     /* THE PANE IS AS TALL AS THE SESSION, AND NOT A LINE TALLER. Every line is
        laid out at this width, once, and the pane is fixed to what that

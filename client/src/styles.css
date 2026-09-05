@@ -252,6 +252,28 @@
     display: flex;
 }
 
+/* The other side. Two positions, right and left, and no third one: in
+   annotation mode the layer takes every click, so every pixel of panel is a
+   pixel of page that can no longer be pointed at. A floating panel would
+   only move that loss around.
+
+   "bottom" IS NOT REDECLARED, on purpose: the floating button stays in the
+   bottom-right corner on both sides -- it is the tool's only visible trace at
+   rest, and an anchor that moved would stop being one -- so the panel keeps
+   the same 72 px of clearance above it either way.
+
+   TWO THINGS THIS RULE DEPENDS ON, both fragile:
+     - it is written with ONE class, so it weighs exactly what ".ap-panel"
+       weighs;
+     - it is written BEFORE the narrow block below.
+   Reverse either and it wins under 560 px, where the panel is a bottom band
+   spanning the width -- and a panel pinned to the left there is the full-
+   height panel whose defect at 375 px is described in that block. */
+.ap-left {
+    right: auto;
+    left: 12px;
+}
+
 .ap-panel-header {
     display: flex;
     align-items: baseline;
@@ -614,6 +636,14 @@
         height: 52vh;
         width: auto;
         max-width: calc(100vw - 16px);
+    }
+
+    /* A band spanning the width has no side, so the choice is inert here and
+       the button says so by not being there. Offering a control that visibly
+       does nothing is worse than offering none. The stored side is untouched:
+       it is waiting for the wide screen it was chosen on. */
+    .ap-side-toggle {
+        display: none;
     }
 
     .ap-form {

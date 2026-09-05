@@ -62,6 +62,11 @@ ns.defaultLabels = {
     /* -- The panel ----------------------------------------------------- */
     'panel.title': 'Review notes',
     'panel.close': 'Close',
+    /* The panel has two positions and the button says where it is GOING, not
+       where it is: a label that named the current side would read as a
+       statement and be pressed by nobody. */
+    'panel.move_left': 'Move left',
+    'panel.move_right': 'Move right',
     'panel.instructions': 'Click an element of the page to write a remark about it.',
     'panel.escape': 'Press Escape to stop.',
     'panel.empty': 'Nobody has written a note on this page yet.',
