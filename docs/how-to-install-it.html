@@ -334,11 +334,35 @@ code:not(pre code) {
    so it lives there as tabs beside the tag. A dial at the top of the page
    would advertise that the whole page depends on it. */
 .dials {
-    display: flex; flex-wrap: wrap; gap: 1.6rem 2.6rem;
     margin: 2.2rem 0 0; padding: 1.1rem 1.2rem;
     border: 1px solid var(--line-soft); border-radius: var(--radius);
     background: var(--bg-soft);
 }
+.dial-title {
+    margin: 0; font-size: 1rem; font-weight: 650; color: var(--text);
+}
+/* THREE EQUAL COLUMNS, NOT THREE ITEMS SIZED BY THEIR TEXT. Sized by text, the
+   second row's columns missed the first row's by 19px the moment the row
+   wrapped; equal columns cannot. Below 56rem it becomes one column and never
+   two-then-one, which is the rhythm that read as broken rather than as narrow. */
+.dial-row {
+    display: grid; gap: 1.6rem 2.6rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* A RULE, BECAUSE THE TWO HALVES ARE TWO GESTURES. Title, sentence, field
+       and row all sat at the same rhythm, so the box read as four things of
+       equal weight instead of "what the page cannot know" then "what it can
+       stop repeating". */
+    margin-top: 1.3rem; padding-top: 1.3rem;
+    border-top: 1px solid var(--line-soft);
+}
+@media (max-width: 56rem) { .dial-row { grid-template-columns: minmax(0, 1fr); } }
+/* The field is above the row and takes the measure of a sentence, not a third
+   of the box: it holds a domain name, and a domain name is short. */
+.dial-wide { margin: 1.3rem 0 0; max-width: 26rem; }
+/* The same field, inside a step's cell rather than in the settings box: no
+   legend of its own -- the line above it is the legend -- and it takes the
+   cell's width, which is already the width of the block over it. */
+.dial-inline { max-width: none; margin-top: .6rem; }
 .dial { border: 0; margin: 0; padding: 0; min-width: 0; }
 .dial legend { padding: 0; font-size: .78rem; font-weight: 650; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); }
 .seg { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
@@ -361,18 +385,30 @@ code:not(pre code) {
 /* ITS OWN LINE, WHOLE. It is about the row, not about the dial it happens to
    land next to -- and with four items in the row it landed beside the site
    field, reading as that field's caption. */
-.dial-why { flex: 1 0 100%; margin: .9rem 0 0; font-size: .9rem; color: var(--dim); }
+/* UNDER THE TITLE, NOT AT THE FOOT. It is what the box IS; read last it was
+   read after the reader had already decided the box was a form. */
+.dial-why { margin: .35rem 0 0; font-size: .9rem; color: var(--dim); }
 
 /* THE SECOND BOX, AND IT IS A SECOND BOX AND NOT MORE ITEMS IN THE FIRST.
    Appearing and disappearing inside a row of three would look like the row
    reflowing; a block of its own, with the line that says whose questions
    these are, reads as what it is -- two more questions, asked because of an
    answer given above. */
-.dials-2 { margin-top: .8rem; }
+/* INSIDE THE CHAPTER NOW, so it opens it rather than following a heading at a
+   distance. No top margin of its own: the h2 above already gives it one. */
+.dials-2 { margin-top: 1.1rem; }
 .dial-when {
-    flex: 1 0 100%; margin: 0; font-size: .9rem; font-weight: 600;
-    color: var(--dim);
+    margin: 0 0 1rem; font-size: .9rem; font-weight: 600; color: var(--dim);
 }
+/* TWO HERE, NOT THREE: a two-item row laid on a three-column grid would leave
+   a third of the box empty and read as an item that failed to load. */
+.dial-row-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* No rule above this one: its own line says what it is, and there is no
+       first half for it to be separated from. */
+    margin-top: 0; padding-top: 0; border-top: 0;
+}
+@media (max-width: 56rem) { .dial-row-2 { grid-template-columns: minmax(0, 1fr); } }
 
 /* THE FIELD, AND IT IS NOT A THIRD DIAL. The two dials take routes away; this
    takes EXAMPLES away -- it is asked once and answers in all three chapters,
@@ -682,7 +718,44 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
              server box, then found out it might not be theirs. Same order as
              how-to-use-it.html now, and for the same reason: answer first,
              read a page that already knows the answer. -->
-        <div class="dials" id="modes">
+        <!-- ONE BOX, NAMED, WITH THE TYPING ABOVE THE CLICKING. Measured on
+             what stood here: four items in one row want 1390px and the column
+             gives 1257, so the row wrapped at EVERY width -- two lines down to
+             830px, three below that, and at 1000px the second line's columns
+             missed the first line's by 19px, because each item is sized by its
+             own text. Taking the field out of the row puts it back to 215px on
+             one line down to 1230, which is the geometry how-to-use-it.html was
+             validated at.
+
+             THE FIELD IS A DIFFERENT GESTURE and now looks like one: it is
+             typed, not clicked, and it is the only one of the four whose answer
+             the page cannot know. On its own line above, it stops competing for
+             a place in a row that wraps.
+
+             THE LINE THAT SAYS WHAT THE BOX IS, ABOVE IT. It closed the box
+             before -- 273px under the first question, read last, after the
+             reader had already taken the block for a form to fill in.
+
+             A TITLE, AND NOT AN <h2>. The four h2s on this page are things you
+             do; a fifth would make a reader count five installations. -->
+        <section class="dials" id="modes" aria-labelledby="dials-t">
+            <p class="dial-title" id="dials-t">Before you start</p>
+            <p class="dial-why">
+                They take routes away &mdash; each names a case you are already
+                in, or one choice the page then stops repeating.
+            </p>
+
+            <div class="dial dial-wide">
+                <label class="dial-legend" for="site">Your site</label>
+                <input class="dial-in" id="site" type="text" inputmode="url"
+                       autocomplete="off" spellcheck="false"
+                       placeholder="staging.example.com">
+                <p class="dial-say">
+                    It fills in the examples.
+                </p>
+            </div>
+
+            <div class="dial-row">
             <fieldset class="dial">
                 <legend>Your project</legend>
                 <div class="seg">
@@ -734,67 +807,10 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 </p>
             </fieldset>
 
-            <div class="dial">
-                <label class="dial-legend" for="site">Your site</label>
-                <input class="dial-in" id="site" type="text" inputmode="url"
-                       autocomplete="off" spellcheck="false"
-                       placeholder="staging.example.com">
-                <p class="dial-say">
-                    It fills in the examples.
-                </p>
+
             </div>
+        </section>
 
-            <p class="dial-why">
-                They take routes away. You are already in one of these cases.
-            </p>
-        </div>
-
-        <!-- THE SECOND SERIES, AND IT ONLY EXISTS FOR SOMEBODY RUNNING THE
-             SERVER. Its two questions are two of the three the installer
-             itself asks, and they are here rather than there for the reason
-             the first series is here: each one adds or removes a step below,
-             so the page has to know the answer before it can be right.
-
-             THE THIRD QUESTION THE INSTALLER ASKS IS NOT HERE. Where the notes
-             live -- a file it creates, or a MySQL you already have -- changes
-             nothing you do on this page: same upload, same steps, same tag. It
-             is at the foot of the chapter with the other prerequisites, which
-             is what it is. A dial that changes no step would say the page
-             depends on it, and it does not. -->
-        <div class="dials dials-2 if-own">
-            <p class="dial-when">Running it yourself asks two more:</p>
-
-            <fieldset class="dial">
-                <legend>Who it answers for</legend>
-                <div class="seg">
-                    <label><input type="radio" name="aud" id="a-mine" checked> <span>My site</span></label>
-                    <label><input type="radio" name="aud" id="a-any"> <span>Anyone</span></label>
-                </div>
-                <p class="dial-say">
-                    <span class="if-declared">Declared, so it answers your origin
-                    and refuses every other.</span><span class="if-any">A relay: any
-                    project that asks is served, and none of them has an origin
-                    lock.</span>
-                </p>
-            </fieldset>
-
-            <fieldset class="dial">
-                <legend>Who updates it</legend>
-                <div class="seg">
-                    <label><input type="radio" name="upd" id="u-cron" checked> <span>A cron</span></label>
-                    <label><input type="radio" name="upd" id="u-url"> <span>An address</span></label>
-                    <label><input type="radio" name="upd" id="u-self"> <span>Itself</span></label>
-                </div>
-                <p class="dial-say">
-                    <span class="if-cron">A line in your crontab. The code stays
-                    writable by you and never by the web server.</span><span
-                    class="if-url">For a host with no shell: a scheduler that
-                    takes an address and nothing else.</span><span class="if-self">Nothing
-                    to schedule, and nothing below to do. The price is the code
-                    directory writable by the web server, for good.</span>
-                </p>
-            </fieldset>
-        </div>
 
     </div>
 </section>
@@ -960,6 +976,67 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
              that takes a route away has to take the whole route. -->
         <h2>Install the app on the server</h2>
 
+        <!-- AT THE HEAD OF THE ONE CHAPTER THEY CHANGE. These two sat in a
+             second box at the top of the page, and two things were wrong with
+             that: they touch nothing else -- `if-declared`, `if-cron`, `if-url`
+             and `if-self` appear nowhere outside this section -- and a second
+             box drawn exactly like the first read as a second subject rather
+             than as a consequence of an answer given in it. On a 500px screen,
+             clicking "Your own" made it appear 805px down, below the fold: the
+             click produced nothing the reader could see.
+
+             The chapter is `if-own` as a whole, so they disappear with it.
+
+             THE THIRD QUESTION THE INSTALLER ASKS IS NOT HERE. Where the notes
+             live -- a file it creates, or a MySQL you already have -- changes
+             nothing you do on this page: same upload, same steps, same tag. It
+             is at the foot of the chapter with the other prerequisites, which
+             is what it is. A dial that changes no step would say the page
+             depends on it, and it does not. -->
+        <div class="dials dials-2">
+            <p class="dial-when">Two questions, before the steps:</p>
+
+            <div class="dial-row dial-row-2">
+            <fieldset class="dial">
+                <legend>Who it answers for</legend>
+                <div class="seg">
+                    <label><input type="radio" name="aud" id="a-mine" checked> <span>My site</span></label>
+                    <label><input type="radio" name="aud" id="a-any"> <span>Anyone</span></label>
+                </div>
+                <p class="dial-say">
+                    <span class="if-declared">Declared, so it answers your origin
+                    and refuses every other.</span><span class="if-any">A relay: any
+                    project that asks is served, and none of them has an origin
+                    lock.</span>
+                </p>
+            </fieldset>
+
+            <fieldset class="dial">
+                <legend>Who updates it</legend>
+                <div class="seg">
+                    <!-- "A URL CRON" AND NOT "AN ADDRESS". Both of the first
+                         two ARE crons -- the installer's own screens call them
+                         "cron with a shell" and "cron that can only fetch a
+                         URL" -- and naming one of them after the thing it calls
+                         made them read as two different kinds of answer. What
+                         separates them is what the host gives you. -->
+                    <label><input type="radio" name="upd" id="u-cron" checked> <span>A shell cron</span></label>
+                    <label><input type="radio" name="upd" id="u-url"> <span>A URL cron</span></label>
+                    <label><input type="radio" name="upd" id="u-self"> <span>Itself</span></label>
+                </div>
+                <p class="dial-say">
+                    <span class="if-cron">A line in your crontab. The code stays
+                    writable by you and never by the web server.</span><span
+                    class="if-url">The same thing, for a host with no shell:
+                    a scheduler that takes an address and nothing else.</span><span class="if-self">Nothing
+                    to schedule, and nothing below to do. The price is the code
+                    directory writable by the web server, for good.</span>
+                </p>
+            </fieldset>
+            </div>
+        </div>
+
+
         <!-- FOUR NUMBERED LINES BECAME TWO STEPS, AND NOTHING WAS DROPPED.
              Stacked one under the other, "upload", "open it", "answer two
              questions" and "paste the line" read as four things to install.
@@ -981,6 +1058,37 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                                 <button class="copy" type="button" data-copy="snip-php" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-php"><code>https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php</code></pre>
                             </div>
+
+                    <!-- THE ADDRESS, ASKED AND NO LONGER GUESSED. The page was
+                         building it: https://<your site>/notes/api.php, from
+                         the field at the top, and putting that into the tag,
+                         the assistant's file, the scheduler's line and the
+                         command -- four blocks, plausible and wrong for anybody
+                         who installed in /annotepage/ or on a host of its own.
+                         The page even said so two lines up: "anywhere under
+                         your web root". It knew the address was not deducible
+                         and deduced it anyway.
+
+                         AND IT IS ASKED HERE, NOT AT THE TOP OF THE PAGE. The
+                         address does not exist yet up there: the installer
+                         prints it, and the installer is what the step above
+                         opens. A field before the upload asks a question nobody
+                         can answer.
+
+                         PLACEHOLDER, NEVER A VALUE. Left empty, the four blocks
+                         fall back to the guess -- which is right for most
+                         people and is now visibly a suggestion rather than an
+                         answer. -->
+                    <p class="sub-lead">The address it prints, when it is done:</p>
+                    <div class="dial dial-wide dial-inline">
+                        <input class="dial-in" id="srv" type="text" inputmode="url"
+                               autocomplete="off" spellcheck="false"
+                               aria-label="The API address your installer printed"
+                               placeholder="https://staging.example.com/notes/api.php">
+                        <p class="dial-say">
+                            Four blocks below use it. Left empty, they guess.
+                        </p>
+                    </div>
                 </div>
             </li>
 
@@ -1575,6 +1683,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     var askCode   = document.getElementById('ask-code');
     var cronCode  = document.getElementById('cron-code');
     var siteIn    = document.getElementById('site');
+    var srvIn     = document.getElementById('srv');
     var open      = document.getElementById('m-open');
     var shared    = document.getElementById('s-shared');
     var pinned    = document.getElementById('p-lock');
@@ -1591,7 +1700,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
        page no longer has would leave the placeholder sitting in the tag,
        ready to be copied. */
     if (!tagCode || !keyCode || !orgCode || !jsonCode || !cronCode
-        || !askCode || !siteIn || !open || !shared || !pinned) return;
+        || !askCode || !siteIn || !srvIn || !open || !shared || !pinned) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
        Math.random would be guessable -- which is worse than no key at all,
@@ -1669,7 +1778,12 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     function paint() {
         var secure = !open.checked;
         var site   = host();
-        var ownApi = 'https://' + site + '/notes/api.php';
+        /* WHAT THE READER TYPED, OR THE GUESS -- and the guess is written into
+           the placeholder so it reads as a suggestion rather than as an
+           answer the page already has. */
+        var guess  = 'https://' + site + '/notes/api.php';
+        srvIn.placeholder = guess;
+        var ownApi = srvIn.value.trim() || guess;
         var origin = 'https://' + site;
         var api = shared.checked ? SHARED_API : ownApi;
         var locked = pinned.checked;
@@ -1801,6 +1915,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
        out whether it took. Nothing is sent on either event -- there is no code
        here that sends anything, which is what makes the claim checkable. */
     siteIn.addEventListener('input', paint);
+    srvIn.addEventListener('input', paint);
 
     fresh();
 }());
