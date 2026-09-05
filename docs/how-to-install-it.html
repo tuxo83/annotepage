@@ -810,24 +810,54 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
    hover rules would lose to this while it runs; the whole figure stops
    animating while a box is pointed at, which is also what somebody reaching for
    one wants. */
-@keyframes lp-hit {
-    0%   { border-color: var(--line);   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
-    4%   { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    14%  { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    26%  { border-color: var(--line);   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
-    100% { border-color: var(--line);   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+/* ON A RING OF ITS OWN, NOT ON THE BOX'S BORDER, AND IT NEVER STOPS.
+
+   IT USED TO STOP, AND THAT WAS THE BUG. An animation beats a plain
+   declaration, so the hover rules lost to this one while it ran; the answer
+   then was `animation: none` on the boxes while a box was pointed at. But
+   removing an animation and putting it back RESTARTS it from zero, and the
+   dots never stopped -- so after every hover the boxes lit out of step with
+   the dot that was supposed to be arriving. Reported as exactly that: "a kind
+   of desynchronisation between the dot and the box that gets outlined".
+
+   A pseudo-element takes the ring instead. The box's own border and ink stay
+   plain declarations, so hover wins them without a fight, and the ring goes
+   round on its own clock -- never removed, never restarted, nothing to fall
+   out of step with. The only thing that ever pauses it is the figure leaving
+   the screen, which pauses the dots in the same breath and by the same
+   attribute, so the two come back together. */
+.lp-box { position: relative; }
+.lp-box::after {
+    content: ""; position: absolute; inset: -1px;
+    border-radius: inherit; pointer-events: none;
+    box-shadow: 0 0 0 1px var(--accent), inset 0 0 0 1px var(--accent);
+    opacity: 0;
+    animation: lp-hit 4.6s linear infinite;
 }
-.lp-box { animation: lp-hit 4.6s linear infinite; }
-.lp-srv  { animation-delay: 1.15s; }
-.lp-asst { animation-delay: 2.3s; }
-.lp-code { animation-delay: 3.45s; }
-.loop:has(a.lp-box:hover) .lp-box,
-.loop:has(a.lp-box:focus-visible) .lp-box { animation: none; }
+/* IT STRADDLES THE ARRIVAL. Fading in exactly as the dot lands and out a
+   quarter-cycle later read as the box reacting late, then holding long after
+   the dot had gone. The window is 26% of the cycle and the arrival sits in the
+   middle of it: lit a little before, out a little after, which is what a thing
+   arriving looks like. The delays are that window's start -- the arrival minus
+   the .55s it takes to reach full -- and the page's wraps to the end of the
+   cycle rather than going negative, which is the same instant and easier to
+   read. */
+@keyframes lp-hit {
+    0%   { opacity: 0; }
+    6%   { opacity: 1; }
+    18%  { opacity: 1; }
+    26%  { opacity: 0; }
+    100% { opacity: 0; }
+}
+.lp-page::after { animation-delay: 4.05s; }
+.lp-srv::after  { animation-delay: 0.6s; }
+.lp-asst::after { animation-delay: 1.75s; }
+.lp-code::after { animation-delay: 2.9s; }
 
 /* NOTHING TURNS BEHIND THE READER'S BACK. `data-seen` is set by the observer
    below, which already knows when the figure is on screen. */
 .loop:not([data-seen]) .lp-dot,
-.loop:not([data-seen]) .lp-box { animation-play-state: paused; }
+.loop:not([data-seen]) .lp-box::after { animation-play-state: paused; }
 
 /* Stacked, the arrows are a glyph and there is nothing to travel along. */
 @media (max-width: 32.5rem) { .lp-dot { display: none; } }
