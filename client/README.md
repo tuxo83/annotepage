@@ -34,7 +34,7 @@ Load the client once, on a page of the site, with `data-setup` and **without**
 
 ```html
 <script src="https://<your-cdn>/annotepage-client@2.5.0/dist/annotepage.js"
-        integrity="sha384-XBuHeHc6PGf8HLsuKkVhRUGpUE6wXOjCkHQ7ADjRn6s6pkgNV8MDIfVR9I3syPbi"
+        integrity="sha384-PVE6tjzC72/VHyRLdxHLpwMLIp9ji+VUBapD+j3vmoi69rpkXn0h+ZicxwORUdQt"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-setup
@@ -55,7 +55,7 @@ on the server. No network request is made at that point.
 
 ```html
 <script src="https://<your-cdn>/annotepage-client@2.5.0/dist/annotepage.js"
-        integrity="sha384-XBuHeHc6PGf8HLsuKkVhRUGpUE6wXOjCkHQ7ADjRn6s6pkgNV8MDIfVR9I3syPbi"
+        integrity="sha384-PVE6tjzC72/VHyRLdxHLpwMLIp9ji+VUBapD+j3vmoi69rpkXn0h+ZicxwORUdQt"
         crossorigin="anonymous"
         data-server="https://<your-server>/annotepage/api.php"
         data-project="7Qb1kZ3xNvA9dLpEqKf2Zt"
