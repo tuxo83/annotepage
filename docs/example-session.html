@@ -1385,7 +1385,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                 <p class="say">One file, on the machine where your assistant runs. Write it
                 yourself, or hand it the key and let it write the file (less secure).</p>
                 <p class="say"><b>The address is on your tag.</b> The key is the one your
-                setup screen gave you, and the one your reviewers paste.</p>
+                reviewers paste.</p>
             </div>
 
             <figure class="fig">
@@ -1921,7 +1921,21 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         stage('rest');
         pill.textContent = 'Annotate this page';
         count(0);
-        moveTo('rest');
+        /* PUT BACK AT THE MIDDLE, AND WITHOUT TRAVELLING THERE. This line used
+           to send the pointer to the BUTTON, so every restart drew three trips
+           where the figure needs one: to the button, then out to the middle at
+           the first cue, then back to the button at the second. Reported as "a
+           parasitic little movement at the start of the cycle", which is
+           exactly what it was.
+           The transition is cut for the jump: the reset happens while the
+           frame is dimmed, but a .85s transition started there would still be
+           running when the fade lifts, and the reader would see the tail of
+           it. Reading offsetWidth forces the layout so the new position is
+           committed before the transition comes back. */
+        cur.style.transition = 'none';
+        moveTo('idle');
+        void cur.offsetWidth;
+        cur.style.transition = '';
     };
 
     var play = function () {
