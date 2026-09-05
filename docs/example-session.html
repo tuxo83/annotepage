@@ -1774,6 +1774,15 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
        the moment of the move. Nothing is precomputed and nothing survives a
        resize as a stale number. */
     var AT = {
+        /* WHERE THE POINTER IS BEFORE ANYBODY HAS DONE ANYTHING. Reported from
+           the live site: it used to appear out of nothing, already on the
+           button it was about to press, so the first thing the figure showed
+           was a result. A pointer is on the page before the gesture, like
+           every pointer on every screen, and it has to be SEEN travelling to
+           the button -- that trip is the first half of "they press the
+           button". The heading is a real element of the crop, top left, which
+           is where a hand that has been reading tends to be. */
+        idle: '.pg-h',
         rest: '.pill',        // the control that opens the tool
         elem: '.target',      // the button the remark will be about
         area: '.fm-area',     // the field, which is entered by clicking in it
@@ -1820,10 +1829,13 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         var o = 0, list = [];
         list.push([o + 0, function () {
             stage('rest'); pill.textContent = 'Annotate this page';
-            count(0); moveTo('rest');
-            g.removeAttribute('data-cursor');
+            count(0); moveTo('idle');
+            g.setAttribute('data-cursor', '');
         }]);
-        list.push([o + 500,  function () { g.setAttribute('data-cursor', ''); moveTo('rest'); }]);
+        /* The trip to the button, and it is the point: .85s of transition on
+           the transform, so what the reader sees is a pointer CROSSING the
+           page towards the control, not one that was already there. */
+        list.push([o + 500,  function () { moveTo('rest'); }]);
         /* The button is pressed: the label becomes `button.close` and the
            panel opens with the two lines that say what to do. */
         list.push([o + 1420, function () { g.setAttribute('data-press', ''); }]);
@@ -1983,9 +1995,12 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         pill.textContent = 'Annotate this page';
         for (var k = 0; k < cells.length; k++) cells[k].className = 'ch';
         typed = 0; count(0);
-        g.removeAttribute('data-cursor');
         g.removeAttribute('data-typed');
-        moveTo('rest');
+        /* Shown, and away from the button: the wait before the first pass is
+           a page nobody has touched yet, and a pointer sitting on the control
+           would already be half the gesture. */
+        moveTo('idle');
+        g.setAttribute('data-cursor', '');
     };
     atRest();
 
