@@ -207,10 +207,18 @@ h1 + .lead { margin-top: 1.15rem; }
    row three times over; here there is one picture per part and it is the page,
    so the sentence takes a narrow fixed column and everything else goes to the
    frame. Stacked below 62rem, words first. */
+/* THE SPACE IS ON THE ITEMS, NOT IN A `gap`, and that is not a stylistic
+   preference. A grid gap is the same between every pair, and it cannot be
+   reduced for one of them: the marker between two steps spent it TWICE --
+   measured 192px against 96 for an ordinary pair -- and no negative margin
+   could take it back, because a gap is not a margin. Carried by the items, the
+   distance is still one value for ordinary steps and can be another one around
+   something that is not a step. */
 .use-steps {
-    display: grid; gap: clamp(2.6rem, 7vw, 6rem);
+    display: grid; gap: 0;
     margin: 2.4rem 0 0; padding: 0; list-style: none;
 }
+.use-steps > li + li { margin-top: clamp(2.6rem, 7vw, 6rem); }
 .use-steps > li {
     display: grid; gap: clamp(1rem, 3vw, 2.4rem);
     grid-template-columns: minmax(0, 1fr);
@@ -243,15 +251,29 @@ h1 + .lead { margin-top: 1.15rem; }
    counter-increment is cancelled, so the step after it carries the number it
    would have had. */
 .use-steps > li.between {
-    display: block; grid-template-columns: none;
+    display: flex; grid-template-columns: none;
+    align-items: center; justify-content: center; gap: .55rem;
     counter-increment: none;
-    margin: calc(-1 * clamp(1rem, 2.8vw, 2.4rem)) 0;
-    text-align: center;
     color: var(--dim); font-size: .95rem; font-weight: 600;
 }
+/* AND IT IS CLOSER THAN A STEP IS, on both sides, because it belongs to the
+   passage rather than to either step. Measured at 1440px: 51 above the symbol,
+   51 below, and 126 from one step to the next where two ordinary steps sit 96
+   apart. It reads as punctuation between them, not as a third block. */
+.use-steps > li.between { margin-top: clamp(1.4rem, 3.6vw, 3.2rem); }
+/* The step after it comes up by the same amount -- but ONLY when the marker is
+   actually there. It is `display: none` in the other branch, where the step
+   that follows must keep the ordinary distance. */
+body:has(#d-wait:checked) .use-steps > li.between + li {
+    margin-top: clamp(1.4rem, 3.6vw, 3.2rem);
+}
+/* Drawn rather than typed. The character U+21BB comes out of the body font at
+   whatever weight and size that font gives it -- thin, small, and sitting on
+   the baseline instead of on the text's middle. Two paths, a stroke we choose,
+   and it centres on the words beside it. */
 .use-steps > li.between .turn {
-    display: inline-block; margin-right: .5rem;
-    color: var(--accent); font-weight: 400;
+    flex: none; width: 1.15em; height: 1.15em;
+    color: var(--accent);
 }
 .use-steps .say + .say { margin-top: .7rem; }
 .use-steps .say b { color: var(--text); font-weight: 650; }
@@ -1126,7 +1148,13 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         </li>
 
         <li class="between if-wait">
-            <span class="turn" aria-hidden="true">&#x21BB;</span>You deploy the fix.
+            <svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false">
+                <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>
+                <path d="M20.5 3.5v5.5h-5.5"/>
+            </svg>
+            You deploy the fix.
         </li>
 
         <li>
