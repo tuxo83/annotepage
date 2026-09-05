@@ -84,6 +84,25 @@ into shape.
 The distinction matters because it is the whole credibility of the page: the
 figure may show LESS than happened, never OTHER than what happened.
 
+**ONE LINE HAS BEEN REPLACED, AND HERE IS WHICH.** The capture ended its
+deployment beat with `gh api .../actions/jobs/.../logs` returning `Reported
+success!`. It proved the fix had shipped, and it proved it in one company's
+command line -- on a page that refuses to name one assistant under a figure for
+exactly that reason. Reviewed on the live site, the remark was: is there
+something more universal? There is no neutral capture of that beat to reach
+for, so the owner authorised rewriting it, once, in so many words.
+
+It now reads `curl -s staging.example.com/guide | grep -o 'data-version="…"'`
+returning `data-version="1.4.13"`. Two commands that run everywhere, and what
+they read back is the attribute the last part of the page turns on: the old
+line proved a job had gone green somewhere, this one proves the page the
+reviewer is about to open says 1.4.13.
+
+**The exception is written down so that it stays an exception.** A rule that
+absorbs its own breaches in silence has stopped being a rule; the next line
+that somebody wants to improve has to come back through here and be named the
+same way, or the figure is no longer a capture.
+
 ## Naming another tool, and the line not to cross
 
 The replay shows an assistant working. It is NOT captioned with the name of the

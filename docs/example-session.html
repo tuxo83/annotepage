@@ -1292,9 +1292,8 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 <code class="rp-tool" data-step="t8"><b>Bash</b>(git push origin main)</code>
 <code class="rp-out" data-step="o8"><span class="trunc">&#x2026; +8 lines (ctrl+o to expand)</span></code>
 
-<code class="rp-tool" data-step="t9"><b>Bash</b>(gh api repos/{owner}/{repo}/actions/jobs/99870014804/logs | cut -c30-)</code>
-<code class="rp-out" data-step="o9"><span class="ok">Reported success!</span>
-<span class="trunc">&#x2026; +55 lines (ctrl+o to expand)</span></code>
+<code class="rp-tool" data-step="t9"><b>Bash</b>(curl -s staging.example.com/guide | grep -o 'data-version="[^"]*"')</code>
+<code class="rp-out" data-step="o9"><span class="ok">data-version="1.4.13"</span></code>
 
 <p class="rp-say" data-step="s7">Replied in each thread with what I measured, and resolved all three in <span class="id">1.4.13</span>.</p>
 
@@ -1881,7 +1880,22 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         [5260,  function () { show('o4'); }],
         /* THE THREE BEATS A FIGURE LIKE THIS LIES BY LEAVING OUT. The edit
            above changed a working copy and nothing else. It becomes a commit,
-           the commit is pushed, and a deployment puts the result online. */
+           the commit is pushed, and the deployment is CHECKED.
+
+           THE THIRD LINE IS NOT CAPTURED, AND IT IS SAID HERE BECAUSE THE RULE
+           FOR THIS FIGURE IS THAT EVERY LINE IS. The capture ran `gh api
+           .../actions/jobs/.../logs`, which returned `Reported success!` and
+           proved the deployment had landed -- in one company's command line,
+           on a page that refuses to name one assistant under a figure for
+           exactly that reason. The owner authorised replacing it, once, in so
+           many words; site/BRIEF.md records the exception rather than letting
+           it dissolve the rule.
+
+           AND THE REPLACEMENT IS BETTER THAN NEUTRAL. curl and grep run
+           everywhere, and what they read back is `data-version` on the page
+           itself -- the very attribute the last part of this page turns on.
+           The old line proved a job had gone green somewhere; this one proves
+           the page the reviewer is about to open says 1.4.13. */
         [6100,  function () { show('t7'); }],
         [6520,  function () { show('o7'); }],
         [7060,  function () { show('t8'); }],
