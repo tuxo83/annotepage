@@ -336,6 +336,17 @@ code:not(pre code) {
 .dial-say { margin: .55rem 0 0; font-size: .85rem; color: var(--dim); max-width: 26em; }
 .dial-why { margin: .9rem 0 0; font-size: .9rem; color: var(--dim); }
 
+/* THE SECOND BOX, AND IT IS A SECOND BOX AND NOT MORE ITEMS IN THE FIRST.
+   Appearing and disappearing inside a row of three would look like the row
+   reflowing; a block of its own, with the line that says whose questions
+   these are, reads as what it is -- two more questions, asked because of an
+   answer given above. */
+.dials-2 { margin-top: .8rem; }
+.dial-when {
+    flex: 1 0 100%; margin: 0; font-size: .9rem; font-weight: 600;
+    color: var(--dim);
+}
+
 /* THE FIELD, AND IT IS NOT A THIRD DIAL. The two dials take routes away; this
    takes EXAMPLES away -- it is asked once and answers in all three chapters,
    in the tag's own address, in the origin the server has to be told, in the
@@ -370,6 +381,16 @@ body:has(#m-open:checked)   .if-secure { display: none; }
 body:has(#m-secure:checked) .if-open   { display: none; }
 body:has(#s-shared:checked) .if-own    { display: none; }
 body:has(#s-own:checked)    .if-shared { display: none; }
+
+/* THE SECOND SERIES, WHICH ONLY EXISTS UNDER `Your own`. Written as "hide the
+   others" rather than "show the one", like the two above and unlike the
+   framework tabs: a `display: block` that wins would flatten a step's two
+   columns into one, and these conditions land on <li> as well as on <span>. */
+body:has(#a-any:checked)   .if-declared { display: none; }
+body:has(#a-mine:checked)  .if-any      { display: none; }
+body:has(#u-url:checked)   .if-cron, body:has(#u-self:checked) .if-cron { display: none; }
+body:has(#u-cron:checked)  .if-url,  body:has(#u-self:checked) .if-url  { display: none; }
+body:has(#u-cron:checked)  .if-self, body:has(#u-url:checked)  .if-self { display: none; }
 
 /* == THE FRAMEWORK TABS =================================================== */
 
@@ -674,6 +695,53 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             </p>
         </div>
 
+        <!-- THE SECOND SERIES, AND IT ONLY EXISTS FOR SOMEBODY RUNNING THE
+             SERVER. Its two questions are two of the three the installer
+             itself asks, and they are here rather than there for the reason
+             the first series is here: each one adds or removes a step below,
+             so the page has to know the answer before it can be right.
+
+             THE THIRD QUESTION THE INSTALLER ASKS IS NOT HERE. Where the notes
+             live -- a file it creates, or a MySQL you already have -- changes
+             nothing you do on this page: same upload, same steps, same tag. It
+             is at the foot of the chapter with the other prerequisites, which
+             is what it is. A dial that changes no step would say the page
+             depends on it, and it does not. -->
+        <div class="dials dials-2 if-own">
+            <p class="dial-when">Running it yourself asks two more:</p>
+
+            <fieldset class="dial">
+                <legend>Who it answers for</legend>
+                <div class="seg">
+                    <label><input type="radio" name="aud" id="a-mine" checked> <span>My site</span></label>
+                    <label><input type="radio" name="aud" id="a-any"> <span>Anyone</span></label>
+                </div>
+                <p class="dial-say">
+                    <span class="if-declared">Declared, so it answers your origin
+                    and refuses every other.</span><span class="if-any">A relay: any
+                    project that asks is served, and none of them has an origin
+                    lock.</span>
+                </p>
+            </fieldset>
+
+            <fieldset class="dial">
+                <legend>Who updates it</legend>
+                <div class="seg">
+                    <label><input type="radio" name="upd" id="u-cron" checked> <span>A cron</span></label>
+                    <label><input type="radio" name="upd" id="u-url"> <span>An address</span></label>
+                    <label><input type="radio" name="upd" id="u-self"> <span>Itself</span></label>
+                </div>
+                <p class="dial-say">
+                    <span class="if-cron">A line in your crontab. The code stays
+                    writable by you and never by the web server.</span><span
+                    class="if-url">For a host with no shell: a scheduler that
+                    takes an address and nothing else.</span><span class="if-self">Nothing
+                    to schedule, and nothing below to do. The price is the code
+                    directory writable by the web server, for good.</span>
+                </p>
+            </fieldset>
+        </div>
+
     </div>
 </section>
 
@@ -867,12 +935,11 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                  carries it -- printing it twice would be the page repeating
                  itself. What is left is the one line the server needs and
                  nothing else says: the origin it will answer from. -->
-            <li>
+            <li class="if-declared">
                 <div>
                     <p class="cap"><span class="n"></span> Declare your origin</p>
                     <p class="say">
-                        Two questions, both already answered. Its last line
-                        goes in the tag.
+                        One line, and its last one goes in the tag.
                     </p>
                 </div>
                 <div>
@@ -882,10 +949,58 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                             </div>
                 </div>
             </li>
+
+            <!-- AND THE STEP THAT WAS MISSING ALTOGETHER. A server installed
+                 and never updated is the one outcome this page could produce
+                 in silence: nothing on the last screen forces the reader to
+                 come back, so the line has to be here, with the rest.
+
+                 IT DISAPPEARS ON THE THIRD ANSWER. A server that updates
+                 itself needs nothing scheduled -- so there is no step, and the
+                 dial's own line carries what that costs. A dial that takes a
+                 route away takes the whole route. -->
+            <li class="if-cron">
+                <div>
+                    <p class="cap"><span class="n"></span> Keep it up to date</p>
+                    <p class="say">
+                        Once a day. The last screen gives you this line with
+                        the real path already in it.
+                    </p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-cron" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-cron"><code><span class="op">17 4 * * *</span> <span class="tg">php</span> &lt;your install&gt;/internal/update.php <span class="op">&gt;</span>/dev/null</code></pre>
+                            </div>
+                </div>
+            </li>
+
+            <li class="if-url">
+                <div>
+                    <p class="cap"><span class="n"></span> Keep it up to date</p>
+                    <p class="say">
+                        The installer writes a secret and shows the address
+                        <b>once</b>, on its last screen and nowhere else.
+                    </p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-cronurl" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-cronurl"><code id="cron-code"><span class="op">17 4 * * *</span> <span class="tg">curl</span> <span class="op">-fsS</span> <span class="st">'https://staging.example.com/notes/api.php?action=update&amp;token=&lt;the secret&gt;'</span></code></pre>
+                            </div>
+                </div>
+            </li>
         </ol>
 
+        <!-- THE THIRD QUESTION THE INSTALLER ASKS, WHERE IT BELONGS. It
+             changes no step above, so it is not a dial; it changes what you
+             need to have ready before starting, which is what this line is
+             for. -->
         <p class="small dim">
-            PHP 7.4 and <code>pdo_sqlite</code>. The rest is in
+            PHP 7.4 and <code>pdo_sqlite</code>. The installer also asks where the
+            notes go: a file it creates and checks the web server refuses to
+            serve, or a MySQL you already have &mdash; have its host, name, user
+            and password to hand for that one. The rest is in
             <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">INSTALL.md</a>.
         </p>
 
@@ -1313,6 +1428,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     var orgCode   = document.getElementById('org-code');
     var jsonCode  = document.getElementById('json-code');
     var askCode   = document.getElementById('ask-code');
+    var cronCode  = document.getElementById('cron-code');
     var mcpCode   = document.getElementById('mcp-code');
     var siteIn    = document.getElementById('site');
     var open      = document.getElementById('m-open');
@@ -1321,7 +1437,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     /* It must stop rather than half-run: a generator wired to elements the
        page no longer has would leave the placeholder sitting in the tag,
        ready to be copied. */
-    if (!tagCode || !keyCode || !orgCode || !jsonCode
+    if (!tagCode || !keyCode || !orgCode || !jsonCode || !cronCode
         || !askCode || !mcpCode || !siteIn || !open || !shared) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
@@ -1466,6 +1582,20 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             jsonCode.appendChild(document.createTextNode(r < rows.length - 1 ? ',\n' : '\n'));
         }
         jsonCode.appendChild(document.createTextNode('    }\n  }\n}'));
+
+        /* The scheduler's line names the same api.php the tag does. The
+           secret is not generated here and never will be: the installer
+           writes it, shows it on its own last screen and nowhere else, so a
+           placeholder is the honest thing to print. */
+        while (cronCode.firstChild) cronCode.removeChild(cronCode.firstChild);
+        cronCode.appendChild(piece('op', '17 4 * * *'));
+        cronCode.appendChild(document.createTextNode(' '));
+        cronCode.appendChild(piece('tg', 'curl'));
+        cronCode.appendChild(document.createTextNode(' '));
+        cronCode.appendChild(piece('op', '-fsS'));
+        cronCode.appendChild(document.createTextNode(' '));
+        cronCode.appendChild(piece('st',
+            "'" + api + "?action=update&token=<the secret>'"));
 
         askCode.textContent =
             'connect to ' + site
