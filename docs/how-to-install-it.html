@@ -334,7 +334,10 @@ code:not(pre code) {
 }
 .seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
 .dial-say { margin: .55rem 0 0; font-size: .85rem; color: var(--dim); max-width: 26em; }
-.dial-why { margin: .9rem 0 0; font-size: .9rem; color: var(--dim); }
+/* ITS OWN LINE, WHOLE. It is about the row, not about the dial it happens to
+   land next to -- and with four items in the row it landed beside the site
+   field, reading as that field's caption. */
+.dial-why { flex: 1 0 100%; margin: .9rem 0 0; font-size: .9rem; color: var(--dim); }
 
 /* THE SECOND BOX, AND IT IS A SECOND BOX AND NOT MORE ITEMS IN THE FIRST.
    Appearing and disappearing inside a row of three would look like the row
@@ -386,6 +389,8 @@ body:has(#s-own:checked)    .if-shared { display: none; }
    others" rather than "show the one", like the two above and unlike the
    framework tabs: a `display: block` that wins would flatten a step's two
    columns into one, and these conditions land on <li> as well as on <span>. */
+body:has(#p-lock:checked)  .if-free { display: none; }
+body:has(#p-free:checked)  .if-lock { display: none; }
 body:has(#a-any:checked)   .if-declared { display: none; }
 body:has(#a-mine:checked)  .if-any      { display: none; }
 body:has(#u-url:checked)   .if-cron, body:has(#u-self:checked) .if-cron { display: none; }
@@ -677,6 +682,29 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 <p class="dial-say">
                     api.annotepage.com is free and already running, or put one
                     on your own disk.
+                </p>
+            </fieldset>
+
+            <!-- WHO UPGRADES THE CLIENT, and it is a dial for the reason the
+                 other two are: it changes what the tag says. A range and no
+                 digest means a newer client arrives on its own; an exact
+                 version and its `integrity` means it never does, and somebody
+                 comes back here at every release. Two answers to one question,
+                 and the page shows ONE tag rather than a tag with a variant
+                 explained under it -- which made an install read as a decision
+                 about cryptography when it is a decision about who does the
+                 upgrading. -->
+            <fieldset class="dial">
+                <legend>The client</legend>
+                <div class="seg">
+                    <label><input type="radio" name="pin" id="p-free" checked> <span>Updates itself</span></label>
+                    <label><input type="radio" name="pin" id="p-lock"> <span>Pinned</span></label>
+                </div>
+                <p class="dial-say">
+                    <span class="if-free">The tag names a range: a newer client
+                    arrives without you.</span><span class="if-lock">The tag names
+                    one release and its digest. Every upgrade is a visit
+                    here.</span>
                 </p>
             </fieldset>
 
@@ -1433,12 +1461,21 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     var siteIn    = document.getElementById('site');
     var open      = document.getElementById('m-open');
     var shared    = document.getElementById('s-shared');
+    var pinned    = document.getElementById('p-lock');
+
+    /* WRITTEN HERE AND CHECKED ELSEWHERE. The pair is the released client and
+       the digest of that exact file; tools/check-sri.mjs hashes the bundle,
+       reads the version standing beside every digest in the repository, and
+       refuses either one going stale. Fetched to confirm before this was
+       written: the address below answers 200 and hashes to this value. */
+    var CLIENT_VERSION = '2.11.0';
+    var CLIENT_SRI = 'sha384-1VebNL8kJMC++WJHyG9Q+08OQ6e3HREOUPO0ahYZPxxFQSxY1dc/YX2rtExC4CK9';
 
     /* It must stop rather than half-run: a generator wired to elements the
        page no longer has would leave the placeholder sitting in the tag,
        ready to be copied. */
     if (!tagCode || !keyCode || !orgCode || !jsonCode || !cronCode
-        || !askCode || !mcpCode || !siteIn || !open || !shared) return;
+        || !askCode || !mcpCode || !siteIn || !open || !shared || !pinned) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
        Math.random would be guessable -- which is worse than no key at all,
@@ -1519,6 +1556,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
         var ownApi = 'https://' + site + '/notes/api.php';
         var origin = 'https://' + site;
         var api = shared.checked ? SHARED_API : ownApi;
+        var locked = pinned.checked;
 
         while (tagCode.firstChild) tagCode.removeChild(tagCode.firstChild);
         tagCode.appendChild(document.createTextNode('<'));
@@ -1526,9 +1564,32 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
         tagCode.appendChild(document.createTextNode(' '));
         tagCode.appendChild(piece('at', 'src'));
         tagCode.appendChild(document.createTextNode('='));
-        tagCode.appendChild(piece('st',
-            '"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"'));
+        /* THE TWO ADDRESSES, AND THE DIGEST BELONGS TO ONE OF THEM. The
+           range never carries an `integrity`: a digest describes one file, and
+           a range is a promise to serve a different one later -- pinning a
+           range would break the tag on the day the client is upgraded, in
+           silence, which is the failure the questions at the foot of this page
+           describe. tools/check-sri.mjs refuses a version written beside a
+           digest that does not describe it, so these two constants cannot
+           drift apart or fall behind a release. */
+        tagCode.appendChild(piece('st', locked
+            ? '"https://cdn.jsdelivr.net/npm/annotepage-client@'
+              + CLIENT_VERSION + '/dist/annotepage.js"'
+            : '"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"'));
         tagCode.appendChild(document.createTextNode('\n        '));
+        if (locked) {
+            tagCode.appendChild(piece('at', 'integrity'));
+            tagCode.appendChild(document.createTextNode('='));
+            tagCode.appendChild(piece('st', '"' + CLIENT_SRI + '"'));
+            tagCode.appendChild(document.createTextNode('\n        '));
+            /* WITHOUT IT THE DIGEST IS NOT CHECKED AND THE FILE IS NOT LOADED.
+               A cross-origin script with `integrity` and no `crossorigin` is
+               refused outright, which is the same silence as a wrong digest. */
+            tagCode.appendChild(piece('at', 'crossorigin'));
+            tagCode.appendChild(document.createTextNode('='));
+            tagCode.appendChild(piece('st', '"anonymous"'));
+            tagCode.appendChild(document.createTextNode('\n        '));
+        }
         tagCode.appendChild(piece('at', 'data-server'));
         tagCode.appendChild(document.createTextNode('='));
         tagCode.appendChild(piece('st', '"' + api + '"'));
