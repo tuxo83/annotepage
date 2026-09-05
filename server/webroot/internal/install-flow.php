@@ -1337,9 +1337,28 @@ function ap_i_run(array $options)
        cron, and plenty of it has no cron either, or a cron that can only fetch
        a URL. This is the answer for all of them, and it is one line to paste
        into whatever scheduler exists. */
+    /* PRE-TICKED WHERE IT IS THE ONLY WAY, AND THE HOST IS ASKED, NOT GUESSED
+       AT. The opportunistic path needs an interface that can hand the response
+       to the visitor before working: php-fpm and LiteSpeed can, `cgi-fcgi` and
+       the rest cannot, and on those the checkbox above buys nothing at all.
+       Somebody installing on such a host should not have to know that to end
+       up with a working server -- so the box is already ticked, and the note
+       says which interface answered. */
+    $canDefer = PHP_SAPI === 'cli'
+        || function_exists('fastcgi_finish_request')
+        || function_exists('litespeed_finish_request');
+    $wantsUrl = ($method === 'POST') ? !empty($_POST['update_url']) : !$canDefer;
+
     echo '<label class="choice"><input type="checkbox" name="update_url" value="1"'
-        . (!empty($_POST['update_url']) ? ' checked' : '')
+        . ($wantsUrl ? ' checked' : '')
         . "> Give me an address a scheduler can call to update this server</label>\n";
+    if (!$canDefer) {
+        echo '<p class="note bad">This PHP interface (<code>' . ap_i_h(PHP_SAPI)
+            . '</code>) cannot hand the response to the visitor before doing more '
+            . 'work, and a visitor must never wait on a fetch to GitHub. The option '
+            . 'above therefore does nothing here, whether you tick it or not: THIS is '
+            . "the one that works on this host, and it is ticked for you.</p>\n";
+    }
     echo '<p class="note">For a host with no cron and no shell, or one whose cron can '
         . 'only fetch a URL. A secret is written into the configuration and the address '
         . 'is shown once, on the next screen. Whoever calls it waits while the update '
