@@ -518,7 +518,8 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
                     <label><input type="radio" name="srv" id="s-own"> <span>Your own</span></label>
                 </div>
                 <p class="dial-say">
-                    The free one at api.annotepage.com, or one on your own disk.
+                    api.annotepage.com is free and already running, or put one
+                    on your own disk.
                 </p>
             </fieldset>
 
@@ -545,7 +546,7 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
      it loses to this: somebody who has to stand a server up cannot do
      anything else until it is up. So the chapter that CAN block comes first,
      and the dial is what makes it cost one line for everybody else. -->
-<section id="server">
+<section id="server" class="if-own">
     <div class="wrap">
         <!-- THE THREE TITLES ARE ONE SENTENCE SAID THREE TIMES: install the
              THING on the PLACE, down to the same preposition three times --
@@ -560,11 +561,13 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
              and a reader counting what is left to do can count it from the
              headings alone.
 
-             AND THE FIRST ONE TURNS WITH THE DIAL, because on the shared
-             server there is nothing to install and a heading promising work
-             that does not exist is the fear this page was rebuilt to remove. -->
-        <h2 class="if-shared">No server to install</h2>
-        <h2 class="if-own">Install the app on the server</h2>
+             AND ON THE SHARED SERVER THIS CHAPTER DOES NOT EXIST AT ALL.
+             It first said "No server to install" over one sentence, which is
+             still a chapter, still a heading, still something a reader counts
+             -- and the fear this page was rebuilt to remove is exactly that
+             count. The dial's own line carries what is left to say. A dial
+             that takes a route away has to take the whole route. -->
+        <h2>Install the app on the server</h2>
 
         <p class="if-own">
             <b>1.</b> Upload one PHP file anywhere under your web root.
@@ -605,12 +608,6 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
             <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">INSTALL.md</a>.
         </p>
 
-        <!-- ONE SENTENCE, AND IT IS THE WHOLE CHAPTER FOR MOST READERS. That
-             is the dial earning its place. -->
-        <p class="if-shared">
-            Nothing to do: <code>api.annotepage.com</code> is free, open to
-            everyone, and already running.
-        </p>
     </div>
 </section>
 
