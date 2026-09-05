@@ -1743,9 +1743,9 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             }
         }
         if (held) {
-            // Le fondu se leve un demi-tour d avance : on voit le geste
-            // revenir a son etat de depart AVANT qu il reparte, donc on lit
-            // une reprise et non un saut.
+            // The fade lifts half a beat early, so the gesture is seen
+            // BACK at its starting state before it goes again: what that
+            // reads as is a restart, not a jump.
             if (t >= held + GAP - FADE) g.removeAttribute('data-rewind');
             if (t >= held + GAP) { pass++; play(); return; }
             raf = requestAnimationFrame(tick); return;
@@ -2142,8 +2142,8 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             rp.setAttribute('data-rewind', '');
             flow.scrollTop = 0;
         }
-        // Le fondu remonte avant la reprise, pour la meme raison que dans le
-        // geste : on doit voir revenir, pas voir sauter.
+        // The fade lifts before the replay starts, for the same reason as in
+        // the gesture above: one must see it come back, not see it jump.
         if (t >= DONE + GAP - FADE) rp.removeAttribute('data-rewind');
         if (t < DONE + GAP) { raf = requestAnimationFrame(tick); return; }
         cycle++;
