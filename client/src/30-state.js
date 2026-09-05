@@ -15,6 +15,14 @@ let author = '';            // read at startup: see 90-boot
 let timer = null;
 let rafPending = false;
 
+/* The page is somebody else's, and it moves. `observer` watches it WHILE
+   annotation mode is on -- never outside it -- and its only job is to raise
+   `domDirty`. The work itself belongs to the animation frame in
+   refreshPositions: a page that mutates in a loop would otherwise pay for a
+   full re-anchoring on every single mutation. */
+let observer = null;
+let domDirty = false;
+
 /* What we did NOT manage to read at the last load. We count it so we can say
    it: a note skipped in silence is a remark that disappears. */
 let skipped = { newer: 0, unreadable: 0, unknown: 0 };

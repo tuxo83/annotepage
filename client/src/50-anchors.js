@@ -154,3 +154,50 @@ const anchor = () => {
         group.notes.push(note);
     }
 };
+
+/* -- 12 bis. When the page redraws itself under the tool -------------------
+   `anchor()` resolves the elements ONCE. A page that replaces a piece of its
+   own DOM -- a click that re-renders a block, a framework that swaps a node
+   for an equivalent one -- leaves us holding a node that is no longer in the
+   document: it measures 0x0, and the badge does not move, it VANISHES.
+
+   The two functions below are what lets refreshPositions notice and repair
+   that, without the panel paying for it. */
+
+/** True as soon as one remembered element has left the document. This is the
+    safety net, and it is deliberately independent of the MutationObserver:
+    an observer can be missing, disconnected, or blind to a change made
+    before it was hooked up -- a detached node cannot hide. */
+const anchorsStale = () => {
+    for (let i = 0; i < anchored.length; i += 1) {
+        if (!document.contains(anchored[i].element)) return true;
+    }
+    return false;
+};
+
+/**
+ * What the PANEL would show of the current anchoring, as a string.
+ *
+ * The panel is rebuilt from scratch by drawPanel(), which costs the reader
+ * their scroll position, their focus, and any reply half typed. So it is
+ * only ever redrawn when this string changes -- that is, when a note has
+ * actually moved between "anchored" and "orphaned", or when the groups no
+ * longer hold the same notes. An element swapped for an equivalent one
+ * changes NOTHING here, and rightly: only the markers have to be redrawn.
+ *
+ * Note identifiers are used, never the elements: two different nodes
+ * carrying the same notes are the same thing as far as the panel goes.
+ */
+const anchorSignature = () => {
+    const parts = [];
+    for (let i = 0; i < anchored.length; i += 1) {
+        const ids = [];
+        for (let j = 0; j < anchored[i].notes.length; j += 1) {
+            ids.push(anchored[i].notes[j].id);
+        }
+        parts.push(ids.join(','));
+    }
+    const lost = [];
+    for (let i = 0; i < orphans.length; i += 1) lost.push(orphans[i].id);
+    return parts.join('|') + '/' + lost.join(',');
+};

@@ -194,12 +194,40 @@ const drawMarkers = () => {
     }
 };
 
+/**
+ * Redoes the anchoring when -- and only when -- the page has moved under us.
+ *
+ * Two triggers, on purpose. `domDirty` is raised by the MutationObserver,
+ * which sees everything including a swap that leaves the badge in exactly the
+ * same place; `anchorsStale()` sees a detached node even when no observer is
+ * running. Either one alone would have a blind spot.
+ *
+ * THE PANEL IS ONLY REDRAWN IF THE RESULT CHANGED. drawPanel() rebuilds the
+ * list from nothing: called at every tick it would wipe the reader's scroll
+ * position, the focus, and any reply being typed. The signature says whether
+ * a note actually changed side; the markers, cheap and stateless, are redrawn
+ * by the caller in any case.
+ */
+const reanchor = () => {
+    if (!domDirty && !anchorsStale()) return;
+    domDirty = false;
+    const before = anchorSignature();
+    anchor();
+    /* A note can also come BACK from the orphan list here: the page had not
+       finished rendering when we first looked, and now it has. That is a real
+       change, and it is worth the redraw. */
+    if (anchorSignature() !== before) drawPanel();
+};
+
 const refreshPositions = () => {
     if (rafPending) return;
     rafPending = true;
     window.requestAnimationFrame(() => {
         rafPending = false;
         if (!mode) return;
+        // BEFORE drawing: the markers must be measured on the elements that
+        // are in the document now, not on the ones that were.
+        reanchor();
         drawMarkers();
         if (hovered && document.contains(hovered)) showHighlight(hovered);
         if (target && document.contains(target)) positionForm(target);
@@ -935,6 +963,29 @@ const enterMode = () => {
     // without emitting either scroll or resize.
     timer = window.setInterval(refreshPositions, 500);
 
+    /* THE PAGE REDRAWS ITSELF, AND THE BADGES MUST NOT DIE OF IT. A click on
+       the site's own button can replace a whole block: the node we remembered
+       is then detached, it measures 0x0, and the badge simply stops being
+       drawn.
+
+       The callback raises a flag AND NOTHING ELSE. All the work -- redoing
+       the anchoring, deciding whether the panel changed -- happens in the
+       animation frame of refreshPositions, at most once per frame. A page
+       that mutates in a loop would otherwise pay for a full re-anchoring on
+       every mutation record, which is how an annotation layer turns a lively
+       page into a slow one.
+
+       Observed on document.body, childList and subtree: an element swapped
+       anywhere is what breaks us. It never crosses into the shadow root, so
+       the tool cannot see -- or answer -- its own drawing. */
+    if (typeof MutationObserver === 'function') {
+        observer = new MutationObserver(() => {
+            domDirty = true;
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+    domDirty = false;
+
     // The markers for what we ALREADY know, straight away; the server is
     // asked next and will correct if there is anything new. Waiting for the
     // network to show what is already on screen would suggest an empty page.
@@ -959,6 +1010,13 @@ const leaveMode = () => {
     document.removeEventListener('keydown', onKey, true);
     window.removeEventListener('scroll', refreshPositions, true);
     window.removeEventListener('resize', refreshPositions);
+    // Outside annotation mode the tool watches nothing: the site is the
+    // site's again, and it pays nothing for us.
+    if (observer) {
+        observer.disconnect();
+        observer = null;
+    }
+    domDirty = false;
     if (timer) {
         window.clearInterval(timer);
         timer = null;
