@@ -670,19 +670,13 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
    rgb(211,215,222) with the pointer on the assistant. Excluding the hovered box
    from the recession beats raising the other rule's weight: nothing has to win
    a fight it was never in. */
-.loop[data-lit] .lp-box,
 .loop:has(a.lp-box:hover) .lp-box:not(:hover),
 .loop:has(a.lp-box:focus-visible) .lp-box:not(:focus-visible) {
     color: var(--dim); border-color: var(--line-soft);
 }
-.loop[data-lit] .lp-arr,
-.loop[data-lit] .lp-arr svg,
 .loop:has(a.lp-box:hover) .lp-arr,
 .loop:has(a.lp-box:hover) .lp-arr svg { color: var(--line); }
 
-.loop[data-lit="page"] .lp-page,
-.loop[data-lit="srv"]  .lp-srv,
-.loop[data-lit="asst"] .lp-asst,
 .loop a.lp-box:hover,
 .loop a.lp-box:focus-visible {
     color: var(--text);
@@ -713,17 +707,9 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
    full strength while the box behind it dimmed would be the brightest thing on
    a figure whose point is elsewhere. Written as the recession is written --
    "every box except the one being pointed at" -- so the two cannot disagree. */
-.loop[data-lit] .lp-box .lp-num,
 .loop:has(a.lp-box:hover) .lp-box:not(:hover) .lp-num,
 .loop:has(a.lp-box:focus-visible) .lp-box:not(:focus-visible) .lp-num {
     background: var(--line); color: var(--bg);
-}
-.loop[data-lit="page"] .lp-page .lp-num,
-.loop[data-lit="srv"]  .lp-srv .lp-num,
-.loop[data-lit="asst"] .lp-asst .lp-num,
-.loop a.lp-box:hover .lp-num,
-.loop a.lp-box:focus-visible .lp-num {
-    background: var(--accent); color: var(--on-accent);
 }
 
 @media (max-width: 420px) {
@@ -1702,9 +1688,18 @@ return array(
                  under it, which is the reverse of what this chapter did. -->
             <li class="if-secure">
                 <div>
-                    <p class="cap"><span class="n"></span> Give it the key</p>
+                    <!-- THE WORDING IS how-to-use-it.html's, WHICH WAS
+                         VALIDATED. Two pages draw the same file in the same two
+                         windows and said it two ways -- this one shorter, and
+                         short in the wrong place: it dropped "once", which is
+                         the reassurance, and it kept the third route as a grey
+                         line at the foot of the step instead of in the sentence
+                         that offers it. -->
+                    <p class="cap"><span class="n"></span> Give it the key, once</p>
                     <p class="say">
-                        One file, on the machine where your assistant runs.
+                        One file, on the machine where your assistant runs. Write
+                        it yourself, or hand it the key and let it write the file
+                        (less secure: the key crosses a provider&rsquo;s logs).
                     </p>
                     <p class="say">
                         <b>The address is on your tag.</b> The key is the one
@@ -1762,10 +1757,6 @@ return array(
                          same shape, and the key never enters a shell's history.
                          The variables stay in the MCP for whoever runs it from
                          a script; they are not a way to install it. -->
-                    <p class="small dim">
-                        Or let the assistant write it: easiest, and the key
-                        crosses a provider&rsquo;s logs.
-                    </p>
                 </div>
             </li>
 
@@ -2150,7 +2141,14 @@ return array(
            anything at. The tag two chapters up has always used `api`; this
            block is the same answer and has to name the same server. */
         var rows = [['"api"',    '"' + api + '"',  '    '],
-                    ['"key"',    '"<the key>"',       '    '],
+                    /* THE KEY ITSELF, NOT A PLACEHOLDER. how-to-use-it.html
+                       draws this file with a real one, and it is right: the
+                       block has a copy button, and a button that hands back
+                       something you still have to edit is the defect this page
+                       removed from the server's own config figure. The key is
+                       this browser's, drawn a second ago, and it is the one
+                       already shown two steps up. */
+                    ['"key"',    '"' + current.key + '"',  '    '],
                     ['"origin"', '"' + origin + '"',  ' ']];
         jsonCode.appendChild(document.createTextNode('{\n  "projects": {\n    '));
         jsonCode.appendChild(piece('site', '"' + site + '"'));
@@ -2214,179 +2212,61 @@ return array(
 </script>
 
 <!-- ===================================================================
-     THE CYCLE UNDER THE DRAWING.
+     WHAT MOVES ON THE DRAWING, AND WHY IT IS ONE THING NOW.
 
-     ASKED FOR AS A LOOP, AND WHAT A LOOP COSTS WAS SAID BEFORE IT WAS BUILT:
-     something on the page moves for as long as the page is open, and a
-     reader trying to read the box it has just left has to wait for it to come
-     round. The owner kept it, so the three answers to that are built in
-     rather than argued about -- the reader who refuses motion never arms it,
-     the reader who points at a box stops it, and the reader who scrolls past
-     leaves nothing running behind them.
+     There were two. A timed round lit the boxes in the order of the chapters,
+     once, then parked; and a dot travels the four arrows for ever. The reader
+     met the first and could not tell what it was -- "some sort of animation,
+     not clear, does not loop, I do not understand" -- which is fair: it said
+     the ORDER, and the order is written on the boxes as 1, 2, 3. Two motions
+     saying two different things at once is one too many.
 
-     THE ORDER IS THE CHAPTERS' ORDER, NOT THE LOOP'S. The arrows already
-     draw the loop; what a reader at the top of an installation page does not
-     yet know is what they will be asked to do first. So it lights the server,
-     then the page, then the assistant -- the three sections below, in the
-     order they come -- and on the shared server the server chapter does not
-     exist, so neither does its turn.
+     So the round is gone, with the state it kept and the CSS that painted it.
+     What is left says one thing each: the numbers say in what order, the dot
+     says it is a cycle and comes back, and pointing at a box says this one.
      =================================================================== -->
 <script>
 (function () {
     'use strict';
 
-    var loop   = document.querySelector('.loop');
-    var shared = document.getElementById('s-shared');
-    if (!loop || !shared) return;
+    var loop = document.querySelector('.loop');
+    if (!loop) return;
 
-    /* IT DOES NOT ARM, RATHER THAN ARMING AND STANDING STILL. A chain of
-       timers is not an animation and `animation: none` does not reach one --
-       the stylesheet says the same thing over the sibling page. What is left
-       is every bubble on screen, which is the whole point of them. */
+    /* IT DOES NOT ARM, RATHER THAN ARMING AND STANDING STILL. The stylesheet
+       stops the animation itself under `prefers-reduced-motion`; what this
+       would add is a measurement nothing reads. */
     var quiet = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
     if (quiet && quiet.matches) return;
 
     /* HOW FAR EACH DOT TRAVELS: THE ARROW'S OWN LENGTH, MEASURED. The arrows
-       are drawn at clamp() sizes -- the horizontal ones take the column's
-       width up to 7rem, the vertical ones 2.6 to 4rem -- so a distance written
-       into the stylesheet would be right at one width and wrong at every other,
-       and the dot would stop short of the box or run past it. Measured here,
-       and again when the window changes. */
+       are drawn at clamp() sizes -- the horizontal ones take the column's width
+       up to 7rem, the vertical ones 2.6 to 4rem -- so a distance written into
+       the stylesheet would be right at one width and wrong at every other, and
+       the dot would stop short of the box or run past it. */
     var mesurer = function () {
         var fleches = loop.querySelectorAll('.lp-arr');
         for (var f = 0; f < fleches.length; f++) {
             var dessin = fleches[f].querySelector('svg');
             if (!dessin) continue;
             var b = dessin.getBoundingClientRect();
-            var horizontale = fleches[f].classList.contains('lp-h');
-            var d = Math.round(horizontale ? b.width : b.height);
+            var d = Math.round(fleches[f].classList.contains('lp-h') ? b.width : b.height);
             if (d > 0) fleches[f].style.setProperty('--lp-run', d + 'px');
         }
     };
     mesurer();
     window.addEventListener('resize', mesurer);
 
-    /* Long enough to read eight words and look at the box they belong to.
-       Shorter was tried on the sibling page's replay and the finding there
-       holds here: a figure that has to be watched twice has failed once. */
-    /* SHORT: IT SAYS AN ORDER, NOT A SENTENCE. 3400ms was measured for a
-       figure whose requirements only existed while a box was lit -- long enough
-       to read eight words. They are written in the boxes now and never leave,
-       so the round has one thing left to say, and 3.4s a box spent ten seconds
-       greying three quarters of a drawing to say it. */
-    var HOLD = 1300;
-
-    var timer = null;
-    var at    = 0;
-    var held  = null;
-    var seen  = false;
-    var done  = false;
-
-    /* ALL THREE, IN BOTH SERVER MODES. It used to drop the server's turn when
-       the server was shared, so on the page's own default TWO of the four boxes
-       never lit at all and "Your code" never lit in either. The box is drawn in
-       both modes -- the server is there either way, only the installing of it
-       is not -- so it takes its turn either way. */
-    /* THE ORDER OF THE CHAPTERS BELOW, WHICH IS NOT ALWAYS THE SAME THREE. On
-       the shared server there is no server chapter, so opening the round on the
-       server box announced a chapter that does not exist -- and pointed at the
-       one box in that mode that is not a link. The box stays drawn either way;
-       it only takes the first turn when there is something to install in it. */
-    var ring = function () {
-        return shared.checked ? ['page', 'asst'] : ['srv', 'page', 'asst'];
-    };
-
-    var stop = function () {
-        if (timer) { clearTimeout(timer); timer = null; }
-    };
-
-    /* ONE ROUND, THEN IT PARKS. It turned for as long as the figure was on
-       screen, which meant a given requirement was absent from the drawing two
-       thirds of the time -- and the requirements are what the drawing is for.
-       They are written in the boxes now and never move; the round is only there
-       to say, once, in what order the chapters below come. When it ends the
-       attribute is removed and every box is equal again, which is the state
-       worth leaving a reader in. */
-    var turn = function () {
-        var r = ring();
-        if (at >= r.length) {
-            loop.removeAttribute('data-lit');
-            done = true;
-            timer = null;
-            return;
-        }
-        loop.setAttribute('data-lit', r[at]);
-        at += 1;
-        timer = setTimeout(turn, HOLD);
-    };
-
-    var run = function () {
-        if (timer || held || done || !seen) return;
-        turn();
-    };
-
-    /* POINTING AT A BOX STOPS THE ROUND, AND NOTHING ELSE. The lighting is the
-       stylesheet's job now -- `.loop:has(.lp-box:hover)` -- so a reader who
-       reaches for a box is not fighting a timer that is about to light another
-       one. What the script still owes is to get out of the way. */
-    var grab = function (name) { held = name; stop(); loop.removeAttribute('data-lit'); };
-    var drop = function (name) { if (held !== name) return; held = null; run(); };
-
-    /* BOTH DRAWINGS OF THE SERVER, NOT JUST THE LINK. This listed
-       `.lp-srv.if-own`, so on the shared server the box had no handler at all:
-       hovering it did not stop the round, the stylesheet lit it, and the round
-       lit another one -- two boxes forward at once, which is the one thing the
-       highlight exists to prevent. Measured before this line was written. */
-    var pairs = [['.lp-page', 'page'], ['.lp-srv.if-own', 'srv'],
-                 ['.lp-srv.if-shared', 'srv'], ['.lp-asst', 'asst']];
-    for (var i = 0; i < pairs.length; i++) {
-        (function (box, name) {
-            if (!box) return;
-            box.addEventListener('mouseenter', function () { grab(name); });
-            box.addEventListener('mouseleave', function () { drop(name); });
-            box.addEventListener('focus', function () { grab(name); });
-            box.addEventListener('blur', function () { drop(name); });
-        }(loop.querySelector(pairs[i][0]), pairs[i][1]));
-    }
-
-    /* The dial can take the server's turn away under a pointer that is still
-       on it: the box it was holding is display:none now, and no mouseleave is
-       owed to an element that was never left. */
-    var dials = document.querySelectorAll('.dials input[name="srv"]');
-    for (var d = 0; d < dials.length; d++) {
-        dials[d].addEventListener('change', function () {
-            /* The server box is drawn in both modes now, so the dial can no
-               longer take a lit box out from under a pointer. What is left is
-               that a finished round stays finished: replaying it on every dial
-               change would make the figure twitch at each answer. */
-            if (held === 'srv' && shared.checked) held = null;
-            /* A dial changed BEFORE the round has finished changes which
-               chapters exist, so the round it is in the middle of is about the
-               wrong three. It restarts; a finished one stays finished. */
-            if (!done) { stop(); at = 0; loop.removeAttribute('data-lit'); run(); }
-        });
-    }
-
-    /* NOTHING TURNS BEHIND THE READER'S BACK, and this one now has an end to
-       reach: the observer disconnects once the round is done, because there is
-       nothing left for it to start. */
+    /* NOTHING TURNS BEHIND THE READER'S BACK. The dots are CSS and pause on
+       this attribute. */
     if (window.IntersectionObserver) {
-        var watch = new IntersectionObserver(function (entries) {
+        new IntersectionObserver(function (entries) {
             for (var k = 0; k < entries.length; k++) {
-                seen = entries[k].isIntersecting;
-                /* The dots are CSS and pause on this attribute; the round is a
-                   chain of timers and stops on its own. One signal, two
-                   mechanisms, and neither turns off screen. */
-                if (seen) loop.setAttribute('data-seen', '');
+                if (entries[k].isIntersecting) loop.setAttribute('data-seen', '');
                 else loop.removeAttribute('data-seen');
-                if (seen) run(); else stop();
             }
-        }, { threshold: 0 });
-        watch.observe(loop);
+        }, { threshold: 0 }).observe(loop);
     } else {
-        seen = true;
         loop.setAttribute('data-seen', '');
-        run();
     }
 }());
 </script>
