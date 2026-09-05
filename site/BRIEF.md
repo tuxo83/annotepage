@@ -229,11 +229,22 @@ the landing page, 208 on the usage page open / 235 secure, and not one sentence
 over 110 characters in any of the four states of its two dials. The tooling is
 `.outillage-test/ap4-prose.mjs` and `ap4-mesure.mjs`.
 
-## The setup page: what it is, decided
+## The two detail pages, and the setup one in particular
 
-Renamed `setup.html` -- of three chapters, two install nothing. `install.html`
-stays as a redirect; four internal links, the sitemap, a check and the anchors
-follow it.
+**THE TWO DETAIL PAGES ARE NAMED AFTER THE CHAPTERS THEY UNFOLD**, word for
+word: `how-you-use-it.html` and `how-you-install-it.html`. The landing page's
+two chapters are called "How you use it" and "How you install it", and each of
+these pages is the long form of one of them -- so the address says which,
+without a word being invented for it. `example-session.html` and `install.html`
+said neither that they were a pair nor whose long form they were.
+
+Not `use.html` / `install.html`: the menu already reads `Use . Install` and
+points at the landing page's anchors, so those two names are taken by something
+else.
+
+Both old addresses stay as redirects. What follows a rename: the internal links
+in the three pages, `docs/sitemap.xml`, `tools/check-shell.mjs`, the anchors,
+and the READMEs that point at the old ones.
 
 **THE ORDER IS SERVER, PAGE, ASSISTANT, and the reason is blocking.** A
 developer's own order is page first -- paste the tag, watch a note leave, plug
