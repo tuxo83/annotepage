@@ -1071,7 +1071,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                 <p class="fm-title">The key of this project is needed</p>
                 <p class="fm-help">The notes of this project are encrypted in your browser. Without the project key, this browser can neither read them nor write any. Ask whoever installed the tool for it, and paste it below. It will be remembered by this browser, for this site.</p>
                 <p class="fm-label">The project key (43 characters)</p>
-                <p class="fm-area fm-key">W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw</p>
+                <p class="fm-area fm-key">W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw<span class="caret"></span></p>
                 <p class="fm-acts"><span class="fm-send">Use this key</span></p>
             </div>
         </div>
@@ -1738,7 +1738,19 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 
     settled();
 
-    var begin = function () { if (!started) { started = true; pass = 0; play(); } };
+    /* A BEAT BEFORE THE FIRST MOVE, AND ONLY THE FIRST. Reviewed on the live
+       site: the figure started the instant it came into view, so a reader who
+       had just arrived was reading the sentence on the left while the picture
+       beside it was already moving, and had to choose. Two seconds and a bit
+       is enough to take the frame in whole -- and the loop that follows is
+       unchanged, because a pause between every cycle would read as a stall
+       rather than as a courtesy. */
+    var LEAD_IN = 2200;
+    var begin = function () {
+        if (started) return;
+        started = true;
+        setTimeout(function () { pass = 0; play(); }, LEAD_IN);
+    };
     if (window.IntersectionObserver) {
         var watch = new IntersectionObserver(function (entries) {
             for (var k = 0; k < entries.length; k++) {
@@ -2105,7 +2117,14 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
        margin rather than a ratio, because the frame is taller than a short
        window and a ratio can then never be reached. */
     var started = false;
-    var begin = function () { if (!started) { started = true; play(); } };
+    /* The same beat as the gesture above, for the same reason and with the
+       same value: the reader gets to see the terminal before it types. */
+    var LEAD_IN = 2200;
+    var begin = function () {
+        if (started) return;
+        started = true;
+        setTimeout(play, LEAD_IN);
+    };
 
     if (window.IntersectionObserver) {
         var watch = new IntersectionObserver(function (entries) {
