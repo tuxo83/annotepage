@@ -532,18 +532,16 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
     min-width: 17rem;
     max-width: 32rem;
     grid-template-columns: minmax(0, 1fr) minmax(4.4rem, .8fr) minmax(0, 1fr);
-    /* THE BUBBLES SIT OUTSIDE THE SQUARE, AND THAT IS THE WHOLE REASON FOR
-       THESE TWO EXTRA ROWS. Put between the boxes and the arrows they would
-       have pushed the arrows off the boxes, and an arrow that no longer
-       touches what it leaves is a broken drawing. Above the top pair and
-       below the assistant, the square is untouched: same four boxes, same
-       four arrows, same empty middle. */
+    /* THE SQUARE, AND NOTHING AROUND IT. Two extra rows used to hold the
+       requirement bubbles outside the boxes; they were 138 of the figure's 410
+       pixels, reserved whether or not a bubble was in them, and only one bubble
+       was ever visible at a time. The requirements are inside the boxes now --
+       see .lp-req -- so the drawing is four boxes, four arrows and an empty
+       middle, which is all it ever claimed to be. */
     grid-template-areas:
-        "psay .    ssay"
         "page top  srv"
         "left .    right"
-        "code bot  asst"
-        ".    .    asay";
+        "code bot  asst";
     gap: clamp(.45rem, 1.7vw, 1rem);
     align-items: stretch;
 }
@@ -555,18 +553,25 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 .lp-bot   { grid-area: bot; }
 .lp-code  { grid-area: code; }
 .lp-left  { grid-area: left; }
-.lp-say-page { grid-area: psay; }
-.lp-say-srv  { grid-area: ssay; }
-.lp-say-asst { grid-area: asay; }
 
 .lp-box {
-    display: flex; align-items: center; justify-content: center;
-    flex-wrap: wrap; gap: .35rem;
-    margin: 0; padding: .8rem .6rem;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: .3rem;
+    margin: 0; padding: .7rem .6rem;
     border: 1px solid var(--line); border-radius: var(--radius);
     background: var(--bg-soft); color: var(--text);
-    font-size: clamp(.82rem, 2.1vw, .95rem); font-weight: 650;
     line-height: 1.35; text-align: center;
+    transition: color .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.lp-name { font-size: clamp(.82rem, 2.1vw, .95rem); font-weight: 650; }
+/* WHAT THE PIECE ASKS FOR, INSIDE THE PIECE. It was a bubble floating beside
+   the box with a curved hook between them -- a hook that started 5px inside
+   the bubble and stopped 9.5px short of the box, so it joined neither. A line
+   under the name needs no connector: it is already in the thing it describes.
+   Inherits its colour, so it recedes and lights with the box. */
+.lp-req {
+    font-size: clamp(.68rem, 1.7vw, .74rem); font-weight: 400;
+    line-height: 1.4; opacity: .82;
 }
 /* The mark that says what the server holds, and it is a mark rather than a
    sentence: what arrives locked is stored locked, and the box that stores it
@@ -578,8 +583,7 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
    bare `a` on specificity for the colour, so only the underline has to go. What
    moves on hover is the edge and the ink, which is what every other control on
    this page does. */
-a.lp-box { text-decoration: none; transition: color .15s ease, border-color .15s ease; }
-a.lp-box:hover { color: var(--accent); border-color: var(--accent); }
+a.lp-box { text-decoration: none; }
 a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 .lp-hold { white-space: nowrap; }
@@ -596,72 +600,35 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 .lp-h svg { width: 100%; max-width: 7rem; height: auto; }
 .lp-v svg { height: clamp(2.6rem, 8vw, 4rem); width: auto; }
 
-/* == WHAT EACH PIECE ASKS FOR, WRITTEN ON THE PIECE =======================
+/* THE HIGHLIGHT WAS BACKWARDS, AND IT WAS MEASURED. The lit box was drawn in
+   --accent on --bg-soft: 6.45:1. Every other box stayed at --text: 16.42:1. The
+   box being pointed at had the LEAST contrast on the figure, and nothing was
+   dimmed -- the only change was a hue. So the emphasis is where it belongs
+   now: everything else recedes, the lit one keeps full ink and gains the ring.
 
-   THREE BUBBLES, AND THEY REPLACE A LINE THAT SAT ABOVE THE FIGURE. That
-   line -- a page you can edit, and a browser on https or localhost -- said
-   two requirements belonging to two different pieces, in one breath, before
-   the reader had met either. Each of them is now attached to the box it
-   constrains, and the third piece got the one it never had. "Your code" gets
-   none: nothing has to be true of it for this to work.
-
-   THEY ARE NEVER HIDDEN FROM A SCREEN READER, only faded. `visibility:
-   hidden` would take the two unlit ones out of the accessibility tree, so
-   what a reader on a screen reader got would depend on which second of the
-   cycle they arrived in. Opacity leaves all three in the tree, all the time,
-   and `pointer-events: none` keeps them out of the way of the boxes, which
-   are links.
-
-   AND THE SPACE IS RESERVED WHETHER OR NOT A BUBBLE IS IN IT. The rows exist
-   from the first frame, so nothing under the figure moves when the cycle
-   turns -- a diagram that shifts the page every three seconds is worse than
-   one that says nothing. */
-.lp-say {
-    position: relative;
-    align-self: end;
-    margin: 0 0 1rem;
-    padding: .5rem .55rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--dim);
-    font-size: clamp(.7rem, 1.8vw, .78rem);
-    line-height: 1.4;
-    text-align: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .3s ease;
+   BY TOKEN, NEVER BY OPACITY ON THE BOX. On the dark theme --line is a
+   hairline; at .5 it disappears and the square loses its corners. The receded
+   ink is --dim, which stays above 4.5:1 in both themes -- a box in the
+   background is still a box somebody may be reading. */
+.loop[data-lit] .lp-box,
+.loop:has(.lp-box:hover) .lp-box,
+.loop:has(.lp-box:focus-visible) .lp-box {
+    color: var(--dim); border-color: var(--line-soft);
 }
-.lp-say-asst { align-self: start; margin: 1rem 0 0; }
+.loop[data-lit] .lp-arr,
+.loop[data-lit] .lp-arr svg,
+.loop:has(.lp-box:hover) .lp-arr,
+.loop:has(.lp-box:hover) .lp-arr svg { color: var(--line); }
 
-/* One curve, drawn once and mirrored: the two top bubbles hang over their
-   box, the assistant's hangs under its own. */
-.lp-hook {
-    position: absolute; width: 26px; height: 20px;
-    /* --dim, the ink the four arrows of the square are already drawn in: a
-       connector paler than that disappears on the dark theme, where --line is
-       a hairline meant for edges and not for strokes. */
-    color: var(--dim);
-}
-.lp-say-page .lp-hook { bottom: -1rem; left: 1.1rem; }
-.lp-say-srv  .lp-hook { bottom: -1rem; right: 1.1rem; transform: scaleX(-1); }
-.lp-say-asst .lp-hook { top: -1rem; right: 1.1rem; transform: scaleY(-1); }
-
-/* THE LIT BOX WEARS THE HOVER IT ALREADY HAD. A third look -- a fill, a
-   glow -- would teach a reader that the cycle means something other than
-   "this one, now". The ring is one pixel outside the border, and the focus
-   outline still stands 3px clear of it, so a keyboard is never left guessing
-   which box it is on. */
 .loop[data-lit="page"] .lp-page,
 .loop[data-lit="srv"]  .lp-srv,
-.loop[data-lit="asst"] .lp-asst {
-    color: var(--accent);
+.loop[data-lit="asst"] .lp-asst,
+.loop .lp-box:hover,
+.loop .lp-box:focus-visible {
+    color: var(--text);
     border-color: var(--accent);
     box-shadow: 0 0 0 1px var(--accent);
 }
-.loop[data-lit="page"] .lp-say-page,
-.loop[data-lit="srv"]  .lp-say-srv,
-.loop[data-lit="asst"] .lp-say-asst { opacity: 1; }
 
 @media (max-width: 420px) {
     body { font-size: 16px; }
@@ -673,9 +640,23 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
    at all, so no box is ever lit; the three bubbles are simply there, all of
    them, from the first frame. The information the cycle exists to deliver is
    not the cycle. */
+/* NARROW: THE SQUARE BECOMES A COLUMN. `min-width: 17rem` held the square
+   together and, at 375px with a 20px root font, made it 340px inside a 335px
+   frame -- the right-hand column was cut off inside a pane the page gave no
+   sign was scrollable. Stacked, there is no minimum to hold and nothing to
+   cut. The arrows become one glyph each: an SVG drawn 100px wide cannot turn
+   ninety degrees, and a chevron says the same thing. */
+@media (max-width: 32.5rem) {
+    .loop { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; min-width: 0; }
+    .lp-box, .lp-arr { grid-area: auto; }
+    .lp-arr svg { display: none; }
+    .lp-arr { flex-direction: row; gap: .4rem; }
+    .lp-arr::before { content: "\2193"; color: var(--dim); }
+    .lp-left::before { content: "\2191"; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
-    .lp-say { opacity: 1; }
 }
 </style>
 <body>
@@ -848,18 +829,9 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <div class="loop-frame">
                 <div class="loop">
 
-                    <a class="lp-box lp-page" href="#page">The annotated page</a>
+                    <a class="lp-box lp-page" href="#page"><span class="lp-name">The annotated page</span><span class="lp-req">A page you can edit, on https or localhost. Can sit behind a login.</span></a>
 
-                    <!-- WHAT THE PAGE ASKS FOR, AND IT IS THE LINE THAT USED
-                         TO SIT ABOVE THE FIGURE. Both halves are the same
-                         requirement seen twice: a file you are allowed to add
-                         a tag to, and a secure context, without which the
-                         browser has no crypto.subtle to derive a key with.
-                         A LAN address is not one -- INSTALL.md says so, and
-                         says the tool announces it rather than failing
-                         quietly. -->
-                    <p class="lp-say lp-say-page">A page you can edit, on https or localhost.<svg class="lp-hook" viewBox="0 0 26 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1C4 10 21 8 21 17.5"/><path d="M17.8 13.6 21 17.9 24.2 13.6"/></svg></p>
-
+                    
                     <p class="lp-arr lp-h lp-top">
                         <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M2 6H90" vector-effect="non-scaling-stroke"/>
@@ -874,23 +846,10 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                          is worse than no link. The box itself stays -- the
                          server is there in both routes, it is only the
                          installing of it that is not. -->
-                    <a class="lp-box lp-srv if-own" href="#server"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></a>
-                    <p class="lp-box lp-srv if-shared"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></p>
+                    <a class="lp-box lp-srv if-own" href="#server"><span class="lp-name"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></span><span class="lp-req">https, and the site&rsquo;s origin declared &mdash; or open to anyone.</span></a>
+                    <p class="lp-box lp-srv if-shared"><span class="lp-name"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></span><span class="lp-req">Already running. Nothing to install, nothing to declare.</span></p>
 
-                    <!-- WHAT THE SERVER ASKS FOR, AND IT IS NOT PHP 7.4.
-                         That one is where you install it, and the chapter
-                         below already carries it. What the DRAWING is about is
-                         this arrow: the reviewer's browser has to reach the
-                         API, so plain http gets a 308 to https, and a write
-                         from an origin the project never declared gets a 403
-                         in plain text. Both are in INSTALL.md.
-
-                         AND IT LEAVES WITH THE CHAPTER. On the shared server
-                         nobody declares anything and nobody installs
-                         anything, so `if-own` takes the bubble away and the
-                         cycle below turns on two boxes. -->
-                    <p class="lp-say lp-say-srv if-own">https, and the site&rsquo;s origin declared.<svg class="lp-hook" viewBox="0 0 26 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1C4 10 21 8 21 17.5"/><path d="M17.8 13.6 21 17.9 24.2 13.6"/></svg></p>
-
+                    
                     <p class="lp-arr lp-v lp-right">
                         <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M6 2V90" vector-effect="non-scaling-stroke"/>
@@ -899,16 +858,9 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         <span>Reads the notes</span>
                     </p>
 
-                    <a class="lp-box lp-asst" href="#assistant">The assistant</a>
+                    <a class="lp-box lp-asst" href="#assistant"><span class="lp-name">The assistant</span><span class="lp-req">Node 18, and the project key.</span></a>
 
-                    <!-- WHAT THE ASSISTANT ASKS FOR. Node 18 and no
-                         dependencies, from the MCP's README, and the key --
-                         which is the one requirement this drawing can show
-                         the point of: the server it reads from cannot decrypt
-                         a line, so the key is what turns the arrow above into
-                         readable remarks. -->
-                    <p class="lp-say lp-say-asst">Node 18, and the project key.<svg class="lp-hook" viewBox="0 0 26 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1C4 10 21 8 21 17.5"/><path d="M17.8 13.6 21 17.9 24.2 13.6"/></svg></p>
-
+                    
                     <p class="lp-arr lp-h lp-bot">
                         <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M98 6H10" vector-effect="non-scaling-stroke"/>
@@ -917,7 +869,9 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         <span>Writes the fix</span>
                     </p>
 
-                    <p class="lp-box lp-code">Your code</p>
+                    <!-- NO SECOND LINE, AND THAT IS THE INFORMATION: nothing
+                         has to be true of your code for any of this to work. -->
+                    <p class="lp-box lp-code"><span class="lp-name">Your code</span></p>
 
                     <p class="lp-arr lp-v lp-left">
                         <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -931,19 +885,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             </div>
         </figure>
 
-        <!-- AND ONE LINE UNDER IT, WHICH IS THE ONLY KIND ALLOWED THERE: it is
-             about the DRAWING. The comment above the requirement line says a
-             sentence under a figure is read as a caption whatever it says --
-             this one is a caption, of the arrow that is not drawn. Neither the
-             note server nor the assistant ever opens the reviewed page: the MCP
-             talks to the notes API and to nothing else, and api.php reads only
-             its own files. The page is opened by the reviewer's browser, which
-             is already logged in. Checked in mcp/src/api.mjs and
-             server/webroot/api.php before it was written. -->
-        <p class="small dim">
-            Your site can sit behind a login: only the reviewers&rsquo; own
-            browsers ever open it.
-        </p>
     </div>
 </section>
 
@@ -1354,6 +1295,19 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             </li>
 
         </ol>
+
+        <!-- THE FULL SENTENCE, IN THE CHAPTER ABOUT THE PAGE. The drawing
+             carries the short clause -- "Can sit behind a login." -- inside the
+             box it is true of; this is where somebody deciding whether to put a
+             tag on a staging site behind a password needs the whole of it. It
+             used to sit under the diagram as a grey line, which is where a
+             caption goes, and it is not a caption. -->
+        <p class="small dim">
+            The page can sit behind a login. Neither the notes server nor the
+            assistant ever opens it: the MCP talks to the notes API and to
+            nothing else, and the page is opened by the reviewers&rsquo; own
+            browsers, which are already signed in.
+        </p>
     </div>
 </section>
 
@@ -1963,34 +1917,49 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     var at    = 0;
     var held  = null;
     var seen  = false;
+    var done  = false;
 
-    var ring = function () {
-        return shared.checked ? ['page', 'asst'] : ['srv', 'page', 'asst'];
-    };
+    /* ALL THREE, IN BOTH SERVER MODES. It used to drop the server's turn when
+       the server was shared, so on the page's own default TWO of the four boxes
+       never lit at all and "Your code" never lit in either. The box is drawn in
+       both modes -- the server is there either way, only the installing of it
+       is not -- so it takes its turn either way. */
+    var ring = function () { return ['srv', 'page', 'asst']; };
 
     var stop = function () {
         if (timer) { clearTimeout(timer); timer = null; }
     };
 
+    /* ONE ROUND, THEN IT PARKS. It turned for as long as the figure was on
+       screen, which meant a given requirement was absent from the drawing two
+       thirds of the time -- and the requirements are what the drawing is for.
+       They are written in the boxes now and never move; the round is only there
+       to say, once, in what order the chapters below come. When it ends the
+       attribute is removed and every box is equal again, which is the state
+       worth leaving a reader in. */
     var turn = function () {
         var r = ring();
-        if (at >= r.length) at = 0;
+        if (at >= r.length) {
+            loop.removeAttribute('data-lit');
+            done = true;
+            timer = null;
+            return;
+        }
         loop.setAttribute('data-lit', r[at]);
-        at = (at + 1) % r.length;
+        at += 1;
         timer = setTimeout(turn, HOLD);
     };
 
     var run = function () {
-        if (timer || held || !seen) return;
+        if (timer || held || done || !seen) return;
         turn();
     };
 
-    /* POINTING AT A BOX WINS, AND KEEPS WINNING WHILE IT IS POINTED AT. A
-       reader who reaches for a bubble is reaching for it now; a cycle that
-       carried on would take it away at the moment it was asked for. Focus
-       does the same thing, because the three boxes are links and a keyboard
-       reaches them in order. */
-    var grab = function (name) { held = name; stop(); loop.setAttribute('data-lit', name); };
+    /* POINTING AT A BOX STOPS THE ROUND, AND NOTHING ELSE. The lighting is the
+       stylesheet's job now -- `.loop:has(.lp-box:hover)` -- so a reader who
+       reaches for a box is not fighting a timer that is about to light another
+       one. What the script still owes is to get out of the way. */
+    var grab = function (name) { held = name; stop(); loop.removeAttribute('data-lit'); };
     var drop = function (name) { if (held !== name) return; held = null; run(); };
 
     var pairs = [['.lp-page', 'page'], ['.lp-srv.if-own', 'srv'], ['.lp-asst', 'asst']];
@@ -2010,22 +1979,24 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     var dials = document.querySelectorAll('.dials input[name="srv"]');
     for (var d = 0; d < dials.length; d++) {
         dials[d].addEventListener('change', function () {
+            /* The server box is drawn in both modes now, so the dial can no
+               longer take a lit box out from under a pointer. What is left is
+               that a finished round stays finished: replaying it on every dial
+               change would make the figure twitch at each answer. */
             if (held === 'srv' && shared.checked) held = null;
-            at = 0;
-            if (!held) { stop(); turn(); }
         });
     }
 
-    /* NOTHING TURNS BEHIND THE READER'S BACK. Same observer as the figures on
-       the usage page, and it keeps observing rather than disconnecting: this
-       one has no end to reach, so leaving it running under a page the reader
-       has scrolled away from is a timer nobody will ever see. */
+    /* NOTHING TURNS BEHIND THE READER'S BACK, and this one now has an end to
+       reach: the observer disconnects once the round is done, because there is
+       nothing left for it to start. */
     if (window.IntersectionObserver) {
         var watch = new IntersectionObserver(function (entries) {
             for (var k = 0; k < entries.length; k++) {
                 seen = entries[k].isIntersecting;
                 if (seen) run(); else stop();
             }
+            if (done) watch.disconnect();
         }, { threshold: 0 });
         watch.observe(loop);
     } else {
