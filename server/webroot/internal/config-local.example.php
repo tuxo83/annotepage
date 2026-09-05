@@ -182,6 +182,13 @@ return array(
     // expires nothing: refuses the write beyond, and says so.
     // 'max_notes_per_project' => 5000,
 
+    // THE UPDATE URL, FOR A HOST WITH NEITHER CRON NOR SHELL. Written here,
+    // it turns on ?action=update&token=... , which fetches and installs the
+    // published version DURING the request and answers with what it did. Put
+    // that address in any external scheduler, or open it by hand. Empty, and
+    // the action does not exist -- unknown, not refused. 32 characters or more.
+    // 'update_token' => 'the 43 characters of anything nobody can guess',
+
     // WHERE A BARE VISIT GOES. Empty: a visit to this directory with no path
     // gets a 404, and api.php is unaffected either way. An absolute http(s)
     // URL sends such a visit there with a 302 -- what a public relay wants, so

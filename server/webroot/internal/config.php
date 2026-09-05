@@ -139,6 +139,31 @@ function ap_config_defaults()
         // installation wants.
         'auto_update' => false,
 
+        // THE UPDATE URL, FOR A HOST WITH NO CRON AND NO SHELL.
+        //
+        // The web path above cannot run everywhere: it hands the response to
+        // the visitor first and then works, and only php-fpm and LiteSpeed can
+        // guarantee that. On anything else -- `cgi-fcgi` among them -- it
+        // declines, and says so in ?action=diagnostic. INSTALL.md then points
+        // at `php internal/update.php` from cron, which is the right answer
+        // for anybody who has cron. Plenty of hosting has neither.
+        //
+        // Written here, this token turns on `?action=update&token=...`, which
+        // runs the update IN the request and answers with what it did. Nobody
+        // is made to wait for somebody else: whoever calls that URL asked for
+        // it. Put it in any external scheduler, or open it by hand.
+        //
+        // WHY A TOKEN AND NOT AN OPEN ACTION. The action makes this server
+        // fetch code and rewrite itself. It can only ever install the version
+        // published at `update_source`, every file hash-checked against the
+        // manifest, so the worst a stranger could do is make it do its job at
+        // a moment of their choosing -- but "at a moment of their choosing" is
+        // exactly what one does not hand out. Empty, and the action does not
+        // exist at all: not refused, unknown, like any address nobody wrote.
+        //
+        // 32 characters or more, and it is compared in constant time.
+        'update_token' => '',
+
         // Where an update is fetched from. HTTPS ONLY -- there is no flag to
         // relax that, and any code path that disabled certificate verification
         // would be the bug, not the workaround. It is configurable so that a

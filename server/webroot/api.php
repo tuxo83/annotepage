@@ -646,7 +646,7 @@ $action = strtolower(trim($action));
 // The order follows that of the list shown for an unknown action, below: the
 // two are read together, and an action missing here would be refused by the
 // message that announces it.
-$actions = array('list', 'add', 'resolve', 'text', 'diagnostic', 'backfill');
+$actions = array('list', 'add', 'resolve', 'text', 'diagnostic', 'backfill', 'update');
 
 /**
  * The refusal an action nobody knows gets.
@@ -675,7 +675,8 @@ function ap_unknown_action_failure($action)
         . "  ?action=resolve                          mark resolved (POST)\n"
         . "  ?action=text&project=<id>                every note (plain text)\n"
         . "  ?action=diagnostic                       state of the server (plain text)\n"
-        . "  ?action=backfill&project=<id>            backfill of a 1.2.0 database",
+        . "  ?action=backfill&project=<id>            backfill of a 1.2.0 database\n"
+        . "  ?action=update&token=<token>             fetch and install the published version",
         400);
 }
 
@@ -753,6 +754,39 @@ try {
 if ($action === 'diagnostic') {
     ap_begin_text();
     ap_write_diagnostic($config, ap_version(), $configError, $diagnostic);
+    exit;
+}
+
+// THE UPDATE, ON DEMAND, and it answers next to the diagnostic for the same
+// reason: it is not called by a page, it is called by a human with an address
+// bar or by whatever scheduler that human set up. No origin lock, no project,
+// no note.
+//
+// IT IS THE WAY IN FOR A HOST THAT HAS NEITHER CRON NOR SHELL. The
+// opportunistic path further down hands the response to the visitor before
+// doing any work, which only php-fpm and LiteSpeed can guarantee; everywhere
+// else it declines, and on such a host this action is the only one left. It is
+// also the only place where the server does network work WHILE somebody waits,
+// and that is allowed here and nowhere else: whoever called this address came
+// for exactly that.
+//
+// NO TOKEN, NO ACTION -- and `unknown`, not `refused`. A server whose operator
+// never wrote the key answers precisely what it answers for an address nobody
+// invented, so nothing can be learnt by asking.
+if ($action === 'update') {
+    $token = $configError === null ? ap_update_token($config) : null;
+    $given = isset($_GET['token']) && is_string($_GET['token']) ? $_GET['token'] : '';
+    /* hash_equals is not optional here: a byte-by-byte comparison that stops
+       at the first difference tells whoever measures it how much of the token
+       they got right. */
+    if ($token === null || !hash_equals($token, $given)) {
+        throw ap_unknown_action_failure($action);
+    }
+    ap_begin_text();
+    $forced = isset($_GET['force']) && $_GET['force'] !== '' && $_GET['force'] !== '0';
+    foreach (ap_update_on_demand($config, $forced) as $line) {
+        echo $line . "\n";
+    }
     exit;
 }
 
