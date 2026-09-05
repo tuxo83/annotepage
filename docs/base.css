@@ -504,6 +504,24 @@
    differs: three small frames in a chapter, three large ones on a page of
    their own.
 
+   AND A FOURTH DRAWING CONFIRMED THE SPLIT RATHER THAN CHANGING IT.
+   how-to-install-it.html now writes its three chapters in this shape and adds
+   nothing to what is above: it took the caption, the number and the sentence
+   from here unmodified. What it could NOT take is the grid, and the reason is
+   the same one that left it out in the first place -- the landing page folds
+   at 48rem into a fraction and again at 78rem into 21rem of words; the
+   detailed example folds once at 62rem into 18rem; the install page folds once
+   at 62rem too but tops its rows rather than centring them, because a code
+   block's first line is its first pixel and a capture's is not. Three grids,
+   three arguments, none of them shared by two pages. Moving any one of them
+   here would only mean the other two overriding it further down.
+
+   The counting is in the same case and for the same reason. The number is
+   drawn here; WHERE THE COUNT STARTS is not, because that is the one thing the
+   three disagree about -- the detailed example resets once for a walk that
+   runs 01 to 05 across three chapters, and the install page resets at every
+   chapter so that no number is ever a tally of things to install.
+
    Scoped to `.use-steps` and not loose, because `.cap`, `.n` and `.say` are
    words that would collide with anything. */
 .use-steps .cap {

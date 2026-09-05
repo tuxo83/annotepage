@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Setting annotepage up &mdash; the server, the tag, the assistant</title>
-<meta name="description" content="Three chapters, and two of them install nothing: where the notes are stored, the tag to paste on your pages with a key generated in your browser, and the command that plugs your assistant in.">
+<title>A detailed installation &mdash; annotepage</title>
+<meta name="description" content="How you install it, at length: where the notes are stored, the tag to paste on your pages with a key generated in your browser, and the command that plugs your assistant in.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
@@ -12,8 +12,8 @@
 <meta property="og:type"        content="article">
 <meta property="og:site_name"   content="annotepage">
 <meta property="og:url"         content="https://annotepage.com/how-to-install-it.html">
-<meta property="og:title"       content="Setting annotepage up">
-<meta property="og:description" content="The server, the tag, the assistant. Two dials at the top take the routes you are not in away.">
+<meta property="og:title"       content="A detailed installation">
+<meta property="og:description" content="How you install it, at length, with every option. Two dials at the top take the routes you are not in away.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/base.css">
 <style>
@@ -74,7 +74,10 @@ p:last-child { margin-bottom: 0; }
 main .wrap > * { max-width: var(--measure); }
 main .wrap > .loop-row,
 main .wrap > .dials { max-width: none; }
-main .wrap > .snip { max-width: 48rem; }
+/* The steps are a sentence beside a code block, so they take the container and
+   the sentence keeps its own column one level deeper -- exactly as the usage
+   page's steps do. */
+main .wrap > .use-steps { max-width: none; }
 
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
@@ -213,6 +216,86 @@ code:not(pre code) {
     border-radius: 5px; padding: .08em .32em;
 }
 
+/* == THE NUMBERED STEPS ===================================================
+
+   THE COMPONENT IS base.css's, AND THIS IS THE THIRD PAGE TO DRAW IT. The
+   caption, its number and its one sentence are in the sheet already -- moved
+   there the day the landing page and the detailed example both wanted them --
+   and this page adds nothing to them. What stays here is the GRID they sit on,
+   which is what the sheet says stays with each page and is the part that
+   genuinely differs: three large captures on the usage page, code blocks here.
+
+   Written the other way -- a bold "1." at the head of a paragraph, the block
+   under it, the next paragraph under that -- three chapters came out as one
+   vertical run of eleven numbered lines, and a reader scanning it counts
+   eleven things to install. Beside its block, a step is one row: a short
+   sentence on the left, the thing itself on the right, and the chapter is as
+   tall as its longest row rather than as tall as the sum of its parts.
+
+   AND THE SENTENCES GOT SHORTER, WHICH IS THE POINT. A paragraph that has to
+   carry its own number and introduce the block below it says the gesture
+   twice; a caption beside the block says it once. */
+.use-steps {
+    display: grid; gap: clamp(1.6rem, 3.4vw, 3.2rem);
+    margin: 1.7rem 0 0; padding: 0; list-style: none;
+    /* THE COUNT RESTARTS AT EVERY CHAPTER, and the reset is on the list rather
+       than on the page for exactly that reason. Run through the page it would
+       be a tally of things to install -- 01 to 07, and 01 to 05 on the shared
+       server, where the whole first chapter is gone. That number is the fear
+       this page was rebuilt to remove. Inside one chapter the steps ARE
+       successive gestures, so there they count. */
+    counter-reset: step;
+}
+/* COUNTED, NOT TYPED. One step of the tag chapter disappears in open mode, and
+   a number written into the markup does not renumber the ones after it -- it
+   would read 01, 03. A step that is `display: none` generates no box and does
+   not increment. */
+.use-steps > li { counter-increment: step; }
+.use-steps .cap .n::before { content: counter(step, decimal-leading-zero); }
+
+/* Words left, block right, and only once there is room for both. Below that
+   they stack, words first -- which is also the order they are read in.
+
+   62rem is the usage page's line, not a number of its own: the two pages lay
+   the same component out and a reader moving between them should not find one
+   of them folding at a width the other does not. */
+.use-steps > li {
+    display: grid; gap: clamp(.8rem, 3vw, 2.4rem);
+    grid-template-columns: minmax(0, 1fr);
+    /* THE ROW STARTS ON ONE LINE. The usage page centres its steps, because a
+       caption of two lines beside a 500px capture has nothing to line up with.
+       Here the two columns are of comparable height and the first line of code
+       is the first thing in its block, so the number, the heading and that
+       line begin together. */
+    align-items: start;
+}
+@media (min-width: 62rem) {
+    /* A STATED WIDTH RATHER THAN A FRACTION. Past this point a fraction hands
+       the growth to the sentence, and the sentence does not want it: it is one
+       line of caption and one of prose. 18rem holds the longest caption,
+       "Ask it, in one sentence", on two lines, and everything above it goes to
+       the block -- which is the only thing on the row that can use it. The tag
+       is 78 characters wide and stops scrolling at this width. */
+    .use-steps > li { grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); }
+}
+/* Two sentences are the exception and there is one: the assistant's step, where
+   the second names the other place the key can live. */
+.use-steps .say + .say { margin-top: .55rem; }
+/* THE BLOCK'S OWN LEADING MARGIN GOES, and its trailing one only on the last:
+   the space between two blocks stacked in one cell is a margin, the space
+   above the first one is the grid's business. `:last-child` and not
+   `:first-child`, because a hidden variant is still a first child -- in secure
+   mode the open command is `display: none` and would have handed its top
+   margin to the block that replaces it. Nothing is ever hidden LAST. */
+.use-steps .snip { margin: 0 0 .9rem; }
+.use-steps .snip:last-child { margin-bottom: 0; }
+/* AND THE LINE THAT CLOSES A CHAPTER IS NOT A FOURTH STEP. Two chapters end on
+   a small grey sentence -- what the server needs, what the third way costs --
+   and with no distance of its own it sat against the last step's own sentence
+   and read as a second line of it. It stands off by the same amount two steps
+   stand apart at the narrow end. */
+.use-steps + p { margin-top: clamp(1.4rem, 3vw, 2.2rem); }
+
 /* == THE TWO DIALS ======================================================== */
 
 /* THE COMPONENT IS THE USAGE PAGE'S, RULE FOR RULE. It is copied rather than
@@ -345,6 +428,13 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
    loop. Only the strokes are SVG, and those carry nothing a screen reader
    could want, so they are aria-hidden. */
 .loop-row { margin: clamp(1.4rem, 3.4vw, 2.4rem) 0 0; }
+/* ABOVE the drawing, and drawn like the requirement line above it rather than
+   like a title: it places the figure, it does not announce a section. */
+.loop-cap { margin: 0 0 .9rem; font-size: .875rem; line-height: 1.55; color: var(--dim); }
+/* AND THE ONE LINE UNDER IT KEEPS ITS DISTANCE. The figure carries no bottom
+   margin -- nothing was ever written under it -- so the sentence landed on the
+   bottom row of boxes and read as a fourth label. */
+.loop-row + p { margin-top: clamp(1.1rem, 2.6vw, 1.8rem); }
 .loop { margin-left: auto; margin-right: auto; }
 /* The page never scrolls sideways. If a very narrow viewport or a very large
    font ever makes the square wider than its column, the square scrolls here
@@ -385,6 +475,15 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
    is the place to say so. --accent on --bg-soft, both themes measured.
    The mark never leaves the word it marks: at 375px the server's name takes
    two lines, and a padlock alone on a third one marks nothing. */
+/* THE BOX THAT HAS A CHAPTER IS A LINK TO IT, and it must not become a
+   different box for it: same ground, same edge, same ink. `.lp-box` beats the
+   bare `a` on specificity for the colour, so only the underline has to go. What
+   moves on hover is the edge and the ink, which is what every other control on
+   this page does. */
+a.lp-box { text-decoration: none; transition: color .15s ease, border-color .15s ease; }
+a.lp-box:hover { color: var(--accent); border-color: var(--accent); }
+a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 .lp-hold { white-space: nowrap; }
 .lp-lock { display: inline-block; width: .78em; height: auto; vertical-align: -.06em; color: var(--accent); }
 
@@ -428,9 +527,17 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 
 <section class="hero" id="top">
     <div class="wrap">
-        <h1>Setting it up</h1>
+        <!-- THE TITLE SAYS WHAT THE PAGE IS, AND THE LEAD CARRIES THE LINK.
+             Same shape as how-to-use-it.html, which is the other long version
+             of a landing-page chapter: the heading names the page, the line
+             under it points back at the three sentences it unfolds.
+
+             "with every option", and NOT "the other routes". Most readers do
+             the short version, and this page explains that one too -- it is
+             the detailed installation, not the exotic one. -->
+        <h1>A detailed installation</h1>
         <p class="lead">
-            Three chapters, and two of them install nothing.
+            <a href="/#install">How you install it</a>, at length, with every option.
         </p>
 
         <!-- WHAT IT COSTS TO START, ABOVE THE FIGURE AND NOT UNDER IT.
@@ -443,13 +550,25 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
             <code>localhost</code>.
         </p>
 
-        <!-- THE LOOP, BEFORE ANY OF THE ROUTES, AND NOTHING WRITTEN UNDER IT.
-             The middle is empty and stays empty. -->
+        <!-- THE LOOP, BEFORE ANY OF THE ROUTES. The middle is empty and stays
+             empty.
+
+             ONE LINE ABOVE IT, SAYING WHAT THE IMAGE IS AND NOT WHAT IT SHOWS.
+             The drawing has to keep making its own point -- that no arrow
+             reaches from the assistant to the page -- and a caption naming that
+             point would do the drawing's work for it. Four words placing the
+             figure, and nothing else.
+
+             AND THE THREE BOXES THAT HAVE A CHAPTER ARE LINKS TO IT. "Your
+             code" is not one: nothing on this page installs it. So the diagram
+             also says where each piece goes, without being a table of
+             contents. -->
         <figure class="loop-row">
+            <figcaption class="loop-cap">What talks to what.</figcaption>
             <div class="loop-frame">
                 <div class="loop">
 
-                    <p class="lp-box lp-page">The annotated page</p>
+                    <a class="lp-box lp-page" href="#page">The annotated page</a>
 
                     <p class="lp-arr lp-h lp-top">
                         <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -459,7 +578,14 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
                         <span>Encrypted note</span>
                     </p>
 
-                    <p class="lp-box lp-srv"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></p>
+                    <!-- TWO DRAWINGS OF ONE BOX, AND ONLY EVER ONE ON SCREEN.
+                         On the shared server the chapter does not exist, so
+                         neither does its anchor: a link to a missing #server
+                         is worse than no link. The box itself stays -- the
+                         server is there in both routes, it is only the
+                         installing of it that is not. -->
+                    <a class="lp-box lp-srv if-own" href="#server"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></a>
+                    <p class="lp-box lp-srv if-shared"><span>The note <span class="lp-hold">server <svg class="lp-lock" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg></span></span></p>
 
                     <p class="lp-arr lp-v lp-right">
                         <svg viewBox="0 0 12 100" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -469,7 +595,7 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
                         <span>Reads the notes</span>
                     </p>
 
-                    <p class="lp-box lp-asst">The assistant</p>
+                    <a class="lp-box lp-asst" href="#assistant">The assistant</a>
 
                     <p class="lp-arr lp-h lp-bot">
                         <svg viewBox="0 0 100 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -492,6 +618,20 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
                 </div>
             </div>
         </figure>
+
+        <!-- AND ONE LINE UNDER IT, WHICH IS THE ONLY KIND ALLOWED THERE: it is
+             about the DRAWING. The comment above the requirement line says a
+             sentence under a figure is read as a caption whatever it says --
+             this one is a caption, of the arrow that is not drawn. Neither the
+             note server nor the assistant ever opens the reviewed page: the MCP
+             talks to the notes API and to nothing else, and api.php reads only
+             its own files. The page is opened by the reviewer's browser, which
+             is already logged in. Checked in mcp/src/api.mjs and
+             server/webroot/api.php before it was written. -->
+        <p class="small dim">
+            Your site can sit behind a login: only the reviewers&rsquo; own
+            browsers ever open it.
+        </p>
 
         <!-- THE DIALS, AT THE TOP, BEFORE ANY OF THE THREE CHAPTERS. -->
         <div class="dials" id="modes">
@@ -569,41 +709,53 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
              that takes a route away has to take the whole route. -->
         <h2>Install the app on the server</h2>
 
-        <p class="if-own">
-            <b>1.</b> Upload one PHP file anywhere under your web root.
-        </p>
-
-        <div class="snip if-own">
-            <button class="copy" type="button" data-copy="snip-php" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+        <!-- FOUR NUMBERED LINES BECAME TWO STEPS, AND NOTHING WAS DROPPED.
+             Stacked one under the other, "upload", "open it", "answer two
+             questions" and "paste the line" read as four things to install.
+             They are two gestures with what happens in between: the file goes
+             up and answers for itself, then the origin is declared. What the
+             installer does on its own belongs in the sentence, not in a step
+             of its own. -->
+        <ol class="use-steps">
+            <li>
+                <div>
+                    <p class="cap"><span class="n"></span> Upload one PHP file</p>
+                    <p class="say">
+                        Anywhere under your web root. Open it: its button
+                        hashes the rest against the <code>MANIFEST</code>.
+                    </p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-php" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-php"><code>https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php</code></pre>
-        </div>
+                            </div>
+                </div>
+            </li>
 
-        <p class="if-own">
-            <b>2.</b> Open it and press its button. It fetches the rest and hashes it
-            against the release&rsquo;s <code>MANIFEST</code>.
-        </p>
-
-        <p class="if-own">
-            <b>3.</b> Answer two questions. Both already carry the answer that works.
-        </p>
-
-        <!-- FOUR STEPS AND NOT FIVE. The address it prints is the tag's
-             data-server, and the tag below already carries it -- printing it
-             twice would be the page repeating itself, which is the rule that
-             emptied the old footer. What is left here is the one line the
-             server needs and nothing else says: the origin it will answer
-             from, which is the field at the top. -->
-        <p class="if-own">
-            <b>4.</b> Paste the line it prints into the tag below, then declare
-            your origin.
-        </p>
-
-        <div class="snip if-own">
-            <button class="copy" type="button" data-copy="snip-org" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+            <!-- AND NOT A THIRD STEP FOR THE ADDRESS IT PRINTS. That address is
+                 the tag's data-server, and the tag in the next chapter already
+                 carries it -- printing it twice would be the page repeating
+                 itself. What is left is the one line the server needs and
+                 nothing else says: the origin it will answer from. -->
+            <li>
+                <div>
+                    <p class="cap"><span class="n"></span> Declare your origin</p>
+                    <p class="say">
+                        Two questions, both already answered. Its last line
+                        goes in the tag.
+                    </p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-org" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-org"><code id="org-code"><span class="st">'origins'</span> =&gt; <span class="at">array</span>(<span class="st">'https://staging.example.com'</span>),</code></pre>
-        </div>
+                            </div>
+                </div>
+            </li>
+        </ol>
 
-        <p class="small dim if-own">
+        <p class="small dim">
             PHP 7.4 and <code>pdo_sqlite</code>. The rest is in
             <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">INSTALL.md</a>.
         </p>
@@ -616,8 +768,14 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
     <div class="wrap">
         <h2>Install the tag on the site</h2>
 
+        <!-- WHICH FILE IS NOT A STEP, IT IS A LOOKUP. The tabs answer one
+             question once, for the whole chapter, and they sit above the steps
+             rather than inside one: a control in the sentence column of a step
+             would be the only thing on the page that is both a gesture and a
+             question. What install.html had here was a twelve-row table, which
+             is eleven answers a reader does not want beside the one they do. -->
         <p>
-            At the end of <code>&lt;body&gt;</code>, in whichever file writes it.
+            At the end of <code>&lt;body&gt;</code>.
         </p>
 
         <div class="tabs">
@@ -646,47 +804,75 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
             <p class="fw-wp"><code>footer.php</code>, or the <code>wp_footer</code> hook</p>
         </div>
 
-        <!-- THE ONE BLOCK ON THIS PAGE WHOSE JOB IS TO BE COPIED, AND IT IS.
-             What stood here before read data-project="<yours, from the landing
-             page>": a tag that cannot be pasted, sending the reader to another
-             page for the generator. The key is drawn in this browser now, by
-             the same derivation the landing page runs and the same one
-             tools/check-landing-derivation.mjs proves against the MCP's.
+        <ol class="use-steps">
+            <!-- THE ONE BLOCK ON THIS PAGE WHOSE JOB IS TO BE COPIED, AND IT IS.
+                 What stood here before read data-project="<yours, from the
+                 landing page>": a tag that cannot be pasted, sending the reader
+                 to another page for the generator. The key is drawn in this
+                 browser now, by the same derivation the landing page runs and
+                 the same one tools/check-landing-derivation.mjs proves against
+                 the MCP's.
 
-             WHY IT IS BUILT AND NOT HIDDEN AND SHOWN. The copy button reads
-             textContent, and textContent does not know what display:none is:
-             four static variants would put every one of them in the
-             clipboard. The dials repaint this block instead. -->
-        <div class="snip">
-            <button class="copy" type="button" data-copy="snip-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                 WHY IT IS BUILT AND NOT HIDDEN AND SHOWN. The copy button reads
+                 textContent, and textContent does not know what display:none
+                 is: four static variants would put every one of them in the
+                 clipboard. The dials repaint this block instead. -->
+            <li>
+                <div>
+                    <!-- NO SENTENCE UNDER THIS ONE, and that is the component
+                         earning its keep: the block beside it already says the
+                         key is drawn in this browser, in the one place a reader
+                         will look. A caption repeating what the code says is
+                         the paragraph this page was rebuilt to lose. -->
+                    <p class="cap"><span class="n"></span> Paste the tag</p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-tag"><code id="tag-code">&lt;<span class="tg">script</span> <span class="at">src</span>=<span class="st">"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"</span>
-        <span class="at">data-server</span>=<span class="st">"https://api.annotepage.com/api.php"</span>
-        <span class="at">data-key</span>=<span class="st">"&lt;43 characters, drawn in your browser&gt;"</span>
-        <span class="at">defer</span>&gt;&lt;/<span class="tg">script</span>&gt;</code></pre>
-        </div>
+                            <span class="at">data-server</span>=<span class="st">"https://api.annotepage.com/api.php"</span>
+                            <span class="at">data-key</span>=<span class="st">"&lt;43 characters, drawn in your browser&gt;"</span>
+                            <span class="at">defer</span>&gt;&lt;/<span class="tg">script</span>&gt;</code></pre>
+                            </div>
+                </div>
+            </li>
 
-        <p class="small dim if-secure">
-            Each reviewer pastes it once, in their own browser.
-        </p>
-
-        <div class="snip if-secure">
-            <button class="copy" type="button" data-copy="snip-key" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+            <!-- THE STEP THAT ONLY EXISTS IN ONE MODE, AND IT IS THE WHOLE STEP
+                 THAT GOES. The number is counted rather than typed, so the
+                 check below carries 02 in open mode and 03 in secure -- a
+                 number written into the markup would read 01, 03. -->
+            <li class="if-secure">
+                <div>
+                    <p class="cap"><span class="n"></span> Hand the key over</p>
+                    <p class="say">Each reviewer pastes it once.</p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-key" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-key"><code id="key-code">&lt;43 characters, drawn in your browser&gt;</code></pre>
-        </div>
+                            </div>
+                </div>
+            </li>
 
-        <!-- THE ONE THING ON THIS PAGE A READER CAN MEASURE, and it follows
-             the dial for the same reason everything else does: an open tag
-             carries data-key and no data-project, so the selector that is
-             true in one mode returns null in the other. A check that is
-             wrong in half the states teaches a reader to distrust the page. -->
-        <p>
-            The console says whether it landed: a tag, or <code>null</code>.
-        </p>
-
-        <div class="snip">
-            <button class="copy" type="button" data-copy="snip-check" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+            <!-- THE ONE THING ON THIS PAGE A READER CAN MEASURE, and it follows
+                 the dial for the same reason everything else does: an open tag
+                 carries data-key and no data-project, so the selector that is
+                 true in one mode returns null in the other. A check that is
+                 wrong in half the states teaches a reader to distrust the
+                 page. -->
+            <li>
+                <div>
+                    <p class="cap"><span class="n"></span> Check it landed</p>
+                    <p class="say">The console answers a tag, or <code>null</code>.</p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-check" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-check"><code id="check-code"><span class="tg">document</span>.<span class="at">querySelector</span>(<span class="st">'script[data-key]'</span>)</code></pre>
-        </div>
+                            </div>
+                </div>
+            </li>
+        </ol>
     </div>
 </section>
 
@@ -695,60 +881,80 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
     <div class="wrap">
         <h2>Install the MCP on the assistant</h2>
 
-        <p class="if-open">
-            <b>1. In the command.</b> The key is on the page, so there is
-            nothing to configure.
-        </p>
-
-        <div class="snip if-open">
-            <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+        <!-- TWO STEPS, AND THE THREE PLACES THE KEY CAN LIVE ARE NOT THREE OF
+             THEM. They are one gesture done one of three ways, and numbering
+             them 01 02 03 would say a reader has three things to set up. The
+             command and the file are the two that can be copied, so they stand
+             in the same cell, one under the other; the third is a sentence
+             under the chapter, because what it costs is the only thing about it
+             worth reading. -->
+        <ol class="use-steps">
+            <li>
+                <div>
+                    <p class="cap"><span class="n"></span> Plug it in</p>
+                    <p class="say if-open">
+                        Two commands. The key is on the page, so there is
+                        nothing to configure.
+                    </p>
+                    <p class="say if-secure">
+                        Two commands. The key rides in them, never in the
+                        conversation.
+                    </p>
+                    <p class="say">
+                        Or a file, for several sites: <code>chmod 600</code>,
+                        gitignored.
+                    </p>
+                </div>
+                <div>
+                    <div class="snip if-open">
+                                <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
 <span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
-        </div>
-
-        <p class="if-secure">
-            <b>1. In the command.</b> The key rides in it, and never enters the
-            conversation.
-        </p>
-
-        <div class="snip if-secure">
-            <button class="copy" type="button" data-copy="snip-mcp-sec" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                            </div>
+                    <div class="snip if-secure">
+                                <button class="copy" type="button" data-copy="snip-mcp-sec" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-mcp-sec"><code id="mcp-code"><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
 <span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">\</span>
-  <span class="op">-e</span> ANNOTEPAGE_API=<span class="ap-api">https://api.annotepage.com/api.php</span> <span class="op">\</span>
-  <span class="op">-e</span> ANNOTEPAGE_KEY=&lt;the key above&gt; <span class="op">\</span>
-  <span class="op">-e</span> ANNOTEPAGE_AUTHOR=Assistant <span class="op">\</span>
-  <span class="op">--</span> annotepage-mcp</code></pre>
-        </div>
-
-        <p>
-            <b>2. In a file</b> for several sites, <code>chmod 600</code> and gitignored.
-        </p>
-
-        <div class="snip">
-            <button class="copy" type="button" data-copy="snip-json" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                      <span class="op">-e</span> ANNOTEPAGE_API=<span class="ap-api">https://api.annotepage.com/api.php</span> <span class="op">\</span>
+                      <span class="op">-e</span> ANNOTEPAGE_KEY=&lt;the key above&gt; <span class="op">\</span>
+                      <span class="op">-e</span> ANNOTEPAGE_AUTHOR=Assistant <span class="op">\</span>
+                      <span class="op">--</span> annotepage-mcp</code></pre>
+                            </div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-json" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-json"><code id="json-code"><span class="at">"api"</span>:    <span class="st">"https://staging.example.com/notes/api.php"</span>,
 <span class="at">"key"</span>:    <span class="st">"&lt;the key&gt;"</span>,
 <span class="at">"origin"</span>: <span class="st">"https://staging.example.com"</span></code></pre>
-        </div>
+                            </div>
+                </div>
+            </li>
 
-        <p>
-            <b>3. Let the assistant write it.</b> Easiest, and the key crosses
-            a provider&rsquo;s logs.
-        </p>
-
-        <!-- AND WHAT PLUGGED IN IS FOR. The chapter used to stop at two
-             commands, which leaves a reader holding a configuration and no
-             idea what to type next. The site named in it is the reader's own,
-             from the field at the top. -->
-        <p>
-            Then, in one sentence:
-        </p>
-
-        <div class="snip">
-            <button class="copy" type="button" data-copy="snip-ask" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+            <!-- AND WHAT PLUGGED IN IS FOR. The chapter used to stop at two
+                 commands, which leaves a reader holding a configuration and no
+                 idea what to type next. The site named in it is the reader's
+                 own, from the field at the top. -->
+            <li>
+                <div>
+                    <!-- AND NO SENTENCE HERE EITHER: the line beside it is the
+                         sentence, with the reader's own site already in it.
+                         "Then", because it is what the two commands above were
+                         for -- the chapter used to stop at them and leave a
+                         reader holding a configuration. -->
+                    <p class="cap"><span class="n"></span> Then ask it</p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-ask" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-ask"><code id="ask-code">connect to staging.example.com with annotepage and fix what the reviewers flagged</code></pre>
-        </div>
+                            </div>
+                </div>
+            </li>
+        </ol>
+
+        <p class="small dim">
+            Or let the assistant write it: easiest, and the key crosses a
+            provider&rsquo;s logs.
+        </p>
     </div>
 </section>
 
