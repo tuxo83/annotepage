@@ -316,11 +316,15 @@
    this is not a failure and it is on screen for ever -- an alarm that never
    goes away stops being read. It is a fact about the project, stated in the
    panel's own tone, and it stays at the top of every draw. */
-/* The public-key notice and the "a newer client exists" line are the same
-   object on screen: a standing statement about what one is looking at, above
-   the notes and above the failures. One rule, so they cannot drift apart. */
+/* The public-key notice, the "a newer client exists" line and the "this
+   server speaks another format" line are the same object on screen: a
+   standing statement about what one is looking at, above the notes and above
+   the failures. One rule, so they cannot drift apart -- and the third one
+   joins it rather than inventing a colour, precisely because a protocol
+   disagreement is a fact about the project, not an incident. */
 .ap-public,
-.ap-upgrade {
+.ap-upgrade,
+.ap-format {
     margin: 0 0 10px;
     padding: 8px 10px;
     border: 1px solid var(--ap-border);

@@ -581,6 +581,25 @@ const drawPanel = () => {
         ui.body.appendChild(notice);
     }
 
+    /* THE SERVER AND THIS CLIENT DO NOT SPEAK THE SAME PROTOCOL NUMBER, and
+       that is a standing property of what is on screen, not an event: same
+       register as the two notices above, same place, at every draw
+       (40-api, section 8bis).
+
+       Which of the two sentences is drawn is the whole asymmetry. A server
+       AHEAD of us also refuses our writes, and the sentence says so, here,
+       before anybody types four hundred words into the form -- the refusal at
+       send time (failureFrom) is the guarantee, not the announcement. A
+       server BEHIND us is read normally and written to normally, so its
+       sentence names what to update and stops there. */
+    if (serverIsNewer() || serverIsOlder()) {
+        const notice = create('div', 'ap-format',
+            T(serverIsNewer() ? 'format.server_newer' : 'format.server_older',
+              { server: serverFormat, ours: FORMAT }));
+        notice.setAttribute('role', 'note');
+        ui.body.appendChild(notice);
+    }
+
     if (currentFailure) {
         ui.body.appendChild(failureBlock(currentFailure, () => {
             currentFailure = null;

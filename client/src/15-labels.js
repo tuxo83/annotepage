@@ -254,6 +254,37 @@ ns.defaultLabels = {
         + 'running {current}, served by the site itself -- nothing was fetched '
         + 'to replace it, and when to update the file is the owner\'s call.',
 
+    /* -- The server and this client do not speak the same protocol -----
+       Two numbers in every sentence, never the word "incompatible" on its
+       own: "incompatible" sends somebody hunting through three components,
+       two numbers say in one line which end is behind and therefore what to
+       update. The two directions do not say the same thing because they do
+       not cost the same thing -- ahead of us, writing is refused; behind us,
+       everything still works. */
+    'format.server_newer':
+        'This server speaks annotepage format {server}; this client speaks '
+        + 'format {ours}. Writing is refused from this page while that is '
+        + 'true: a remark sealed at format {ours} would be stored in an '
+        + 'envelope this server cannot read back, and nothing is ever deleted '
+        + 'in this tool. The notes are still shown, and what cannot be read is '
+        + 'counted below. To fix it, update the annotepage client file this '
+        + 'page loads to a version that speaks format {server} -- that is the '
+        + 'call of whoever looks after the site.',
+    'format.server_older':
+        'This server speaks annotepage format {server}; this client speaks '
+        + 'format {ours}. Nothing is blocked: notes of format {server} are '
+        + 'read here, and remarks can still be written. It is the SERVER that '
+        + 'is behind -- tell whoever looks after it to update it to format '
+        + '{ours}.',
+    'format.write_refused':
+        'Nothing was sent, and nothing was lost: your text is kept above. '
+        + 'This server speaks annotepage format {server}, this client speaks '
+        + 'format {ours}, so a remark written from here would be stored in an '
+        + 'envelope the server cannot read back -- and nothing is ever deleted '
+        + 'in this tool. The annotepage client file loaded by this page has to '
+        + 'be updated to format {server} first. Until then, write the remark '
+        + 'somewhere else: it will not arrive from this page.',
+
     /* -- A tag that cannot be used as it stands ------------------------
        Somebody put that tag there on purpose, so we speak instead of staying
        silent -- and we refuse exactly as a wrong pasted key is refused
