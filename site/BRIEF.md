@@ -342,6 +342,36 @@ Ask, then show ONE tag. Showing both, or showing the pinned one and explaining
 the other underneath, makes an install look like a decision about
 cryptography when it is a decision about who does the upgrading.
 
+### What the first reading of it changed
+
+Seven remarks, and every one of them was about ORDER or about a question left
+implicit. They hold beyond this page:
+
+- **the settings come before everything they change.** They sat under the loop
+  diagram, which put the reader in front of a server box before telling them it
+  might not be theirs;
+- **a picture with a line over it is read as a chapter.** "What talks to what."
+  was a four-word caption doing a heading's job. It is a chapter now -- "What to
+  install, and where" -- and it carries no number, because the numbers on this
+  page belong to the steps a reader PERFORMS;
+- **a control goes under what it changes, not over it.** Ten framework names
+  above the tag read as ten variants of the tag. Under it, behind "Where it goes,
+  in what you use:", they are the lookup they always were;
+- **do not teach a reader to check.** "Check it landed", with a console line,
+  is a step for somebody who already knows how to open a console -- and an
+  impossible one for anybody else;
+- **installing a thing and giving it a secret are two steps.** One is the same
+  in every project; the other is the only thing on the page a reader can get
+  wrong;
+- **a consequence without its question is a warning nobody is looking for.**
+  Eight statements became eight questions. "The mode is settled by the tag" is
+  not a sentence anybody scans for; "Can I switch from open to secure later?"
+  is;
+- **and reuse the drawing, do not redraw it.** The file on a desktop came from
+  the usage page, the terminal crop from the landing page. Both moved into
+  base.css rather than being copied -- see below for what copying costs.
+
+
 ## The menu, and the check that did not see it
 
 The menu is the SAME on every page: `Use` and `Install`, pointing at the
