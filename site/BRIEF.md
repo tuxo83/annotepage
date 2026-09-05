@@ -250,6 +250,18 @@ everybody else.
 Choosing Shared collapses the whole server chapter to a sentence. That is the
 dial earning its place: it takes a variant away, it never adds one.
 
+**AND A FIELD BESIDE THEM: "Your site".** Not a dial -- it hides no route --
+but the one answer that turns examples into the reader's own values: the
+`data-server` when they host it themselves, the `origins` of the relay, the
+`origin` of the assistant's configuration file, and the line they will type to
+the assistant. Asked once, reused in all three chapters. Left empty, everything
+falls back to `staging.example.com`, so the page reads exactly as it does now.
+
+Two conditions, both checkable. The page SENDS NOTHING -- the landing page's
+key generator is already local, and this must stay measurable the same way. And
+the fallback is never a blank: a reader who types nothing must still see a
+complete, copyable block.
+
 **THE FRAMEWORK QUESTION IS NOT ONE OF THEM.** It only changes one block, in
 one chapter, so it lives there -- tabs beside the tag, not a third dial at the
 top of the page.
