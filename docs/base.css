@@ -724,6 +724,10 @@
     color: var(--t-dim); font: inherit;
 }
 .sc-body .site { color: var(--t-ident); }
+/* A comment in the file, at the ink a comment gets. --t-dim rather than a new
+   token: it is what the terminal already uses for what is not the point of the
+   line, and it holds 4.97:1 on --t-ground. */
+.sc-body .cm { color: var(--t-dim); }
 .sc-body .val { color: var(--t-text); }
 
 /* THE OVERLAP, AND ONLY WHERE THERE IS ROOM FOR IT. Below 62rem -- the width

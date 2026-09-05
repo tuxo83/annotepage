@@ -119,29 +119,34 @@ ul.plain b { color: var(--text); }
 /* Two of them now, and the second is not decoration: see the <p> they sit in. */
 .cta + .cta { margin-left: 2.2rem; }
 
-/* -- the one warning on the page ----------------------------------------- */
+/* -- a note standing beside the prose ------------------------------------- */
 
-/* THE LANDING PAGE'S `.install-other`, TURNED INTO A WARNING. Same shape --
-   inline-flex so it hugs its own text instead of ruling a box across the
-   column, a mark, one sentence -- and the colour is the difference: that one
-   tells you what open mode means, this one tells you what cannot be undone.
-   Its rules are written here rather than shared for the reason the copy
-   button's are: sharing would mean editing the landing page, which is frozen.
-
-   IN THE CODE COLUMN, NOT THE SENTENCE ONE. The comment at the top of this
-   file refuses a bordered aside among the prose, and it is right: it would put
-   a third left edge on a page that has two. Beside the key, in the column that
-   already holds blocks with edges of their own, it adds none. */
-.warn-note {
+/* THE LANDING PAGE'S `.install-other`, WITH TWO VOICES. Same shape -- inline-
+   flex so it hugs its own text instead of ruling a box across the column, a
+   mark, one sentence -- and only the colour and the mark separate them: one
+   says what cannot be undone, the other says a thing that is fine and sounds
+   like it might not be. Its rules are written here rather than shared for the
+   reason the copy button's are: sharing would mean editing the landing page,
+   which is frozen. */
+.note-aside {
     display: inline-flex; align-items: baseline; gap: .5rem;
     margin: 1.1rem 0 0; max-width: 46em;
     padding: .55rem .85rem;
-    border: 1px solid var(--line-soft); border-left: 3px solid var(--warn);
-    border-radius: 8px; background: var(--bg-warn);
+    border: 1px solid var(--line-soft); border-radius: 8px;
+    background: var(--bg-soft);
     font-size: .88rem; color: var(--dim);
 }
-.warn-note .mk { color: var(--warn); }
-.warn-note b { color: var(--text); }
+.note-aside b { color: var(--text); }
+.note-aside .mk { flex: none; }
+/* The padlock is drawn, so it needs a size; the info mark is a glyph and takes
+   the one the sentence gives it. */
+/* The padlock is drawn, so it needs a size. Nudged rather than baseline-
+   aligned: an SVG has no baseline of its own, and `align-self: center` put it
+   in the middle of a four-line block instead of beside its first word. */
+svg.mk { width: .82em; height: 1em; align-self: flex-start; margin-top: .18em; }
+.is-warn { border-left: 3px solid var(--warn); background: var(--bg-warn); }
+.is-warn .mk { color: var(--warn); }
+.is-info .mk { color: var(--accent); }
 
 /* -- Code snippets ------------------------------------------------------- */
 
@@ -267,12 +272,15 @@ code:not(pre code) {
 .use-steps > li {
     display: grid; gap: clamp(.8rem, 3vw, 2.4rem);
     grid-template-columns: minmax(0, 1fr);
-    /* THE ROW STARTS ON ONE LINE. The usage page centres its steps, because a
-       caption of two lines beside a 500px capture has nothing to line up with.
-       Here the two columns are of comparable height and the first line of code
-       is the first thing in its block, so the number, the heading and that
-       line begin together. */
-    align-items: start;
+    /* CENTRED, LIKE THE USAGE PAGE'S. This read `align-items: start`, on the
+       argument that the two columns were of comparable height and the first
+       line of code was the first thing in its block. That stopped being true:
+       the steps carry a drawn installer screen, a two-window desktop and a
+       five-line file now, and a two-line caption pinned to the top of a 300px
+       figure sits in a column of its own white space. The sibling page centres
+       for exactly this reason, and a reader moving between them should not
+       find the same component laid out two ways. */
+    align-items: center;
 }
 @media (min-width: 62rem) {
     /* A STATED WIDTH RATHER THAN A FRACTION. Past this point a fraction hands
@@ -368,12 +376,21 @@ code:not(pre code) {
     border-bottom: 1px solid var(--line-soft); background: var(--bg-soft);
     font-family: var(--mono); font-size: .78rem; font-weight: 600; color: var(--dim);
 }
-.wiz-body { padding: .9rem 1rem; }
+.wiz-body { padding: .9rem 1rem 1.1rem; }
+/* The head of the installer's own page, at the weight a screenshot gives it:
+   large enough to be a title, small enough that nobody mistakes it for one of
+   this page's. */
+.wiz-h1 { margin: 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); }
+.wiz-lede { margin: .3rem 0 0; font-size: .82rem; color: var(--dim); }
+.wiz-h2 {
+    margin: 1.1rem 0 0; padding-top: .9rem; border-top: 1px solid var(--line-soft);
+    font-size: .95rem; font-weight: 650; color: var(--text);
+}
+.wiz-h2 + .wiz-q { margin-top: .9rem; }
 .wiz-q {
     margin: 1.1rem 0 0; font-size: .78rem; font-weight: 650;
     letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
 }
-.wiz-q:first-child { margin-top: 0; }
 .wiz-a { display: flex; flex-wrap: wrap; gap: .4rem; margin: .45rem 0 0; }
 /* The chips of the dials at the top of the page, one weight lighter: these are
    not controls, they are what the installer will show. Nothing here is
@@ -416,9 +433,13 @@ code:not(pre code) {
    reflowing; a block of its own, with the line that says whose questions
    these are, reads as what it is -- two more questions, asked because of an
    answer given above. */
-/* INSIDE THE CHAPTER NOW, so it opens it rather than following a heading at a
-   distance. No top margin of its own: the h2 above already gives it one. */
-.dials-2 { margin-top: 1.1rem; }
+/* THE SECOND HALF OF THE SAME BOX. A rule and not a frame: two frames at the
+   same drawing read as two subjects, and these are the same questions, asked
+   because of an answer given three inches above. */
+.dials-2 {
+    margin-top: 1.3rem; padding-top: 1.3rem;
+    border-top: 1px solid var(--line-soft);
+}
 .dial-when {
     margin: 0 0 1rem; font-size: .9rem; font-weight: 600; color: var(--dim);
 }
@@ -632,24 +653,43 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
    hairline; at .5 it disappears and the square loses its corners. The receded
    ink is --dim, which stays above 4.5:1 in both themes -- a box in the
    background is still a box somebody may be reading. */
+/* ONLY WHERE THERE IS SOMEWHERE TO GO. `.lp-box:hover` lit every box, the two
+   that are plain <p> included: pointing at "Your code", or at the shared notes
+   server, made it glow and led nowhere. A hover that promises a click the box
+   cannot honour is worse than no hover. `a.lp-box` and nothing else. */
+/* `:not(:hover)` IS NOT DECORATION, IT IS THE FIX. Written without it, this
+   rule scored 0,4,1 against the lit rule's 0,3,1 -- so the box being pointed at
+   receded WITH the others and nothing lit at all. Measured: all four boxes at
+   rgb(211,215,222) with the pointer on the assistant. Excluding the hovered box
+   from the recession beats raising the other rule's weight: nothing has to win
+   a fight it was never in. */
 .loop[data-lit] .lp-box,
-.loop:has(.lp-box:hover) .lp-box,
-.loop:has(.lp-box:focus-visible) .lp-box {
+.loop:has(a.lp-box:hover) .lp-box:not(:hover),
+.loop:has(a.lp-box:focus-visible) .lp-box:not(:focus-visible) {
     color: var(--dim); border-color: var(--line-soft);
 }
 .loop[data-lit] .lp-arr,
 .loop[data-lit] .lp-arr svg,
-.loop:has(.lp-box:hover) .lp-arr,
-.loop:has(.lp-box:hover) .lp-arr svg { color: var(--line); }
+.loop:has(a.lp-box:hover) .lp-arr,
+.loop:has(a.lp-box:hover) .lp-arr svg { color: var(--line); }
 
 .loop[data-lit="page"] .lp-page,
 .loop[data-lit="srv"]  .lp-srv,
 .loop[data-lit="asst"] .lp-asst,
-.loop .lp-box:hover,
-.loop .lp-box:focus-visible {
+.loop a.lp-box:hover,
+.loop a.lp-box:focus-visible {
     color: var(--text);
     border-color: var(--accent);
     box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* AND THE CLICK IS SAID, NOT GUESSED. Three of the four boxes have been links
+   since the figure was drawn and nothing on them said so -- the reader who
+   asked for "the clickable side" was asking for a thing he already had and
+   could not see. A chevron, on the boxes that lead somewhere, and on no other:
+   it is a signpost, not a sentence, so the drawing gains no words. */
+a.lp-box .lp-name::after {
+    content: "\2009\203A"; color: var(--accent); font-weight: 400;
 }
 
 @media (max-width: 420px) {
@@ -687,9 +727,10 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     <div class="wrap">
         <a class="mark" href="/">annotepage</a>
         <nav>
+            <a href="/">Home</a>
             <a href="/#use">Use</a>
             <a href="/#install">Install</a>
-            <a href="questions.html">Questions</a>
+            <a href="questions.html">FAQ</a>
             <a class="leave" href="https://github.com/tuxo83/annotepage"
                target="_blank" rel="noopener"
                aria-label="GitHub, opens in a new tab">GitHub</a>
@@ -812,6 +853,66 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             </fieldset>
 
 
+            </div>
+
+        <!-- AT THE HEAD OF THE ONE CHAPTER THEY CHANGE. These two sat in a
+             second box at the top of the page, and two things were wrong with
+             that: they touch nothing else -- `if-declared`, `if-cron`, `if-url`
+             and `if-self` appear nowhere outside this section -- and a second
+             box drawn exactly like the first read as a second subject rather
+             than as a consequence of an answer given in it. On a 500px screen,
+             clicking "Your own" made it appear 805px down, below the fold: the
+             click produced nothing the reader could see.
+
+             The chapter is `if-own` as a whole, so they disappear with it.
+
+             THE THIRD QUESTION THE INSTALLER ASKS IS NOT HERE. Where the notes
+             live -- a file it creates, or a MySQL you already have -- changes
+             nothing you do on this page: same upload, same steps, same tag. It
+             is at the foot of the chapter with the other prerequisites, which
+             is what it is. A dial that changes no step would say the page
+             depends on it, and it does not. -->
+            <div class="dials-2 if-own">
+                <p class="dial-when">Running it yourself asks two more:</p>
+
+                <div class="dial-row dial-row-2">
+                <fieldset class="dial">
+                    <legend>Who it answers for</legend>
+                    <div class="seg">
+                        <label><input type="radio" name="aud" id="a-mine" checked> <span>My site</span></label>
+                        <label><input type="radio" name="aud" id="a-any"> <span>Anyone</span></label>
+                    </div>
+                    <p class="dial-say">
+                    <span class="if-declared">Declared, so it answers your origin
+                    and refuses every other.</span><span class="if-any">A relay: any
+                    project that asks is served, and none of them has an origin
+                    lock.</span>
+                    </p>
+                </fieldset>
+
+                <fieldset class="dial">
+                    <legend>Who updates it</legend>
+                    <div class="seg">
+                    <!-- "A URL CRON" AND NOT "AN ADDRESS". Both of the first
+                         two ARE crons -- the installer's own screens call them
+                         "cron with a shell" and "cron that can only fetch a
+                         URL" -- and naming one of them after the thing it calls
+                         made them read as two different kinds of answer. What
+                         separates them is what the host gives you. -->
+                        <label><input type="radio" name="upd" id="u-cron" checked> <span>A shell cron</span></label>
+                        <label><input type="radio" name="upd" id="u-url"> <span>A URL cron</span></label>
+                        <label><input type="radio" name="upd" id="u-self"> <span>Itself</span></label>
+                    </div>
+                    <p class="dial-say">
+                    <span class="if-cron">A line in your crontab. The code stays
+                    writable by you and never by the web server.</span><span
+                    class="if-url">The same thing, for a host with no shell:
+                    a scheduler that takes an address and nothing else.</span><span class="if-self">Nothing
+                    to schedule, and nothing below to do. The price is the code
+                    directory writable by the web server, for good.</span>
+                    </p>
+                </fieldset>
+                </div>
             </div>
         </section>
 
@@ -940,65 +1041,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
              that takes a route away has to take the whole route. -->
         <h2>Install the app on the server</h2>
 
-        <!-- AT THE HEAD OF THE ONE CHAPTER THEY CHANGE. These two sat in a
-             second box at the top of the page, and two things were wrong with
-             that: they touch nothing else -- `if-declared`, `if-cron`, `if-url`
-             and `if-self` appear nowhere outside this section -- and a second
-             box drawn exactly like the first read as a second subject rather
-             than as a consequence of an answer given in it. On a 500px screen,
-             clicking "Your own" made it appear 805px down, below the fold: the
-             click produced nothing the reader could see.
-
-             The chapter is `if-own` as a whole, so they disappear with it.
-
-             THE THIRD QUESTION THE INSTALLER ASKS IS NOT HERE. Where the notes
-             live -- a file it creates, or a MySQL you already have -- changes
-             nothing you do on this page: same upload, same steps, same tag. It
-             is at the foot of the chapter with the other prerequisites, which
-             is what it is. A dial that changes no step would say the page
-             depends on it, and it does not. -->
-        <div class="dials dials-2">
-            <p class="dial-when">Two questions, before the steps:</p>
-
-            <div class="dial-row dial-row-2">
-            <fieldset class="dial">
-                <legend>Who it answers for</legend>
-                <div class="seg">
-                    <label><input type="radio" name="aud" id="a-mine" checked> <span>My site</span></label>
-                    <label><input type="radio" name="aud" id="a-any"> <span>Anyone</span></label>
-                </div>
-                <p class="dial-say">
-                    <span class="if-declared">Declared, so it answers your origin
-                    and refuses every other.</span><span class="if-any">A relay: any
-                    project that asks is served, and none of them has an origin
-                    lock.</span>
-                </p>
-            </fieldset>
-
-            <fieldset class="dial">
-                <legend>Who updates it</legend>
-                <div class="seg">
-                    <!-- "A URL CRON" AND NOT "AN ADDRESS". Both of the first
-                         two ARE crons -- the installer's own screens call them
-                         "cron with a shell" and "cron that can only fetch a
-                         URL" -- and naming one of them after the thing it calls
-                         made them read as two different kinds of answer. What
-                         separates them is what the host gives you. -->
-                    <label><input type="radio" name="upd" id="u-cron" checked> <span>A shell cron</span></label>
-                    <label><input type="radio" name="upd" id="u-url"> <span>A URL cron</span></label>
-                    <label><input type="radio" name="upd" id="u-self"> <span>Itself</span></label>
-                </div>
-                <p class="dial-say">
-                    <span class="if-cron">A line in your crontab. The code stays
-                    writable by you and never by the web server.</span><span
-                    class="if-url">The same thing, for a host with no shell:
-                    a scheduler that takes an address and nothing else.</span><span class="if-self">Nothing
-                    to schedule, and nothing below to do. The price is the code
-                    directory writable by the web server, for good.</span>
-                </p>
-            </fieldset>
-            </div>
-        </div>
 
 
         <!-- FOUR NUMBERED LINES BECAME TWO STEPS, AND NOTHING WAS DROPPED.
@@ -1087,6 +1129,18 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <div class="frame wiz">
                         <p class="wiz-bar" aria-hidden="true">annotepage &mdash; install</p>
                         <div class="wiz-body">
+                            <!-- THE SCREEN STARTS WHERE THE REAL ONE STARTS.
+                                 Without these three lines the drawing was a
+                                 stack of legends and chips, and it was read as
+                                 a set of questions the PAGE was asking -- the
+                                 reader answered them in their head and wondered
+                                 why nothing changed. The installer opens on its
+                                 own name, one line saying where it is up to,
+                                 and the heading "Install"; copied from
+                                 annotepage-install.php and install-flow.php. -->
+                            <p class="wiz-h1" aria-hidden="true">annotepage</p>
+                            <p class="wiz-lede">The server is downloaded. Three questions, and each has a default that works.</p>
+                            <p class="wiz-h2">Install</p>
                             <p class="wiz-q">Who this server is for</p>
                             <p class="wiz-a"><span class="on if-declared">One site, mine</span><span class="on if-any">Anyone &mdash; a relay</span></p>
                             <p class="wiz-q">Storage</p>
@@ -1105,15 +1159,21 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                  nothing else says: the origin it will answer from. -->
             <li class="if-declared">
                 <div>
-                    <p class="cap"><span class="n"></span> Declare your origin</p>
+                    <p class="cap"><span class="n"></span> Declare your project</p>
                     <p class="say">
-                        One line, and its last one goes in the tag.
+                        The installer leaves this empty on purpose: the id does
+                        not exist while it runs. Your browser drew it above.
                     </p>
                 </div>
                 <div>
                     <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-org" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-org"><code id="org-code"><span class="st">'origins'</span> =&gt; <span class="at">array</span>(<span class="st">'https://staging.example.com'</span>),</code></pre>
+<pre id="snip-org"><code id="org-code"><span class="st">'projects'</span> =&gt; <span class="at">array</span>(
+    <span class="st">'7Qb1kZ3xNvA9dLpEqKf2Zt'</span> =&gt; <span class="at">array</span>(
+        <span class="st">'origins'</span> =&gt; <span class="at">array</span>(<span class="st">'https://staging.example.com'</span>),
+        <span class="st">'mode'</span>    =&gt; <span class="st">'encrypted'</span>,
+    ),
+),</code></pre>
                             </div>
                 </div>
             </li>
@@ -1131,14 +1191,14 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 <div>
                     <p class="cap"><span class="n"></span> Keep it up to date</p>
                     <p class="say">
-                        Once a day. The last screen gives you this line with
-                        the real path already in it.
+                        One line in your crontab, once a day. The last screen
+                        gives it to you with the real path already in it.
                     </p>
                 </div>
                 <div>
                     <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-cron" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-cron"><code><span class="op">17 4 * * *</span> <span class="tg">php</span> &lt;your install&gt;/internal/update.php <span class="op">&gt;</span>/dev/null</code></pre>
+<pre id="snip-cron"><code id="cron-sh"><span class="op">17 4 * * *</span> <span class="tg">php</span> &lt;your install&gt;/internal/update.php <span class="op">&gt;</span>/dev/null</code></pre>
                             </div>
                 </div>
             </li>
@@ -1147,8 +1207,9 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 <div>
                     <p class="cap"><span class="n"></span> Keep it up to date</p>
                     <p class="say">
-                        The installer writes a secret and shows the address
-                        <b>once</b>, on its last screen and nowhere else.
+                        One line in your crontab, or the same address pasted
+                        into your host&rsquo;s scheduler. The installer writes
+                        the secret and shows it <b>once</b>.
                     </p>
                 </div>
                 <div>
@@ -1158,65 +1219,76 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                             </div>
                 </div>
             </li>
-        </ol>
 
-        <!-- AND THE FILE BEHIND ALL OF IT, WHICH IS NOT A STEP. Nothing above
-             requires opening it: the installer writes it, and the two lines the
-             steps show are the two anybody edits by hand. But a reader who
-             wants a second origin, a relay, a plain-mode project or database
-             credentials read from outside the web root has nowhere to look, and
-             the answer is one commented file -- so it is shown rather than
-             named, in the same two windows how-to-use-it.html uses for the
-             assistant's own configuration.
+            <!-- AND THE FILE THE INSTALLER WROTE, LAID OUT LIKE EVERY OTHER
+                 STEP. It stood after the list, under a small label, with a
+                 figure and a copy button, and it was read as a different kind
+                 of thing entirely -- the reader asked why it was not presented
+                 like the rest. It is a step: opening that file is something
+                 somebody does, when they want what the installer did not ask
+                 about.
 
-             THE TEMPLATE IS THE DOCUMENTATION. config-local.example.php is 227
-             lines of which most are comments, and it is the thing to link to:
-             a page that paraphrased it would be a second copy going stale. -->
-        <p class="sub-lead">Everything else is one file, and it is commented:</p>
-
-        <figure class="fig">
-            <div class="sc">
-                <div class="sc-win sc-fm" aria-hidden="true">
-                    <p class="sc-bar">
-                        <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M2.6 15.4V4.6h4.6l1.7 2h8.5v8.8a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1z"/></svg>
-                        <span>internal</span>
-                    </p>
-                    <p class="sc-path"><span>annotepage</span><span>&#8250;</span><span>internal</span></p>
-                    <p class="sc-row on">
-                        <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
-                        <span>config-local.php</span>
+                 AN EXTRACT, AND NO COPY BUTTON. What stood here was not the
+                 file: it showed a filled-in `projects` array, which the
+                 installer never writes -- it writes it EMPTY, with the block to
+                 paste in a comment, because the id does not exist while it
+                 runs. And there is nothing to copy: the file is already on the
+                 disk, and a button handing back what is already there does
+                 nothing. Five lines from config-local.example.php, said to be
+                 an extract. -->
+            <li>
+                <div>
+                    <p class="cap"><span class="n"></span> Change anything else by hand</p>
+                    <p class="say">
+                        The installer wrote this file. Open it for what it did
+                        not ask about &mdash; a second origin, a relay, plain
+                        mode, credentials read from outside the web root.
                     </p>
                 </div>
+                <div>
+                    <figure class="fig">
+                        <div class="sc">
+                            <div class="sc-win sc-fm" aria-hidden="true">
+                                <p class="sc-bar">
+                                    <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M2.6 15.4V4.6h4.6l1.7 2h8.5v8.8a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1z"/></svg>
+                                    <span>internal</span>
+                                </p>
+                                <p class="sc-path"><span>annotepage</span><span>&#8250;</span><span>internal</span></p>
+                                <p class="sc-row on">
+                                    <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
+                                    <span>config-local.php</span>
+                                </p>
+                            </div>
 
-                <div class="sc-win sc-ed">
-                    <p class="sc-bar">
-                        <svg class="sc-ic" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
-                        <span>config-local.php</span>
-                    </p>
-                    <div class="sc-sheet">
-                        <button class="copy" type="button" data-copy="cfg-body" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre class="sc-body" id="cfg-body">return array(
-    'active'     =&gt; true,
+                            <div class="sc-win sc-ed">
+                                <p class="sc-bar">
+                                    <svg class="sc-ic" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
+                                    <span>config-local.php</span>
+                                </p>
+                                <div class="sc-sheet">
+<pre class="sc-body"><span class="cm">// an extract: the file only carries what</span>
+<span class="cm">// differs from the defaults in config.php</span>
+return array(
+    'active'     =&gt; <span class="val">true</span>,
     'deployment' =&gt; <span class="val">'self-hosted'</span>,
-    'projects'   =&gt; array(
-        <span class="site">'7Qb1kZ3xNvA9dLpEqKf2Zt'</span> =&gt; array(
-            'origins' =&gt; array(<span class="val">'https://staging.example.com'</span>),
-            'mode'    =&gt; <span class="val">'encrypted'</span>,
-        ),
-    ),
-);</pre>
-                    </div>
-                </div>
-            </div>
-        </figure>
 
-        <p class="small dim">
-            Copy
-            <a href="https://github.com/tuxo83/annotepage/blob/main/server/webroot/internal/config-local.example.php">config-local.example.php</a>
-            over it and adapt: a second origin, a relay serving several projects,
-            plain mode, or database credentials read from a file outside the web
-            root. It only needs to carry what differs from the defaults.
-        </p>
+    <span class="cm">// THE PROJECTS. Empty until you have one, and</span>
+    <span class="cm">// you will the first time somebody opens an</span>
+    <span class="cm">// annotated page.</span>
+    'projects' =&gt; array(),
+);</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </figure>
+
+                    <p class="small dim">
+                        The whole of it, commented:
+                        <a href="https://github.com/tuxo83/annotepage/blob/main/server/webroot/internal/config-local.example.php">config-local.example.php</a>.
+                    </p>
+                </div>
+            </li>
+        </ol>
 
         <!-- THE THIRD QUESTION THE INSTALLER ASKS, WHERE IT BELONGS. It
              changes no step above, so it is not a dial; it changes what you
@@ -1334,6 +1406,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 <div>
                     <p class="cap"><span class="n"></span> Hand the key over</p>
                     <p class="say">Each reviewer pastes it once.</p>
+
                 </div>
                 <div>
                     <div class="snip">
@@ -1341,25 +1414,42 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 <pre id="snip-key"><code id="key-code">&lt;43 characters, drawn in your browser&gt;</code></pre>
                             </div>
 
-                    <!-- THE ONE THING ON THIS PAGE THAT CANNOT BE UNDONE, SAID
-                         WHERE IT IS DONE. The questions at the foot of the page
-                         answer it for whoever reads that far; this key is
-                         handed over here, and here is where somebody decides
-                         whether to keep a copy.
-
-                         AND ONLY IN THIS MODE. In open mode the key is written
-                         in the tag, on a page anybody can read: it cannot be
-                         lost, and this step does not exist. -->
-                    <p class="warn-note">
-                        <span class="mk" aria-hidden="true">&#9888;</span>
-                        <span><b>Nothing on the page carries it.</b> Lose this key
-                        and the notes go with it &mdash; no recovery, no rotation.
-                        Put it where your team keeps its passwords, now.</span>
-                    </p>
                 </div>
             </li>
 
         </ol>
+
+        <!-- THE ONE THING ON THIS PAGE THAT CANNOT BE UNDONE, SAID
+     WHERE IT IS DONE. It opened on "Nothing on the page
+     carries it", which is a fact about the tag and not the
+     thing a reader has to act on -- it read as an
+     explanation when it is an instruction. It says what to
+     do first now, and keeps the line that was already
+     right.
+
+     IN THE SENTENCE COLUMN, LEFT, like the landing page's
+     own standing note. It was in the code column, on the
+     argument that a bordered aside among the prose puts a
+     third left edge on a page that has two -- true of a box
+     that rules across the column, and this one is
+     inline-flex: it hugs its own text and starts on the
+     page's axis like every sentence above it.
+
+     A PADLOCK, NOT A WARNING TRIANGLE. The triangle is the
+     glyph of a page that has gone wrong; nothing has gone
+     wrong. The mark is the one already drawn on the note
+     server in the diagram above, which is the same subject:
+     the thing that locks.
+
+     AND ONLY IN THIS MODE. In open mode the key is in the
+     tag, on a page anybody can read: it cannot be lost, and
+     this step does not exist. -->
+        <p class="note-aside is-warn if-secure">
+            <svg class="mk" viewBox="0 0 14 17" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg>
+            <span><b>Keep this key.</b> Lose it and the notes go with
+            it &mdash; no recovery, no rotation. Put it where your
+            team keeps its passwords, now.</span>
+        </p>
 
         <!-- THE FULL SENTENCE, IN THE CHAPTER ABOUT THE PAGE. The drawing
              carries the short clause -- "Can sit behind a login." -- inside the
@@ -1367,11 +1457,12 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
              tag on a staging site behind a password needs the whole of it. It
              used to sit under the diagram as a grey line, which is where a
              caption goes, and it is not a caption. -->
-        <p class="small dim">
-            The page can sit behind a login. Neither the notes server nor the
-            assistant ever opens it: the MCP talks to the notes API and to
+        <p class="note-aside is-info">
+            <span class="mk" aria-hidden="true">&#9432;</span>
+            <span><b>Behind a login is fine.</b> Neither the notes server nor the
+            assistant ever opens the page: the MCP talks to the notes API and to
             nothing else, and the page is opened by the reviewers&rsquo; own
-            browsers, which are already signed in.
+            browsers, which are already signed in.</span>
         </p>
     </div>
 </section>
@@ -1537,23 +1628,14 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     </div>
 </section>
 
-<!-- THE WAY OUT, AND THE PAGE THE QUESTIONS MOVED TO ===================
-     Eight questions stood here. They are questions.html now, for the reason
-     the reader gave: there will be many, and a chapter that grows without
-     limit at the foot of an install page turns that page into a reference
-     nobody finishes. #data, #no-recovery and #locked moved with the lines they
-     name, and ROADMAP.md's citations were updated in the same commit. -->
+<!-- THE WAY OUT, AND NOTHING ELSE ======================================
+     A paragraph stood here summarising the questions page under a heading of
+     its own, "Before you commit to it". It said again what the note two
+     chapters up already says, and it made the page end on a warning rather
+     than on a way forward. The buttons are the whole section now, as on every
+     other page. -->
 <section id="out">
     <div class="wrap">
-        <h2>Before you commit to it</h2>
-
-        <p>
-            What happens if the key is lost, what the notes server sees, what
-            the mode settles for good, and what a wrong <code>integrity</code>
-            digest costs &mdash; the answers are on one page, and it is in the
-            menu above.
-        </p>
-
         <!-- THE ONLY WAY FROM HERE TO THE USAGE PAGE. It used to be the menu,
              which carried "A detailed usage example" on this page and something
              else on every other one; the menu is now identical everywhere and
@@ -1677,6 +1759,21 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     var jsonCode  = document.getElementById('json-code');
     var askCode   = document.getElementById('ask-code');
     var cronCode  = document.getElementById('cron-code');
+    var cronSh    = document.getElementById('cron-sh');
+
+    /* A MINUTE AND AN HOUR NOBODY ELSE HAS. The line read 17 4 on every copy of
+       this page, so everybody who pasted it woke their host at the same second
+       of the same minute -- and the installer's own screen says it plainly:
+       any minute of any hour does, that one is no better than another. Drawn
+       once, here, in the reader's browser. Small hours, because an update that
+       replaces files is better done when nobody is reading.
+
+       Math.random and not crypto: nothing here is a secret. A cron minute that
+       could be guessed costs nothing; a cron minute shared with ten thousand
+       other installs costs the host. */
+    var mn = Math.floor(Math.random() * 60);
+    var hr = Math.floor(Math.random() * 5) + 2;
+    var quand = mn + ' ' + hr + ' * * *';
     var siteIn    = document.getElementById('site');
     var srvIn     = document.getElementById('srv');
     var open      = document.getElementById('m-open');
@@ -1695,7 +1792,8 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
        page no longer has would leave the placeholder sitting in the tag,
        ready to be copied. */
     if (!tagCode || !keyCode || !orgCode || !jsonCode || !cronCode
-        || !askCode || !siteIn || !srvIn || !open || !shared || !pinned) return;
+        || !askCode || !siteIn || !srvIn || !cronSh || !open || !shared
+        || !pinned) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
        Math.random would be guessable -- which is worse than no key at all,
@@ -1837,13 +1935,24 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
         /* The three other places the field answers in: the origin the server
            has to be told, the assistant's file, and the sentence somebody
            types at the end. One answer, four blocks. */
+        /* THE WHOLE BLOCK, NOT THE ONE LINE INSIDE IT. This wrote
+           `'origins' => array(...)` on its own, which is not something that can
+           be pasted anywhere: config-local.php wants a project keyed by its id,
+           and the installer writes `'projects' => array()` empty on purpose --
+           the id does not exist while it runs, because a browser has not drawn
+           the key yet. A reader given the inner line had to invent the four
+           lines around it, or conclude the installer had already done it. */
         while (orgCode.firstChild) orgCode.removeChild(orgCode.firstChild);
-        orgCode.appendChild(piece('st', "'origins'"));
-        orgCode.appendChild(document.createTextNode(' => '));
-        orgCode.appendChild(piece('at', 'array'));
-        orgCode.appendChild(document.createTextNode('('));
-        orgCode.appendChild(piece('st', "'" + origin + "'"));
-        orgCode.appendChild(document.createTextNode('),'));
+        var pousse = function (cls, txt) {
+            orgCode.appendChild(cls ? piece(cls, txt) : document.createTextNode(txt));
+        };
+        pousse('st', "'projects'"); pousse(null, ' => '); pousse('at', 'array');
+        pousse(null, '(\n    '); pousse('st', "'" + current.id + "'");
+        pousse(null, ' => '); pousse('at', 'array'); pousse(null, '(\n        ');
+        pousse('st', "'origins'"); pousse(null, ' => '); pousse('at', 'array');
+        pousse(null, '('); pousse('st', "'" + origin + "'"); pousse(null, '),\n        ');
+        pousse('st', "'mode'"); pousse(null, '    => '); pousse('st', "'encrypted'");
+        pousse(null, ',\n    ),\n),');
 
         /* THE FILE, IN THE SHAPE how-to-use-it.html DRAWS IT: a projects
            map keyed by the site, because that is what makes "name the site"
@@ -1873,8 +1982,12 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
            secret is not generated here and never will be: the installer
            writes it, shows it on its own last screen and nowhere else, so a
            placeholder is the honest thing to print. */
+        /* The shell line is static markup, so only its first token moves. */
+        var t = cronSh.querySelector('.op');
+        if (t) t.textContent = quand;
+
         while (cronCode.firstChild) cronCode.removeChild(cronCode.firstChild);
-        cronCode.appendChild(piece('op', '17 4 * * *'));
+        cronCode.appendChild(piece('op', quand));
         cronCode.appendChild(document.createTextNode(' '));
         cronCode.appendChild(piece('tg', 'curl'));
         cronCode.appendChild(document.createTextNode(' '));
@@ -1952,7 +2065,12 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     /* Long enough to read eight words and look at the box they belong to.
        Shorter was tried on the sibling page's replay and the finding there
        holds here: a figure that has to be watched twice has failed once. */
-    var HOLD = 3400;
+    /* SHORT: IT SAYS AN ORDER, NOT A SENTENCE. 3400ms was measured for a
+       figure whose requirements only existed while a box was lit -- long enough
+       to read eight words. They are written in the boxes now and never leave,
+       so the round has one thing left to say, and 3.4s a box spent ten seconds
+       greying three quarters of a drawing to say it. */
+    var HOLD = 1300;
 
     var timer = null;
     var at    = 0;
@@ -1965,7 +2083,14 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
        never lit at all and "Your code" never lit in either. The box is drawn in
        both modes -- the server is there either way, only the installing of it
        is not -- so it takes its turn either way. */
-    var ring = function () { return ['srv', 'page', 'asst']; };
+    /* THE ORDER OF THE CHAPTERS BELOW, WHICH IS NOT ALWAYS THE SAME THREE. On
+       the shared server there is no server chapter, so opening the round on the
+       server box announced a chapter that does not exist -- and pointed at the
+       one box in that mode that is not a link. The box stays drawn either way;
+       it only takes the first turn when there is something to install in it. */
+    var ring = function () {
+        return shared.checked ? ['page', 'asst'] : ['srv', 'page', 'asst'];
+    };
 
     var stop = function () {
         if (timer) { clearTimeout(timer); timer = null; }
@@ -2003,7 +2128,13 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     var grab = function (name) { held = name; stop(); loop.removeAttribute('data-lit'); };
     var drop = function (name) { if (held !== name) return; held = null; run(); };
 
-    var pairs = [['.lp-page', 'page'], ['.lp-srv.if-own', 'srv'], ['.lp-asst', 'asst']];
+    /* BOTH DRAWINGS OF THE SERVER, NOT JUST THE LINK. This listed
+       `.lp-srv.if-own`, so on the shared server the box had no handler at all:
+       hovering it did not stop the round, the stylesheet lit it, and the round
+       lit another one -- two boxes forward at once, which is the one thing the
+       highlight exists to prevent. Measured before this line was written. */
+    var pairs = [['.lp-page', 'page'], ['.lp-srv.if-own', 'srv'],
+                 ['.lp-srv.if-shared', 'srv'], ['.lp-asst', 'asst']];
     for (var i = 0; i < pairs.length; i++) {
         (function (box, name) {
             if (!box) return;
@@ -2025,6 +2156,10 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                that a finished round stays finished: replaying it on every dial
                change would make the figure twitch at each answer. */
             if (held === 'srv' && shared.checked) held = null;
+            /* A dial changed BEFORE the round has finished changes which
+               chapters exist, so the round it is in the middle of is about the
+               wrong three. It restarts; a finished one stays finished. */
+            if (!done) { stop(); at = 0; loop.removeAttribute('data-lit'); run(); }
         });
     }
 
