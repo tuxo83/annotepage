@@ -1782,16 +1782,27 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
            the button -- that trip is the first half of "they press the
            button". The heading is a real element of the crop, top left, which
            is where a hand that has been reading tends to be. */
-        idle: '.pg-h',
+        idle: null,           // the middle of the frame; see moveTo
         rest: '.pill',        // the control that opens the tool
         elem: '.target',      // the button the remark will be about
         area: '.fm-area',     // the field, which is entered by clicking in it
         send: '.fm-send'      // the Send it is reaching for when the figure holds
     };
     var moveTo = function (where) {
+        var box = g.getBoundingClientRect();
+        /* A STATION WITH NO ELEMENT IS THE MIDDLE OF THE FRAME. Everywhere
+           else a station is a selector, because a pointer landing beside the
+           thing it is about to press says the tool clicked elsewhere. The
+           resting place is the exception: it is where nothing is happening,
+           and it belongs to no element -- asked for on the live site, the
+           heading it used to sit on read as "the pointer is on that". */
+        if (AT[where] === null) {
+            cur.style.transform = 'translate(' + (box.width / 2) + 'px, '
+                                               + (box.height / 2) + 'px)';
+            return;
+        }
         var el = g.querySelector(AT[where]);
         if (!el) return;
-        var box = g.getBoundingClientRect();
         var r = el.getBoundingClientRect();
         /* A station whose element is not laid out yet -- the form's Send before
            the form exists -- would read as 0,0, which is the frame's corner.
