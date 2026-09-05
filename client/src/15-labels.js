@@ -258,13 +258,13 @@ ns.defaultLabels = {
        so that the description can be asked for without a mouse. */
     'mode.public': 'Public',
     'mode.secure': 'Secure',
-    /* The write half is the one nobody expects -- the key gives both, and
-       this format has no reader-only role. Shortened from the paragraph it
-       replaces, and not one claim lighter. */
+    /* The write half is the one nobody expects, so AND write them carries
+       the sentence. It ended on "the key gives both -- this format has no
+       reader-only role", which restated the clause before it and then
+       explained a design decision to somebody who cannot act on it. Cut. */
     'mode.public_detail':
         'End-to-end encrypted, and the key is in this page: anyone who can '
-        + 'open the page can read these notes AND write them. The key gives '
-        + 'both -- this format has no reader-only role.',
+        + 'open the page can read these notes AND write them.',
     /* The mirror answer, which had never been written down anywhere: what
        the other mode actually costs the server. */
     'mode.secure_detail':
