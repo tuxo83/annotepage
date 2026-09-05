@@ -593,6 +593,24 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
     --t-ident:   #a4cbfa;
 }
 
+/* -- the configuration file, as it sits on the machine --------------------
+
+   A .frame.term because that is where it lives: the same ground and the same
+   border as the session below it, so the reader is told without a word that
+   these two pictures are the same computer.
+
+   THE SITES ARE THE ONLY THING LIT. Everything else -- the braces, the field
+   names, the addresses, the keys -- is dim, because what this figure is about
+   is the MAPPING: this site, that key. A file with one project would have said
+   "give it the key"; a file with two says the tool was built for somebody who
+   reviews several sites, without a sentence claiming it. */
+.cf-path { margin: 0 0 calc(.6rem * var(--ui)); color: var(--t-dim); }
+.cf-body {
+    margin: 0; white-space: pre; overflow-x: auto;
+    color: var(--t-dim); font: inherit;
+}
+.cf-body .site { color: var(--t-ident); }
+
 /* The terminal is a .frame.term from base.css: same ground, same border, same
    pair of rules round the input. What it needs on top is a session's shape --
    a fixed pane that never scrolls, and a monospace size that holds the
@@ -1118,14 +1136,52 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         <h2 class="chapter">You and your assistant</h2>
         <ol class="use-steps">
 
+<!-- == THE KEY, HANDED OVER -- SECURE MODE ONLY ======================
+     The question this page kept creating and answering elsewhere: the
+     reviewers have the key in their browsers, so how does the assistant
+     get it? It was a sentence in the step below, which put two moments
+     in one number -- and a sentence cannot show what the next step
+     needs, which is that the file maps SITES to keys.
+
+     TWO PROJECTS IN THE PICTURE, ON PURPOSE. Only one of them is used
+     in the session below, and one would have been enough to illustrate
+     "give it the key". Two says, without a sentence claiming it, that
+     somebody who reviews three sites is not going to be stuck -- and it
+     is what makes the next step's "one line names the site" mean
+     something: naming the site is what picks the key. -->
+        <li class="if-secure">
+            <div>
+                <p class="cap"><span class="n"></span> You give it the key, once</p>
+                <p class="say">One file on your machine, one entry per site.</p>
+                <p class="say">The assistant reads it there. The key never goes through the conversation.</p>
+            </div>
+
+            <figure class="fig">
+                <div class="frame term ui-large" aria-hidden="true">
+                    <p class="cf-path">~/.config/annotepage/annotepage.json</p>
+<pre class="cf-body">{
+  "projects": {
+    <span class="site">"staging.example.com"</span>: {
+      "api": "https://staging.example.com/notes/api.php",
+      "key": "W0iAHlP66ib&#x2026;65cRWkaw"
+    },
+    <span class="site">"shop.example.com"</span>: {
+      "api": "https://shop.example.com/notes/api.php",
+      "key": "Lm4tR9xQ2vC&#x2026;8sZKp1Ad"
+    }
+  }
+}</pre>
+                </div>
+            </figure>
+        </li>
+
 <!-- == 02 ============================================================== -->
         <li>
             <div>
                 <p class="cap"><span class="n"></span> You ask your assistant</p>
                 <p class="say">One line names the site. The rest is its own work.</p>
-                <p class="say if-secure"><b>Your assistant has the key too.</b> You gave it
-                once, in the command that
-                <a href="install.html#assistant">plugged it in</a>.</p>
+                <p class="say if-secure"><b>Naming the site is enough.</b> The file above
+                says which key that site uses.</p>
             </div>
 
             <figure class="fig">
