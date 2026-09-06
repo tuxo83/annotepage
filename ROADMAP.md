@@ -12,6 +12,28 @@ attached, which is the part worth keeping.
 
 ## Open
 
+- **The installer, self-contained, and the same options from a shell.**
+  Required, whatever else the install review decides. `annotepage-install.php`
+  runs today only in a browser: it reads `$_POST`, writes HTML, and asks three
+  questions. It has to run from a command line too, with proper options and a
+  `--help` that is readable on its own, and the two faces have to cover the
+  SAME set of options -- neither able to configure something the other cannot.
+
+  Measured before promising anything: `config.php` recognises **34 top-level
+  keys**; the installer's form asks **nine fields** and writes **two keys**
+  into the configuration, leaving everything else at its default. So parity is
+  not "add a CLI beside the form": it is deciding what the installer is for.
+  Every key is not a question -- eleven of the thirty-four are length caps
+  nobody sets at install time -- and the design question the review has to
+  settle is which keys are *questions*, which are *flags for whoever knows
+  they want them*, and which are neither. Until that line is drawn, a CLI
+  would be a second incomplete interface rather than one complete one.
+
+  Also required, and cheaper: a CLI run must be non-interactive by
+  construction (no prompt with a default nobody sees in a script), must say
+  what it wrote and where, and must fail loudly on an unknown option rather
+  than ignoring it.
+
 - **Screenshots on a note.** Undecided, and the objections are the point: a
   note weighs a few hundred bytes and a screenshot a thousand times more; it
   would have to be encrypted too, so no relay could ever build a thumbnail;
