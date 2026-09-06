@@ -7,30 +7,37 @@ annotepage is a script tag, so it already works anywhere you can paste one.
 This plugin is for sites where pasting into the template is the awkward part.
 It does not add a capability; it removes a chore.
 
+## Installing it
+
+It is not in the WordPress plugin directory. Download this repository, zip the
+`wordpress/` directory, and upload the zip under **Plugins > Add New > Upload
+Plugin**. Then **Settings > annotepage**: the address of your `api.php`, the
+mode, **Draw a key**, save. The tag appears at the end of `<body>` from that
+moment.
+
+`readme.txt` is the plugin's own page -- what it does, the two modes, the
+questions people ask. Read that one if you are installing it; this file is for
+whoever is reading the code.
+
 ## What it is not
 
 No dashboard of notes, no role, no widget, no shortcode, no block. The notes
 live in the panel on the site, beside the element they are about. Read them
 there, or through the MCP, from your assistant.
 
-## Why it ships no client code
+## The three decisions, and where they are argued
 
-The tag points at the CDN on a **floating major range**, `@2`. The client
-releases; the sites get it; this plugin does not move. Bundling `annotepage.js`
-would make this a release train for a file it did not write, and would put
-every fix behind somebody remembering to press Update.
+In the header of `annotepage.php`, beside the code that carries them, and in
+`readme.txt`, which is the plugin's own page. Not a third time here:
 
-The cost is stated rather than hidden: no `integrity` digest. A pinned digest
-is a fix that reaches nobody.
-
-## Why `wp_footer` and not `wp_enqueue_script`
-
-The client reads `document.currentScript` for its own attributes. A script
-queue may load a script however it likes -- concatenated, inlined, deferred as
-a module -- and every one of those leaves `currentScript` null. The client's
-rule is then silence: no annotation layer, **no error**. So the tag is written
-as text, late in `wp_footer`, where the queue has no invitation. `defer` stays
-on it; `type="module"` is what would break it.
+- **it ships no client code** -- the tag points at the CDN on a floating major
+  range, and the cost of that is stated rather than hidden: no `integrity`
+  digest;
+- **`wp_footer`, never `wp_enqueue_script`** -- the client reads
+  `document.currentScript`, and a script queue is entitled to load a script in
+  ways that leave it null;
+- **no `uninstall.php`** -- the stored option holds a key, and a key has no
+  recovery.
 
 ## The four answers
 
@@ -46,17 +53,13 @@ The six attributes that get no field -- `data-setup`, `data-mode`, `data-path`,
 `annotepage.php`, above the settings screen. A setting nobody will touch is a
 setting too many.
 
-## The key never transits
-
-It is generated with WebCrypto, on the administrator's machine. In public mode
-it is stored, because it is written into the page and is public by definition.
-In secure mode it is shown once and **not sent to WordPress at all**: the input
-is disabled before submit, and the save handler does not read it either.
+## The derivation is checked, not asserted
 
 `tools/check-landing-derivation.mjs` extracts the derivation block from
-`admin.js` and runs it against the MCP's implementation. A drift there would
-hand out a project id the client never computes, and nothing anywhere would
-raise an error.
+`admin.js` and runs it against the MCP's implementation. Of the three
+generators it guards, this is the one where a drift is hardest to see: there is
+no tag on screen to compare by eye. A drift would hand out a project id the
+client never computes, and nothing anywhere would raise an error.
 
 ## Requirements
 

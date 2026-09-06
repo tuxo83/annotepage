@@ -5,15 +5,25 @@ and one database; there is no build step and nothing to compile.
 
 ## What goes where
 
-    webroot/                  ->  the document root of api.annotepage.com
+    webroot/                  ->  the document root
     relay/config-local.php    ->  webroot/internal/config-local.php
-    secrets/                  ->  one level ABOVE the document root
+    secrets/                  ->  OUTSIDE the document root
 
 `secrets/` holds three one-line files -- `database-name`, `database-user`,
 `database-password` -- so the configuration you upload carries no password and
-can be read by anyone without harm. Put them outside the document root; the
-config refuses a path that is not absolute after resolution, and says which one
-it got.
+can be read by anyone without harm.
+
+**COUNT THE LEVELS AGAINST YOUR OWN LAYOUT, and do not copy the number.** The
+paths are absolute, anchored on `__DIR__`, and `__DIR__` is
+`webroot/internal/`. The file shipped here climbs three -- `/../../../secrets/`
+-- which is right when the document root is itself one directory below the
+account's home, and wrong by one everywhere else; `internal/config.php`'s own
+example climbs two. Both are examples, neither is the answer for your host.
+
+A path that is not absolute after resolution is refused outright, naming the
+path it got. One `..` too many is worse, because it arrives as a 503 saying the
+file is missing and to check the number of levels climbed -- which is exactly
+the mistake, said in a sentence somebody has to read carefully.
 
 ## The database
 
@@ -35,17 +45,24 @@ HTTPS serves nobody. Any certificate does.
 
 ## Checking it, in one request
 
-    curl 'https://api.annotepage.com/api.php?action=diagnostic'
+```
+GET <base>/api.php?action=diagnostic
+```
 
-Read three lines:
+**It answers four lines and no more** -- the tool, its version, the format and
+the verdict -- unless the configuration says `'diagnostic' => 'full'`. The
+short report is the default on purpose: that address has no authentication, so
+what it publishes it publishes to everybody.
+
+With `full`, the three lines worth reading on a relay are
 
     config.deployment          relay
     config.open_registration   yes -- any project id is served, no origin lock
     config.max_note_age_days   90 -- threads older than this are removed
 
-If `open_registration` says `no`, a copied tag will be refused with a 404 and
-the person who copied it has no way to guess why.
-
+and `full` is set while you check, then set back. This section used to name
+those three lines without saying that the default hides them: the reader ran
+the command, saw four lines, and had nothing to conclude from.
 ## What it costs to run
 
 It stores sealed envelopes it cannot read. A note is a few hundred bytes; the
