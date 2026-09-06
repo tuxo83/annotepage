@@ -15,8 +15,8 @@ At the end of `<body>`. The [install page](https://annotepage.com/how-to-install
 builds this one with your own address and key.
 
 ```html
-<script src="https://annotepage.com/annotepage-client-2.21.0.js"
-        integrity="sha384-somAD2fmEFshhHeIPtH2osNOi6CvkCHukXSYrGu1h0EHoJODDc9OFbSzvq2jfq57"
+<script src="https://annotepage.com/annotepage-client-2.22.0.js"
+        integrity="sha384-Iw9wfZ6d9e9+lE0pZQ3fSjkZ++f3qHdxQtLH4+d42SCEeiYmSzDD3Gbkw4SYjCZm"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
         data-project="your-project-id"
