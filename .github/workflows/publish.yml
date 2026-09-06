@@ -33,7 +33,17 @@ name: publish
 on:
   push:
     branches:
+      # main is what users get. `recette` is where a version is validated
+      # before they do: a version carrying a `-` publishes under npm's `next`
+      # dist-tag, so `annotepage-client@2` -- the range every install uses --
+      # keeps resolving to the last stable one, and only somebody asking for
+      # `@next` gets the candidate. jsDelivr resolves dist-tags, checked
+      # against a package that publishes both.
+      #
+      # The whole gate runs on both: a candidate nobody can install by accident
+      # is still a candidate that has to pass everything.
       - main
+      - recette
   # Kept so a release can be forced by hand when the registry was unreachable
   # at the time of the push.
   workflow_dispatch:
@@ -212,7 +222,28 @@ jobs:
         # Without --provenance: public repository + trusted publishing, npm
         # generates the attestation by itself. Adding the flag would change
         # nothing and would suggest it is what produces it.
-        run: npm publish
+        run: |
+          set -eu
+          # THE DIST-TAG IS DERIVED FROM THE VERSION, NEVER ASSUMED.
+          #
+          # `npm publish` with no --tag moves `latest` -- including for a
+          # pre-release. So publishing 2.17.0-rc.1 the plain way would make it
+          # the version `npm install annotepage-client` hands to everybody,
+          # which is the opposite of what a pre-release is for. npm does not
+          # guess this; nobody's habit should have to either.
+          #
+          # A version carrying a `-` goes out under `next`. Nothing else moves:
+          # `latest` stays where it was, the `@2` range keeps resolving to the
+          # last stable one -- semver ranges exclude pre-releases -- and
+          # `@next` is how the beta is asked for. jsDelivr resolves npm
+          # dist-tags, verified against a package that publishes both.
+          version="$(node -p "require('./package.json').version")"
+          case "${version}" in
+            *-*) echo "pre-release ${version}: publishing under the 'next' tag"
+                 npm publish --tag next ;;
+            *)   echo "release ${version}: publishing as 'latest'"
+                 npm publish ;;
+          esac
 
       # THE FLOATING TAG IS ONLY AS FAST AS THE CDN, and by default that is up
       # to twelve hours. jsDelivr resolves `@2` to a version and caches THAT

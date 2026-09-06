@@ -17,8 +17,15 @@ import { execFileSync } from 'node:child_process';
 
 const [pkg, version] = process.argv.slice(2);
 
-if (!['client', 'mcp'].includes(pkg) || !/^\d+\.\d+\.\d+$/.test(version || '')) {
-    console.error('usage: node tools/release.mjs <client|mcp> <x.y.z>');
+/* A RELEASE CANDIDATE IS A VERSION TOO. `2.17.0-rc.1` goes out under npm's
+   `next` tag, which the publish workflow derives from the `-`; the range every
+   install uses keeps resolving to the last stable one, because semver ranges
+   exclude pre-releases. And the client refuses to install an announced
+   pre-release on anybody's site: its shape is three numbers and nothing
+   around them. */
+if (!['client', 'mcp'].includes(pkg)
+    || !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version || '')) {
+    console.error('usage: node tools/release.mjs <client|mcp> <x.y.z[-rc.N]>');
     process.exit(1);
 }
 
