@@ -639,7 +639,8 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
     border: 1px solid var(--line); border-radius: var(--radius);
     background: var(--bg-soft); color: var(--text);
     line-height: 1.35; text-align: center;
-    transition: color .25s ease, border-color .25s ease, box-shadow .25s ease;
+    transition: color .25s ease, border-color .25s ease, box-shadow .25s ease,
+                background-color .25s ease;
 }
 .lp-name { font-size: clamp(.82rem, 2.1vw, .95rem); font-weight: 650; }
 /* WHAT THE PIECE ASKS FOR, INSIDE THE PIECE. It was a bubble floating beside
@@ -676,8 +677,18 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     font-size: clamp(.72rem, 1.9vw, .8rem); line-height: 1.3; text-align: center;
 }
 .lp-arr svg { display: block; color: var(--dim); }
-.lp-h svg { width: 100%; max-width: 7rem; height: auto; }
-.lp-v svg { height: clamp(2.6rem, 8vw, 4rem); width: auto; }
+/* THE FOUR ARE ONE LENGTH, AND THAT IS THE OTHER HALF OF "the arrows do not
+   look quite right". Measured on the rendered figure: the horizontal shafts
+   were 112px and the vertical ones 64px -- the same drawing at two sizes, side
+   by side, in a square. Nothing was malformed; the glyph is geometrically
+   sound at 6x magnification, the shaft meets its point and the aspect ratio is
+   preserved. What the eye caught was the pair being 1.75 times the other pair.
+
+   5.5rem for both, so a turn of the loop is four arrows of the same length.
+   The travelling dot follows on its own: the script below reads each arrow's
+   drawn length rather than carrying a number. */
+.lp-h svg { width: 100%; max-width: 5.5rem; height: auto; }
+.lp-v svg { height: clamp(2.6rem, 8vw, 5.5rem); width: auto; }
 
 /* THE HIGHLIGHT WAS BACKWARDS, AND IT WAS MEASURED. The lit box was drawn in
    --accent on --bg-soft: 6.45:1. Every other box stayed at --text: 16.42:1. The
@@ -706,11 +717,33 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 .loop:has(a.lp-box:hover) .lp-arr,
 .loop:has(a.lp-box:hover) .lp-arr svg { color: var(--line); }
 
+/* AND IT IS RAISED, NOT OUTLINED IN THE ACCENT -- WHICH IS THE WHOLE OF THE
+   SECOND DESYNCHRONISATION REPORT. It was outlined in the accent, exactly as
+   the travelling ring outlines the box the note has just reached. So pointing
+   at a box left an accent outline standing on it while the ring went on round
+   without it, and what the eye reads is not "one box is hovered and another is
+   lit" but "the lighting has come away from the dot".
+
+   MEASURED BEFORE CHANGING ANYTHING, because the same symptom was a real
+   timing bug once and that fix must not be undone by mistake: the ring's
+   opacity was sampled every 230ms for five seconds, with and without a pointer
+   held on a box, and it is the same single-box rotation in both -- nothing
+   restarts, nothing drifts. The ring's clock was not the problem this time.
+   Two different things were being drawn the same way.
+
+   So the accent stays the exclusive property of the ring, which is the one
+   thing on this figure that means "the note is here, now". Hovering raises the
+   box instead: its ground comes up off the mat, it keeps its full ink and its
+   ordinary edge while the others soften, and it takes the shadow every other
+   raised surface on this site has. The focus ring stays accent and stays an
+   `outline` three pixels off the box -- a keyboard ring is not in the running
+   to be mistaken for the loop. */
 .loop a.lp-box:hover,
 .loop a.lp-box:focus-visible {
     color: var(--text);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent);
+    border-color: var(--line);
+    background: var(--bg);
+    box-shadow: var(--shadow);
 }
 
 /* WHAT IS INSTALLED, AND WHAT IS ONLY THERE. A chevron said "this one leads
@@ -2484,8 +2517,8 @@ return array(
     if (quiet && quiet.matches) return;
 
     /* HOW FAR EACH DOT TRAVELS: THE ARROW'S OWN LENGTH, MEASURED. The arrows
-       are drawn at clamp() sizes -- the horizontal ones take the column's width
-       up to 7rem, the vertical ones 2.6 to 4rem -- so a distance written into
+       are drawn at clamp() sizes -- both pairs up to 5.5rem, the horizontal
+       ones capped by the column's width -- so a distance written into
        the stylesheet would be right at one width and wrong at every other, and
        the dot would stop short of the box or run past it. */
     var mesurer = function () {
