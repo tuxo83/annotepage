@@ -59,12 +59,18 @@
     --dim:       #52565f;
     --line:      #d3d7de;
     --line-soft: #e2e5ea;
-    /* --control-line lived here: the 3:1 boundary WCAG 1.4.11 asks of an
-       interactive control, and the only control that needed it was the copy
-       button. That button no longer stands on a surface that follows the
-       theme, so its boundary cannot either -- it is --code-chip-line now,
-       measured on the ground it actually sits on. A token defined against a
-       strip it is no longer painted on is a measurement nobody can check. */
+    /* THE BOUNDARY OF AN INTERACTIVE CONTROL, which --line cannot serve. It
+       left this file once, when the only control that needed it was a copy
+       button that had moved onto a surface not following the theme; it comes
+       back because the replay's own control is here now, and TWO pages carry
+       one. Measured on the rendered pixels: --line reaches 1.34:1 against the
+       strip that control sits on, where WCAG 1.4.11 asks for 3. This one
+       measures 3.35:1 against that strip and 3.62:1 against the button's own
+       fill -- the strip is --bg-soft, defined in this file, so the numbers
+       hold on every page that links it. It is deliberately NOT applied to the
+       frames around the pictures: those are decoration, and 1.4.11 does not
+       cover them. */
+    --control-line: #7f8794;
     --accent:    #0b53c0;
     --on-accent: #ffffff;
     --warn:      #7a4200;
@@ -84,7 +90,7 @@
 
 @media (prefers-color-scheme: dark) {
     :root {
---bg:        #0f1115;
+            --bg:        #0f1115;
             --bg-soft:   #171a20;
             --bg-code:   #13161b;
             --bg-warn:   #1d1810;
@@ -92,6 +98,7 @@
             --dim:       #a3a9b4;
             --line:      #38404c;
             --line-soft: #262c35;
+            --control-line: #6a7484;
             --accent:    #8ab4ff;
             --on-accent: #0f1115;
             --warn:      #f2c17a;
@@ -928,4 +935,356 @@
 .more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
     .more .arrow { transition: none; }
+}
+
+
+/* THE THREE TINTS ONLY A REPLAY NEEDS, beside the terminal ink above rather
+   than on the page that used to be the only one with a session. They were on
+   that page; base.css referred to them from here the day the rules moved, and
+   the second page then drew a sent line with no band behind it -- a custom
+   property that resolves nowhere fails silently, which is why
+   tools/check-css-balance.mjs now refuses one.
+
+   Measured on rendered pixels against the #1a1a1a ground, and the figures
+   cannot differ between page themes because nothing painted on that ground
+   depends on one. The band behind a sent line is a fill. `subtle` is the
+   prompt chevron at 2.16:1: it is the glyph the interface paints outside the
+   band, measured off a real session, and it is aria-hidden -- the band, not
+   the chevron, says whose line it is. */
+:root {
+    --t-subtle:  #505050;
+    --t-userbg:  #373737;
+    /* Not in the binary's table: measured off a real session instead, on the
+       lossless capture rather than the lossy one. The bullet in front of a
+       tool call is rgb(82,151,248) where the bullet in front of the
+       assistant's own prose is plain white, and an identifier quoted inside a
+       sentence is rgb(164,203,250). One bullet for everything was the clearest
+       tell the figure had left. */
+    --t-tool:    #5297f8;
+}
+
+/* == A SESSION REPLAYING, AND THE CHROME UNDER A FIGURE ====================
+
+   WRITTEN ON ONE PAGE, NEEDED ON TWO. Every rule below stood in
+   how-to-use-it.html and was moved here whole -- not retyped -- the day the
+   install page ended on a session of its own. The menus of this site diverged
+   once because a shell was copied rather than shared, and 250 lines of
+   timeline chrome would have diverged the same way, only less visibly.
+
+   The markup these rules expect, and the script that drives it, are in
+   /replay.js: one root carrying `.rp`, the lines inside it carrying
+   `data-step` and `data-at`, and the control in the caption carrying
+   `.replay`. Nothing here knows what a session says.
+   ======================================================================== */
+
+/* The terminal is a .frame.term from base.css: same ground, same border, same
+   pair of rules round the input. What it needs on top is a session's shape --
+   a fixed pane that never scrolls, and a monospace size that holds the
+   capture's columns. */
+.frame.rp {
+    display: block; padding: 0; min-height: 0;
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.35;
+    letter-spacing: 0;
+}
+.rp-flow {
+    padding: .9rem .8rem .4rem; min-width: 0;
+    /* A terminal has no scrollbar in the middle of a recording. The pane is
+       clipped and the script moves it, one jump at a time, forward only. */
+    overflow: hidden;
+}
+/* THE SESSION FILLS THE PANE FROM THE TOP. While the pane is exactly as tall
+   as the finished session, holding the lines against the bottom spends the
+   first seconds with four hundred pixels of empty black above them -- which is
+   the same shape as an embed that failed to load. Top down, the first line
+   lands where the eye already is. */
+.rp[data-play] .rp-flow {
+    /* A fallback for the instant before the script runs. The height that
+       survives is written by the script, which lays the finished session out
+       once and measures it -- so it is right at every width, in every font
+       fallback, and it cannot drift when a line above is edited. */
+    height: 22rem;
+    display: flex; flex-direction: column;
+}
+.rp[data-play] .rp-flow > * { flex: none; }
+/* 100ch: the longest row in the session is 91 characters, so this clears every
+   one of them and the pane, not this rule, is what a line wraps against. */
+.rp-flow > * { max-width: 100ch; }
+
+/* The user's own turn, once it has been sent. Measured off a real session
+   rather than reasoned about: the chevron sits OUTSIDE the band, on the
+   terminal's own ground, and the band hugs the text. The glyph is U+276F, not
+   the ASCII `>`: the older builds draw `>`, the current ones draw the
+   chevron. */
+.rp-user {
+    margin: 0 0 .4rem; color: var(--t-text);
+    white-space: pre-wrap; overflow-wrap: break-word;
+    padding-left: 2ch; text-indent: -2ch;
+}
+.rp-user .ps, .rp-line .ps { color: var(--t-subtle); }
+/* AND THE GUTTER THE COPY CHIP NEEDS, where there is one. A session whose
+   first line is the thing to copy carries the page's copy chip in the frame's
+   top right corner, and at 500px that line wraps -- its first row ran under
+   the chip and lost three words. Only this line can reach the chip: every
+   other one starts lower than the chip ends. So the gutter is reserved on the
+   line, not on the pane, which would indent a session nobody is copying. */
+.rp:has(.copy) .rp-user { padding-right: 2.6rem; }
+.rp-user .band {
+    background: var(--t-userbg);
+    padding: .1rem .35rem; border-radius: 2px;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+/* The tool call and its result are <code> outside a <pre>. A terminal has
+   neither a border nor a fill round a line. */
+.rp-tool, .rp-out {
+    display: block; background: none; border: 0; border-radius: 0;
+    font-family: inherit; font-size: inherit;
+}
+/* The assistant's own words, and its tool calls: the round bullet at column
+   1, the text from column 3, wrapped continuations lined up under it. */
+.rp-say, .rp-tool {
+    position: relative; margin: 0 0 .4rem; padding-left: 2ch;
+    white-space: pre-wrap; overflow-wrap: break-word; color: var(--t-text);
+}
+.rp-say::before, .rp-tool::before {
+    content: "\25CF"; position: absolute; left: 0; top: 0;
+}
+/* THE BULLET IS NOT ONE COLOUR. It is coded by what produced the line: the
+   assistant's own prose takes a white bullet, a tool call takes the tool's
+   colour -- blue for Bash, which is every tool call in this session. The
+   tool's NAME is bold and its argument is not. */
+.rp-say::before { color: var(--t-text); }
+.rp-tool::before { color: var(--t-tool); }
+.rp-tool b { font-weight: 700; }
+/* A TOOL CALL IS ONE ROW, ALWAYS, cut off with an ellipsis rather than
+   wrapped -- which is what the interface does with a command longer than the
+   window. It matters more than it looks: the commit message is 91 characters
+   and wrapped it ran to three rows on a phone, and six rows of broken shell is
+   the most intimidating thing a figure like this can show somebody who writes
+   none. */
+.rp-tool { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* An identifier quoted inside a sentence is tinted where the rest of the
+   sentence is not -- here the version a fix ships in, which is the only
+   identifier this session's prose contains. */
+.rp-say .id { color: var(--t-ident); }
+/* A tool result: two spaces, the hooked prefix, two spaces, then the output
+   from column 5 -- dim, because it is the machine talking and not the
+   assistant. It arrives whole. Nothing here is ever typed out. */
+.rp-out {
+    position: relative; margin: -.3rem 0 .55rem; padding-left: 5ch;
+    color: var(--t-dim);
+    white-space: pre-wrap; overflow-wrap: break-word;
+}
+.rp-out::before { content: "\23BF"; position: absolute; left: 2ch; top: 0; }
+/* THE REAL INTERFACE COLLAPSES TOOL OUTPUT BY DEFAULT: it prints the call, and
+   under it one dim line reading the number of rows it is not showing. This
+   figure collapses the same way, and every count is the exact number of lines
+   the capture holds and this figure does not show. Two results carry one line
+   out of the collapse, and each is the one line of its capture that decides
+   something: the measurement, because a measurement being taken is the
+   project's whole argument, and `Reported success!`, which is the moment the
+   fix stops being local. */
+.rp-out .trunc { color: var(--t-dim); }
+.rp-out .ok { color: var(--t-ok); }
+/* Between passes. The pane empties and this line holds alone for a second and
+   a half, so a reader arriving in the middle of the second pass does not spend
+   it reconciling two sessions that are the same session. It is the figure's
+   own mark, bracketed, because no terminal prints it. */
+.rp-restart { margin: 0; color: var(--t-dim); font-style: italic; display: none; }
+.rp[data-play][data-restart] .rp-restart { display: block; }
+
+/* -- the working indicator ------------------------------------------------
+   The part a still frame cannot show. One blank line above it, column 1, and
+   it sits under the transcript for the whole turn. It is aria-hidden: it
+   carries no fact, and read aloud it would be noise between the sentences that
+   do. One line of room is kept whether or not anything is in it, so the input
+   box below never moves when the turn ends.
+
+   WHAT IS NOT IN IT: the elapsed clock and the token count the interface
+   prints beside the verb. Both are real and both were dropped -- a number
+   climbing while nothing else moves is the figure saying "this took effort".
+   What the turn cost is said once, at the end, in the past tense. */
+.rp-work {
+    visibility: hidden; min-height: 1.4em;
+    margin: .5rem .8rem .2rem; color: var(--t-claude);
+}
+.rp[data-play][data-working] .rp-work { visibility: visible; }
+/* The frame cell is always two columns wide, whatever glyph is in it. That
+   fixed box is what stops the verb twitching when a frame measures wider. */
+.rp-frame { display: inline-block; width: 2ch; text-align: left; }
+.rp-verb { white-space: pre; }
+/* Three cells of brighter ink crossing the verb, one whole cell at a time. A
+   gradient would be smoother and therefore wrong: the real one can only
+   address whole character cells. */
+.rp-verb .lit { color: var(--t-shimmer); }
+
+/* Two full-width rules and nothing else: no verticals, no corners. Drawn as
+   1px borders in base.css, never as box-drawing characters -- on a fallback
+   font those stop tiling and the column drifts. */
+.rp-input { margin: .2rem .8rem 0; flex: none; }
+.rp-line {
+    padding-left: 2ch; text-indent: -2ch;
+    white-space: pre-wrap; overflow-wrap: break-word;
+}
+/* The chevron's gap is the literal space after it plus the negative indent,
+   as it was captured. `.mt-input .ps` brings .6ch of margin for the crop on
+   the other two pages, where there is no indent to answer it. */
+.rp-line .ps { color: var(--t-dim); margin-right: 0; }
+/* The hint row under the lower rule, and WHICH hint belongs when. A finished
+   session that still offers to interrupt something is a line no session ever
+   printed: while a turn runs the row reads `esc to interrupt`, and when
+   nothing is running it reads `? for shortcuts`. With the script off nothing
+   is running, so the idle hint is the one the static transcript carries. */
+.rp-hint { margin: .1rem .8rem .55rem; color: var(--t-dim); font-size: 12px; }
+.rp-hint .busy { display: none; }
+.rp[data-play][data-working] .rp-hint .busy { display: inline; }
+.rp[data-play][data-working] .rp-hint .idle { display: none; }
+/* What a turn leaves behind when it ends. The indicator does not simply
+   vanish -- it is replaced, IN PLACE, by a line saying how long the turn took,
+   and that line stays in the scrollback. They used to be stacked, and the
+   figure grew by a line at the exact moment it was supposed to be settling.
+   The number is not chosen: the script writes the elapsed time its own
+   timeline produced, floored the way the counter above it floors. */
+.rp-worked {
+    display: none; min-height: 1.4em;
+    margin: .5rem .8rem .2rem; color: var(--t-dim);
+}
+/* U+273B, and it is one of the twelve the indicator actually draws -- which
+   matters, because this line REPLACES that indicator in the same cell. Its
+   predecessor was in no frame of it, and at 12px on a phone it painted nothing
+   at all. */
+.rp-worked .g { display: inline-block; width: 2ch; color: var(--t-claude); }
+.rp[data-play][data-worked] .rp-worked { display: block; }
+.rp[data-play][data-worked] .rp-work { display: none; }
+/* The block cursor is not a separate box that could push the line about: it is
+   the NEXT cell, painted. It stays solid while characters are arriving -- a
+   caret that blinks through its own typing is the tell. */
+.rp[data-play] .rp-line .ch { visibility: hidden; }
+.rp[data-play] .rp-line .ch.on { visibility: visible; }
+.rp[data-play] .rp-line .ch.cur {
+    visibility: visible; background: var(--t-text); color: transparent;
+    display: inline-block; width: 1ch;
+}
+.rp[data-play][data-idle] .rp-line .ch.cur { animation: rp-blink 1s steps(1, end) infinite; }
+@keyframes rp-blink { 50% { opacity: 0; } }
+/* Nothing appears until the script says so, and only then. */
+.rp[data-play] [data-step] { display: none; }
+.rp[data-play] [data-step].on { display: block; }
+
+@media (max-width: 700px) {
+    .frame.rp { font-size: 12px; }
+    .rp[data-play] .rp-flow { height: 26rem; }
+}
+
+/* -- under a figure ------------------------------------------------------- */
+
+.fig { margin: 0; }
+/* NOTHING IS WRITTEN UNDER A FIGURE ANY MORE -- the pictures say it, and a
+   line repeating them scored zero. What is left is the button, and the button
+   is itself hidden unless the reader has asked for no motion or the figure has
+   run out. So the strip carries NO margin of its own: an empty caption that
+   still pushed the next step down would be spacing for nothing. The margin
+   arrives with the button, in the same rule that reveals it. */
+.fig-foot {
+    display: flex; align-items: baseline; gap: .8rem 1.2rem; flex-wrap: wrap;
+}
+/* THE LOOP HAS TO LOOK LIKE A LOOP. Both figures run for ever now -- they are
+   the content of this page, not decoration beside it -- and a restart that
+   simply swaps the screen reads as a glitch: somebody looking away for a second
+   cannot tell whether they missed something or whether the figure moved on its
+   own. So the frame dims while it rewinds, and comes back up half a second
+   before it starts again: you see it RETURN, then go.
+
+   Opacity and not display: the box keeps its size, so nothing below it jumps.
+   And it is a transition rather than an animation, so the reduced-motion block
+   further down can stop it with the rest -- there, neither timeline arms at
+   all, and a figure that never rewinds never dims. */
+/* Named on the class and not on an id, because two pages carry a replay now
+   and an id cannot be in two places. The usage page's gesture figure keeps its
+   own pair beside this one: it rewinds the same way and is not a session. */
+.rp { transition: opacity .52s ease; }
+.rp[data-rewind] { opacity: .16; }
+
+/* AND THE RESTART IS SAID, NOT ONLY SHOWN. Reviewed on the live site: the
+   dim-and-return reads as a restart once you already know the figure loops,
+   and not before. So a badge appears in the middle of the frame for exactly as
+   long as the frame is dimmed, and disappears with it.
+
+   IT IS OUTSIDE THE FRAME IN THE MARKUP, and it has to be: opacity applies to
+   a whole subtree, so a badge inside the frame would fade to .16 along with
+   everything it is there to explain.
+
+   The circular arrow is the retry glyph of every icon set there is -- the
+   wrong drawing for a deploy, which is why the marker between two steps uses
+   an arrow out of a line, and exactly the right one here. Same two paths,
+   drawn by us, owed to nobody.
+
+   Nothing appears for a reader who asked for no motion: neither figure ever
+   rewinds there, so neither ever carries the attribute this hangs off. */
+.fig { position: relative; }
+.restart {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex; align-items: center; gap: .6rem;
+    padding: .55rem 1.05rem .55rem .8rem;
+    border-radius: 999px;
+    background: var(--bg); border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    color: var(--dim); font: 600 .95rem/1 var(--sans);
+    opacity: 0; transition: opacity .3s ease;
+    pointer-events: none; white-space: nowrap;
+}
+.restart svg { flex: none; width: 1.25rem; height: 1.25rem; color: var(--accent); }
+.fig > [data-rewind] ~ .restart { opacity: 1; }
+
+/* IT HAS TO BE READ, NOT GLIMPSED. Reviewed on the live site: a badge that
+   appears and goes inside a second is not understood, it is only noticed. So
+   three things, and the three of them are the answer to that one remark: the
+   gap between two passes goes from 1.6s to 2.6s, the badge SAYS the word
+   instead of leaving a glyph to carry it alone, and the arrow turns once --
+   one turn, at the speed of the pause, not a spinner. A spinner would say
+   "wait"; this says "it is going round again", which is the truth.
+
+   The turn is an animation, so the page's own reduced-motion rule stops it
+   with everything else -- and there, no figure ever rewinds, so nothing of
+   this is ever on screen anyway. */
+@keyframes ap-restart-turn {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+.fig > [data-rewind] ~ .restart svg { animation: ap-restart-turn 1.6s ease-in-out; }
+
+.replay {
+    display: none; flex: none;
+    font: 600 .85rem/1 var(--sans); color: var(--text);
+    background: var(--bg-soft); border: 1px solid var(--control-line);
+    border-radius: 999px; padding: .5rem .95rem; cursor: pointer;
+}
+.replay:hover { border-color: var(--accent); color: var(--accent); }
+/* Shown when the figure has finished, and shown at once when the reader has
+   asked for no motion -- in that case nothing plays unless they press it. */
+[data-done] ~ .fig-foot .replay,
+[data-quiet] ~ .fig-foot .replay { display: inline-block; }
+/* THE COPY BUTTON IS NOT A REPLAY: it is always there, because what it copies
+   is always there. Same shape, so the strip reads as one kind of thing.
+   It lives in the caption and NOT in the frame, because the frame is
+   aria-hidden -- a control inside it would be a control nobody using a screen
+   reader could reach. */
+.fig-foot .copy {
+    display: inline-block; flex: none;
+    font: 600 .85rem/1 var(--sans); color: var(--text);
+    background: var(--bg-soft); border: 1px solid var(--control-line);
+    border-radius: 999px; padding: .5rem .95rem; cursor: pointer;
+}
+.fig-foot .copy:hover { border-color: var(--accent); color: var(--accent); }
+.fig-foot .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.fig-foot:has(.copy) { margin-top: .95rem; }
+@media (min-width: 48rem) {
+    .fig-foot:has(.copy) { margin-top: 1.7rem; }
+}
+[data-done] ~ .fig-foot,
+[data-quiet] ~ .fig-foot { margin-top: .95rem; }
+@media (min-width: 48rem) {
+    /* Clear of the mat the frame paints around itself. */
+    [data-done] ~ .fig-foot,
+    [data-quiet] ~ .fig-foot { margin-top: 1.7rem; }
 }

@@ -1963,11 +1963,77 @@ return array(
                     <p class="cap"><span class="n"></span> Then ask it</p>
                     <p class="say">One sentence, with the address of your site.</p>
                 </div>
-                <div class="frame term">
-                    <button class="copy" type="button" data-copy="ask-code" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-                    <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
-                    <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-code">connect to staging.example.com with annotepage and fix what the reviewers flagged</span><span class="cur"></span></div>
-                </div>
+                <!-- AND IT MOVES, BECAUSE A STILL PICTURE OF A PROMPT ANSWERS
+                     THE WRONG QUESTION. What stood here was the line, a
+                     "Pondering..." that never finished, and a cursor. It showed
+                     what to type. It did not show what comes back, which is the
+                     only thing a reader who has just installed three parts
+                     wants to know: did any of it work.
+
+                     So the same skin runs the turn. The line is typed, the
+                     project is opened, and what comes back is the notes left by
+                     the person the marker above put there -- three of them, on
+                     one page. THE SESSION STOPS AT READING THEM. Measuring,
+                     editing, replying and resolving are the detailed usage
+                     page's whole subject, and replaying them here would be the
+                     same session told twice on one site. This one ends where
+                     that one starts, and the last line says so.
+
+                     NOTHING HERE IS A CAPTURE, and nothing pretends to be: the
+                     host is the example host this page has used since its first
+                     step, and the counts are an example's counts. The usage
+                     page's session is captioned as a real run and is one; this
+                     is the same drawing as the file manager and the installer
+                     screen above it.
+
+                     The chrome, the rules and the clock come from base.css and
+                     /replay.js, shared with that page rather than copied -- the
+                     timings below are the only thing about this session that
+                     lives here. -->
+                <figure class="fig">
+                    <div class="frame term rp"
+                         data-sent="1740" data-end="6340" data-held="9340">
+                        <button class="copy" type="button" data-copy="ask-code" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                        <div class="rp-flow">
+<p class="rp-restart">[figure: playing it again]</p>
+
+<p class="rp-user" data-step="ask"><span class="ps" aria-hidden="true">&#x276F;</span> <span class="band" id="ask-code">connect to staging.example.com with annotepage and fix what the reviewers flagged</span></p>
+
+<code class="rp-tool" data-step="t1" data-at="2220"><b>Bash</b>(annotepage open)</code>
+<code class="rp-out" data-step="o1" data-at="2600"><span class="trunc">&#x2026; +41 lines (ctrl+o to expand)</span></code>
+
+<p class="rp-say" data-step="s1" data-at="3320">Three notes are open on <span class="id">staging.example.com</span>, all on <span class="id">/pricing</span>.</p>
+
+<code class="rp-tool" data-step="t2" data-at="4060"><b>Read</b>(pricing.html)</code>
+<code class="rp-out" data-step="o2" data-at="4460"><span class="trunc">&#x2026; +214 lines (ctrl+o to expand)</span></code>
+
+<p class="rp-say" data-step="s2" data-at="5320">Reading the page they point at. From here it is the loop: measure, edit, reply in the thread, resolve.</p>
+
+                        </div>
+
+                        <div class="rp-work" aria-hidden="true"><span class="rp-frame">&#x00B7;</span><span class="rp-verb"></span></div>
+                        <div class="rp-worked" aria-hidden="true"><span class="g">&#x273B;</span>Worked for <span class="rp-worked-n">0s</span></div>
+
+                        <div class="rp-input mt-input">
+                            <div class="rp-line"><span class="ps">&#x276F;</span> </div>
+                        </div>
+                        <div class="rp-hint" aria-hidden="true"><span class="busy">esc to interrupt</span><span class="idle">? for shortcuts</span></div>
+                    </div>
+
+                    <span class="restart" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
+                             focusable="false">
+                            <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>
+                            <path d="M20.5 3.5v5.5h-5.5"/>
+                        </svg>
+                        Playing it again
+                    </span>
+
+                    <figcaption class="fig-foot">
+                        <button type="button" class="replay">Watch again</button>
+                    </figcaption>
+                </figure>
             </li>
         </ol>
     </div>
@@ -2457,6 +2523,10 @@ return array(
     }
 }());
 </script>
+
+<!-- The session in the last step, on the clock written on its own markup. The
+     same file drives the usage page's; neither knows about the other. -->
+<script src="/replay.js" defer></script>
 
 <!-- The tool, on this page, in open mode: the site is annotated with what it
      describes. Served from this origin, not the CDN: this file is compared byte
