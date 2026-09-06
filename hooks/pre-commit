@@ -1,0 +1,12 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# BEFORE A COMMIT: the leak guard, and nothing else.
+#
+# The checks belong to pre-push, not here. `npm run check` takes seconds, and a
+# commit is the unit of work in this repository -- gating every one of them
+# would make people commit less, which is the opposite of what is wanted. What
+# CANNOT wait is the leak guard: once a name is in a commit it is in the
+# history, and a later commit does not take it out.
+# ---------------------------------------------------------------------------
+set -u
+exec "$(dirname "$0")/garde.sh"

@@ -8,6 +8,7 @@
     "url": "git+https://github.com/tuxo83/annotepage.git"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath hooks",
     "build": "node client/tools/build.mjs",
     "check": "npm run check:bundle && npm run check:sri && npm run check:injection && npm run check:css && npm run check:html && npm run check:shell && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp",
     "check:sri": "node tools/check-sri.mjs",
@@ -20,7 +21,8 @@
     "check:css": "node tools/check-css-balance.mjs",
     "check:html": "node tools/check-html-nesting.mjs",
     "check:shell": "node tools/check-shell.mjs",
-    "check:bundle": "node tools/check-bundle-parses.mjs"
+    "check:bundle": "node tools/check-bundle-parses.mjs",
+    "check:published": "node tools/check-published.mjs"
   },
   "engines": {
     "node": ">=20"

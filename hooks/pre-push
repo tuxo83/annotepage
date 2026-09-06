@@ -1,0 +1,39 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# BEFORE A PUSH: everything, because a push is what reaches production.
+#
+# WHY THIS EXISTS. A release went out with `npm run check` failing -- it had
+# been run, the output had not been read -- and the next one went out with a
+# bundle the browser refuses to parse, which left the tool non-existent on
+# every page carrying it. Both were found by a person, afterwards, on the live
+# site. A gate that depends on somebody reading a screen is not a gate.
+#
+# Pushing is the last moment anything can still be stopped: GitHub Pages
+# deploys from main, and the publish workflow publishes from main.
+#
+# --no-verify still bypasses it, as it bypasses every hook. That is git's
+# design and not a hole to plug here: what this removes is the failure that
+# actually happened, which is a green-looking screen nobody read.
+# ---------------------------------------------------------------------------
+set -u
+
+echo "--- garde-fou : noms, adresses, chemins"
+"$(dirname "$0")/garde.sh" || exit 1
+
+echo "--- npm run check : bundle, sri, injection, css, html, shell, versions,"
+echo "    manifest, landing, client, mcp"
+if ! npm run check --silent; then
+    echo
+    echo "REFUSE : la suite echoue. Rien ne part."
+    echo "Corriger la cause, jamais le controle."
+    exit 1
+fi
+
+echo "--- ce qui est deja en ligne sous ce numero"
+if ! node tools/check-published.mjs; then
+    echo
+    echo "REFUSE : la version publiee et ce qui est ici ne sont pas le meme fichier."
+    exit 1
+fi
+
+echo "--- tout est vert"
