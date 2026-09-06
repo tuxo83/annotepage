@@ -9,4 +9,13 @@
 # history, and a later commit does not take it out.
 # ---------------------------------------------------------------------------
 set -u
-exec "$(dirname "$0")/garde.sh"
+here="$(dirname "$0")"
+
+# AND NO ASSISTANT'S NAME, which is the other thing a commit carries for ever.
+# Here rather than in pre-push for the same reason as the guard above: once it
+# is in a commit it is in the history, and a later commit does not take it out.
+# This half reads the git identity and the lines the commit ADDS -- never the
+# lines it removes, or the guard would forbid its own cleanup.
+node "${here}/../tools/check-ai-names.mjs" staged || exit 1
+
+exec "${here}/garde.sh"
