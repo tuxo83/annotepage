@@ -71,6 +71,19 @@ ns.defaultLabels = {
     'panel.escape': 'Press Escape to stop.',
     'panel.empty': 'Nobody has written a note on this page yet.',
     'panel.section_page': 'On this page',
+    /* -- The list, and what opens from it --------------------------------
+       THE PANEL IS A LIST NOW, AND A REMARK IS A WINDOW. Full cards down a
+       350px band meant three of them filled it and the fourth was below the
+       fold; what a reviewer wants from that column is which remarks exist and
+       where they point, and then one of them at a time.
+
+       The row says what the remark is ABOUT, because that is how somebody
+       finds the one they mean -- not by its author and not by its date. */
+    'list.open': 'Open this remark',
+    'list.state_open': 'Still to fix',
+    'list.state_pending': 'Resolved, waiting to be deployed',
+    'list.state_done': 'Resolved and online',
+    'list.untitled': 'A remark',
     /* -- What the whole project holds ------------------------------------
        ONE ROW, ALWAYS, UNDER THE HEADER. A count is a glance, not a section:
        it was a fold behind a fourth link in a 350px header, and both that link

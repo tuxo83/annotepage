@@ -328,6 +328,66 @@ const failureBlock = (failure, onClose) => {
     return block;
 };
 
+/* -- A REMARK, AS ONE LINE IN A LIST -------------------------------------
+ *
+ * WHAT THE COLUMN IS FOR. Full cards down a 350px band meant three of them
+ * filled it and the fourth was below the fold, so the panel answered "what
+ * does this one say" for the first three and "what is here at all" for none.
+ * The list answers the second question, which is the one somebody has when
+ * they open the panel; the window answers the first, one remark at a time.
+ *
+ * IT SAYS WHAT THE REMARK IS ABOUT, not who wrote it or when. That is how
+ * somebody finds the one they mean: they remember the button, the heading, the
+ * sentence it was about -- never the timestamp.
+ *
+ * AND ITS STATE, AS A MARK RATHER THAN A SENTENCE. Three states, and the
+ * middle one has to be visible from the list: resolved but not deployed is a
+ * defect still on screen, and a list that showed it as done would be lying at
+ * a glance.
+ */
+
+const noteRow = (note, orphan) => {
+    const live = note.resolved_at ? alreadyDeployed(note.resolved_version) : false;
+    const state = note.resolved_at ? (live ? 'done' : 'pending') : 'open';
+    const row = create('button', 'ap-row ap-row-' + state);
+    row.type = 'button';
+    row.setAttribute('data-ap-note', String(note.id));
+
+    const dot = create('span', 'ap-row-dot');
+    dot.setAttribute('aria-hidden', 'true');
+    row.appendChild(dot);
+
+    const about = note.excerpt || (orphan ? T('note.element_lost') : T('list.untitled'));
+    const text = create('span', 'ap-row-about', about);
+    row.appendChild(text);
+    row.appendChild(create('span', 'ap-row-who', note.author));
+
+    /* The state is a colour, and a colour is not a fact for everybody: it is
+       spelled out in the accessible name, with what the remark is about. */
+    row.setAttribute('aria-label', T('list.open') + ' -- ' + about + ' -- '
+        + T(state === 'open' ? 'list.state_open'
+            : (state === 'pending' ? 'list.state_pending' : 'list.state_done')));
+    row.title = T('list.open');
+
+    row.addEventListener('click', () => showNote(note, orphan));
+    return row;
+};
+
+/* THE WINDOW REMEMBERS WHICH REMARK IT HOLDS. Replying or resolving redraws
+   the panel from the server's answer, and a window left showing the card as it
+   was before would be the one place on screen still telling the old story. */
+let popNote = null;
+
+/* `showNote` and not `openNote`: 40-api.js already has an openNote, and it
+   DECRYPTS a note. Two functions with one name in one bundle is a bug waiting
+   for whoever reads the second one first. */
+const showNote = (note, orphan) => {
+    popNote = { id: note.id, orphan: orphan };
+    openPop(note.excerpt || T('list.untitled'), (into) => {
+        into.appendChild(noteCard(note, orphan));
+    });
+};
+
 const noteCard = (note, orphan) => {
     /* Resolution state, said on the card itself. Two distinct cases:
        resolved and online, or resolved but not deployed yet -- the second has
@@ -722,6 +782,7 @@ const closePop = () => {
     if (!pop) return;
     pop.remove();
     pop = null;
+    popNote = null;
 };
 
 const openPop = (title, fill) => {
@@ -952,7 +1013,7 @@ const drawPanel = () => {
     if (current.length) {
         ui.body.appendChild(create('h2', 'ap-section-title', T('panel.section_page')));
         for (let i = 0; i < current.length; i += 1) {
-            ui.body.appendChild(noteCard(current[i], false));
+            ui.body.appendChild(noteRow(current[i], false));
         }
     }
 
@@ -960,7 +1021,7 @@ const drawPanel = () => {
         ui.body.appendChild(create('h2', 'ap-section-title', T('orphans.title')));
         ui.body.appendChild(create('p', 'ap-section-help', T('orphans.help')));
         for (let i = 0; i < orphans.length; i += 1) {
-            ui.body.appendChild(noteCard(orphans[i], true));
+            ui.body.appendChild(noteRow(orphans[i], true));
         }
     }
 
@@ -978,7 +1039,7 @@ const drawPanel = () => {
         if (historyOpen) {
             ui.body.appendChild(create('p', 'ap-section-help', T('history.help')));
             for (let i = 0; i < archived.length; i += 1) {
-                ui.body.appendChild(noteCard(archived[i], false));
+                ui.body.appendChild(noteRow(archived[i], false));
             }
         }
     }
@@ -1070,6 +1131,26 @@ const drawPanel = () => {
         const n = notes[i];
         if (!(n.resolved_at && alreadyDeployed(n.resolved_version))) open += 1;
     }
+    /* AND THE WINDOW FOLLOWS. Replying or resolving redraws this panel from
+       what the server answered; a window still showing the card as it was
+       would be the one place on screen telling the old story. The remark is
+       looked up again by id -- it may have gained a reply, changed state, or
+       gone. */
+    if (popNote) {
+        let again = null;
+        for (let i = 0; i < notes.length; i += 1) {
+            if (notes[i].id === popNote.id) { again = notes[i]; break; }
+        }
+        if (!again) closePop();
+        else {
+            const body = pop && pop.querySelector('.ap-pop-body');
+            if (body) {
+                empty(body);
+                body.appendChild(noteCard(again, popNote.orphan));
+            }
+        }
+    }
+
     ui.buttonCount.textContent = (total && open !== total)
         ? T('button.notes_of', { open: open, total: total })
         : readableCount(total, 'button.notes_zero', 'button.notes_one', 'button.notes_n');
