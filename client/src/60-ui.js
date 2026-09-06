@@ -1596,6 +1596,13 @@ const openForm = (el, existingText) => {
    on whatever happens to be under a pointer that has not moved. */
 const onHover = (event) => {
     if (pop) return;
+    /* AND NOT WHILE A REMARK IS BEING WRITTEN, for the same reason and on the
+       same report: the outline and its label kept moving from paragraph to
+       paragraph behind the form, so the tool was proposing the next thing to
+       annotate to somebody in the middle of annotating this one. The element
+       being written about stays outlined until the form closes -- which is
+       what a reader looking away from their own sentence needs to find. */
+    if (ui.form.classList.contains('ap-open')) return;
     const el = event.target;
     if (!el || el.nodeType !== 1 || inTool(el)) return;
     if (el === document.body || el === document.documentElement) return;
@@ -1629,6 +1636,17 @@ const onClick = (event) => {
             && el !== document.documentElement) hovered = el;
         closePop();
         return;
+    }
+    /* AND A CLICK ELSEWHERE DOES NOT THROW A REMARK AWAY. openForm() rebuilds
+       the form from nothing, so aiming at another element while something was
+       written DISCARDED it -- silently, with no confirmation, on a click the
+       reader may not have meant. Nothing typed: aiming again costs nothing and
+       still works, which is what one does when the first click missed by one
+       block. Something typed: the form stays where it is. Escape and Cancel
+       are the two ways out, and both are on screen. */
+    if (ui.form.classList.contains('ap-open')) {
+        const written = ui.form.querySelector('.ap-area');
+        if (written && written.value.trim() !== '') return;
     }
     if (!el || el.nodeType !== 1) return;
     if (el === document.body || el === document.documentElement) return;
