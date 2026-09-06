@@ -640,9 +640,10 @@ const assistantConfig = () => JSON.stringify({
 }, null, 2);
 
 const configBlock = () => {
+    /* NO TITLE OF ITS OWN. This block only ever appears inside a window, and
+       the window's bar carries the same words: written twice, the second one
+       reads as a section inside a section. */
     const block = create('div', 'ap-config');
-    block.setAttribute('role', 'group');
-    block.appendChild(create('div', 'ap-section-title', T('config.title')));
 
     /* THE PATH IS AN ELEMENT, NOT MARKUP IN A LABEL. Writing `<code>` into the
        string and letting a node parse it would make one label on this panel a
@@ -680,7 +681,9 @@ const configBlock = () => {
     });
     const close = create('button', 'ap-secondary', T('note.cancel'));
     close.type = 'button';
-    close.addEventListener('click', () => block.remove());
+    /* It closes the window it is in, not itself: removing the block would
+       leave an empty window with a title bar and nothing under it. */
+    close.addEventListener('click', () => closePop());
     actions.appendChild(save);
     actions.appendChild(close);
     block.appendChild(actions);
@@ -689,10 +692,120 @@ const configBlock = () => {
     return block;
 };
 
+/* -- A WINDOW THAT IS NOT THE PANEL ---------------------------------------
+ *
+ * WHY THIS EXISTS. Everything the tool had to say was said inside the panel,
+ * and the panel is a 350px band down one edge of somebody else's page. The
+ * notes belong there -- they point at the page beside them. Nothing else does:
+ * a configuration file, three counts, what to do about a key. Each of them
+ * arrived as another block pushed into the same column, and the column stopped
+ * being readable.
+ *
+ * SO THEY LEAVE. One window, opened by the footer's links, floating over the
+ * page rather than inside the band. It has room, and what is in it is one
+ * subject at a time.
+ *
+ * IT MOVES, BY ITS TITLE BAR. A window that covers the very thing being
+ * discussed is worse than no window, and this one sits over somebody else's
+ * page: wherever it opens, it is in the way of something. Dragging it is the
+ * whole answer, and a title bar is where every window on earth is dragged
+ * from.
+ *
+ * ONE AT A TIME. A second would need a stacking order, a focus order and a
+ * rule about which Escape closes -- three questions for a tool that has one
+ * thing to say at a time.
+ */
+
+let pop = null;
+
+const closePop = () => {
+    if (!pop) return;
+    pop.remove();
+    pop = null;
+};
+
+const openPop = (title, fill) => {
+    closePop();
+    const box = create('div', 'ap-pop');
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'false');
+    box.setAttribute('aria-label', title);
+
+    const bar = create('div', 'ap-pop-bar');
+    bar.appendChild(create('span', 'ap-pop-title', title));
+    const shut = create('button', 'ap-link', T('panel.close'));
+    shut.type = 'button';
+    shut.addEventListener('click', () => closePop());
+    bar.appendChild(shut);
+    box.appendChild(bar);
+
+    const body = create('div', 'ap-pop-body');
+    box.appendChild(body);
+    ui.layer.appendChild(box);
+    /* WITHOUT THIS THE WINDOW IS A PICTURE. `pop` is what closePop, Escape and
+       leaveMode all test; it was never assigned, so the window could be opened
+       and never closed by anything but another open -- Escape fell through to
+       leaving annotation mode, taking the page's highlighting away and leaving
+       the window floating over it. */
+    pop = box;
+
+    /* PLACED, THEN MOVED BY HAND. It opens beside the panel rather than over
+       it -- the panel is where the reader just clicked -- and never off the
+       edge of a narrow window. */
+    const w = box.offsetWidth || 380;
+    const h = box.offsetHeight || 260;
+    let x = Math.max(12, Math.round((window.innerWidth - w) / 2));
+    let y = Math.max(12, Math.round((window.innerHeight - h) / 3));
+    const place = () => {
+        box.style.left = x + 'px';
+        box.style.top = y + 'px';
+    };
+    place();
+
+    /* THE DRAG. Pointer events and not mouse events: one code path for a
+       mouse, a finger and a pen. setPointerCapture keeps the moves coming even
+       when the pointer leaves the bar, which it does the moment the window
+       starts following it.
+
+       CLAMPED SO A TITLE BAR IS ALWAYS REACHABLE. A window dragged off the top
+       or fully past an edge cannot be dragged back, and there is no menu here
+       to bring it home. */
+    let from = null;
+    bar.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button')) return;
+        from = { px: e.clientX, py: e.clientY, x: x, y: y };
+        bar.setPointerCapture(e.pointerId);
+        box.classList.add('ap-pop-moving');
+        e.preventDefault();
+    });
+    bar.addEventListener('pointermove', (e) => {
+        if (!from) return;
+        const wide = box.offsetWidth;
+        x = Math.min(Math.max(8 - wide + 60, from.x + (e.clientX - from.px)),
+            window.innerWidth - 60);
+        y = Math.min(Math.max(0, from.y + (e.clientY - from.py)),
+            window.innerHeight - 32);
+        place();
+    });
+    const release = (e) => {
+        if (!from) return;
+        from = null;
+        box.classList.remove('ap-pop-moving');
+        try { bar.releasePointerCapture(e.pointerId); } catch (err) { /* already gone */ }
+    };
+    bar.addEventListener('pointerup', release);
+    bar.addEventListener('pointercancel', release);
+
+    fill(body);
+    /* The close button rather than the body: whatever is inside may be a block
+       of text with nothing to focus, and a dialog that opens with focus
+       nowhere leaves a keyboard where it was. */
+    shut.focus();
+    return box;
+};
+
 const forgetForm = () => {
     const block = create('div', 'ap-forget');
-    block.setAttribute('role', 'group');
-    block.appendChild(create('div', 'ap-section-title', T('key.forget')));
     block.appendChild(create('p', 'ap-help', T('key.forget_confirm')));
 
     const actions = create('div', 'ap-actions');
@@ -701,7 +814,8 @@ const forgetForm = () => {
     confirm.addEventListener('click', () => forgetKey());
     const cancel = create('button', 'ap-secondary', T('note.cancel'));
     cancel.type = 'button';
-    cancel.addEventListener('click', () => block.remove());
+    /* Closes the window, not the block: see the same button in configBlock. */
+    cancel.addEventListener('click', () => closePop());
     actions.appendChild(confirm);
     actions.appendChild(cancel);
     block.appendChild(actions);
@@ -765,8 +879,6 @@ const drawPanel = () => {
     empty(ui.body);
     empty(ui.footer);
 
-    const chiffres = statsRow();
-    if (chiffres) ui.footer.appendChild(chiffres);
 
     ui.body.appendChild(modeBadge());
 
@@ -871,6 +983,9 @@ const drawPanel = () => {
         }
     }
 
+    /* WHO YOU ARE, AND NOTHING ELSE IN PLAIN SIGHT. It is the one thing in
+       this footer somebody reads without being asked to: a name they will be
+       signing with. Everything else is behind a link now. */
     if (author) {
         ui.footer.appendChild(create('span', null, T('author.known', { name: author })));
         const change = create('button', 'ap-link', T('author.change'));
@@ -880,6 +995,20 @@ const drawPanel = () => {
             drawPanel();
         });
         ui.footer.appendChild(change);
+    }
+
+    /* AND THREE LINKS THAT OPEN A WINDOW, NEVER A BLOCK IN THIS COLUMN. Each
+       used to push its own panel into the body, above the notes: the counts as
+       a row, the file as a block, the key as a form. Three subjects competing
+       with the one thing this band is for. */
+    if (totals !== null) {
+        const fig = create('button', 'ap-link', T('panel.stats_label'));
+        fig.type = 'button';
+        fig.addEventListener('click', () => openPop(T('panel.stats_label'), (into) => {
+            const row = statsRow();
+            if (row) into.appendChild(row);
+        }));
+        ui.footer.appendChild(fig);
     }
 
     /* The key gets pasted again from here. This is not a convenience
@@ -905,13 +1034,9 @@ const drawPanel = () => {
     if (keyText) {
         const conf = create('button', 'ap-link', T('config.show'));
         conf.type = 'button';
-        conf.addEventListener('click', () => {
-            // One at a time, like the forget form under it.
-            if (ui.body.querySelector('.ap-config')) return;
-            const block = configBlock();
-            ui.body.appendChild(block);
-            block.scrollIntoView({ block: 'nearest' });
-        });
+        conf.addEventListener('click', () => openPop(T('config.title'), (into) => {
+            into.appendChild(configBlock());
+        }));
         ui.footer.appendChild(conf);
     }
 
@@ -924,14 +1049,9 @@ const drawPanel = () => {
 
         const forget = create('button', 'ap-link', T('key.forget'));
         forget.type = 'button';
-        forget.addEventListener('click', () => {
-            // One at a time: a second click on the link asks nothing new,
-            // it would just stack the same question.
-            if (ui.body.querySelector('.ap-forget')) return;
-            const block = forgetForm();
-            ui.body.appendChild(block);
-            block.scrollIntoView({ block: 'nearest' });
-        });
+        forget.addEventListener('click', () => openPop(T('key.forget'), (into) => {
+            into.appendChild(forgetForm());
+        }));
         ui.footer.appendChild(forget);
     }
 
@@ -1212,6 +1332,13 @@ const onClick = (event) => {
 
 const onKey = (event) => {
     if (event.key !== 'Escape') return;
+    /* The window first: it is the thing on top, and Escape closes what is on
+       top. Leaving annotation mode from under an open window would take the
+       page away and leave the window floating over it. */
+    if (pop) {
+        closePop();
+        return;
+    }
     if (ui.form.classList.contains('ap-open')) {
         closeForm();
         return;
@@ -1268,6 +1395,7 @@ const enterMode = () => {
 
 const leaveMode = () => {
     mode = false;
+    closePop();
     ui.button.setAttribute('aria-pressed', 'false');
     ui.buttonText.textContent = T('button.open');
     ui.panel.classList.remove('ap-open');

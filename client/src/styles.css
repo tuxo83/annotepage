@@ -311,6 +311,54 @@
    not beside it. */
 .ap-panel-footer { flex-wrap: wrap; }
 
+/* -- a window that is not the panel --------------------------------------
+   IT FLOATS OVER THE PAGE, and that is the point: the panel is a band down one
+   edge, and what goes in here is not about the page beside it. Fixed rather
+   than absolute -- the reader scrolls the page under it, and a window that
+   scrolled away with the article would have to be chased.
+
+   ABOVE THE PANEL AND BELOW NOTHING. It is opened from the panel's footer, so
+   it must cover it; the tool's own layer already sits above the site.
+
+   WIDTH: it is read, not filled in. 26rem is a paragraph, and min() keeps it
+   inside a phone without a media query. */
+.ap-pop {
+    position: fixed; z-index: 3;
+    /* THE LAYER IS `pointer-events: none` so the site underneath keeps working,
+       and every piece that must be reachable turns it back on. Without this
+       line the window is a picture: no click on its buttons, and no drag on its
+       bar -- which is exactly how it behaved when first measured. */
+    pointer-events: auto;
+    width: min(26rem, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    display: flex; flex-direction: column;
+    border: 1px solid var(--ap-border); border-radius: 12px;
+    background: var(--ap-bg); color: var(--ap-text);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, .22);
+    overflow: hidden;
+}
+/* THE HANDLE. `touch-action: none` is what makes a finger drag the window
+   instead of scrolling the page under it -- without it the browser claims the
+   gesture before the first pointermove arrives. */
+.ap-pop-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ap-border);
+    background: var(--ap-bg-soft);
+    cursor: grab; touch-action: none; user-select: none;
+}
+.ap-pop-moving .ap-pop-bar { cursor: grabbing; }
+.ap-pop-title { flex: 1; font-size: 13px; font-weight: 650; }
+.ap-pop-body { padding: 12px; overflow: auto; }
+/* Inside a window, the block is the window: no second frame around it. */
+.ap-pop-body .ap-config { margin: 0; padding: 0; border: 0; background: none; }
+.ap-pop-body .ap-forget { margin: 0; }
+.ap-pop-body .ap-panel-stats { margin: 0; }
+/* A WINDOW HAS ROOM, SO THE FILE GETS IT. In the panel this field was two or
+   four lines because the column had nothing to spare; here it can show the
+   whole thing without being scrolled. */
+.ap-pop-body .ap-code { min-height: 9.5em; }
+
 /* -- the file the assistant needs ---------------------------------------
    Drawn like the other block the panel opens in its body -- a title, a
    sentence, the thing itself, two buttons -- so nothing here is a new shape to
