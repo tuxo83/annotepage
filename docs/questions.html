@@ -173,33 +173,29 @@ code {
                  link named a HOST; what exists is the repository and two
                  published packages.
 
-                 IT OPENS ON HOVER, IN PLACE, AND MOVES NOTHING. It was a
-                 <details> first -- an accordion, with a caret to say so -- and
-                 that is a control where a signpost was wanted: it changed the
-                 bar's shape, and it asked to be clicked before it would say
-                 what was under it. A panel that appears where the pointer
-                 already is needs no symbol to announce itself, and takes no
-                 room from anything.
+                 A BUTTON, NOT A LINK, AND THAT IS THE FIX. It was a link to the
+                 repository with the panel hanging under it: fine with a mouse,
+                 useless without one -- a click or a tap followed the link and
+                 the three entries were never seen. A button goes nowhere, and
+                 focusing it is what opens the panel, so a click, a tap and a
+                 Tab all do the same thing. Clicking away blurs it and it
+                 closes. No script on any of those paths.
 
-                 STILL A LINK, so it works with no pointer at all: the word goes
-                 to the repository, and `:focus-within` opens the panel for a
-                 keyboard, which then tabs through the three. On a touch screen
-                 there is no hover and the word simply follows its link -- the
-                 FAQ lists all three in a card for that case. -->
+                 EACH ENTRY SAYS WHAT IT IS AND WHERE IT LIVES. "annotepage-mcp"
+                 is a package name, and a package name does not say that it is
+                 on npm or what it is for. -->
             <span class="drop">
-                <a href="https://github.com/tuxo83/annotepage"
-                   target="_blank" rel="noopener"
-                   aria-label="The source, on GitHub, opens in a new tab">Source</a>
+                <button class="drop-word" type="button">Source</button>
                 <span class="drop-menu">
                     <a href="https://github.com/tuxo83/annotepage"
                        target="_blank" rel="noopener"
-                       aria-label="The repository, on GitHub, opens in a new tab">GitHub</a>
+                       aria-label="The whole project on GitHub, opens in a new tab">The whole project <span class="drop-where">GitHub</span></a>
                     <a href="https://www.npmjs.com/package/annotepage-client"
                        target="_blank" rel="noopener"
-                       aria-label="annotepage-client on npm, opens in a new tab">annotepage-client</a>
+                       aria-label="The client for the site, on npm, opens in a new tab">The client, for the site <span class="drop-where">npm</span></a>
                     <a href="https://www.npmjs.com/package/annotepage-mcp"
                        target="_blank" rel="noopener"
-                       aria-label="annotepage-mcp on npm, opens in a new tab">annotepage-mcp</a>
+                       aria-label="The MCP for the assistant, on npm, opens in a new tab">The MCP, for the assistant <span class="drop-where">npm</span></a>
                 </span>
             </span>
         </nav>

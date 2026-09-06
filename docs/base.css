@@ -637,8 +637,20 @@
    AND IT OPENS FOR A KEYBOARD TOO, on `:focus-within`: the word is a link, so
    it takes focus on its own, and the three inside follow it in the tab order.
    Nothing here needs a pointer, and nothing here needs a script. */
-.top nav .drop { position: relative; }
-.top nav .drop > a { position: relative; z-index: 1; }
+.top nav .drop { position: relative; display: inline-flex; }
+/* A BUTTON DRAWN AS ONE OF THE WORDS BESIDE IT. A button carries a font, a
+   padding, a border and a line-height of the browser's choosing, and every one
+   of them pushed this entry out of line with the four links -- which is how it
+   was reported. All four are reset, and the size and ink come from the rule
+   above that dresses `.top nav a`. */
+.top nav .drop-word {
+    position: relative; z-index: 1;
+    margin: 0; padding: 0; border: 0; background: none;
+    font: inherit; font-size: .875rem; line-height: inherit;
+    color: var(--dim); cursor: pointer;
+}
+.top nav .drop-word:hover { color: var(--text); text-decoration: underline; }
+.top nav .drop-word:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .drop::after {
     content: ""; position: absolute; left: 0; right: 0;
     top: 100%; height: .95rem;
@@ -653,8 +665,14 @@
 .drop:hover .drop-menu,
 .drop:focus-within .drop-menu { display: flex; }
 .top nav .drop-menu a {
+    display: flex; align-items: baseline; gap: .5rem;
     padding: .35rem .55rem; border-radius: 6px;
     color: var(--text); white-space: nowrap;
+}
+/* Where it lives, at the weight of a place and not of a name. */
+.drop-where {
+    margin-left: auto;
+    font-size: .78em; color: var(--dim);
 }
 .top nav .drop-menu a:hover { background: var(--bg-soft); text-decoration: none; }
 
