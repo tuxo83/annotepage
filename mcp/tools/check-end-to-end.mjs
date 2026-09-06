@@ -443,13 +443,18 @@ const bareCall = async (name, args) => {
     return { text: result.content[0].text, isError: result.isError === true, errors };
 };
 
+/* THE COUNT IS ASSERTED, NOT THE NAMES, and that is on purpose: a tool added
+   without being thought about would slip past a list of names nobody rereads,
+   where a number has to be edited by whoever adds one. Nine since the title:
+   open, read, reply, title, mark_resolved, reopen, export, save_project, and
+   the one that lists projects. */
 await check('mcp: with no configuration at all, the server still starts', async () => {
     const { answers, errors } = await bareDialogue([
         { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } },
         { jsonrpc: '2.0', id: 2, method: 'tools/list' },
     ]);
     truthy(answers.length === 2, 'it answered\n' + errors);
-    truthy(answers[1].result.tools.length === 8, 'the eight tools are there');
+    truthy(answers[1].result.tools.length === 9, 'the nine tools are there');
     contains(errors, 'No configuration found', 'and it said so, on stderr');
 
     for (const tool of answers[1].result.tools) {
