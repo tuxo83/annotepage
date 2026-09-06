@@ -357,6 +357,14 @@
    not beside it. */
 .ap-panel-footer { flex-wrap: wrap; }
 
+/* WHO YOU ARE SIGNING AS, ON A LINE OF ITS OWN. `flex-basis: 100%` is the same
+   device the block above uses, and for the same reason: the footer is one
+   wrapping row and everything in it was being strung end to end. */
+.ap-foot-who {
+    flex-basis: 100%;
+    display: flex; align-items: baseline; gap: 8px;
+}
+
 /* -- the list of remarks -------------------------------------------------
    A ROW, AND EVERY ROW IS A BUTTON. Not a card with a link in it: the whole
    line is the target, which is what a list of things to open should be, and it

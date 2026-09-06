@@ -436,9 +436,22 @@ const showNotes = (notes, orphan, title) => {
 
 /* `showNote` and not `openNote`: 40-api.js already has an openNote, and it
    DECRYPTS a note. Two functions with one name in one bundle is a bug waiting
-   for whoever reads the second one first. */
+   for whoever reads the second one first.
+
+   AND IT TAKES THE READER TO THE ELEMENT. Opening a remark from the list left
+   them reading about a button they could not see: the list is sorted by the
+   page's own order, not by what is on screen, so the thing being discussed is
+   usually somewhere else entirely. The window says what was written; the page
+   has to show what it was written about. `showElement` scrolls the viewpoint
+   and outlines the element for a moment -- it touches no node and no style of
+   the site.
+
+   Not done from a badge: a badge is only drawn for an element inside the
+   viewport, so the reader is already looking at it, and scrolling the page
+   under a hand that just clicked would be the tool moving for no reason. */
 const showNote = (note, orphan) => {
     showNotes([note], orphan, note.excerpt || T('list.untitled'));
+    if (!orphan) showElement(note);
 };
 
 /* THE BADGE'S OWN WINDOW. Its title is what the ELEMENT says, not what the
@@ -1205,14 +1218,22 @@ const drawPanel = () => {
        this footer somebody reads without being asked to: a name they will be
        signing with. Everything else is behind a link now. */
     if (author) {
-        ui.footer.appendChild(create('span', null, T('author.known', { name: author })));
+        /* ON ITS OWN LINE, and the rest under it. The footer is one wrapping
+           flex row, so the name, the button that changes it and three links
+           that open windows were strung together and broke wherever the width
+           happened to run out -- "as Dominique." then "Change" then "Across
+           the site" reading as one sentence of four unrelated things. This
+           takes the whole width; everything after it starts a line. */
+        const who = create('div', 'ap-foot-who');
+        who.appendChild(create('span', null, T('author.known', { name: author })));
         const change = create('button', 'ap-link', T('author.change'));
         change.type = 'button';
         change.addEventListener('click', () => {
             writeAuthor('');
             drawPanel();
         });
-        ui.footer.appendChild(change);
+        who.appendChild(change);
+        ui.footer.appendChild(who);
     }
 
     /* AND THREE LINKS THAT OPEN A WINDOW, NEVER A BLOCK IN THIS COLUMN. Each
