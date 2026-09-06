@@ -79,6 +79,30 @@ ns.defaultLabels = {
        "Across the site" and not "in this project": the reviewer knows the site
        they are looking at; the word project belongs to whoever installed it. */
     'panel.stats_label': 'Across the site',
+
+    /* -- The configuration the assistant needs ---------------------------
+       THE TOOL ALREADY HOLDS ALL OF IT: the address it talks to, and the key
+       it reads with. Writing that file by hand meant copying two values out of
+       a page and a tag into a text editor, and the site had to print both of
+       them in a figure to explain how. It hands the file over instead.
+
+       "for your assistant" and not "MCP configuration": the reviewer clicking
+       this is not the person who installed the MCP -- they are the one being
+       asked for the file. */
+    'config.show': 'File for your assistant',
+    'config.title': 'The file your assistant needs',
+    'config.where': 'On the machine where the assistant runs, save it as:',
+    'config.path': '~/.config/annotepage/annotepage.json',
+    'config.download': 'Download it',
+    'config.file': 'annotepage.json',
+    /* WHAT THE ASSISTANT SIGNS ITS REPLIES WITH, and the file is refused the
+       right to write without it -- `annotepage projects` says so in as many
+       words: "writing refused, for want of a name". Not the reviewer's name:
+       the replies in the thread come from the assistant, and a thread where
+       both voices carry one name is a thread nobody can read. */
+    'config.author': 'Assistant',
+    'config.warn': 'It carries your key. Anyone holding this file can read '
+        + 'these notes and write them.',
     'panel.stats_notes': 'notes',
     'panel.stats_open': 'still open',
     'panel.stats_pages': 'pages',

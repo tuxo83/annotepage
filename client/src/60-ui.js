@@ -602,6 +602,86 @@ const nameField = () => {
  * first time a reviewer forgot the key and found their notes again, they
  * would stop believing the warnings that are true.
  */
+/**
+ * THE FILE THE ASSISTANT NEEDS, BUILT FROM WHAT THE TOOL ALREADY HOLDS.
+ *
+ * Both values are here: the address this panel talks to, and the key it reads
+ * with. Writing that file by hand meant copying them out of a page and a tag
+ * into a text editor -- and the site had to draw the file in a figure to
+ * explain how. The tool hands it over instead: the text to copy, and the file
+ * to save.
+ *
+ * THE PROJECT IS KEYED BY THE SITE, which is what lets the assistant be told
+ * "the notes on staging.example.com" and find the right key on its own. The
+ * origin is there because a relay demands it on every write.
+ *
+ * AND THE NAME THE ASSISTANT SIGNS WITH. Without it the MCP refuses to write,
+ * which would leave a reviewer with a file that reads their notes and cannot
+ * answer one.
+ *
+ * IT SAYS WHAT IT CARRIES. This file is the key: whoever holds it reads these
+ * notes and writes them. That is one line, under the block, and not a dialog
+ * to dismiss -- the reviewer asked for the file, they are not being warned off
+ * it.
+ */
+const assistantConfig = () => JSON.stringify({
+    projects: {
+        [location.host]: {
+            api: API,
+            key: keyText,
+            origin: location.origin,
+            /* Without a name the MCP refuses to write -- it says so itself, and
+               a file that cannot answer a note is half a file. It is the
+               ASSISTANT's name and not the reviewer's: both voices carrying one
+               name is a thread nobody can read. */
+            author: T('config.author')
+        }
+    }
+}, null, 2);
+
+const configBlock = () => {
+    const block = create('div', 'ap-config');
+    block.setAttribute('role', 'group');
+    block.appendChild(create('div', 'ap-section-title', T('config.title')));
+
+    /* THE PATH IS AN ELEMENT, NOT MARKUP IN A LABEL. Writing `<code>` into the
+       string and handing it to innerHTML would make one label on this panel a
+       fragment of HTML -- and labels are replaceable by the host site, so that
+       is a shipped file parsing markup, which this repository refuses
+       everywhere else. Two labels and two nodes. */
+    block.appendChild(create('p', 'ap-help', T('config.where')));
+    const path = create('p', 'ap-help');
+    path.appendChild(create('code', null, T('config.path')));
+    block.appendChild(path);
+
+    const text = assistantConfig();
+    copyBlock(block, T('config.file'), text);
+
+    const actions = create('div', 'ap-actions');
+    /* A Blob and an <a download>: no request leaves, and the file is built
+       from the two values already on this page. revokeObjectURL after the
+       click, because a URL kept alive keeps the blob alive with it. */
+    const save = create('button', 'ap-primary', T('config.download'));
+    save.type = 'button';
+    save.addEventListener('click', () => {
+        const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'annotepage.json';
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    });
+    const close = create('button', 'ap-secondary', T('note.cancel'));
+    close.type = 'button';
+    close.addEventListener('click', () => block.remove());
+    actions.appendChild(save);
+    actions.appendChild(close);
+    block.appendChild(actions);
+
+    block.appendChild(create('p', 'ap-help ap-warn', T('config.warn')));
+    return block;
+};
+
 const forgetForm = () => {
     const block = create('div', 'ap-forget');
     block.setAttribute('role', 'group');
@@ -812,6 +892,22 @@ const drawPanel = () => {
        The pair is deliberate: replacing a key and dropping it are the two
        halves of the same question, and offering only the first is what
        forced people to clear the storage by hand. */
+    /* OFFERED WHEREVER THERE IS A KEY TO PUT IN IT, which includes the tag's:
+       the reviewer who never pasted anything still has an assistant to hand the
+       file to, and the values are the same values. */
+    if (keyText) {
+        const conf = create('button', 'ap-link', T('config.show'));
+        conf.type = 'button';
+        conf.addEventListener('click', () => {
+            // One at a time, like the forget form under it.
+            if (ui.body.querySelector('.ap-config')) return;
+            const block = configBlock();
+            ui.body.appendChild(block);
+            block.scrollIntoView({ block: 'nearest' });
+        });
+        ui.footer.appendChild(conf);
+    }
+
     if (PROJECT && keyText && !PUBLIC_KEY) {
         const changeSalt = create('button', 'ap-link', T('key.replace'));
         changeSalt.type = 'button';

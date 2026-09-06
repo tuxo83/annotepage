@@ -310,6 +310,21 @@
    rest wraps under it. No ground and no border of its own: it is IN the footer,
    not beside it. */
 .ap-panel-footer { flex-wrap: wrap; }
+
+/* -- the file the assistant needs ---------------------------------------
+   Drawn like the other block the panel opens in its body -- a title, a
+   sentence, the thing itself, two buttons -- so nothing here is a new shape to
+   learn. The last line is the warning, and it is a line and not a dialog: the
+   reviewer asked for this file. */
+.ap-config {
+    margin: 10px 0 0; padding: 12px;
+    border: 1px solid var(--ap-border); border-radius: 10px;
+    background: var(--ap-bg-soft);
+}
+/* The warning is a line at the tool's own soft ink, not in an alert colour:
+   the reviewer asked for this file, they are not being warned off it. There is
+   no --ap-warn token and this does not invent one. */
+.ap-config .ap-warn { margin-top: 10px; }
 .ap-panel-stats {
     flex-basis: 100%;
     display: flex; flex-wrap: wrap; gap: 4px 18px;
