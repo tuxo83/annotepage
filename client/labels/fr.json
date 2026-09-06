@@ -20,6 +20,8 @@
   "orphans.help": "Ces remarques portaient sur un élément qui n’existe plus sous la même forme. Elles sont conservées telles quelles.",
   "note.about": "À propos de : {excerpt}",
   "note.no_element": "À propos de la page entière",
+  "list.not_shown": "La page n’a pas bougé : ce dont parle cette remarque est bien dessus, mais masqué par un réglage plus haut.",
+  "list.not_here": "La page n’a pas bougé : ce dont parle cette remarque n’y est plus. La remarque est conservée telle qu’elle a été écrite.",
   "note.element_lost": "Élément non retrouvé sur la page actuelle",
   "note.show": "Montrer sur la page",
   "note.reply": "Répondre",

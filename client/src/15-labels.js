@@ -131,6 +131,15 @@ ns.defaultLabels = {
     'note.about': 'About: {excerpt}',
     'note.no_element': 'About the whole page',
     'note.element_lost': 'Element not found on the current page',
+    /* WHY THE PAGE DID NOT MOVE, said in the window that just opened. Two
+       cases, and they are not the same news: one the reader can undo in a
+       click, the other nobody can. */
+    'list.not_shown':
+        'The page did not move: what this remark is about is on it, but hidden '
+        + 'by a setting further up.',
+    'list.not_here':
+        'The page did not move: what this remark is about is not on it any '
+        + 'more. The remark is kept as it was written.',
     'note.show': 'Show on the page',
     'note.reply': 'Reply',
     'note.reply_placeholder': 'Your reply',

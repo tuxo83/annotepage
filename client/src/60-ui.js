@@ -435,11 +435,16 @@ const noteRow = (note, orphan) => {
    badge that says 3, it holds three. */
 let popNotes = null;
 
-const showNotes = (notes, orphan, title) => {
+const showNotes = (notes, orphan, title, why) => {
     const ids = [];
     for (let i = 0; i < notes.length; i += 1) ids.push(notes[i].id);
-    popNotes = { ids: ids, orphan: orphan };
+    popNotes = { ids: ids, orphan: orphan, why: why || null };
     openPop(title, (into) => {
+        /* WHY THE PAGE DID NOT MOVE, at the top of what the reader is now
+           looking at. It is one line and it only exists when there is
+           something to explain: a window that carried a strip every time
+           would teach the reader to skip the place the explanation lives. */
+        if (why) into.appendChild(create('p', 'ap-why', why));
         for (let i = 0; i < notes.length; i += 1) {
             into.appendChild(noteCard(notes[i], orphan));
         }
@@ -462,16 +467,22 @@ const showNotes = (notes, orphan, title) => {
    viewport, so the reader is already looking at it, and scrolling the page
    under a hand that just clicked would be the tool moving for no reason. */
 const showNote = (note, orphan) => {
-    showNotes([note], orphan, note.excerpt || T('list.untitled'));
-    if (!orphan) showElement(note);
+    /* THE PAGE IS ASKED TO MOVE FIRST, so that what the window says about it is
+       what actually happened rather than a guess made before trying. */
+    const went = orphan ? 'gone' : showElement(note);
+    showNotes([note], orphan, note.title || note.excerpt || T('list.untitled'),
+        went === 'scrolled' ? null
+            : T(went === 'hidden' ? 'list.not_shown' : 'list.not_here'));
 };
 
 /* THE BADGE'S OWN WINDOW. Its title is what the ELEMENT says, not what the
    first remark says: the window holds all of them, and naming it after one
    would be wrong as soon as there are two. */
 const showGroup = (group) => {
+    /* No line about scrolling here: a badge is only drawn for an element
+       inside the viewport, so the reader is already looking at it. */
     showNotes(group.notes, false,
-        excerptOf(group.element) || T('list.untitled'));
+        excerptOf(group.element) || T('list.untitled'), null);
 };
 
 const noteCard = (note, orphan) => {
@@ -1345,6 +1356,7 @@ const drawPanel = () => {
             const body = pop && pop.querySelector('.ap-pop-body');
             if (body) {
                 empty(body);
+                if (popNotes.why) body.appendChild(create('p', 'ap-why', popNotes.why));
                 for (let i = 0; i < again.length; i += 1) {
                     body.appendChild(noteCard(again[i], popNotes.orphan));
                 }
@@ -1371,13 +1383,32 @@ const drawPanel = () => {
    did nothing. Its one caller was the badge, which now opens the window
    instead. The rule went with it. */
 
-/** Brings the commented element back into view, by showing it on our side. */
+/**
+ * Brings the commented element back into view, by showing it on our side.
+ *
+ * AND IT SAYS WHICH OF THE THREE THINGS HAPPENED, because two of them look
+ * identical from the reader's chair: the page does not move. Reported as "it
+ * shows me the note but does not scroll to it", and on the page where it was
+ * reported every visible remark was in the third case -- the element it was
+ * written on no longer exists. A feature that silently does nothing is
+ * indistinguishable from one that is broken.
+ *
+ * `hidden` is the case nobody thinks of and this page makes common: the
+ * element IS anchored, and a dial at the top of the site has folded the
+ * chapter it lives in. It measures 0x0, so there is nothing to scroll to and
+ * nothing to outline -- and the reader can fix it, which is exactly why they
+ * have to be told.
+ *
+ * @returns {'scrolled'|'hidden'|'gone'}
+ */
 const showElement = (note) => {
     let el = null;
     for (let i = 0; i < anchored.length; i += 1) {
         if (anchored[i].notes.indexOf(note) !== -1) el = anchored[i].element;
     }
-    if (!el) return;
+    if (!el || !document.contains(el)) return 'gone';
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return 'hidden';
     // scrollIntoView moves the viewpoint, never the document: no node, no
     // style of the site is touched.
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -1385,6 +1416,7 @@ const showElement = (note) => {
         showHighlight(el);
         window.setTimeout(hideHighlight, 1400);
     }, 350);
+    return 'scrolled';
 };
 
 /* -- 16. The form for a new note ------------------------------------------ */

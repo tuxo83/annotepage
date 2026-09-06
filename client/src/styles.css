@@ -444,6 +444,13 @@
    below its content without it, and the end of a long remark would be behind
    the bottom edge with nothing to scroll. */
 .ap-pop-body { flex: 1 1 auto; min-height: 0; padding: 12px; overflow: auto; }
+/* The one line that says why the page stayed where it was. Drawn as the panel
+   draws its own help text, not as an alert: nothing has gone wrong. */
+.ap-why {
+    margin: 0 0 10px; padding: 8px 10px;
+    border-radius: 8px; background: var(--ap-bg-soft);
+    color: var(--ap-text-soft); font-size: 12.5px;
+}
 /* THE CORNER, AND IT IS DRAWN RATHER THAN LEFT TO THE BROWSER. `resize: both`
    would have done this in one line and does nothing under a finger on iOS; the
    window is moved with pointer events for exactly that reason, and it is
