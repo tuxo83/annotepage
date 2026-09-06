@@ -8,12 +8,10 @@ is encrypted in their browser and pinned to that element. An assistant reads
 the notes, fixes the code, replies in the thread with what it measured, and
 resolves the remark stamped with the version the fix ships in.
 
-**Everything you need in order to install it is on the site:**
-
-- [how you use it](https://annotepage.com/how-to-use-it.html)
-- [every way to install it](https://annotepage.com/how-to-install-it.html) —
-  it builds the tag below with your own address and key
-- [the questions people ask](https://annotepage.com/questions.html)
+**What annotepage is, and every way to get it running, is on the site:**
+[how you use it](https://annotepage.com/how-to-use-it.html) ·
+[installing it](https://annotepage.com/how-to-install-it.html) ·
+[questions](https://annotepage.com/questions.html)
 
 ## The tag
 
@@ -21,17 +19,36 @@ At the end of `<body>`. Needs a **secure context** — https, or localhost —
 because the encryption is WebCrypto's.
 
 ```html
-<script src="https://annotepage.com/annotepage-client-2.23.0.js"
+<script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.23.0/dist/annotepage.js"
         integrity="sha384-3N2cyMhzg3iB8eohex9kcKadMt7xjORkxpv/BA7+jqrjhZSPnt6DwRFgDjBZPWkb"
         crossorigin="anonymous"
-        data-server="https://your-server.example.com/annotepage/api.php"
-        data-project="your-project-id"
+        data-server="https://api.annotepage.com/api.php"
+        data-setup
         defer></script>
 ```
 
+`data-server` is the address of an **annotepage server** — a small PHP
+codebase that stores the notes. `api.annotepage.com` is a shared one, free and
+already running, so there is nothing to install anywhere in order to try this:
+it stores sealed envelopes and can read none of them. To run your own instead,
+the install page walks it, and `server/INSTALL.md` is the reference.
+
+`data-setup` opens the setup screen, once. It creates the project, shows you
+the key — 43 characters, written down nowhere else — and prints the tag to
+keep, with `data-project` in its place. A button, *Annotate this page*, then
+sits at the foot of the page.
+
 It must stay a **classic script tag**: the tool reads its own attributes
-through `document.currentScript`, which is `null` inside a module. Loaded as
-a module it stops, silently, with one line in the console.
+through `document.currentScript`, which is `null` inside a module. Loaded as a
+module it stops, silently, with one line in the console.
+
+## From npm
+
+`npm install annotepage-client` gives you `dist/annotepage.js` — the file the
+tag above loads, byte for byte — and `labels/fr.json`. Served from your own
+origin, one directory below `api.php`, `data-server` may be dropped: the client
+falls back to `../api.php` relative to its own `src`. From a CDN it is
+required, because a CDN's address says nothing about the site under review.
 
 ## The attributes
 
@@ -40,7 +57,7 @@ contract rather than a step in an installation.
 
 | Attribute | What it declares |
 |---|---|
-| `data-server` | the address of `api.php`. Required as soon as the client comes from a CDN |
+| `data-server` | the address of `api.php`, the annotepage server. Required as soon as the client comes from a CDN |
 | `data-key` | **the key itself**, 43 characters. The project is then **public**: the tool derives the id from it and starts, asking nothing |
 | `data-project` | the project id, 22 characters. The project is then **confidential**: the key is asked for once per browser. Without either attribute the tool does nothing |
 | `data-setup` | opens the setup screen. Remove it once the project exists |

@@ -1,37 +1,24 @@
 # annotepage
 
-Annotate a web page. An assistant reads the notes, fixes the code, replies in
-the thread with what it measured, and resolves the remark stamped with the
-version the fix ships in.
+Annotate a web page. A reviewer clicks an element and writes what is wrong. An
+assistant reads the notes, fixes the code, replies in the thread with what it
+measured, and resolves the remark stamped with the version the fix ships in.
 
-**[annotepage.com](https://annotepage.com)** — what it does, how you use it,
-every way to install it, and the questions people ask.
+**Everything about using it is on the site — [annotepage.com](https://annotepage.com):**
+
+- [how you use it](https://annotepage.com/how-to-use-it.html)
+- [every way to install it](https://annotepage.com/how-to-install-it.html) — on
+  a shared server or your own; the page builds your tag
+- [the questions people ask](https://annotepage.com/questions.html)
 
 Free, MIT, no account, no tracking.
 
-## The tag
+**Key lost = notes lost.** No recovery, no escrow, no rotation — the server has
+never had the key. It is said here, and nowhere else in this repository,
+because it is the one thing that will hurt:
+[why](https://annotepage.com/questions.html#no-recovery).
 
-At the end of `<body>`. The [install page](https://annotepage.com/how-to-install-it.html)
-builds this one with your own address and key.
-
-```html
-<script src="https://annotepage.com/annotepage-client-2.23.0.js"
-        integrity="sha384-3N2cyMhzg3iB8eohex9kcKadMt7xjORkxpv/BA7+jqrjhZSPnt6DwRFgDjBZPWkb"
-        crossorigin="anonymous"
-        data-server="https://your-server.example.com/annotepage/api.php"
-        data-project="your-project-id"
-        defer></script>
-```
-
-## The assistant
-
-```
-npm install -g annotepage-mcp
-claude mcp add annotepage -- annotepage-mcp
-```
-
-In plain mode nothing needs installing at all: any assistant that can fetch a
-URL reads the whole review from `?action=text&project=<id>`.
+Nothing else about using annotepage is repeated below. This is the code.
 
 ## The three pieces
 
@@ -41,29 +28,19 @@ URL reads the whole review from `?action=text&project=<id>`.
 | [`server/`](server/) | one PHP codebase, on the site itself or on a machine serving several |
 | [`mcp/`](mcp/) | the assistants' access: an MCP server and a CLI — npm `annotepage-mcp` |
 
-## Key lost = notes lost
-
-The notes are encrypted in the browser by default. The server stores sealed
-envelopes and cannot read a path, a name or a remark — nor can whoever runs it.
-There is no recovery and no escrow. It is said here rather than in a footnote
-because it is the one thing that will hurt.
-
 ## For whoever reads the code
 
 - [`FORMAT.md`](FORMAT.md) — the exchange format and the security model. It is
   the reference; where any other file disagrees with it, it is right.
 - [`CONVENTIONS.md`](CONVENTIONS.md) — how this repository is written.
-- [`server/INSTALL.md`](server/INSTALL.md) — running a server, past the
-  install page: MySQL, the addresses, migration, the flags.
+- [`server/INSTALL.md`](server/INSTALL.md) — running a server, past the install
+  page: MySQL, the addresses, migration, the flags.
+- [`ROADMAP.md`](ROADMAP.md) — what is coming, and what is ruled out for good.
 
 ```
 npm run build     # rebuild the client bundle
-npm run check     # the whole suite
+npm run check     # the whole suite, and the gate before any release
 ```
-
-`npm run check` refuses a stale SRI digest, any markup-parsing assignment in
-shipped code, and a protocol number the three components disagree on. Each of
-those failures is silent in production, which is why they are checked here.
 
 ## Licence
 

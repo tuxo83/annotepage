@@ -44,7 +44,7 @@
  *     one does not guess at cryptography, one does guess at a line of text.
  */
 
-import { FORMAT, safeValue, indent, isoDate } from './format.mjs';
+import { FORMAT, safeValue, indent, isoDate, normalisedLines } from './format.mjs';
 
 /* -- The keys, by the place where they can appear ------------------------ */
 
@@ -195,7 +195,14 @@ export const readExport = (text) => {
         textParts = [];
     };
 
-    for (const line of String(text == null ? '' : text).split('\n')) {
+    /* NORMALISED ON THE WAY IN, not only on the way out. FORMAT.md section 5.1
+       says every end of line is reduced to a plain line feed "on writing AND on
+       reading back", and this reader was doing only the first half: an export
+       that crossed a proxy which rewrote its line endings arrived with a `\r`
+       glued to the end of every value, and it travelled into a name. The
+       function is the one the writer already uses, so the two halves cannot
+       drift apart. */
+    for (const line of normalisedLines(String(text == null ? '' : text)).split('\n')) {
         if (line.trim() === '') {
             // Pending: this empty line belongs to the text if text follows, it
             // separates two notes otherwise. We cannot decide here.

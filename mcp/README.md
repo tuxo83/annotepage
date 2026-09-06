@@ -28,7 +28,11 @@ One file, one entry per site, named after the site — so afterwards you say the
 site you are looking at and it is found. The annotation panel on your own page
 writes this file for you: **File for your assistant**, in its footer.
 
-`~/.config/annotepage/annotepage.json`, or `.annotepage.json` beside your work:
+`.annotepage.json` beside your work, or
+`~/.config/annotepage/annotepage.json` — **the first that exists wins**, and
+nothing is merged. `ANNOTEPAGE_CONFIG` names one outright, which is what to
+reach for when the MCP host starts the server from a directory that is not
+yours.
 
 ```json
 {
@@ -48,10 +52,18 @@ writes this file for you: **File for your assistant**, in its footer.
 > no rotation: a leaked key means a fresh project and the notes already written
 > abandoned.
 
-`"read_only": true` cuts every write, for plugging an assistant onto a review
-you do not know yet. `origin` matters facing a shared relay: it refuses a write
-that arrives without one. A project whose key is already public in the page can
-skip the file entirely and pass `api` and `key` on the call.
+`author` is **required for every write**: a reply signed by nobody is a reply
+the reviewer cannot answer back to. `"read_only": true` cuts every write, for
+plugging an assistant onto a review you do not know yet. `origin` matters
+facing a shared relay: it refuses a write that arrives without one.
+
+No file at all also works, and it is the shortest way to try this once:
+`ANNOTEPAGE_API`, `ANNOTEPAGE_KEY` and `ANNOTEPAGE_AUTHOR` describe one project
+between them, and take precedence over any file. A project whose key is already
+public in its page can likewise pass `api` and `key` on the call.
+
+The key itself comes from the client: the tag loaded with `data-setup` draws it
+in the browser, once, and it reaches no server in any form.
 
 ## From the command line
 
@@ -63,8 +75,12 @@ annotepage reply 12 "The label holds one line down to 317px." --title "Action la
 annotepage resolve 12 1.4.13
 annotepage reopen 12                # a fix that turned out incomplete
 annotepage text                     # the whole review, decrypted
+annotepage projects                 # what the configuration declares
+annotepage --project staging.example.com open    # when several are declared
 annotepage diagnostic               # what the server thinks of your setup
 ```
+
+`annotepage --help` lists the rest — `title`, `id`, `raw`, and the options.
 
 `resolve` is the one that matters. It stamps the note with the version the fix
 ships in, so the reviewer sees what became of their remark instead of watching

@@ -243,8 +243,8 @@ ways, and only two:
 - twelve columns carry French names: `reponse_a`, `cree_le`, `resolue_le`,
   `selecteur`, `empreinte`, `extrait`, `auteur`, `texte`, `environnement`,
   `fenetre`, `resolue_par`, `resolue_version`;
-- six columns are missing: `project`, `page_index`, `format`, `mode`,
-  `payload`, `resolution_payload`.
+- eight columns are missing: `project`, `page_index`, `format`, `mode`,
+  `payload`, `resolution_payload`, `title`, `title_payload`.
 
 The lazy column catch-up already present in `store.php` covers both on the
 first call: it **adds** the six missing columns and **renames** the twelve
@@ -343,9 +343,18 @@ aimed at.
 AAD = UTF-8( format + "\n" + project + "\n" + page_index + "\n" + role )
 ```
 
-`format` is the decimal number (`2`), `role` is `note` or `resolution`. The
-four values are in base64url or in digits: none of them can contain a line
-break, so the separation is unambiguous.
+`format` is the decimal number (`2`), and `role` is one of **`note`**,
+**`resolution`** and **`title`** — one per envelope a row can carry (§3, §3.5,
+§3.5 bis). The four values are in base64url or in digits: none of them can
+contain a line break, so the separation is unambiguous.
+
+The list of roles is part of the AAD, so it is frozen by the format number the
+same way the derivation labels are (§7). `title` was added when §3.5 bis was,
+and was missing from this line for a day: an implementation written against the
+older sentence produces a title envelope the reference implementations cannot
+open, and fails at decryption with nothing to point at. That is the one error
+this document can make that breaks cryptography in silence, and it is the
+reason a new role has to be written HERE first.
 
 ### 3.3 Serialised form
 
@@ -524,6 +533,24 @@ are readable in the database — but it loses the **grouping by page**, which
 cannot be recomputed. One can then still read everything, and find nothing
 back in context.
 
+
+**How `..` is treated, and it is not what a path resolver does.** A segment
+equal to `..` is REMOVED, not applied: `/a/../b` becomes `/a/b`, never `/b`.
+Leading slashes collapse to one. In full, and it is three lines because getting
+it wrong costs everything:
+
+```
+if the path contains "/../" or ends in "/..":
+    drop every segment equal to ".."      # remove, do not resolve
+    if nothing is left, the path is "/"
+collapse a run of leading slashes to one
+```
+
+A reimplementation that resolves `..` the ordinary way computes a different
+HMAC, so a different `page_index`, so its notes land in a page nobody else
+looks at — with no error anywhere, on either side. It is the one place in this
+document where following the obvious reading is worse than following the text.
+
 ### What the server can do without decrypting
 
 - return the notes of a page: `WHERE project = ? AND page_index = ?`;
@@ -559,8 +586,20 @@ Format 1's grammar is a contract, it is taken over identically.
 ```
 
 One piece of information per line, in the form "key value". A missing line
-means an empty value. An empty line separates two notes. Dates are ISO 8601
-with an explicit offset. No decorative punctuation.
+means an empty value. Dates are ISO 8601 with an explicit offset — exactly
+`Y-m-d\THH:MM:SS±HH:MM`, never a `Z` and never milliseconds. No decorative
+punctuation.
+
+**Blank lines are not separators, and reading them as such cuts remarks in
+half.** A blank line precedes every note after the first AND every reply, so
+"blank line, therefore new note" splits a thread into pieces. Inside a `text`
+block a blank line belongs to the text: a remark with two paragraphs contains
+one. The rule that resolves both: a blank line is held, and joins the text if a
+text line follows it, separates if a structure line does.
+
+**A line indented by at least the block's margin is text**, whatever it looks
+like — that is what lets a remark quote indented code. Only a line indented by
+LESS than the margin closes the block.
 
 The gap of **four** spaces between structure and text stays deliberate: at
 two, a remark beginning with the word "reply" would be indistinguishable from
@@ -574,19 +613,29 @@ value is the rest. The list is read from the longest to the shortest.
 Keys emitted: `note`, `page`, `page-index`, `element`, `excerpt`, `title`,
 `mode`, `reply`, `to note`, `author`, `date`, `version`, `environment`,
 `viewport`, `status`, `resolved`, `text`, `payload`, `resolution-payload`,
-`title-payload`.
+`title-payload` — and, at the foot of an export, `skipped` and
+`skipped-reason`.
 
-The three `payload` keys were emitted by the server before they were written
-down here; the list is what a reader is entitled to rely on, so a key that
-exists and is not in it is a defect of this document, not a licence.
+A key that exists and is not in this list is a defect of THIS document, not a
+licence: the list is what a reader is entitled to rely on. It has been that
+defect three times — the three `payload` keys, then `title`, then the two
+footer keys — each time because a key shipped in the code before it was written
+down here.
+
+**A key is only a key when what follows it is a space or the end of the line.**
+Without that, `notes 128` in the header reads as the key `note` with the value
+`s 128`, and the count of an export becomes a remark. The rule is not an
+addition to the "longest prefix" rule above, it is the half of it that makes it
+work.
 
 Three properties of that list, all of which the rule depends on, and all of
 which have to be rechecked before adding a key:
 
 - `note` is not a prefix of `to note`, so both resolve. That property is why
   the rule exists at all;
-- `page` **is** a prefix of `page-index`, and `title` **is** a prefix of
-  `title-payload`. Those are the two places where the list is not prefix-free.
+- `page` **is** a prefix of `page-index`, `title` of `title-payload`, and
+  `skipped` of `skipped-reason` — and `note`, of the header's `notes`. Those
+  are the four places where the list is not prefix-free.
   They resolve correctly, and only because the rule reads from the longest:
   `page-index 9dL...` matches `page-index`, never `page` with the value
   `-index 9dL...`. The reverse cannot happen, because the separator after a
@@ -600,10 +649,34 @@ which have to be rechecked before adding a key:
 The format defends itself, in both directions: everything a reader counts as
 an end of line — `\r\n`, `\r`, U+0085, U+2028, U+2029 — is reduced to a plain
 line feed, on writing **and** on reading back, and control characters other
-than `\n` and `\t` are removed. Without that, one note manufactures, INSIDE
+than `\n` and `\t` are removed. On reading it matters for a document that
+crossed something on the way: a proxy that rewrote the line endings leaves a
+`\r` glued to the end of every value, and a reader that splits on `\n` alone
+carries it into a name. Without that, one note manufactures, INSIDE
 the export, a whole note that was never written. In encrypted mode this
 cleanup happens **after** decryption, at the producer of the export: that is
 the only place where the text exists.
+
+### 5.1 bis Two values the list does not give
+
+`status` has exactly one value, `open`, and `status` and `resolved` never both
+appear: a note is one or the other.
+
+`resolved` carries a sentence rather than a value:
+
+```
+resolved <date> by <name> in <version>
+```
+
+`by` and `in` are absent in encrypted mode, where the server knows the date and
+nothing else. Reading it back is ambiguous by construction — a name containing
+" in " surrounded by spaces cannot be told from the separator — and the rule is
+to take the **last** occurrence, which loses a version rather than a name.
+
+An export with nothing in it emits `no notes recorded`, which is not a "key
+value" line and is in no list. A reader ignores lines it cannot cut, so this
+one costs nothing; it is written down because a reader that fails on what it
+does not know makes every future addition impossible.
 
 ### 5.2 The header
 
@@ -652,9 +725,14 @@ it is missing the key.
 
 **The complete export in encrypted mode is produced by `annotepage-mcp`**,
 which has the key: it reads `?action=text`, decrypts each envelope and emits
-the grammar above, **filled in**, with the same indents and the same keys. A
-tool that reads the export does not know — and does not have to know — which
-of the two producers wrote it.
+the grammar above, **filled in**, with the same indents and the same keys.
+
+A reader does not have to know which producer wrote it, and it can tell: the
+server emits the three `payload` keys and the MCP drops them — a decrypted
+export has no reason to carry the sealed bytes it was made from — and the
+server emits `retention` in the header where the MCP does not. Neither
+difference changes how a line is read. Saying they are indistinguishable was
+tidier and untrue.
 
 `mode encrypted` is emitted only for an encrypted note. A plain note has no
 `mode` line, and neither does a format-1 note: the same absence, the same
@@ -670,20 +748,27 @@ genuinely readable document exists only on the machine that holds the key.
 
 ---
 
-## 6. The seven addresses
+## 6. The eight addresses
 
 Relative to the mount prefix. Format 1's five, with the project id added, plus
-`title` and `backfill`.
+`title`, `backfill` and `update`.
 
 ```
-GET  <base>/api.php?action=list&project=<id>&index=<page_index>
-POST <base>/api.php?action=add
-POST <base>/api.php?action=resolve
-POST <base>/api.php?action=title
-GET  <base>/api.php?action=text&project=<id>
-GET  <base>/api.php?action=diagnostic
-POST <base>/api.php?action=backfill
+GET      <base>/api.php?action=list&project=<id>&index=<page_index>
+POST     <base>/api.php?action=add
+POST     <base>/api.php?action=resolve
+POST     <base>/api.php?action=title
+GET      <base>/api.php?action=text&project=<id>
+GET      <base>/api.php?action=diagnostic
+GET|POST <base>/api.php?action=backfill
+POST     <base>/api.php?action=update&token=<token>
 ```
+
+`update` is not part of the exchange: it exists only where the operator wrote a
+token, it fetches and installs a newer version of the server's own code, and no
+client ever calls it. It is listed because an unknown action is refused with
+the list, so a reader comparing the two would otherwise find one it cannot
+place.
 
 Adding `title` does not change the format number: §7 says an action, and an
 optional field on an action, are additions a reader ignores if it does not know
@@ -693,8 +778,10 @@ which is the same thing a typo gets.
 
 `backfill` is the one no client calls. It fills `page_index` for rows written
 before the blind index existed, and it is meant to be run by hand, once, after
-an upgrade -- see INSTALL.md. It is a POST for the same reason the other two
-are: it writes.
+an upgrade -- see INSTALL.md. Its POST writes; its **GET reads**, and what it
+returns is the list of page paths still without an index, in the clear. That is
+why it exists only when self-hosted: on a relay it would enumerate somebody
+else's paths.
 
 Every write stays POST, never GET: an action that changes state must not be
 triggered by a link somebody follows or a crawler explores. An unknown action
@@ -707,7 +794,14 @@ sending the path in plain mode and the index in encrypted mode would make two
 code paths, and the second would be the less tested one.
 
 Response: `{"ok":true,"tool":"annotepage","format":2,"version":"...",
-"project":"...","index":"...","notes":[...]}`. Each note carries its plain
+"project":"...","index":"...","notes":[...],"totals":{...},"retention":<days>}`.
+
+`totals` counts the whole project — notes, still open, pages carrying one —
+and `retention` is how many days a thread is kept after its last message, `0`
+when nothing expires. Both are answered on this call rather than on one of
+their own, so a page load never costs a second request. Both were added after
+this section was first written, and a reader that did not know them ignored
+them, which is the rule of §7 working. Each note carries its plain
 columns (§2.1), its payload columns (§2.2) and its nested replies.
 
 It may also carry **`client_version`**, the version of the browser client the
