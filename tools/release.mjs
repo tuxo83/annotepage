@@ -90,8 +90,29 @@ if (pkg === 'client') {
                    .join(`annotepage-client-${version}.js`);
         text = text.split(`annotepage-client@${previous}`)
                    .join(`annotepage-client@${version}`);
+        /* AND THE VERSION THAT IS NOT NEXT TO A NAME. The install page builds
+           its pinned tag by concatenation -- `annotepage-client@' + VERSION` --
+           so neither of the two replacements above ever touched it, and the
+           digest beside it moved without it. Measured: the page handed out
+           2.11.0 with 2.14.1's digest, which every browser refuses in silence.
+           The constant is rewritten by name. */
+        text = text.replace(
+            /(var CLIENT_VERSION\s*=\s*')[\d]+\.[\d]+\.[\d]+(')/g,
+            `$1${version}$2`);
         if (text !== before) { writeFileSync(file, text); touched++; console.log(`  ${file}`); }
     }
+    /* AND WHAT THE SERVER TELLS ITS CLIENTS. server/webroot/CLIENT_VERSION is
+       the version a server ANNOUNCES on every `list`, and it is how a client
+       served by a CDN learns that a newer one exists. Nothing wrote it: it said
+       2.2.0 while the client was 2.14.1, so the mechanism had been inert for
+       twelve minor versions -- a client compares three numbers, sees an older
+       one, and stays silent. It is written here, with everything else. */
+    if (pkg === 'client') {
+        const announced = 'server/webroot/CLIENT_VERSION';
+        writeFileSync(announced, version + '\n');
+        console.log(`  ${announced}`);
+    }
+
     console.log(`  ${touched} file(s) carried the digest or the version`);
     if (digestBefore === digest) {
         console.log('  note: the bundle is byte-identical to the previous version.');

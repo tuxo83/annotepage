@@ -145,6 +145,25 @@ if (!served.filter(existsSync).length) {
    Only a version written near a digest is checked. An address in prose, in a
    changelog, in an example of an older release, names what it names. */
 let pins = 0;
+/* AND THE VERSION THAT IS NOT WRITTEN NEXT TO ANYTHING. The install page holds
+   it in a constant and builds the address by concatenation, so the window
+   search below never sees it -- and the digest beside it can move without it.
+   It did: the page handed out annotepage-client@2.11.0 with 2.14.1's digest,
+   refused by every browser with nothing on the page and nothing in the logs,
+   for as long as it was up. Anything calling itself CLIENT_VERSION names the
+   released client, wherever it lives. */
+for (const file of files) {
+    let text;
+    try { text = readFileSync(file, 'utf8'); } catch { continue; }
+    for (const m of text.matchAll(/CLIENT_VERSION\s*=\s*'([\d]+\.[\d]+\.[\d]+)'/g)) {
+        if (m[1] === pkgVersion) continue;
+        const line = text.slice(0, m.index).split('\n').length;
+        console.error(`${file}:${line}  CLIENT_VERSION is ${m[1]}, the released client is ${pkgVersion}.`);
+        console.error('  Whatever this builds carries a digest that describes another file.');
+        pins++;
+    }
+}
+
 for (const file of files) {
     if (file === HISTORY) continue;
     let text;

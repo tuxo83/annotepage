@@ -62,4 +62,27 @@ for (const [label, value] of Object.entries(versions)) {
 
 agree('protocol format', formats);
 
+/* WHAT THE SERVER TELLS ITS CLIENTS IS THE CLIENT THAT EXISTS.
+   server/webroot/CLIENT_VERSION is what a server announces on every `list`, and
+   it is the only way a client served by a CDN learns that a newer one is out.
+   Nothing wrote it and nothing compared it: it said 2.2.0 while the released
+   client was 2.14.1, so the mechanism had been inert for twelve minor versions
+   -- a client compares three numbers, sees an older one, and keeps quiet. The
+   failure of a version that LIES is silence, which is why it needs a rule and
+   not a glance.
+
+   Compared, unlike the three above: those are three products released on their
+   own days, and this is one product's version written down twice. */
+const announced = readFileSync('server/webroot/CLIENT_VERSION', 'utf8').trim();
+const released = versions['client package'];
+if (announced !== released) {
+    console.error(`server/webroot/CLIENT_VERSION announces ${announced}, `
+        + `the released client is ${released}.`);
+    console.error('  A server saying so tells every client the wrong thing, and');
+    console.error('  a client that hears an older number than its own says nothing.');
+    bad++;
+} else {
+    console.log(`announced client: ${announced}, which is the released one`);
+}
+
 process.exit(bad ? 1 : 0);
