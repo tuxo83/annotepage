@@ -82,9 +82,10 @@ complete French set ships in the package, in `labels/fr.json`.
 
 ## Key lost = notes lost
 
-The notes are encrypted in the browser. The server stores sealed envelopes and
-cannot read a path, a name or a remark — nor can whoever runs it. There is no
-recovery and no escrow.
+No recovery, no escrow, no rotation:
+[why](https://annotepage.com/questions.html#no-recovery). Said here because
+this page is all an npm reader has, and said in one line because a second
+wording of it is a wording that can go stale.
 
 ## What it does not touch
 

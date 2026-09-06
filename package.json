@@ -10,7 +10,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath hooks",
     "build": "node client/tools/build.mjs",
-    "check": "npm run check:shapes && npm run check:bundle && npm run check:installer && npm run check:sri && npm run check:injection && npm run check:css && npm run check:html && npm run check:shell && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp && npm run check:e2e",
+    "check": "npm run check:shapes && npm run check:bundle && npm run check:installer && npm run check:sri && npm run check:injection && npm run check:css && npm run check:html && npm run check:shell && npm run check:sitelinks && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp && npm run check:e2e",
     "check:sri": "node tools/check-sri.mjs",
     "check:injection": "node tools/check-no-html-injection.mjs",
     "check:versions": "node tools/check-versions.mjs",
@@ -22,6 +22,7 @@
     "check:css": "node tools/check-css-balance.mjs",
     "check:html": "node tools/check-html-nesting.mjs",
     "check:shell": "node tools/check-shell.mjs",
+    "check:sitelinks": "node tools/check-site-links.mjs",
     "check:bundle": "node tools/check-bundle-parses.mjs",
     "check:installer": "node tools/check-installer-copy.mjs",
     "check:published": "node tools/check-published.mjs",

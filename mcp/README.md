@@ -44,9 +44,9 @@ yours.
 ```
 
 > **This file contains the key, which is every note there is.** `chmod 600` it,
-> keep it out of git, never paste it into a ticket or a conversation. There is
-> no rotation: a leaked key means a fresh project and the notes already written
-> abandoned.
+> keep it out of git, never paste it into a ticket or a conversation — and note
+> that a key cannot be replaced:
+> [why](https://annotepage.com/questions.html#no-recovery).
 
 `author` is **required for every write**: a reply signed by nobody is a reply
 the reviewer cannot answer back to. `"read_only": true` cuts every write, for
