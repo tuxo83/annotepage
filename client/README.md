@@ -21,8 +21,8 @@ At the end of `<body>`. Needs a **secure context** — https, or localhost —
 because the encryption is WebCrypto's.
 
 ```html
-<script src="https://annotepage.com/annotepage-client-2.22.0.js"
-        integrity="sha384-Iw9wfZ6d9e9+lE0pZQ3fSjkZ++f3qHdxQtLH4+d42SCEeiYmSzDD3Gbkw4SYjCZm"
+<script src="https://annotepage.com/annotepage-client-2.23.0.js"
+        integrity="sha384-3N2cyMhzg3iB8eohex9kcKadMt7xjORkxpv/BA7+jqrjhZSPnt6DwRFgDjBZPWkb"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
         data-project="your-project-id"
@@ -64,7 +64,7 @@ you like without touching the code:
 
 ```html
 <script>window.Annotepage = { labels: { 'button.open': 'Annoter la page' } };</script>
-<script src="https://annotepage.com/annotepage-client-2.22.0.js" ... defer></script>
+<script src="https://annotepage.com/annotepage-client-2.23.0.js" ... defer></script>
 ```
 
 A missing label falls back on English, so a partial translation is usable. A
