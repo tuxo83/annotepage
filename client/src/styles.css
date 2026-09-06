@@ -44,6 +44,22 @@
     --ap-alert-bg: #fdeceb;
     --ap-alert-border: #e3a9a4;
     --ap-alert-text: #8a1f16;
+    /* THE TWO STATES A REMARK CAN BE IN ONCE IT IS ANSWERED, as tokens rather
+       than as literals. They were literals, written once inside the card's
+       state mark -- which meant the dark theme drew them at the LIGHT theme's
+       ink: measured, 2.42:1 for "resolved" and 2.02:1 against the veil they
+       sit on, where WCAG 1.4.3 asks 4.5. Below they are 4.68 and 5.23 in the
+       light theme, 6.43 and 6.64 in the dark one, on the same composite.
+
+       `pending` is the state that must never be mistaken for done: resolved,
+       but not deployed -- the defect is still on the reader's screen. `fill`
+       is the same colour asked to carry --ap-accent-text on top of it, for the
+       badge on the page: 5.93:1 in light, 10.14:1 in dark. */
+    --ap-done-ink: #0f7a52;
+    --ap-done-veil: rgba(16, 185, 129, 0.14);
+    --ap-pending-ink: #8a5a00;
+    --ap-pending-veil: rgba(245, 158, 11, 0.16);
+    --ap-pending-fill: #8a5a00;
     --ap-shadow: 0 6px 24px rgba(16, 24, 40, 0.18);
     --ap-radius: 10px;
     --ap-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
@@ -65,6 +81,11 @@
         --ap-alert-bg: #3a1f1c;
         --ap-alert-border: #7c3a33;
         --ap-alert-text: #ffb9b1;
+        --ap-done-ink: #56d3a0;
+        --ap-done-veil: rgba(16, 185, 129, 0.18);
+        --ap-pending-ink: #f0b757;
+        --ap-pending-veil: rgba(245, 158, 11, 0.16);
+        --ap-pending-fill: #f0b757;
         --ap-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
     }
 }
@@ -220,6 +241,31 @@
     cursor: pointer;
     pointer-events: auto;
     box-shadow: var(--ap-shadow);
+}
+
+/* THE STATE, IN THE BADGE ITSELF. The rule above is the OPEN state -- work to
+   do -- and it stays the tool's accent, because that is what a badge on a page
+   has always meant here. The other two are read against it:
+
+     pending  filled amber. Resolved, not deployed: the defect is still on the
+              screen the reader is looking at, and it is the one state worth
+              catching an eye that was not looking for it.
+     done     hollow, in the soft ink. History: there, countable, and not
+              asking for anything.
+
+   THE COLOUR IS NEVER ALONE. The count is written in the badge and the state
+   is spelled out in its accessible name -- a badge that said "still to fix"
+   by hue only would say nothing at all to a good part of its readers. */
+.ap-marker-pending {
+    background: var(--ap-pending-fill);
+}
+.ap-marker-done {
+    background: var(--ap-bg-soft);
+    color: var(--ap-text-soft);
+    font-weight: 600;
+    /* The 2px border is the halo against the page and cannot be spent on the
+       outline, so the outline is drawn inside. */
+    box-shadow: var(--ap-shadow), inset 0 0 0 1px var(--ap-border);
 }
 
 .ap-marker:focus-visible {
@@ -385,7 +431,28 @@
 }
 .ap-pop-moving .ap-pop-bar { cursor: grabbing; }
 .ap-pop-title { flex: 1; font-size: 13px; font-weight: 650; }
-.ap-pop-body { padding: 12px; overflow: auto; }
+/* `min-height: 0` is what makes the scroll happen INSIDE the window rather
+   than the window growing past its own height: a flex item does not shrink
+   below its content without it, and the end of a long remark would be behind
+   the bottom edge with nothing to scroll. */
+.ap-pop-body { flex: 1 1 auto; min-height: 0; padding: 12px; overflow: auto; }
+/* THE CORNER, AND IT IS DRAWN RATHER THAN LEFT TO THE BROWSER. `resize: both`
+   would have done this in one line and does nothing under a finger on iOS; the
+   window is moved with pointer events for exactly that reason, and it is
+   resized with them too. Two hairlines, the shape everybody already reads as a
+   grip, in the same ink as the borders around it. */
+.ap-pop-grip {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize; touch-action: none;
+    background:
+        linear-gradient(135deg, transparent 42%, var(--ap-border) 42%,
+                        var(--ap-border) 54%, transparent 54%),
+        linear-gradient(135deg, transparent 66%, var(--ap-border) 66%,
+                        var(--ap-border) 78%, transparent 78%);
+}
+.ap-pop-sizing { user-select: none; }
+.ap-pop-sizing .ap-pop-grip { cursor: nwse-resize; }
 /* Inside a window, the block is the window: no second frame around it. */
 .ap-pop-body .ap-config { margin: 0; padding: 0; border: 0; background: none; }
 .ap-pop-body .ap-forget { margin: 0; }
@@ -932,10 +999,10 @@
 }
 .ap-note.ap-resolved { opacity: .72; }
 .ap-note.ap-resolved .ap-state-mark {
-    color: #0f7a52; background: rgba(16, 185, 129, .14);
+    color: var(--ap-done-ink); background: var(--ap-done-veil);
 }
 .ap-note.ap-resolved-pending .ap-state-mark {
-    color: #8a5a00; background: rgba(245, 158, 11, .16);
+    color: var(--ap-pending-ink); background: var(--ap-pending-veil);
 }
 /* The "it is fixed" / "reopen" block, opened under the card. Same shape as
    the reply block: it is the same gesture, one answers a remark. */

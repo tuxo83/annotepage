@@ -246,6 +246,10 @@ ns.defaultLabels = {
     /* -- The markers put on the elements already annotated ------------- */
     'marker.one': '1 note here',
     'marker.n': '{n} notes here',
+    /* The badge is a button now: it opens the window on everything written
+       about that element. Said in the accessible name, because the colour and
+       the count say it to the eye alone. */
+    'marker.open': 'Open what is written here',
 
     /* -- The key: the only secret, and it cannot be recovered ---------- */
     'key.title': 'The key of this project is needed',

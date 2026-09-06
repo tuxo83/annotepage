@@ -249,8 +249,43 @@ const hideHighlight = () => {
     ui.label.style.display = 'none';
 };
 
+/* WHAT STATE A REMARK IS IN, IN ONE PLACE. The same three lines were written
+   in the row, in the card and, the day the markers gained a colour, they would
+   have been written a third time. The middle state is the one that must not be
+   folded into the others: resolved but not deployed is a defect still on the
+   reader's screen, and anything drawing it as done lies at a glance. */
+const noteState = (note) => {
+    if (!note.resolved_at) return 'open';
+    return alreadyDeployed(note.resolved_version) ? 'done' : 'pending';
+};
+
+/* AND WHAT STATE A GROUP OF THEM IS IN: the most urgent one present. A badge
+   that averaged its remarks would go quiet on an element still carrying an
+   open one. */
+const groupState = (notes) => {
+    let seen = 'done';
+    for (let i = 0; i < notes.length; i += 1) {
+        const one = noteState(notes[i]);
+        if (one === 'open') return 'open';
+        if (one === 'pending') seen = 'pending';
+    }
+    return seen;
+};
+
 /** One badge per annotated element. It only appears in annotation mode:
-    outside that mode, the page is exactly the site's. */
+    outside that mode, the page is exactly the site's.
+
+    IT CARRIES A COUNT AND A COLOUR, and both are read at a glance without
+    opening anything: how many remarks sit on this element, and whether any of
+    them is still waiting. Blue is work to do, amber is fixed but not yet
+    deployed -- the defect is still on screen -- and a hollow badge is history.
+    The colour is never the only carrier: the count is written in it and the
+    state is spelled out in the badge's accessible name.
+
+    AND CLICKING IT OPENS THE WINDOW. It used to bring the matching row forward
+    in the panel, which answers "where is it in the list" -- a question nobody
+    asks while pointing at the element itself. What they want is the remark,
+    and the window is where a remark is read. */
 const drawMarkers = () => {
     empty(ui.markers);
     if (!mode) return;
@@ -260,12 +295,18 @@ const drawMarkers = () => {
         if (r.width === 0 && r.height === 0) continue;
         if (r.bottom < 0 || r.top > window.innerHeight) continue;
         const n = group.notes.length;
-        const badge = create('button', 'ap-marker', String(n));
+        const state = groupState(group.notes);
+        const badge = create('button', 'ap-marker ap-marker-' + state, String(n));
         badge.type = 'button';
-        badge.title = n === 1 ? T('marker.one') : T('marker.n', { n: n });
+        const what = n === 1 ? T('marker.one') : T('marker.n', { n: n });
+        const how = T(state === 'open' ? 'list.state_open'
+            : (state === 'pending' ? 'list.state_pending' : 'list.state_done'));
+        badge.title = what + ' \u2014 ' + how;
+        badge.setAttribute('aria-label', T('marker.open') + ' \u2014 ' + what
+            + ' \u2014 ' + how);
         badge.style.left = Math.max(2, Math.min(r.left - 8, window.innerWidth - 30)) + 'px';
         badge.style.top = Math.max(2, Math.min(r.top - 8, window.innerHeight - 30)) + 'px';
-        badge.addEventListener('click', ((note) => () => focusNote(note))(group.notes[0]));
+        badge.addEventListener('click', ((g) => () => showGroup(g))(group));
         ui.markers.appendChild(badge);
     }
 };
@@ -373,19 +414,39 @@ const noteRow = (note, orphan) => {
     return row;
 };
 
-/* THE WINDOW REMEMBERS WHICH REMARK IT HOLDS. Replying or resolving redraws
-   the panel from the server's answer, and a window left showing the card as it
-   was before would be the one place on screen still telling the old story. */
-let popNote = null;
+/* THE WINDOW REMEMBERS WHICH REMARKS IT HOLDS. Replying or resolving redraws
+   the panel from the server's answer, and a window left showing the cards as
+   they were would be the one place on screen still telling the old story.
+
+   A LIST AND NOT ONE ID, since a badge opens the window on everything written
+   about one element. Opened from the list it holds exactly one; opened from a
+   badge that says 3, it holds three. */
+let popNotes = null;
+
+const showNotes = (notes, orphan, title) => {
+    const ids = [];
+    for (let i = 0; i < notes.length; i += 1) ids.push(notes[i].id);
+    popNotes = { ids: ids, orphan: orphan };
+    openPop(title, (into) => {
+        for (let i = 0; i < notes.length; i += 1) {
+            into.appendChild(noteCard(notes[i], orphan));
+        }
+    });
+};
 
 /* `showNote` and not `openNote`: 40-api.js already has an openNote, and it
    DECRYPTS a note. Two functions with one name in one bundle is a bug waiting
    for whoever reads the second one first. */
 const showNote = (note, orphan) => {
-    popNote = { id: note.id, orphan: orphan };
-    openPop(note.excerpt || T('list.untitled'), (into) => {
-        into.appendChild(noteCard(note, orphan));
-    });
+    showNotes([note], orphan, note.excerpt || T('list.untitled'));
+};
+
+/* THE BADGE'S OWN WINDOW. Its title is what the ELEMENT says, not what the
+   first remark says: the window holds all of them, and naming it after one
+   would be wrong as soon as there are two. */
+const showGroup = (group) => {
+    showNotes(group.notes, false,
+        excerptOf(group.element) || T('list.untitled'));
 };
 
 const noteCard = (note, orphan) => {
@@ -777,12 +838,21 @@ const configBlock = () => {
  */
 
 let pop = null;
+/* The window listens to the viewport for as long as it is on screen, and not
+   one moment longer. Kept here so closePop can take it back off: a listener
+   left behind would move a window that no longer exists at the next turn of a
+   phone. */
+let popWatch = null;
 
 const closePop = () => {
     if (!pop) return;
+    if (popWatch) {
+        window.removeEventListener('resize', popWatch);
+        popWatch = null;
+    }
     pop.remove();
     pop = null;
-    popNote = null;
+    popNotes = null;
 };
 
 const openPop = (title, fill) => {
@@ -810,18 +880,61 @@ const openPop = (title, fill) => {
        the window floating over it. */
     pop = box;
 
-    /* PLACED, THEN MOVED BY HAND. It opens beside the panel rather than over
-       it -- the panel is where the reader just clicked -- and never off the
-       edge of a narrow window. */
-    const w = box.offsetWidth || 380;
-    const h = box.offsetHeight || 260;
-    let x = Math.max(12, Math.round((window.innerWidth - w) / 2));
-    let y = Math.max(12, Math.round((window.innerHeight - h) / 3));
-    const place = () => {
+    /* FILLED FIRST, THEN PLACED. This is the whole of the bug the reader hit:
+       the window was measured BEFORE its content went in, so `h` was the
+       height of an empty box -- about forty pixels -- and a window opened a
+       third of the way down the viewport then grew a card underneath itself
+       and ran off the bottom of the screen. What is written at the end of a
+       remark could only be reached by dragging the window up first.
+
+       So nothing is placed until there is something to measure. */
+    fill(body);
+
+    /* AND IT OPENS AT A SHAPE, NOT AT ITS FULL LENGTH. A long remark filled
+       the window to the ceiling -- a column the height of the screen, which is
+       the shape the panel already has and the one this window exists not to
+       be. It opens at the smaller of what its content needs and 62% of the
+       viewport, never under 220px, and the body scrolls inside. Growing it is
+       the reader's to do, from the corner. */
+    const ROOM = 12;
+    const fits = (v) => Math.max(220, Math.min(v, window.innerHeight - ROOM * 2));
+    box.style.height =
+        fits(Math.min(box.offsetHeight, Math.round(window.innerHeight * 0.62))) + 'px';
+
+    /* WHERE IT OPENS: in the space the panel leaves, never over it. The panel
+       is a 360px band down one edge; on a narrow screen it is a bottom band
+       instead and the whole width is free. Centred in what is left, a third of
+       the way down -- and then clamped, which is what actually guarantees no
+       edge is crossed. */
+    let x = 0, y = 0;
+    const clamp = () => {
+        const w = box.offsetWidth;
+        const h = box.offsetHeight;
+        x = Math.max(ROOM, Math.min(x, window.innerWidth - w - ROOM));
+        y = Math.max(ROOM, Math.min(y, window.innerHeight - h - ROOM));
         box.style.left = x + 'px';
         box.style.top = y + 'px';
     };
-    place();
+    (function () {
+        const band = narrowScreen() ? 0 : 372;
+        const free = Math.max(0, window.innerWidth - band);
+        const from = (side === 'left' && !narrowScreen()) ? band : 0;
+        x = Math.round(from + (free - box.offsetWidth) / 2);
+        y = Math.round((window.innerHeight - box.offsetHeight) / 3);
+        clamp();
+    }());
+
+    /* A WINDOW ON A VIEWPORT THAT CHANGED IS A WINDOW TO PLACE AGAIN. Turning
+       a phone, or opening a laptop's keyboard drawer, can leave it entirely
+       outside the screen with nothing to grab. The size is brought back inside
+       first, then the position. */
+    popWatch = () => {
+        if (box.offsetHeight > window.innerHeight - ROOM * 2) {
+            box.style.height = fits(box.offsetHeight) + 'px';
+        }
+        clamp();
+    };
+    window.addEventListener('resize', popWatch);
 
     /* THE DRAG. Pointer events and not mouse events: one code path for a
        mouse, a finger and a pen. setPointerCapture keeps the moves coming even
@@ -830,7 +943,9 @@ const openPop = (title, fill) => {
 
        CLAMPED SO A TITLE BAR IS ALWAYS REACHABLE. A window dragged off the top
        or fully past an edge cannot be dragged back, and there is no menu here
-       to bring it home. */
+       to bring it home. Dragging is allowed to put an edge past the screen --
+       that is the reader's own doing, and how one reads the far side of a wide
+       card -- where OPENING is not. */
     let from = null;
     bar.addEventListener('pointerdown', (e) => {
         if (e.target.closest('button')) return;
@@ -846,7 +961,8 @@ const openPop = (title, fill) => {
             window.innerWidth - 60);
         y = Math.min(Math.max(0, from.y + (e.clientY - from.py)),
             window.innerHeight - 32);
-        place();
+        box.style.left = x + 'px';
+        box.style.top = y + 'px';
     });
     const release = (e) => {
         if (!from) return;
@@ -857,7 +973,48 @@ const openPop = (title, fill) => {
     bar.addEventListener('pointerup', release);
     bar.addEventListener('pointercancel', release);
 
-    fill(body);
+    /* THE CORNER. `resize: both` in the stylesheet would have been three
+       lines, and it is not used: it does nothing under a finger on iOS, and
+       the drag two paragraphs up is written on pointer events precisely so
+       that a finger, a pen and a mouse take one code path. A window one can
+       move but not resize with the same gesture is a window that works twice
+       as well for whoever has a mouse.
+
+       BOTH DIMENSIONS, FREELY -- the ratio is the reader's. A wide card wants
+       width, a long thread wants height, and the tool has no opinion on which.
+       The floors are what keeps the title bar and its close button usable; the
+       ceilings are the viewport, because a window bigger than the screen
+       cannot be brought back. */
+    const grip = create('div', 'ap-pop-grip');
+    grip.setAttribute('aria-hidden', 'true');
+    box.appendChild(grip);
+    let size = null;
+    grip.addEventListener('pointerdown', (e) => {
+        size = { px: e.clientX, py: e.clientY,
+                 w: box.offsetWidth, h: box.offsetHeight };
+        grip.setPointerCapture(e.pointerId);
+        box.classList.add('ap-pop-sizing');
+        e.preventDefault();
+        e.stopPropagation();
+    });
+    grip.addEventListener('pointermove', (e) => {
+        if (!size) return;
+        const w = Math.max(240, Math.min(size.w + (e.clientX - size.px),
+            window.innerWidth - x - ROOM));
+        const h = Math.max(140, Math.min(size.h + (e.clientY - size.py),
+            window.innerHeight - y - ROOM));
+        box.style.width = w + 'px';
+        box.style.height = h + 'px';
+    });
+    const dropped = (e) => {
+        if (!size) return;
+        size = null;
+        box.classList.remove('ap-pop-sizing');
+        try { grip.releasePointerCapture(e.pointerId); } catch (err) { /* already gone */ }
+    };
+    grip.addEventListener('pointerup', dropped);
+    grip.addEventListener('pointercancel', dropped);
+
     /* The close button rather than the body: whatever is inside may be a block
        of text with nothing to focus, and a dialog that opens with focus
        nowhere leaves a keyboard where it was. */
@@ -1136,17 +1293,23 @@ const drawPanel = () => {
        would be the one place on screen telling the old story. The remark is
        looked up again by id -- it may have gained a reply, changed state, or
        gone. */
-    if (popNote) {
-        let again = null;
+    if (popNotes) {
+        const again = [];
         for (let i = 0; i < notes.length; i += 1) {
-            if (notes[i].id === popNote.id) { again = notes[i]; break; }
+            if (popNotes.ids.indexOf(notes[i].id) !== -1) again.push(notes[i]);
         }
-        if (!again) closePop();
+        /* Every one of them gone -- deleted, or moved to another page -- and
+           the window has nothing left to say. One of several gone: the window
+           stays, holding the rest, because the reader is still looking at the
+           element they all belong to. */
+        if (!again.length) closePop();
         else {
             const body = pop && pop.querySelector('.ap-pop-body');
             if (body) {
                 empty(body);
-                body.appendChild(noteCard(again, popNote.orphan));
+                for (let i = 0; i < again.length; i += 1) {
+                    body.appendChild(noteCard(again[i], popNotes.orphan));
+                }
             }
         }
     }

@@ -76,6 +76,7 @@
   "read.title_partial": "Certaines notes n’ont pas pu être lues",
   "marker.one": "1 note ici",
   "marker.n": "{n} notes ici",
+  "marker.open": "Ouvrir ce qui est écrit ici",
   "key.title": "La clé de ce projet est nécessaire",
   "key.help": "Les notes de ce projet sont chiffrées dans votre navigateur. Sans la clé du projet, ce navigateur ne peut ni les lire, ni en écrire. Demandez-la à la personne qui a installé l’outil, et collez-la ci-dessous. Elle sera retenue par ce navigateur, pour ce site.",
   "key.label": "La clé du projet (43 caractères)",
