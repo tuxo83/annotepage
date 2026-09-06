@@ -15,13 +15,16 @@
    bundle -- but that check would pass just as happily on two identical broken
    files, which is what happened. */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 
+/* WHAT IS ON DISK, not what git has heard of. Asked of the index, this listed
+   the copy a release had just renamed away and called it missing -- a check
+   failing on a file nobody has any more, one minute after the release that
+   removed it. */
 const files = ['client/dist/annotepage.js'].concat(
-    execSync('git ls-files --cached --others --exclude-standard', { encoding: 'utf8' })
-        .split('\n')
-        .filter((f) => /^docs\/annotepage-client-[\d.]+\.js$/.test(f)));
+    readdirSync('docs')
+        .filter((f) => /^annotepage-client-[\d.]+\.js$/.test(f))
+        .map((f) => 'docs/' + f));
 
 let bad = 0;
 for (const file of files) {
