@@ -1,6 +1,6 @@
 {
   "name": "annotepage-client",
-  "version": "2.17.1",
+  "version": "2.18.0",
   "description": "The annotepage annotation layer: click an element of a page, leave a remark on it, it is encrypted in the browser.",
   "license": "MIT",
   "repository": {
