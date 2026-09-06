@@ -681,10 +681,6 @@
     background: var(--ap-bg-soft);
 }
 
-.ap-note.ap-focused {
-    border-color: var(--ap-accent);
-    box-shadow: 0 0 0 3px var(--ap-accent-veil);
-}
 
 .ap-note-header {
     display: flex;

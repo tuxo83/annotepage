@@ -1325,16 +1325,13 @@ const drawPanel = () => {
                  : T('button.help'));
 };
 
-/** Brings a note forward in the panel, without changing anything on the
-    page. */
-const focusNote = (note) => {
-    const card = ui.body.querySelector('[data-ap-note="' + note.id + '"]');
-    if (!card) return;
-    const previous = ui.body.querySelectorAll('.ap-focused');
-    for (let i = 0; i < previous.length; i += 1) previous[i].classList.remove('ap-focused');
-    card.classList.add('ap-focused');
-    card.scrollIntoView({ block: 'nearest' });
-};
+/* focusNote STOOD HERE, AND IT HAD ALREADY STOPPED WORKING. It put .ap-focused
+   on whatever in the panel carried the note's id and scrolled it into view.
+   The panel stopped drawing cards and started drawing rows: the class landed
+   on a .ap-row, the only rule for it was written .ap-note.ap-focused, and
+   nothing was ever outlined again -- no error, no trace, a gesture that simply
+   did nothing. Its one caller was the badge, which now opens the window
+   instead. The rule went with it. */
 
 /** Brings the commented element back into view, by showing it on our side. */
 const showElement = (note) => {
