@@ -8,10 +8,6 @@
 The assistants' access to [annotepage](https://annotepage.com): an MCP server
 and a command line, over the same code.
 
-A reviewer clicks an element of a page and writes what is wrong. This package
-is how an assistant reads those remarks, answers in the thread with what it
-measured, and resolves them stamped with the version the fix ships in.
-
 ## Install
 
 ```
@@ -113,12 +109,8 @@ integration. In encrypted mode the server has nothing to give — this package i
 the step that decrypts, and `annotepage text` prints exactly what that URL
 would have returned in the clear.
 
-## The exchange format
-
-[`FORMAT.md`](https://github.com/tuxo83/annotepage/blob/main/FORMAT.md) — the
-envelope, the derivations, the blind index, the text export. It is the
-reference; where any other file disagrees with it, it is right.
-
 ## Licence
 
-MIT. Source: [github.com/tuxo83/annotepage](https://github.com/tuxo83/annotepage)
+MIT. Source: [github.com/tuxo83/annotepage](https://github.com/tuxo83/annotepage),
+where [`FORMAT.md`](https://github.com/tuxo83/annotepage/blob/main/FORMAT.md)
+specifies the envelope, the derivations and the export.

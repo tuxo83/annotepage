@@ -8,11 +8,6 @@
 The annotation layer of [annotepage](https://annotepage.com). One file, one
 `<script>` tag, no dependency, no bundler, no stylesheet of its own.
 
-A reviewer clicks an element of the page and writes what is wrong. The remark
-is encrypted in their browser and pinned to that element. An assistant reads
-the notes, fixes the code, replies in the thread with what it measured, and
-resolves the remark stamped with the version the fix ships in.
-
 ## The tag
 
 At the end of `<body>`. Needs a **secure context** — https, or localhost —
@@ -27,16 +22,14 @@ because the encryption is WebCrypto's.
         defer></script>
 ```
 
-`data-server` is the address of an **annotepage server** — a small PHP
-codebase that stores the notes. `api.annotepage.com` is a shared one, free and
-already running, so there is nothing to install anywhere in order to try this:
-it stores sealed envelopes and can read none of them. To run your own instead,
-the install page walks it, and `server/INSTALL.md` is the reference.
+`data-server` is an **annotepage server**, which stores the notes.
+`api.annotepage.com` is a shared one, free and already running, so nothing has
+to be installed anywhere to try this; running your own is one PHP file, and the
+install page walks it.
 
-`data-setup` opens the setup screen, once. It creates the project, shows you
-the key — 43 characters, written down nowhere else — and prints the tag to
-keep, with `data-project` in its place. A button, *Annotate this page*, then
-sits at the foot of the page.
+`data-setup` opens the setup screen once: it creates the project, shows the key
+— 43 characters, kept nowhere else — and prints the tag to keep, with
+`data-project` in its place.
 
 It must stay a **classic script tag**: the tool reads its own attributes
 through `document.currentScript`, which is `null` inside a module. Loaded as a
@@ -99,12 +92,8 @@ No cookie, no analytics, no third-party request. The interface lives in a
 shadow root, so no rule of the site can reach it and no rule of the tool can
 reach the site. Outside annotation mode the page is exactly the site's.
 
-## The exchange format
-
-[`FORMAT.md`](https://github.com/tuxo83/annotepage/blob/main/FORMAT.md) — the
-envelope, the derivations, the blind index, the text export. It is the
-reference; where any other file disagrees with it, it is right.
-
 ## Licence
 
-MIT. Source: [github.com/tuxo83/annotepage](https://github.com/tuxo83/annotepage)
+MIT. Source: [github.com/tuxo83/annotepage](https://github.com/tuxo83/annotepage),
+where [`FORMAT.md`](https://github.com/tuxo83/annotepage/blob/main/FORMAT.md)
+specifies the envelope, the derivations and the export.
