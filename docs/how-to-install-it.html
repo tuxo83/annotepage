@@ -372,10 +372,29 @@ code:not(pre code) {
    http by the server being installed. Nothing here is an operating system's --
    a title band with the name the installer itself prints, and nothing else. */
 .wiz { padding: 0; overflow: hidden; }
+/* The address bar: a rounded field on a band, which is what every browser
+   draws and what nothing on this site draws. The padlock is the one already on
+   the note server in the diagram -- the installer is opened over http on a
+   machine you own, and over https on one you do not. */
 .wiz-bar {
-    margin: 0; padding: .55rem .8rem;
+    display: flex; align-items: center; gap: .45rem;
+    margin: 0; padding: .5rem .7rem;
     border-bottom: 1px solid var(--line-soft); background: var(--bg-soft);
-    font-family: var(--mono); font-size: .78rem; font-weight: 600; color: var(--dim);
+}
+.wiz-lock { flex: none; width: .7rem; height: .85rem; color: var(--dim); }
+.wiz-url {
+    flex: 1; min-width: 0; padding: .18rem .6rem;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--bg);
+    font-family: var(--mono); font-size: .74rem; color: var(--dim);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* What a wizard ends on. Drawn at the weight of a primary button and left
+   where a form's submit sits, so it reads as the end of the screen. */
+.wiz-go { margin: 1.3rem 0 0; }
+.wiz-go span {
+    display: inline-block; padding: .35rem 1rem; border-radius: 999px;
+    background: var(--accent); color: var(--on-accent);
+    font-size: .85rem; font-weight: 650;
 }
 .wiz-body { padding: .9rem 1rem 1.1rem; }
 /* The head of the installer's own page, at the weight a screenshot gives it:
@@ -1104,7 +1123,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <label class="dial-legend" for="srv">The API address</label>
                     <input class="dial-in" id="srv" type="text" inputmode="url"
                            autocomplete="off" spellcheck="false"
-                           placeholder="https://staging.example.com/notes/api.php">
+                           placeholder="https://api.staging.example.com/api.php">
                     <p class="dial-say">
                         Your installer prints it. Left empty, the blocks guess.
                     </p>
@@ -1347,18 +1366,37 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <li>
                 <div>
                     <p class="cap"><span class="n"></span> Answer its three questions</p>
+                    <!-- WHAT IS LEFT FOR THE READER TO DO, AND NOTHING ELSE.
+                         This described what the installer does while it runs --
+                         walks you through, writes the configuration, proves the
+                         browser cannot reach the notes -- which the screen
+                         beside it is already showing. What it did not say is
+                         the one thing that happens after: it offers to delete
+                         itself, and leaving an installer on a web root is the
+                         mistake this page should not let anybody make. -->
                     <p class="say">
-                        It walks you through them, writes the configuration, and
-                        proves the browser cannot reach the notes before it
-                        finishes.
+                        Two of the three you have answered above.
                     </p>
                     <p class="say">
-                        Two of the three are the answers you gave above.
+                        It writes the configuration, then offers to delete
+                        itself. Let it.
                     </p>
                 </div>
                 <div>
                     <div class="frame wiz">
-                        <p class="wiz-bar" aria-hidden="true">annotepage &mdash; install</p>
+                        <!-- AN ADDRESS BAR, WHICH IS WHAT SAYS "ANOTHER PAGE".
+                             A title band saying "annotepage -- install" is the
+                             chrome of nothing in particular, so the drawing
+                             read as a block of THIS page rather than as a
+                             screen from somewhere else. A browser's address bar
+                             is the one piece of furniture that cannot be
+                             mistaken: the reader knows where it comes from
+                             before reading a word inside it. It carries the
+                             address the file is actually opened at. -->
+                        <p class="wiz-bar" aria-hidden="true">
+                            <svg class="wiz-lock" viewBox="0 0 14 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg>
+                            <span class="wiz-url" id="wiz-url">staging.example.com/annotepage-install.php</span>
+                        </p>
                         <div class="wiz-body">
                             <!-- THE SCREEN STARTS WHERE THE REAL ONE STARTS.
                                  Without these three lines the drawing was a
@@ -1378,6 +1416,12 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                             <p class="wiz-a"><span class="on">SQLite</span><span>MySQL</span></p>
                             <p class="wiz-q">Keeping this server up to date</p>
                             <p class="wiz-a"><span class="on if-cron">A shell cron</span><span class="on if-url">An address to call</span><span class="on if-self">It updates itself</span></p>
+                            <!-- AND A WIZARD ENDS ON A BUTTON. Three rows of
+                                 answers with nothing under them is a form
+                                 somebody abandoned; the thing that makes it a
+                                 wizard is that it goes somewhere when you press
+                                 it. Drawn, not clickable, and said to be. -->
+                            <p class="wiz-go" aria-hidden="true"><span>Install</span></p>
                         </div>
                     </div>
                 </div>
@@ -1446,7 +1490,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 <div>
                     <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-cronurl" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-cronurl"><code id="cron-code"><span class="op">17 4 * * *</span> <span class="tg">curl</span> <span class="op">-fsS</span> <span class="st">'https://staging.example.com/notes/api.php?action=update&amp;token=&lt;the secret&gt;'</span></code></pre>
+<pre id="snip-cronurl"><code id="cron-code"><span class="op">17 4 * * *</span> <span class="tg">curl</span> <span class="op">-fsS</span> <span class="st">'https://api.staging.example.com/api.php?action=update&amp;token=&lt;the secret&gt;'</span></code></pre>
                             </div>
                 </div>
             </li>
@@ -1469,11 +1513,16 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                  an extract. -->
             <li>
                 <div>
-                    <p class="cap"><span class="n"></span> Change anything else by hand</p>
+                    <!-- THE SHORTEST TRUE THING. It listed what the installer
+                         did not ask about -- a second origin, a relay, plain
+                         mode, credentials outside the web root -- which is four
+                         answers to a question nobody has yet. What somebody
+                         wants here is where the file is and whether they will
+                         understand it when they open it. -->
+                    <p class="cap"><span class="n"></span> Change anything else, later</p>
                     <p class="say">
-                        The installer wrote this file. Open it for what it did
-                        not ask about &mdash; a second origin, a relay, plain
-                        mode, credentials read from outside the web root.
+                        Everything else lives in one file, and every key in it
+                        is commented.
                     </p>
                 </div>
                 <div>
@@ -1522,14 +1571,23 @@ return array(
                         </div>
                     </figure>
 
-                    <p class="small dim">
-                        The second file in that folder is the
-                        <a href="https://github.com/tuxo83/annotepage/blob/main/server/webroot/internal/config-local.example.php">commented template</a>:
-                        every key, with what it costs written beside it.
-                    </p>
+
                 </div>
             </li>
         </ol>
+
+        <!-- AND THE TEMPLATE, AS A MENTION AND NOT AS A JUSTIFICATION. A
+             sentence under the figure explained why the second file in that
+             folder is worth opening, which reads as the page arguing for
+             itself. It is one of the notes this page already uses, on the
+             page's own axis like the other two, and it says the one thing
+             worth saying: it is there, it is commented, go and look. -->
+        <p class="note-aside is-info">
+            <span class="mk" aria-hidden="true">&#9432;</span>
+            <span><b>config-local.example.php</b> sits beside it, in the same
+            folder: the same file with every key in it and what each one costs,
+            <a href="https://github.com/tuxo83/annotepage/blob/main/server/webroot/internal/config-local.example.php">written out</a>.</span>
+        </p>
 
         <!-- WHAT YOU NEED BEFORE STARTING, AND ONLY THAT. This also
              described the installer's storage question -- which file, or which
@@ -1930,7 +1988,7 @@ return array(
              finishes. tools/check-shell.mjs refuses a page nothing links to. -->
         <p class="see-out">
             <a class="more" href="how-to-use-it.html">See a detailed usage example<span class="arrow" aria-hidden="true">&rarr;</span></a>
-            <a class="more" href="questions.html">Questions people ask<span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="more" href="questions.html">Frequently asked questions<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
     </div>
 </section>
@@ -2062,6 +2120,7 @@ return array(
     var quand = mn + ' ' + hr + ' * * *';
     var siteIn    = document.getElementById('site');
     var srvIn     = document.getElementById('srv');
+    var wizUrl    = document.getElementById('wiz-url');
     var open      = document.getElementById('m-open');
     var shared    = document.getElementById('s-shared');
     var pinned    = document.getElementById('p-lock');
@@ -2078,7 +2137,7 @@ return array(
        page no longer has would leave the placeholder sitting in the tag,
        ready to be copied. */
     if (!tagCode || !keyCode || !orgCode || !jsonCode || !cronCode
-        || !askCode || !siteIn || !srvIn || !cronSh || !open || !shared
+        || !askCode || !siteIn || !srvIn || !cronSh || !wizUrl || !open || !shared
         || !pinned) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
@@ -2160,8 +2219,17 @@ return array(
         /* WHAT THE READER TYPED, OR THE GUESS -- and the guess is written into
            the placeholder so it reads as a suggestion rather than as an
            answer the page already has. */
-        var guess  = 'https://' + site + '/notes/api.php';
+        /* A HOST OF ITS OWN, LIKE OURS. This guessed
+           https://<your site>/notes/api.php, which draws the API as a folder
+           inside the site being reviewed -- and the shared server everybody
+           starts on is api.annotepage.com, a host of its own. The origin lock
+           exists BECAUSE the two are usually apart: a server that answered from
+           inside the site would have nothing to declare. `api.` mirrors what
+           this project runs itself, and it is a placeholder either way. */
+        var guess  = 'https://api.' + site + '/api.php';
         srvIn.placeholder = guess;
+        /* The installer is opened at the reader's own address. */
+        wizUrl.textContent = site + '/annotepage-install.php';
         var ownApi = srvIn.value.trim() || guess;
         var origin = 'https://' + site;
         var api = shared.checked ? SHARED_API : ownApi;
