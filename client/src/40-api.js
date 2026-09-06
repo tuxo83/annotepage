@@ -297,6 +297,21 @@ const openNote = (note) => {
                 return null;
             }
         )
+        /* THE TITLE, IN ITS OWN ENVELOPE. Forgiven like the resolution below
+           it: a title that will not open costs a title, never the remark. The
+           remark is the thing; the title is a label on it, written later by
+           whoever answered it. */
+        .then((read) => {
+            if (!read || !read.title_payload) return read;
+            return open(keys.encryptionKey, PROJECT, PAGE_INDEX, 'title', read.title_payload)
+                .then(
+                    (object) => {
+                        read.title = object.title === undefined ? '' : String(object.title);
+                        return read;
+                    },
+                    () => { read.title = ''; return read; }
+                );
+        })
         .then((read) => {
             if (!read || !read.resolution_payload) return read;
             return open(keys.encryptionKey, PROJECT, PAGE_INDEX, 'resolution', read.resolution_payload)

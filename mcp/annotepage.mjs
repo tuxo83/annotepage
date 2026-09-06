@@ -33,7 +33,7 @@ import { dirname, join } from 'node:path';
 import { loadConfiguration, chooseProject, ConfigError } from './src/config.mjs';
 import {
     retrieve, filledExport, findNote, isOpen,
-    reply, markResolved, reopen, UsageError,
+    reply, markResolved, reopen, setTitle, UsageError,
 } from './src/notes.mjs';
 import { writeExport } from './src/text-export.mjs';
 import { readDiagnostic, readRawExport, ApiError } from './src/api.mjs';
@@ -53,7 +53,9 @@ const HELP = `annotepage ` + version() + ` — read and answer review notes.
   annotepage text               the complete export, decrypted, on standard output
   annotepage open               only the notes still to be fixed
   annotepage note <id>          one note and its thread
-  annotepage reply <id> <text>
+  annotepage reply <id> <text>           --title "..." titles it in the same call
+  annotepage title <id> <text>           what the remark is ABOUT, 70 characters
+                                         max; no text takes the title off
   annotepage resolve <id> <version>      empty version: write ""
   annotepage reopen <id>
   annotepage id                 the project id derived from the key
@@ -64,6 +66,8 @@ const HELP = `annotepage ` + version() + ` — read and answer review notes.
 Options:
   --project <name>  when the configuration declares several
   --page <path>     with "open": keep one page only
+  --untitled        with "open": only the ones nobody has titled yet
+  --title <text>    with "reply": says what the remark is about, in one line
   --config <file>   failing that: $ANNOTEPAGE_CONFIG, ./.annotepage.json,
                     ~/.config/annotepage/annotepage.json
 
@@ -200,6 +204,13 @@ const main = async () => {
             if (typeof options.page === 'string') {
                 notes = notes.filter((n) => n.page === options.page);
             }
+            /* THE BACKLOG OF TITLES, AND IT IS A FILTER RATHER THAN A REPORT:
+               what comes out is an export like any other, so the same reading
+               and the same answering apply to it. Remarks written before
+               titles existed are the whole first use of it. */
+            if (options.untitled) {
+                notes = notes.filter((n) => !n.title);
+            }
             process.stdout.write(filter(state, project, notes));
             return 0;
         }
@@ -221,6 +232,32 @@ const main = async () => {
             await reply(project, state, id, text);
             process.stdout.write('Reply written in the thread of note ' + id
                 + ', signed "' + project.author + '".\n');
+            /* IN THE SAME CALL, ON PURPOSE. Whoever has just read a remark
+               closely enough to answer it is the only one who knows what it is
+               about; a title asked for later is a title nobody writes. It runs
+               AFTER the reply, and its failure is reported without taking the
+               reply down: the answer is what the person who wrote the remark is
+               waiting for, and a refused title must not cost them one. */
+            if (typeof options.title === 'string') {
+                try {
+                    await setTitle(project, state, id, options.title);
+                    process.stdout.write('Note ' + id + ' titled.\n');
+                } catch (e) {
+                    process.stderr.write('The reply is written; the title is NOT: '
+                        + e.message + '\n');
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        case 'title': {
+            const id = integer(positional[1], 'id');
+            const text = positional.slice(2).join(' ');
+            await setTitle(project, state, id, text);
+            process.stdout.write(text.trim() === ''
+                ? 'The title of note ' + id + ' was taken off.\n'
+                : 'Note ' + id + ' titled.\n');
             return 0;
         }
 

@@ -153,6 +153,9 @@ export const add = (project, fields, signal) => post(project, 'add', fields, sig
 /** POST ?action=resolve — mark resolved, or reopen. */
 export const resolve = (project, fields, signal) => post(project, 'resolve', fields, signal);
 
+/** POST ?action=title — what a remark is about, in one line. */
+export const title = (project, fields, signal) => post(project, 'title', fields, signal);
+
 /**
  * A cache of a few seconds on the export, per project.
  *

@@ -25,7 +25,7 @@ import { FORMAT } from './format.mjs';
 import { readExport, writeExport } from './text-export.mjs';
 import { open, seal, indexOfPath, normalisedPath, EnvelopeError } from './crypto.mjs';
 import {
-    readCachedExport, forgetCache, add, resolve, ApiError,
+    readCachedExport, forgetCache, add, resolve, title, ApiError,
 } from './api.mjs';
 
 export class UsageError extends Error {}
@@ -77,6 +77,20 @@ const openNote = async (project, note, pageIndex, counts) => {
     // it possible to add one some day without changing the format number.
     for (const key of PAYLOAD_FIELDS) {
         note[key] = object[key] === undefined ? '' : String(object[key]);
+    }
+
+    /* THE TITLE, IN ITS OWN ENVELOPE. Read like the resolution and forgiven
+       like it: a title that will not open costs the reader a title, never the
+       remark. The remark is the thing; the title is a label on it. */
+    if (note.title_payload !== undefined && note.title_payload !== '') {
+        try {
+            const titled = await open(project.keys.encryptionKey, project.id,
+                                      pageIndex, 'title', note.title_payload);
+            note.title = titled.title === undefined ? '' : String(titled.title);
+        } catch (e) {
+            note.title = '';
+            counts.unreadable_titles = (counts.unreadable_titles || 0) + 1;
+        }
     }
 
     if (note.resolution_payload !== '') {
@@ -131,7 +145,7 @@ export const retrieve = async (project, signal) => {
 
     const counts = {
         newer: 0, unreadable: 0, unknown: 0, noSalt: 0,
-        unreadable_resolutions: 0,
+        unreadable_resolutions: 0, unreadable_titles: 0,
         /* The server may already have skipped lines on its side, for the same
            reason as us. Its count is not ours: we add them, we do not replace
            them. */
@@ -446,6 +460,76 @@ export const markResolved = async (project, state, id, version, signal) => {
     }
 
     const answer = await resolve(project, fields, signal);
+    forgetCache(project);
+    return answer;
+};
+
+/* THE LONGEST A TITLE MAY BE, and it is refused rather than cut. Seventy
+   characters is a title; past that it is a summary, and a summary in a list
+   column is a paragraph nobody reads. Cutting at seventy would ship a title
+   ending mid-word, which is worse than none: the reader cannot tell whether
+   the remark is about what they can see or about the part that was removed.
+   The number is FORMAT.md section 3.5 bis and the server's own limit; they
+   have to agree, and this is the one that produces the message. */
+export const TITLE_MAX = 70;
+
+/**
+ * Writes what a remark is ABOUT, in one line.
+ *
+ * WHY IT EXISTS. The only name a remark had was its excerpt -- the text of the
+ * element it was left on -- which says WHERE it sits and never what is wrong
+ * with it, and which on a page rewritten since is a photograph of something
+ * that no longer exists. Measured on this project's own install page: eleven
+ * rows out of twelve were headed by an excerpt of an element that no longer
+ * exists.
+ *
+ * WHO WRITES IT. Whoever answers the remark, at the moment they answer it,
+ * because that is the only moment anybody knows what it says. `reply` takes a
+ * title for that reason: one call, one turn, no second chore to forget.
+ *
+ * REPLACEABLE, and an empty one takes it off. A title describes a thing, it is
+ * not the thing -- unlike the remark, which is written once and rewritten by
+ * nobody. The action on the server can reach this field and no other.
+ */
+export const setTitle = async (project, state, id, text, signal) => {
+    requireWrite(project, state);
+
+    const found = findNote(state, id);
+    if (!found) throw new UsageError('No note ' + id + ' in this project.');
+    const note = found.note;
+
+    const clean = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+    if ([...clean].length > TITLE_MAX) {
+        throw new UsageError(
+            'That title is ' + [...clean].length + ' characters, and the limit is '
+            + TITLE_MAX + '.\n'
+            + 'Nothing was written, and it is not truncated on purpose: a title cut '
+            + 'mid-word is worse\nthan none, because the reader cannot tell what was '
+            + 'removed. Say it shorter.');
+    }
+
+    const fields = { id: String(note.id) };
+    if ((note.mode || 'plain') === 'encrypted') {
+        if (!project.keys) {
+            throw new UsageError(
+                'Note ' + id + ' is encrypted and the configuration of this project '
+                + 'carries no key: the title would travel in the clear.');
+        }
+        /* Empty means "take it off", and an empty envelope is how that is said:
+           sending a sealed empty string would put a title on the row that
+           decrypts to nothing, which is a third state nobody draws. */
+        if (clean !== '') {
+            const parent = found.parent || note;
+            const index = await indexForWriting(project, parent);
+            fields.title_payload = await seal(
+                project.keys.encryptionKey, project.id, index, 'title',
+                { title: clean });
+        }
+    } else if (clean !== '') {
+        fields.title = clean;
+    }
+
+    const answer = await title(project, fields, signal);
     forgetCache(project);
     return answer;
 };

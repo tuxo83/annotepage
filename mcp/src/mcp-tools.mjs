@@ -28,7 +28,7 @@
 
 import {
     retrieve, filledExport, findNote, isOpen,
-    reply, markResolved, reopen,
+    reply, markResolved, reopen, setTitle,
 } from './notes.mjs';
 import { writeExport } from './text-export.mjs';
 import { readDiagnostic } from './api.mjs';
@@ -118,6 +118,25 @@ const CARRIES_ITS_OWN_PROJECT =
     + 'page — and then no configuration file is required or read. Read the "key" '
     + 'argument before asking anyone for a key, and pass "origin" whenever you '
     + 'might write: a relay refuses a write that arrives without it.';
+
+/* THE ONE ARGUMENT TWO TOOLS SHARE, so the two cannot describe it differently.
+   It is written at the reviewer, not at the model: what they will read is a
+   line in a narrow column, beside the page it is about. */
+const TITLE_ARG_TEXT =
+    'WHAT THE REMARK IS ABOUT, in one line, at most 70 characters. Pass it '
+    + 'whenever the note has no title yet: you have just read the remark closely '
+    + 'enough to answer it, and that is the only moment anybody knows what it '
+    + 'says. Without one, the reviewer\'s panel names the remark by the text of '
+    + 'the element it sits on — which says where it is and never what is wrong, '
+    + 'and which on a page rewritten since describes something that no longer '
+    + 'exists.\n\n'
+    + 'WRITE THE PROBLEM, NOT THE PLACE AND NOT THE FIX. "Two action labels wrap '
+    + 'below 380px" is a title; "Pricing page" is a location and "padding 36 to '
+    + '16" is a changelog. No final full stop, no "the reviewer says that". Over '
+    + '70 characters is refused rather than cut, because a title ending mid-word '
+    + 'is worse than none.\n\n'
+    + 'Replaceable: writing a better one later replaces it, and an empty one '
+    + 'takes it off.';
 
 const integer = (value, what) => {
     const n = parseInt(value, 10);
@@ -293,6 +312,7 @@ export const buildTools = (configuration) => {
                         + 'replied to. Not the number of a reply.' },
                     text: { type: 'string', description: 'The text of the reply. It '
                         + 'will be read by a human on the annotated page.' },
+                    title: { type: 'string', description: TITLE_ARG_TEXT },
                     project: PROJECT_ARG,
                     api: API_ARG,
                     key: KEY_ARG,
@@ -305,8 +325,61 @@ export const buildTools = (configuration) => {
                 const { project, state } = await stateOf(args);
                 const id = integer(args.id, 'id');
                 await reply(project, state, id, args.text);
-                return 'Reply written in the thread of note ' + id + ', signed "'
+                let said = 'Reply written in the thread of note ' + id + ', signed "'
                     + project.author + '".\nIt can no longer be edited or deleted.\n';
+                /* AFTER the reply, and its failure does not take the reply
+                   down: the answer is what the person who wrote the remark is
+                   waiting for, and a refused title must not cost them one. */
+                if (typeof args.title === 'string') {
+                    try {
+                        await setTitle(project, state, id, args.title);
+                        said += 'Note ' + id + ' titled.\n';
+                    } catch (e) {
+                        said += 'The title was NOT written: ' + e.message + '\n';
+                    }
+                }
+                return said;
+            },
+        },
+
+        {
+            name: 'annotepage_title_note',
+            title: 'Title a note',
+            description:
+                'Writes what a remark is ABOUT, in one line, so that a human '
+                + 'scanning the panel can find it again. Use annotepage_reply\'s '
+                + '"title" argument instead whenever you are answering the remark '
+                + 'anyway: one call, one turn, nothing to remember afterwards. This '
+                + 'tool is for the other case -- going back over remarks written '
+                + 'before anybody titled them.\n\n'
+                + 'FINDING THEM: annotepage_open_notes returns a "title" line only '
+                + 'for the notes that have one. The ones without are the backlog, and '
+                + 'titling a batch of them is a normal thing to be asked for.\n\n'
+                + 'It is NOT a reply and nobody is told about it: it changes how a '
+                + 'remark is listed, never what was said. It does not resolve '
+                + 'anything and it does not answer anything.'
+                + CARRIES_ITS_OWN_PROJECT,
+            schema: {
+                type: 'object',
+                properties: {
+                    id: { type: 'integer', description: 'The number of the note to '
+                        + 'title. Not the number of a reply.' },
+                    title: { type: 'string', description: TITLE_ARG_TEXT },
+                    project: PROJECT_ARG,
+                    api: API_ARG,
+                    key: KEY_ARG,
+                    origin: ORIGIN_ARG,
+                },
+                required: ['id', 'title'],
+                additionalProperties: false,
+            },
+            call: async (args) => {
+                const { project, state } = await stateOf(args);
+                const id = integer(args.id, 'id');
+                await setTitle(project, state, id, args.title);
+                return String(args.title).trim() === ''
+                    ? 'The title of note ' + id + ' was taken off.\n'
+                    : 'Note ' + id + ' titled.\n';
             },
         },
 

@@ -58,9 +58,13 @@ const FOOTER_KEYS = ['skipped', 'skipped-reason'];
 
 const COMMON_KEYS = ['mode', 'author', 'date', 'version', 'environment',
                      'viewport', 'status', 'resolved', 'text',
-                     'payload', 'resolution-payload'];
+                     'payload', 'resolution-payload', 'title-payload'];
 
-const NOTE_KEYS = ['note', 'page', 'page-index', 'element', 'excerpt']
+/* `title` and `title-payload` are the second pair in this list where one key
+   is a prefix of another -- `page` / `page-index` is the first. Both resolve,
+   and only because cut() reads longestFirst and requires a space after the
+   key: see FORMAT.md section 5.1, which now says so for both pairs. */
+const NOTE_KEYS = ['note', 'page', 'page-index', 'element', 'excerpt', 'title']
     .concat(COMMON_KEYS);
 
 const REPLY_KEYS = ['reply', 'to note'].concat(COMMON_KEYS);
@@ -121,11 +125,11 @@ const readResolved = (value) => {
 
 const emptyNote = () => ({
     id: 0, reply_to: null, mode: 'plain',
-    page: '', page_index: '', selector: '', excerpt: '',
+    page: '', page_index: '', selector: '', excerpt: '', title: '',
     author: '', text: '', created_at: '',
     version: '', environment: '', viewport: '',
     resolved_at: null, resolved_by: '', resolved_version: '',
-    payload: '', resolution_payload: '',
+    payload: '', resolution_payload: '', title_payload: '',
     replies: [],
 });
 
@@ -139,6 +143,7 @@ const place = (note, key, value) => {
         case 'page-index': note.page_index = value; break;
         case 'element': note.selector = value; break;
         case 'excerpt': note.excerpt = value; break;
+        case 'title': note.title = value; break;
         case 'mode': note.mode = value; break;
         case 'author': note.author = value; break;
         case 'date': note.created_at = value; break;
@@ -147,6 +152,7 @@ const place = (note, key, value) => {
         case 'viewport': note.viewport = value; break;
         case 'payload': note.payload = value; break;
         case 'resolution-payload': note.resolution_payload = value; break;
+        case 'title-payload': note.title_payload = value; break;
         case 'status': break;   // "status open": the absence of "resolved" says it
         case 'resolved': {
             const read = readResolved(value);
@@ -296,6 +302,11 @@ const block = (note, margin, isReply) => {
         out += keyLine('', 'page-index', note.page_index);
         out += keyLine('', 'element', note.selector);
         out += keyLine('', 'excerpt', note.excerpt);
+        /* Under the excerpt, because it answers what the excerpt cannot: the
+           excerpt is the text of the element and says WHERE the remark is; the
+           title says what is wrong with it. Absent when nobody has written one,
+           which is what `open --untitled` looks for. */
+        out += keyLine('', 'title', note.title);
     }
 
     /* "mode encrypted" is emitted only for an encrypted note. A plain note has

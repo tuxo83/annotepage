@@ -250,6 +250,14 @@ function ap_config_defaults()
         'max_selector_length'    => 500,
         'max_fingerprint_length' => 255,
         'max_excerpt_length'     => 300,
+        // THE TITLE, AND THE NUMBER IS THE POINT. A remark's title is written
+        // by whoever answers it, to say in one glance WHAT THE REMARK IS
+        // ABOUT -- which the excerpt cannot, because the excerpt is the text of
+        // the element and says where it is, not what is wrong with it. Seventy
+        // characters is a title; past that it is a summary, and a summary in a
+        // list column is a paragraph nobody reads. The limit refuses rather
+        // than truncates: a title cut mid-word is worse than a missing one.
+        'max_title_length'       => 70,
         // Note-taking context: site version, environment, window size.
         // Deliberately short -- these are labels, not content, and a long field
         // invites writing something else in it.
@@ -263,6 +271,10 @@ function ap_config_defaults()
         // means accepting that a note written here be refused elsewhere.
         'max_payload_length'            => 24000,
         'max_resolution_payload_length' => 2000,
+        // Seventy characters, encrypted, base64url, with a nonce and a tag:
+        // about 220. A thousand leaves room for a longer alphabet without
+        // leaving room for something that is not a title.
+        'max_title_payload_length'      => 1000,
 
         // BODY CAP, in bytes, checked on Content-Length BEFORE any read. A
         // 24000-character envelope plus the other fields fits with room to

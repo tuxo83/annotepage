@@ -51,8 +51,8 @@
  *
  * The complete export in encrypted mode is produced by annotepage-mcp, which
  * has the key. It has one single source for that: this address. That is why
- * the structural export ALSO emits the envelopes, under the keys `payload` and
- * `resolution-payload`. Without them the second producer would have nothing to
+ * the structural export ALSO emits the envelopes, under the keys `payload`,
+ * `resolution-payload` and `title-payload`. Without them the second producer would have nothing to
  * decrypt and the promise of section 5.3 would be empty. These are added keys,
  * which does not change the format number (FORMAT.md section 7): a reader that
  * does not know them ignores them, and what is left is exactly the structural
@@ -174,6 +174,16 @@ function ap_write_text_export($version, $project, array $breakdown, $total, $not
             if (!$encrypted && $row['excerpt'] !== '') {
                 echo "excerpt " . ap_safe_value($row['excerpt']) . "\n";
             }
+            /* WHAT THE REMARK IS ABOUT, if anybody has said so. It sits under
+               the excerpt because it answers the question the excerpt cannot:
+               the excerpt is the text of the element, so it says WHERE the
+               remark is; the title says what is wrong with it. Written only
+               when it exists -- a reader that finds no `title` line knows the
+               remark has never been titled, which is what the backfill looks
+               for. */
+            if (!$encrypted && $row['title'] !== '') {
+                echo "title " . ap_safe_value($row['title']) . "\n";
+            }
         } else {
             echo "\n";
             echo $margin . "reply " . (int) $row['id'] . "\n";
@@ -236,6 +246,10 @@ function ap_write_text_export($version, $project, array $breakdown, $total, $not
             if ($row['resolution_payload'] !== '') {
                 echo $margin . "resolution-payload "
                     . ap_safe_value($row['resolution_payload']) . "\n";
+            }
+            if ($row['title_payload'] !== '') {
+                echo $margin . "title-payload "
+                    . ap_safe_value($row['title_payload']) . "\n";
             }
         } else {
             echo $margin . "text\n";

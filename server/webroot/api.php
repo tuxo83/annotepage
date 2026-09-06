@@ -12,7 +12,7 @@
  * plain mode, the requirement for the Origin header, the backfill action. There
  * are NOT two implementations -- they would diverge at the second fix.
  *
- * FIVE SERVICE ACTIONS, PLUS ONE FOR MAINTENANCE
+ * SIX SERVICE ACTIONS, PLUS ONE FOR MAINTENANCE
  *
  *   GET  api.php?action=list&project=<id>&index=<page_index>
  *        The notes of one page, in JSON, for the client. The REAL PATH is never
@@ -43,6 +43,17 @@
  *        which has been fixed since the note was written.
  *        Nothing is ever deleted: a resolved note moves into history, from where
  *        it comes back out if the fix turns out to be incomplete.
+ *
+ *   POST api.php?action=title
+ *        Fields:
+ *          project, id                                     always
+ *          title_payload                                   encrypted mode
+ *          title                                           plain mode
+ *        What a remark is ABOUT, in one line, written by whoever answers it --
+ *        the panel names remarks by their excerpt otherwise, which says where a
+ *        remark sits and never what is wrong. Replaceable, and sending neither
+ *        field takes the title off. It is the only field this action can reach:
+ *        the note's own envelope is written once and nothing rewrites it.
  *
  *   GET  api.php?action=text&project=<id>
  *        ALL the notes of the project, in structured text/plain. This is the
@@ -646,7 +657,8 @@ $action = strtolower(trim($action));
 // The order follows that of the list shown for an unknown action, below: the
 // two are read together, and an action missing here would be refused by the
 // message that announces it.
-$actions = array('list', 'add', 'resolve', 'text', 'diagnostic', 'backfill', 'update');
+$actions = array('list', 'add', 'resolve', 'title', 'text', 'diagnostic',
+                 'backfill', 'update');
 
 /**
  * The refusal an action nobody knows gets.
@@ -673,6 +685,7 @@ function ap_unknown_action_failure($action)
         . "  ?action=list&project=<id>&index=<index>  the notes of a page (JSON)\n"
         . "  ?action=add                              write a note (POST)\n"
         . "  ?action=resolve                          mark resolved (POST)\n"
+        . "  ?action=title                            title a note (POST)\n"
         . "  ?action=text&project=<id>                every note (plain text)\n"
         . "  ?action=diagnostic                       state of the server (plain text)\n"
         . "  ?action=backfill&project=<id>            backfill of a 1.2.0 database\n"
@@ -881,7 +894,8 @@ if (!isset($projects[$id])) {
 $project = $projects[$id];
 
 // THE DOMAIN LOCK. Anti-abuse, and nothing else: see internal/origins.php.
-$write = ($action === 'add' || $action === 'resolve' || $action === 'backfill');
+$write = ($action === 'add' || $action === 'resolve' || $action === 'title'
+          || $action === 'backfill');
 ap_apply_origin_lock($config, $id, $project, $write);
 
 // The store receives the backfill id through the configuration: it is the store
@@ -1024,6 +1038,68 @@ switch ($action) {
             'project' => $id,
             'note'    => $store->resolve($noteId, $id, $by, $fixVersion,
                                          $resolutionPayload, $resolved),
+        )));
+        break;
+
+    case 'title':
+        /* WHAT A REMARK IS ABOUT, IN ONE LINE, WRITTEN BY WHOEVER ANSWERS IT.
+           The panel used to name a remark by its excerpt -- the text of the
+           element it was left on. That says WHERE it is and never what is
+           wrong, and on a page that has been rewritten since, the excerpt is a
+           photograph of something that no longer exists. So a remark can carry
+           a title, and it is written by the person or the assistant that has
+           just read it, which is the only moment anybody knows what it says.
+
+           A SEPARATE ACTION, AND THE ONLY WRITABLE FIELD IN IT. The obvious
+           shape was an "update" action taking whatever was sent; that would
+           make a remark rewritable by anything holding the key. The note's own
+           envelope is written once, at creation, and nothing here can reach
+           it. */
+        ap_require_post("Titling a note");
+        ap_apply_rate_limit($config, $store, $id, 'write');
+        $noteId = ap_field_id($input, 'id', 'id');
+        $target = $store->note($noteId, $id);
+        if ($target === null) {
+            throw new ApFailure("Note not found in this project: " . $noteId . ".", 404);
+        }
+        /* THE MODE COMES FROM THE NOTE, exactly as it does for a resolution and
+           for the same reason: a title attaches to a remark whose mode was
+           fixed the day it was written. */
+        $mode = $target['mode'];
+        if ($mode !== 'plain' && $mode !== 'encrypted') {
+            throw new ApFailure(
+                "This note carries a mode that this version of annotepage does not "
+                . "know.\nIt was not modified.", 400);
+        }
+
+        $title = '';
+        $titlePayload = '';
+        if ($mode === 'encrypted') {
+            /* A title is content: it says what somebody found wrong, in their
+               own words. It travels in its own envelope, with its own nonce,
+               role `title`. Sending it in the clear here would put on the
+               server, in one readable line each, the summary of everything
+               that is wrong with the site -- which is the exact thing encrypted
+               mode exists to prevent. */
+            $titlePayload = ap_field_envelope(
+                $input, 'title_payload', $config['max_title_payload_length'],
+                false, 'title_payload');
+            ap_reject_field($input, 'title', 'title',
+                "this project is in encrypted mode, and the title would travel in "
+                . "the clear to the server.");
+        } else {
+            $title = ap_field($input, 'title', $config['max_title_length'],
+                              false, 'title');
+        }
+
+        /* NEITHER FIELD REQUIRED, because sending nothing is how a title is
+           taken off: the row goes back to exactly what it was before anybody
+           titled it, and the reader falls back on the excerpt as before. That
+           is a state the tool already knows how to draw, so it needs no third
+           case. */
+        ap_respond_json(ap_response_envelope(array(
+            'project' => $id,
+            'note'    => $store->setTitle($noteId, $id, $title, $titlePayload),
         )));
         break;
 

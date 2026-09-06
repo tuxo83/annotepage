@@ -600,6 +600,15 @@ class ApStore
             // back to the empty string, once, here.
             'payload'            => 'MEDIUMTEXT NULL DEFAULT NULL',
             'resolution_payload' => 'TEXT NULL DEFAULT NULL',
+            // THE TITLE, IN ITS OWN PAIR OF COLUMNS. Plain mode fills
+            // `title`, encrypted mode fills `title_payload` -- the same
+            // split every other field of a note already follows. It is a
+            // second envelope rather than a field of the note's own,
+            // exactly like the resolution and for the same reason: it is
+            // written LATER, by somebody else, and folding it in would
+            // mean re-encrypting a remark nobody is allowed to rewrite.
+            'title'         => 'VARCHAR(' . (int) $c['max_title_length'] . ") NOT NULL DEFAULT ''",
+            'title_payload' => 'TEXT NULL DEFAULT NULL',
             // Resolution, plain part.
             'resolved_at'      => 'DATETIME NULL DEFAULT NULL',
             'resolved_by'      => 'VARCHAR(' . (int) $c['max_author_length'] . ") NOT NULL DEFAULT ''",
@@ -1371,6 +1380,37 @@ class ApStore
         return $this->note($id, $project);
     }
 
+
+    /**
+     * Writes the title of a remark, or clears it.
+     *
+     * ONE FIELD, ITS OWN ACTION, AND NO OTHER FIELD REACHABLE. The temptation
+     * was an "update note" action taking whatever is sent; that would make a
+     * remark rewritable by anything holding the key, which is the one thing
+     * this store must never allow. A note's own envelope is written once, at
+     * creation, and nothing here can touch it.
+     *
+     * REPLACEABLE, unlike the remark itself: a title is a description of a
+     * thing, not the thing. A better one may be written later, and an empty one
+     * takes the title off -- the row is left exactly as it was before anybody
+     * titled it, which is a state the reader already understands.
+     *
+     * Both forms are written together for the same reason resolve() clears
+     * both: it is one piece of information under two modes, and a mixed
+     * database must not end up carrying a plain title beside an encrypted one
+     * that says something else.
+     */
+    public function setTitle($id, $project, $title, $titlePayload)
+    {
+        $this->ensureSchema();
+        $this->pdo()->prepare(
+            "UPDATE `" . $this->table . "` SET `title` = ?, `title_payload` = ? "
+            . "WHERE `id` = ? AND `project` = ?")
+            ->execute(array((string) $title, (string) $titlePayload,
+                            (int) $id, (string) $project));
+        return $this->note($id, $project);
+    }
+
     /**
      * The single shape of a note, whatever the source.
      * The types come out of here already right: the rest of the code no longer
@@ -1413,6 +1453,9 @@ class ApStore
                                     ? (string) $row['payload'] : '',
             'resolution_payload' => isset($row['resolution_payload']) && $row['resolution_payload'] !== null
                                     ? (string) $row['resolution_payload'] : '',
+            'title'         => isset($row['title']) ? (string) $row['title'] : '',
+            'title_payload' => isset($row['title_payload']) && $row['title_payload'] !== null
+                               ? (string) $row['title_payload'] : '',
             // Resolution. `resolved_version` is the version of the site the fix
             // SHIPS IN: it is what tells whether the fix is already online, or
             // only promised.

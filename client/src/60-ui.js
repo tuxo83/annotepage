@@ -398,7 +398,19 @@ const noteRow = (note, orphan) => {
     dot.setAttribute('aria-hidden', 'true');
     row.appendChild(dot);
 
-    const about = note.excerpt || (orphan ? T('note.element_lost') : T('list.untitled'));
+    /* WHAT THE ROW SAYS IT IS, AND IN WHICH ORDER. The title first: it is the
+       one line that says what is WRONG, written by whoever answered the remark.
+       The excerpt second: it is the text of the element, so it says where the
+       remark sits -- useful, and useless for telling two remarks apart on the
+       same block. Measured on this site's own install page before the title
+       existed: eleven of twelve rows were headed by the excerpt of an element
+       the page no longer has.
+
+       No third shape for "titled": a row is a row. The title simply takes the
+       place the excerpt had, and a remark nobody has titled reads exactly as it
+       did before. */
+    const about = note.title || note.excerpt
+        || (orphan ? T('note.element_lost') : T('list.untitled'));
     const text = create('span', 'ap-row-about', about);
     row.appendChild(text);
     row.appendChild(create('span', 'ap-row-who', note.author));

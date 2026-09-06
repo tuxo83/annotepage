@@ -229,8 +229,10 @@ everything else.
 | `viewport` | `1280x800` | `''` |
 | `resolved_by` | the name of the fixer | `''` |
 | `resolved_version` | the version of the fix | `''` |
+| `title` | what the remark is about, one line | `''` |
 | `payload` | `''` | the envelope of the note (§3) |
 | `resolution_payload` | `''` | the envelope of the resolution (§3.5) |
+| `title_payload` | `''` | the envelope of the title (§3.5 bis) |
 
 Plain mode fills **exactly** the columns of format 1 — under their English
 names, which is where the old promise has to be restated honestly.
@@ -439,15 +441,49 @@ Reopening a note (`resolved=0`) sets `resolved_at` to NULL and
 `resolution_payload` to the empty string. The reply thread is not touched.
 That is format 1's behaviour, word for word.
 
+### 3.5 bis The title envelope
+
+A remark can carry a **title**: one line saying what it is ABOUT, written by
+whoever answers it. It exists because the only name a remark had was its
+`excerpt` — the text of the element it sits on — which says where the remark is
+and never what is wrong with it, and which on a page rewritten since is a
+photograph of something that no longer exists.
+
+It is payload, so it is encrypted, in a **third envelope**, `title_payload`,
+with role `title`.
+
+```json
+{"title":"The two action labels wrap at 316px"}
+```
+
+Its own nonce, for the same three reasons as the resolution's: it is written by
+another person, at another moment, often from another machine. Folding it into
+the note's envelope would force re-encrypting a remark nobody is allowed to
+rewrite — and *nobody is allowed to* is the load-bearing half of that sentence.
+The action that writes it can reach this field and no other.
+
+A title is **replaceable**, unlike a remark: it describes a thing, it is not
+the thing. Writing over it is normal, and writing an empty one takes it off —
+the row returns to exactly the state it had before anybody titled it, and a
+reader falls back on the excerpt as before. There is therefore no third state
+to draw.
+
+Length: **70 characters**, in the same sense as §3.6's other limits — a
+client-side convention in encrypted mode, enforced by the server in plain mode.
+Past seventy it is a summary, and a summary in a list column is a paragraph
+nobody reads. Over the limit is **refused**, never truncated: a title cut
+mid-word is worse than a missing one.
+
 ### 3.6 Limits
 
 In plain mode, format 1's per-field limits are kept:
 text 4000, author 80, page 300, selector 500, fingerprint 255, excerpt 300,
-version 60, environment 20, viewport 20 — in **characters**, not in bytes.
+version 60, environment 20, viewport 20 — in **characters**, not in bytes. The
+title, which format 1 did not have, is 70.
 
 In encrypted mode, the server sees only a string. The only limit it can apply
 is **the length of the envelope: 24000 characters** for `payload`, 2000 for
-`resolution_payload`. Going over returns 400 naming the limit, never a silent
+`resolution_payload`, 1000 for `title_payload`. Going over returns 400 naming the limit, never a silent
 truncation.
 
 A consequence to write down, because it is unpleasant: **in encrypted mode,
@@ -535,23 +571,31 @@ such as `to note` contradicted it: **the key is not the first word, it is the
 longest prefix of the line that appears in the closed list of keys**, and the
 value is the rest. The list is read from the longest to the shortest.
 
-Keys emitted: `note`, `page`, `page-index`, `element`, `excerpt`, `mode`,
-`reply`, `to note`, `author`, `date`, `version`, `environment`, `viewport`,
-`status`, `resolved`, `text`.
+Keys emitted: `note`, `page`, `page-index`, `element`, `excerpt`, `title`,
+`mode`, `reply`, `to note`, `author`, `date`, `version`, `environment`,
+`viewport`, `status`, `resolved`, `text`, `payload`, `resolution-payload`,
+`title-payload`.
 
-Two properties of that list, both of which the rule depends on, and both of
+The three `payload` keys were emitted by the server before they were written
+down here; the list is what a reader is entitled to rely on, so a key that
+exists and is not in it is a defect of this document, not a licence.
+
+Three properties of that list, all of which the rule depends on, and all of
 which have to be rechecked before adding a key:
 
 - `note` is not a prefix of `to note`, so both resolve. That property is why
   the rule exists at all;
-- `page` **is** a prefix of `page-index`. That is the one place where the list
-  is not prefix-free. It resolves correctly, and only because the rule reads
-  from the longest: `page-index 9dL...` matches `page-index`, never `page`
-  with the value `-index 9dL...`. The reverse cannot happen, because the
-  separator after a key is a space and `page-index` requires a `-` in that
-  position. A reader that scans the list in declaration order and takes the
-  first match reads `page-index` lines as `page` lines and silently loses the
-  index. Longest first, or nothing.
+- `page` **is** a prefix of `page-index`, and `title` **is** a prefix of
+  `title-payload`. Those are the two places where the list is not prefix-free.
+  They resolve correctly, and only because the rule reads from the longest:
+  `page-index 9dL...` matches `page-index`, never `page` with the value
+  `-index 9dL...`. The reverse cannot happen, because the separator after a
+  key is a space and `page-index` requires a `-` in that position. A reader
+  that scans the list in declaration order and takes the first match reads
+  `page-index` lines as `page` lines and silently loses the index. Longest
+  first, or nothing;
+- no key is a prefix of `payload` and `payload` is a prefix of none: the two
+  compound envelope keys begin with `resolution-` and `title-`.
 
 The format defends itself, in both directions: everything a reader counts as
 an end of line — `\r\n`, `\r`, U+0085, U+2028, U+2029 — is reduced to a plain
@@ -626,26 +670,33 @@ genuinely readable document exists only on the machine that holds the key.
 
 ---
 
-## 6. The six addresses
+## 6. The seven addresses
 
-Relative to the mount prefix. Format 1's five, with the project id added,
-plus `backfill`.
+Relative to the mount prefix. Format 1's five, with the project id added, plus
+`title` and `backfill`.
 
 ```
 GET  <base>/api.php?action=list&project=<id>&index=<page_index>
 POST <base>/api.php?action=add
 POST <base>/api.php?action=resolve
+POST <base>/api.php?action=title
 GET  <base>/api.php?action=text&project=<id>
 GET  <base>/api.php?action=diagnostic
 POST <base>/api.php?action=backfill
 ```
+
+Adding `title` does not change the format number: §7 says an action, and an
+optional field on an action, are additions a reader ignores if it does not know
+them. A client written against format 2 before this action existed goes on
+working, and a server that has never heard of it answers 400 with the list --
+which is the same thing a typo gets.
 
 `backfill` is the one no client calls. It fills `page_index` for rows written
 before the blind index existed, and it is meant to be run by hand, once, after
 an upgrade -- see INSTALL.md. It is a POST for the same reason the other two
 are: it writes.
 
-The two writes stay POST, never GET: an action that changes state must not be
+Every write stays POST, never GET: an action that changes state must not be
 triggered by a link somebody follows or a crawler explores. An unknown action
 returns 400 and the list above, never an empty body.
 
@@ -698,6 +749,20 @@ comments on. A reply to a reply is refused with a 400.
 `resolution_payload` in encrypted mode, or `by` and `version` in plain mode.
 The name is only required in order to mark something fixed: it is what signs
 it. To reopen, we do not ask for the fixer's name in order to cancel the fix.
+
+**`title`** — `project`, `id`, plus `title_payload` in encrypted mode or
+`title` in plain mode. Neither is required: sending neither takes the title
+off. The **mode is not asked for**, exactly as for `resolve` and for the same
+reason -- a title attaches to a remark whose mode was fixed the day it was
+written, so a half-plain, half-encrypted database is titled row by row with
+nobody having to remember what the installation was that week.
+
+Sending `title` to an encrypted project is **refused**, not silently ignored:
+the summary of everything wrong with a site, one readable line each, is exactly
+what encrypted mode exists to keep off the server.
+
+Response: the note, in the same shape as `resolve` returns it.
+
 
 **`text`** — `project`. Returns the complete export in plain mode, the
 structural one in encrypted mode (§5.3).
