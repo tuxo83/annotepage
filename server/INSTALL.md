@@ -10,73 +10,18 @@ and returns them — in JSON to the client, in plain text to an assistant.
 
 ---
 
-## Installing it: one file, one page, one line to paste
+## Installing it
 
-1. **Drop `annotepage-install.php`** onto your server, anywhere under the web
-   root, under whatever name you like — over FTP, over SFTP, through the host's
-   file manager. One file, and it is the only thing you upload. It is
-   `server/annotepage-install.php` in the release, and on GitHub it is
-   [raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php](https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php).
+**The walk-through is on the site**, and it is better there than it can be
+here: [how you install it](https://annotepage.com/how-to-install-it.html) asks
+what you are installing onto, drops the steps that do not apply, draws the
+installer's own screen, and builds the tag with your address and your key
+already in it. One file to upload, one page to open, one line to paste.
 
-2. **Open it** in a browser: `https://<site>/<where-you-put-it>/annotepage-install.php`.
-   It shows one button. Press it and it downloads the rest of the server from
-   the published release over HTTPS with certificate verification on, checking
-   every file against the release's own `MANIFEST` — one SHA-256 per file —
-   after it has landed on disk and before it is put in place. One bad hash
-   abandons the whole thing and leaves the directory exactly as it was.
-
-3. **Answer the form.** One page, three questions — who the server is for, the
-   storage, and whether the server may update itself — and all three already
-   carry the answer that works. It needs no JavaScript.
-
-   The first one is the one to read: **One site, mine** is the default and gives
-   you a server that answers only about projects you declare by hand.
-   **Anyone** gives you a public relay, which answers about any project id it is
-   given — see [Running a public relay](#running-a-public-relay) for what that
-   opens and what it costs. Nothing but that exact answer opens it.
-
-4. **Paste the line it prints** into the tag on the pages you want to annotate:
-
-   ```
-   data-server="https://<site>/<where-you-put-it>/api.php"
-   ```
-
-Then **delete `annotepage-install.php`**. The last screen offers to delete it
-for you and says whether it managed.
-
-There is no archive to extract — deliberately: shared hosting commonly has
-neither the zip nor the phar extension. There is no database to create, no
-`config-local.php` to write by hand, and nothing to install on your machine.
-
-### What the installer does while you wait
-
-- **downloads the release and verifies it**, file by file, against the
-  published `MANIFEST`. It carries no list of its own: it reads that manifest
-  at install time and installs exactly what it names, so a file added to the
-  server later needs no new installer. The code doing the downloading is
-  `internal/update.php` — the same code that updates an installed server, which
-  is why there is only one of it to get right;
-- **reports what this PHP offers** — the version really served, `pdo_sqlite`,
-  `pdo_mysql`, `mbstring`, `json`, whether the directory is writable, and
-  whether the server can reach the outside over HTTPS. Each line says what it
-  means, not just whether it is there;
-- **creates the database as a file**, SQLite, one file, nothing to provision.
-  `pdo_sqlite` is compiled into PHP on nearly every host, which is the whole
-  reason it is the default. If it is missing here, the page says so in one
-  sentence and MySQL is one radio button away;
-- **puts that file where the web server does not serve it** — outside the
-  document root when it can find a writable directory there, otherwise inside,
-  in a directory with an unguessable name carrying its own `.htaccess` and an
-  `index.php` that exits;
-- **proves it**, and this is the part that matters. It asks the web server for
-  that file's own URL over HTTP and reads the status code. Anything other than
-  a refusal and it deletes what it created, writes no configuration, and tells
-  you what came back. It does not reason about protection, because reasoning is
-  exactly what fails here: an `.htaccess` denying the file does nothing under
-  nginx, and plenty of cheap hosting is nginx;
-- **writes `internal/config-local.php`**, with a comment saying it was
-  generated, when, and by what. It never overwrites an existing one. If one is
-  there, the form is not even shown.
+What follows is what that page does not carry, and what nobody needs before
+their server is up: the refusals, the route for a host that cannot reach out,
+the MySQL details, the addresses, the flags, and everything that happens after
+the first day.
 
 ### One thing is still yours to do
 
@@ -147,39 +92,24 @@ fetches itself.
 
 ---
 
-## What it requires, and nothing more
+## What it requires
 
-- Apache, nginx, or any server that runs PHP;
-- **PHP 7.4 or newer**, with `json` and `mbstring`;
-- **one of two storage extensions**: `pdo_sqlite`, which is compiled into PHP
-  on nearly every host and needs nothing else, or `pdo_mysql` with a database
-  and a user that can write to it.
+PHP 7.4 with `pdo_sqlite` (or `pdo_mysql`), `json`, `mbstring` and `filter`.
+No composer, no build step, no cron unless you want one. The install page lists
+it per component, and the installer measures it on YOUR host and prints what it
+found -- which beats any list.
 
-No dependency to install, no build step, no package, nothing to compile. Drop
-one file, open it, add a tag.
+## What the server sees
 
-The one-file route needs one thing more, and only it: a way out to HTTPS —
-the curl extension, or `allow_url_fopen` with openssl. Without it the copied
-directory installs the same server, and the installer says so rather than
-failing halfway.
+Sealed envelopes, and it is the FAQ that answers this properly, with what is
+encrypted and by what:
+[what does the notes server see?](https://annotepage.com/questions.html#data)
 
----
-
-## What the server does not know, and never will
-
-**The key.** It is generated at setup, in the browser, over 256 bits. It does
-not leave the browser: the server does not receive it at any point, in any form,
-in any mode. Nothing written in this document asks you to put it there.
-
-**Key lost = notes lost.** There is no recovery, no security question, no escrow
-third party. The server can do nothing about it, and that is the price of what
-it buys: a relay operator cannot read the notes it hosts.
-
-What the server does know is the **project id**: 22 characters, derived from the
-key by HKDF, with no way back. It is public — it appears in the tag of every
-annotated page — and it is what you write into the configuration.
-
----
+The operator's version of the same fact, and the reason it is worth reading
+before running one for other people: **you cannot read what you are storing,
+and you cannot moderate it.** What you hold is bytes, a project id, a blind
+index, and dates. FORMAT.md section 2.4 is the exhaustive list, including what
+those dates and sizes leak anyway.
 
 ## Where the notes actually live
 
@@ -413,26 +343,15 @@ outage. The diagnostic does say so.
 
 ## Running the candidate instead of the release
 
-One line, and it is the same address with one word changed:
+One line, `main` swapped for `next`:
 
 ```php
 'update_source' => 'https://raw.githubusercontent.com/tuxo83/annotepage/next/server/webroot/',
 ```
 
-`main` is what everybody runs. `next` is where a version is validated before
-they do — the same files, the same manifest, the same hash check on every one
-of them before anything is put in place. A candidate is verified exactly as a
-release is; what differs is who has looked at it.
-
-Put `main` back and the next check returns the server to the release. There is
-nothing to undo by hand: the update is a whole release or none of it.
-
-The client half is the same word, on the tag rather than in a file:
-`annotepage-client@next` instead of `annotepage-client@2`. The two are
-independent — a server on the candidate serves whatever client its pages ask
-for, and a page on the candidate talks to whatever server it is pointed at.
-
----
+Why, what it is verified against, and how to go back is one FAQ card:
+[can I run a version before everybody else?](https://annotepage.com/questions.html#next)
+The client half is the same word on the tag rather than in a file.
 
 ## Letting the server update itself
 
@@ -954,55 +873,11 @@ expires nothing, and refuses the write beyond, saying so.
 
 ---
 
-## What the server learns anyway, in encrypted mode
-
-Encrypting the fields is not invisibility. An honest relay operator must be able
-to read the following without feeling betrayed, and a client must know it
-**before** choosing the relay:
-
-- the number of projects, and for each one the number of notes;
-- the number of distinct pages annotated, and the number of notes per page — a
-  page that collects forty remarks is visible;
-- the time of every write, hence the rhythm of the review, the days worked, the
-  date of the last note;
-- the shape of the threads, the fix rate and the fix delay;
-- the approximate length of every remark, through the size of the envelope;
-- the IP address and user agent of every reviewer, like any HTTP server;
-- **in relay mode, the domain of the site under review**, through the `Origin`
-  header — which the domain lock has to read precisely. Let us say it plainly:
-  the promise is not "the relay does not know which site you are reviewing". It
-  is "the relay can read neither your paths, nor your names, nor your remarks".
-
-A note id is a counter **global to the server**. Between two notes of the same
-project, the gap in ids says how many notes all the other projects have written.
-A thin leak, a real one, kept: fixing it would require per-project numbering and
-its share of races.
-
----
-
 ## What it does not do
 
-That is a choice, not an oversight:
-
-- **no authentication.** The project id is a bearer token: whoever has it can
-  read the project's rows and write to it. In encrypted mode those rows are
-  unusable without the key. In plain mode they are readable — and that is
-  exactly why plain mode is reserved for self-hosting, where the API sits behind
-  the same access restriction as the site under review. The two sentences close
-  the loop: plain mode is impossible on a relay because a relay has no access
-  restriction to offer;
-- **no moderation, and no deletion.** A note that is posted stays. The only state
-  it can change is "resolved", and that mark can be undone. A note's text is
-  never modified, which is what lets several people annotate at the same time
-  with no lock and no conflict;
-- **no notification, no export anywhere else**;
-- **no pagination of `?action=text`.** A project with ten thousand notes returns
-  a document nobody reads. No limits, no filter by status, no filter by date:
-  `FORMAT.md` section 8.5 does not settle it;
-- **no key rotation.** There is no mechanism, here or anywhere else. A leaked
-  key forces starting from a fresh project.
-
----
+No accounts, no login, no moderation, no notifications, and nothing is ever
+deleted except by age. The FAQ says it and says why:
+[is there an account, a moderator, a way to delete a note?](https://annotepage.com/questions.html)
 
 ## Two behaviours to know about
 
