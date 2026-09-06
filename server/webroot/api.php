@@ -948,11 +948,19 @@ switch ($action) {
 
            A client that does not know this field ignores it, which is what
            every client before this release does. */
+        /* HOW LONG THIS SERVER KEEPS A THREAD, on the one call the client
+           already makes. "Nothing is ever deleted" is the tool's promise and
+           it stops being true on a server where this is set, so the client has
+           to be able to say so where somebody is about to write -- not only in
+           a diagnostic nobody opens and an export header nobody reads. Zero
+           means nothing expires, and the client says nothing. */
         ap_respond_json(ap_response_envelope(array(
-            'project' => $id,
-            'index'   => $index,
-            'notes'   => $store->byPage($id, $index),
-            'totals'  => $store->projectTotals($id),
+            'project'   => $id,
+            'index'     => $index,
+            'notes'     => $store->byPage($id, $index),
+            'totals'    => $store->projectTotals($id),
+            'retention' => isset($config['max_note_age_days'])
+                           ? (int) $config['max_note_age_days'] : 0,
         )));
         break;
 

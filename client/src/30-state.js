@@ -11,6 +11,10 @@ let historyOpen = false;    // resolved AND deployed notes are folded away
 let totals = null;          // { notes, open, pages } for the WHOLE project, or
                             // null: a server older than 2.5.0 does not send it,
                             // and the panel simply does not show the line
+let retention = 0;          // days a thread is kept after its last message, 0
+                            // when nothing expires. A server older than 2.7.0
+                            // sends nothing, which reads as 0 -- the promise
+                            // it made before this key existed
 let target = null;          // element being annotated
 let hovered = null;         // element under the pointer
 let currentFailure = null;  // { title, detail } shown in the panel

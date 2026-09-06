@@ -20,6 +20,7 @@ const reload = () =>
             return null;
         }
         totals = readTotals(r.data);
+        retention = readRetention(r.data);
         return readList(r.data).then((read) => {
             notes = read;
             currentFailure = null;
@@ -198,6 +199,7 @@ function proceed(first) {
         buildUi();
         if (first.ok) {
             totals = readTotals(first.data);
+            retention = readRetention(first.data);
             return readList(first.data).then((read) => {
                 notes = read;
                 redraw();

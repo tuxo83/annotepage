@@ -355,6 +355,13 @@
    short things -- a name, two buttons -- so this takes the whole width and the
    rest wraps under it. No ground and no border of its own: it is IN the footer,
    not beside it. */
+/* The retention line, when there is one. `:empty` rather than a class the
+   script has to add and remove: the element is always there, and CSS decides
+   whether it takes any room -- so a server that deletes nothing costs the
+   panel exactly nothing. */
+.ap-panel-keeps { margin-top: 6px; color: var(--ap-text-soft); }
+.ap-panel-keeps:empty { display: none; }
+
 .ap-panel-footer { flex-wrap: wrap; }
 
 /* WHO YOU ARE SIGNING AS, ON A LINE OF ITS OWN. `flex-basis: 100%` is the same

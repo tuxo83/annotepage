@@ -359,6 +359,16 @@ const readTotals = (data) => {
     return { notes: notes, open: open, pages: pages };
 };
 
+/* HOW LONG THIS SERVER KEEPS A THREAD. Anything that is not a positive whole
+   number reads as "nothing expires", which is what every server said before
+   the key existed and what all but a relay says now. Guessed at in no
+   direction: a tool that invented a retention would frighten a team whose
+   notes are safe, and one that hid a real one would lose them theirs. */
+const readRetention = (data) => {
+    const v = data && data.retention;
+    return (typeof v === 'number' && isFinite(v) && v > 0) ? Math.floor(v) : 0;
+};
+
 const readList = (data) => {
     skipped = { newer: 0, unreadable: 0, unknown: 0 };
     const raw = data && Array.isArray(data.notes) ? data.notes : [];

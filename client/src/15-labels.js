@@ -68,6 +68,13 @@ ns.defaultLabels = {
     'panel.move_left': 'Move left',
     'panel.move_right': 'Move right',
     'panel.instructions': 'Click an element of the page to write a remark about it.',
+    /* SAID ONLY WHERE IT IS TRUE. Everywhere else this tool deletes nothing,
+       and a line promising that on every server would be noise; here it is the
+       one fact somebody about to write a remark has a right to know, because
+       their remark has a date on it. */
+    'panel.keeps':
+        'This server keeps a thread for {n} days after its last message, then '
+        + 'removes it. Nobody chooses which.',
     'panel.escape': 'Press Escape to stop.',
     'panel.empty': 'Nobody has written a note on this page yet.',
     'panel.section_page': 'On this page',

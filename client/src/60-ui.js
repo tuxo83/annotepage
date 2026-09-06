@@ -126,6 +126,19 @@ const buildUi = () => {
     const instructions = create('div', 'ap-panel-instructions');
     instructions.appendChild(create('div', null, T('panel.instructions')));
     instructions.appendChild(create('div', null, T('panel.escape')));
+    /* HOW LONG THIS SERVER KEEPS A THREAD, AND ONLY WHERE IT KEEPS ONE FOR A
+       WHILE. "Nothing is ever deleted" is what this tool promises and what it
+       does everywhere except on a server whose operator set an age -- and
+       somebody about to write a remark is entitled to know their remark has a
+       date on it. It goes here, at the top of the panel, read once when the
+       panel opens: under the form it would be repeated at every remark, and
+       behind a button it would be findable rather than said.
+
+       The element is created and left EMPTY when nothing expires, so the
+       panel's own layout is identical on the servers that keep everything --
+       which is all but one of them. */
+    const keeps = create('div', 'ap-panel-keeps');
+    instructions.appendChild(keeps);
     const body = create('div', 'ap-panel-body');
     const footer = create('div', 'ap-panel-footer');
     panel.appendChild(header);
@@ -149,6 +162,7 @@ const buildUi = () => {
         panel: panel,
         sideToggle: sideToggle,
         body: body,
+        keeps: keeps,
         footer: footer,
         form: form
     };
@@ -1135,6 +1149,15 @@ const modeBadge = () => {
 };
 
 const drawPanel = () => {
+    /* HOW LONG A THREAD IS KEPT, refreshed with the rest: the value arrives
+       with the first list and can change under a server that was reconfigured
+       between two loads. Empty when nothing expires, which is every server
+       that has not chosen otherwise. */
+    if (ui.keeps) {
+        ui.keeps.textContent = retention > 0
+            ? T('panel.keeps', { n: retention }) : '';
+    }
+
     empty(ui.body);
     empty(ui.footer);
 

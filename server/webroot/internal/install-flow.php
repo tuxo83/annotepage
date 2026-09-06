@@ -658,15 +658,38 @@ function ap_i_config_text(array $values)
     $text .= "    // ),\n";
     $text .= "    'projects' => array(),\n\n";
 
+    /* HOW LONG A THREAD IS KEPT, AND WHY IT IS WRITTEN HERE RATHER THAN
+       DEFAULTED IN config.php. Ninety days -- a review cycle with room to
+       spare -- on every installation this file creates, relay or not: a review
+       that nobody has come back to in three months is not a review any more,
+       and a server that keeps everything for ever only grows.
+
+       IT IS NOT THE DEFAULT OF THE KEY, AND THAT IS DELIBERATE. Changing
+       `max_note_age_days` in config.php from 0 to 90 would make every server
+       already in service start deleting threads at its next update, silently,
+       on a decision nobody there took. A default that destroys data on
+       somebody else's machine is not a default. So the number is written into
+       the file this installer generates, where it belongs to THIS
+       installation, is visible, and is one edit away from being changed or
+       removed.
+
+       The whole thread goes, dated by its last message, so a live discussion
+       is never cut short and a reply is never orphaned from its remark. Nobody
+       chooses which -- there is still no moderation and no takedown. The
+       client says it in its panel and the export says it in its header,
+       because "nothing is ever deleted" stops being true here. */
+    $text .= "    // HOW LONG A THREAD IS KEPT, counted from its LAST message: a whole\n";
+    $text .= "    // thread goes at once, so a reply is never cut off its remark. Ninety\n";
+    $text .= "    // days is a review cycle with room to spare. Set it to 0 to keep\n";
+    $text .= "    // everything for ever -- the client stops announcing an age, and this\n";
+    $text .= "    // server stops removing anything.\n";
+    $text .= "    'max_note_age_days'     => 90,\n\n";
+
     if ($relay) {
-        $text .= "    // WHAT BOUNDS THE DISK. Both ship as 0, meaning no limit, which is\n";
-        $text .= "    // right for a server holding one team's notes and wrong for one\n";
-        $text .= "    // holding strangers': it stores what it cannot read, for people who\n";
-        $text .= "    // will never come back to tidy up, so without a ceiling it only\n";
-        $text .= "    // grows. Ninety days is a review cycle with room to spare. The cap\n";
-        $text .= "    // per project is the only thing bounding what a single abuser costs,\n";
-        $text .= "    // since an abuser cannot be told from a project.\n";
-        $text .= "    'max_note_age_days'     => 90,\n";
+        $text .= "    // WHAT ELSE BOUNDS THE DISK ON A RELAY. It stores what it cannot\n";
+        $text .= "    // read, for people who will never come back to tidy up, and the cap\n";
+        $text .= "    // per project is the only thing bounding what a single abuser costs\n";
+        $text .= "    // -- since an abuser cannot be told from a project.\n";
         $text .= "    'max_notes_per_project' => 500,\n\n";
     }
 
@@ -1295,6 +1318,22 @@ function ap_i_run(array $options)
                 . "that is what makes the notes unreadable to it.</p>\n";
         }
 
+        /* THE ONE THING THIS INSTALLATION DOES THAT THE TOOL OTHERWISE PROMISES
+           NOT TO. Everywhere else "nothing is ever deleted" holds; here a
+           number was just written into the configuration, and the person who
+           pressed the button is the person who has to know it. Said on the
+           screen that reports what was done, not left to a comment inside a
+           file and a line in a diagnostic nobody opens. */
+        echo '<h2>How long a remark is kept</h2>' . "\n";
+        echo '<p>Ninety days after the last message of its thread &mdash; a review '
+            . 'cycle with room to spare &mdash; and then the whole thread goes at '
+            . 'once, so a reply is never cut off its remark. Nobody chooses which: '
+            . 'there is no moderation here and no takedown, which is the point of '
+            . "saying age and only age.</p>\n";
+        echo '<p>It is <code>\'max_note_age_days\' => 90</code> in the configuration '
+            . 'just written. Set it to <code>0</code> to keep everything for ever. '
+            . 'While it is set, the panel on your pages says so and every export '
+            . "carries it in its header &mdash; nobody discovers it late.</p>\n";
         echo '<h2>What was measured</h2>' . "\n";
         echo "<table>\n";
         foreach ($report as $line) {
