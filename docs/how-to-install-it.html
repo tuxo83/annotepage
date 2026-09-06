@@ -126,6 +126,12 @@ ul.plain li:last-child { margin-bottom: 0; }
 ul.plain b { color: var(--text); }
 
 
+/* The one button that fetches a file rather than opening a page. Same shape as
+   the buttons that end a chapter -- there is only one kind of button on this
+   site -- and the arrow points down instead of forward, because that is what
+   the click does. */
+.get { margin: 0 0 .6rem; }
+
 /* -- The way out ---------------------------------------------------------
    THE BUTTON THE OTHER PAGES END THEIR CHAPTERS WITH, centred, rather than
    three plain links in a row. They were `.cta` -- text with a colour -- and
@@ -1388,40 +1394,40 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         It ends by printing your API address, for the field at
                         the top.
                     </p>
-                    <!-- AND A SECOND ROUTE, BECAUSE THE FIRST ONE ASKS FOR A
-                         SHELL. `curl` is one line for whoever has one and a
-                         wall for whoever administers their site through a
-                         hosting panel and a file manager -- which is most of
-                         the people this chapter's dial was written for. Both
-                         are offered; neither is called the proper one.
+                </div>
+                <div>
+                    <!-- ONE ROUTE, AND IT IS THE NEWCOMER'S. This carried a
+                         `curl -O` line, then a `curl` line AND a download link.
+                         Both were wrong in the same way, and the reader said
+                         it: somebody who lives in a shell needs no help with a
+                         URL -- they will fetch it however they like -- while
+                         somebody who administers their site through a hosting
+                         panel is stopped dead by a command line. Write for the
+                         second, and the first is not slowed down by a single
+                         second. Two routes for one file also asked the reader
+                         to choose before they knew enough to choose.
 
                          WHY THE LINK POINTS AT THIS SITE AND NOT AT THE
                          REPOSITORY. `download` is IGNORED cross-origin by every
                          browser, and the repository serves a .php file as
                          text/plain -- so a link there opens a page of PHP
-                         source, and the reader has to know to use "save as".
-                         Served from this origin the attribute holds and a file
-                         arrives, under the name the installer must keep.
+                         source and the reader has to know about "save as".
+                         Served from this origin the attribute holds and a FILE
+                         arrives, under the name the installer has to keep.
 
                          THE COPY IS CHECKED, byte for byte, by
                          tools/check-installer-copy.mjs on every run: two places
                          serving one file is how the menus of this site
-                         diverged, and an installer that differs from the one
-                         the line above fetches is an installer nobody has
-                         tested, handed to somebody standing up a server. -->
-                    <p class="say small">
-                        No shell?
-                        <a href="/annotepage-install.php" download="annotepage-install.php">Download
-                        annotepage-install.php</a> and put it there with your
-                        host&rsquo;s file manager. It is the same file.
+                         diverged, and an installer that differs from the
+                         released one is an installer nobody has tested, handed
+                         to somebody standing up a server. -->
+                    <p class="get">
+                        <a class="more" href="/annotepage-install.php" download="annotepage-install.php">Download annotepage-install.php<span class="arrow" aria-hidden="true">&darr;</span></a>
                     </p>
-                </div>
-                <div>
-                    <div class="snip">
-                                <button class="copy" type="button" data-copy="snip-php" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-php"><code><span class="tg">curl</span> <span class="op">-O</span> https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php</code></pre>
-                            </div>
-
+                    <p class="say small dim">
+                        32&nbsp;KB, one file, nothing to configure. Put it
+                        anywhere under your web root.
+                    </p>
                 </div>
             </li>
 
