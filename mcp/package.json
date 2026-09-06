@@ -1,6 +1,6 @@
 {
   "name": "annotepage-mcp",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "description": "The assistants' access to annotepage notes: an MCP server and a command-line utility that fetch and decrypt review remarks, answer them, and mark a note resolved with the version the fix ships in.",
   "license": "MIT",
   "repository": {
