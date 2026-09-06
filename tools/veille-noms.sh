@@ -38,16 +38,32 @@ if [ -z "$ORIGINE" ] || ! git clone -q --bare "$ORIGINE" "$TEMP/d.git" 2>/dev/nu
     exit 1
 fi
 
+# TOUTES LES REFS, PAS DEUX BRANCHES CODEES EN DUR, et le CONTENU autant que
+# les messages. La premiere version lisait `main` et `next`, et seulement leurs
+# messages : elle a ecrit "propre" un jour ou `next` portait encore neuf
+# occurrences dans ses fichiers livres, et n'aurait jamais vu une branche
+# poussee depuis un editeur web ni un tag. Un organe de surveillance qui
+# rassure a tort est pire que pas d'organe du tout.
 ennuis=0
-for b in main next; do
-    git -C "$TEMP/d.git" rev-parse --verify -q "$b" >/dev/null || continue
+refs=$(git -C "$TEMP/d.git" for-each-ref --format='%(refname:short)' refs/heads refs/tags)
+for b in $refs; do
     git -C "$TEMP/d.git" log --format='%an%n%ae%n%B' "$b" > "$TEMP/messages"
     if ! node "$DEPOT/tools/check-ai-names.mjs" message "$TEMP/messages" > "$TEMP/rapport" 2>&1; then
-        echo "$quand  ALERTE sur $b :" >> "$JOURNAL"
+        echo "$quand  ALERTE : messages de $b" >> "$JOURNAL"
+        sed 's/^/    /' "$TEMP/rapport" >> "$JOURNAL"
+        ennuis=1
+    fi
+    # Le contenu livre, en sortant l'arbre de la ref dans un repertoire jetable.
+    rm -rf "$TEMP/arbre"; mkdir -p "$TEMP/arbre"
+    git -C "$TEMP/d.git" archive "$b" | tar -x -C "$TEMP/arbre" 2>/dev/null || continue
+    if ! (cd "$TEMP/arbre" && git init -q . && git add -A -f >/dev/null 2>&1 \
+          && node "$DEPOT/tools/check-ai-names.mjs" > "$TEMP/rapport" 2>&1); then
+        echo "$quand  ALERTE : fichiers de $b" >> "$JOURNAL"
         sed 's/^/    /' "$TEMP/rapport" >> "$JOURNAL"
         ennuis=1
     fi
 done
+[ -z "$refs" ] && { echo "$quand  INJOIGNABLE : aucune ref lue" >> "$JOURNAL"; exit 1; }
 
-[ "$ennuis" = 0 ] && echo "$quand  propre : main et next" >> "$JOURNAL"
+[ "$ennuis" = 0 ] && echo "$quand  propre : $(echo $refs | tr '\n' ' ')" >> "$JOURNAL"
 exit "$ennuis"

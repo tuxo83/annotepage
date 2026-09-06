@@ -50,8 +50,17 @@ const SELF = 'tools/check-ai-names.mjs';
 /* The names that sign work. Word boundaries, case-insensitive. Add to it
    freely: a name that never appears costs one regular expression. */
 const NAMES = [
-    'claude', 'anthropic', 'openai', 'chatgpt', 'gpt-?[345]',
-    'copilot', 'gemini', 'codex', 'codeium', 'llama', 'bard',
+    /* les fournisseurs */
+    'claude', 'anthropic', 'openai', 'chatgpt', 'copilot', 'gemini',
+    'codex', 'codeium', 'llama', 'bard', 'grok', 'deepseek', 'qwen',
+    'kimi', 'windsurf', 'aider', 'tabnine',
+    /* les modeles, parce que le trailer qui a fuit ici disait "Opus 5" et
+       qu'un outil qui change son gabarit pour le nom du modele seul ne serait
+       plus vu. Aucun d'eux n'entre en collision avec un mot de ce depot --
+       verifie, un par un, avant d'etre ajoute. */
+    'opus', 'sonnet', 'haiku', 'fable', 'mistral',
+    /* et les generations, y compris les suffixes que \b rate seul */
+    'gpt-?[0-9]+(\\.[0-9]+)?[a-z]?',
 ];
 
 /* Written out before the scan, so the command survives and the signature does
@@ -63,24 +72,61 @@ const ALLOWED = [
 
 const NEEDLE = new RegExp(`\\b(${NAMES.join('|')})\\b`, 'gi');
 
-const findings = (text, where) => {
-    let clean = String(text);
-    /* ELEMENT TAGS ARE REMOVED BEFORE THE SCAN, and only element tags. The
-       site marks up its code blocks word by word, so the one allowed phrase
-       arrives as `<span>claude</span> <span>mcp</span> <span>add</span>` and
-       no allowance written in English can match it. Stripping `</?tag>` puts
-       the words back together.
+/* THE SHAPE OF A SIGNATURE, WITHOUT ANY NAME IN IT. The list above only ever
+   catches a name somebody thought to write; these two catch the FORM, which is
+   what actually leaked eighty-five times. A tool that renames its model
+   tomorrow still emits a trailer and still emits a session URL. */
+const SHAPES = [
+    [/session_[A-Za-z0-9_-]{16,}/g, 'a session identifier'],
+    [/^\s*Co-Authored-By:.*<[^@>]+@(?!example\.(com|org|net)|users\.noreply\.github\.com)[^>]+>/gim,
+     'a co-author trailer'],
+];
 
-       `<!-- ... -->` is NOT stripped: an HTML comment is exactly where a name
-       would be signed, and a guard that read past comments would miss the case
-       it exists for. The pattern requires a letter after the `<`, which a
-       comment's `!` is not. */
-    clean = clean.replace(/<\/?[a-zA-Z][^>]*>/g, ' ');
-    for (const phrase of ALLOWED) clean = clean.replace(phrase, ' ');
+/* TWO READINGS OF THE SAME TEXT, and a name found in either one is a name.
+ *
+ * WHY, and it was found by an audit rather than by thinking: the first version
+ * deleted every `<...>` before scanning, so that the site's marked-up
+ * `<span>claude</span> <span>mcp</span>` could match the one allowed phrase.
+ * But the email in a co-author trailer sits in angle brackets too, and that is
+ * the CANONICAL shape of a git signature. The guard was blind to the exact
+ * thing it exists to stop: a trailer whose visible name says nothing and whose
+ * address says everything went straight through.
+ *
+ * So nothing is deleted any more:
+ *
+ *   raw       the text as written. Catches a name inside angle brackets.
+ *   stripped  element tags removed. Catches a name CUT BY a tag --
+ *             `Cla<b>ude</b>` reads as one word to a browser and read as two
+ *             to the first version.
+ *
+ * The allowed phrase is removed from each in the form it takes there, which is
+ * why it survives both readings while a signature survives neither. */
+const ALLOWED_MARKED = /claude(?:<[^>]*>|\s)+mcp(?:<[^>]*>|\s)+add/gi;
+
+const findings = (text, where) => {
+    const raw = String(text).replace(ALLOWED_MARKED, ' ');
+    let stripped = String(text).replace(/<\/?[a-zA-Z][^>]*>/g, '');
+    for (const phrase of ALLOWED) stripped = stripped.replace(phrase, ' ');
+
+    const seen = new Set();
     const out = [];
-    for (const line of clean.split('\n')) {
-        const hit = line.match(NEEDLE);
-        if (hit) out.push(`${where}: ${hit[0]} — ${line.trim().slice(0, 90)}`);
+    const note = (line, what) => {
+        const key = what + '|' + line;
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(`${where}: ${what} — ${line.trim().slice(0, 90)}`);
+    };
+    for (const [pattern, what] of SHAPES) {
+        for (const line of String(text).split('\n')) {
+            pattern.lastIndex = 0;
+            if (pattern.test(line)) note(line, what);
+        }
+    }
+    for (const body of [raw, stripped]) {
+        for (const line of body.split('\n')) {
+            const hit = line.match(NEEDLE);
+            if (hit) note(line, hit[0]);
+        }
     }
     return out;
 };
@@ -112,8 +158,16 @@ if (mode === 'message') {
 } else if (mode === 'range') {
     const range = arg || 'origin/main..HEAD';
     let log = '';
+    /* FAILS CLOSED. This said `exit(0)` on any error, so an unfetched
+       origin/main, a renamed remote or a detached repository all read as "no
+       assistant named" -- a guard that answers yes when it cannot look is
+       worse than none. */
     try { log = execFileSync('git', ['log', '--format=%an%n%ae%n%B', range], { encoding: 'utf8' }); }
-    catch (e) { process.exit(0); }   // no such range: nothing to say
+    catch (e) {
+        console.error(`REFUSED: cannot read the range ${range} -- ${e.message.split('\n')[0]}`);
+        console.error('A range that cannot be read has not been checked.');
+        process.exit(1);
+    }
     bad = findings(log, 'a commit being pushed');
 } else {
     const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
