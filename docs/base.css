@@ -905,7 +905,11 @@
    NO ROTATION. Two figures already loop for ever on this page and they carry
    the content; a third movement in the middle of a sentence would take
    attention from them to punctuate. A straight arrow has nothing to turn. */
-.use-steps > li.between .ship {
+/* THE RULE IS ON THE MARKER'S ICON, NOT ON ONE DRAWING. It said `.ship`, which
+   was fine while one page had one marker; the install page's marker says
+   "somebody annotates the page" and the arrow is the DEPLOY glyph, so it draws
+   something else. Two markers, two glyphs, one size and one ink. */
+.use-steps > li.between svg {
     flex: none; width: 1.15em; height: 1.15em;
     color: var(--accent);
 }

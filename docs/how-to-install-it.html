@@ -1388,6 +1388,33 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         It ends by printing your API address, for the field at
                         the top.
                     </p>
+                    <!-- AND A SECOND ROUTE, BECAUSE THE FIRST ONE ASKS FOR A
+                         SHELL. `curl` is one line for whoever has one and a
+                         wall for whoever administers their site through a
+                         hosting panel and a file manager -- which is most of
+                         the people this chapter's dial was written for. Both
+                         are offered; neither is called the proper one.
+
+                         WHY THE LINK POINTS AT THIS SITE AND NOT AT THE
+                         REPOSITORY. `download` is IGNORED cross-origin by every
+                         browser, and the repository serves a .php file as
+                         text/plain -- so a link there opens a page of PHP
+                         source, and the reader has to know to use "save as".
+                         Served from this origin the attribute holds and a file
+                         arrives, under the name the installer must keep.
+
+                         THE COPY IS CHECKED, byte for byte, by
+                         tools/check-installer-copy.mjs on every run: two places
+                         serving one file is how the menus of this site
+                         diverged, and an installer that differs from the one
+                         the line above fetches is an installer nobody has
+                         tested, handed to somebody standing up a server. -->
+                    <p class="say small">
+                        No shell?
+                        <a href="/annotepage-install.php" download="annotepage-install.php">Download
+                        annotepage-install.php</a> and put it there with your
+                        host&rsquo;s file manager. It is the same file.
+                    </p>
                 </div>
                 <div>
                     <div class="snip">
@@ -1989,14 +2016,42 @@ return array(
 
                  The marker how-to-use-it.html puts between two steps, on the
                  steps' own rail, taking no number: its rules moved into
-                 base.css to get here rather than being copied. Same arrow, same
-                 weight, same distance above and below. -->
+                 base.css to get here rather than being copied. Same size, same
+                 weight, same distance above and below -- and NOT the same
+                 glyph, which is what was reported and was right.
+
+                 IT CARRIED THE DEPLOY ARROW, because it was copied from the
+                 marker on the usage page, where the sentence is "You deploy the
+                 fix." and an arrow rising off a line is exactly that. Here the
+                 sentence is "somebody annotates the page", and an upload arrow
+                 says nothing about it -- it is the wrong word, in a place with
+                 room for one word.
+
+                 WHAT IT DRAWS: A REMARK, WITH SOMETHING WRITTEN IN IT. Two
+                 strokes, and they were chosen by looking rather than by
+                 reasoning -- six candidates rendered at the size this is
+                 actually drawn, 1.15em, and compared. The first try was the
+                 page this tool badges, a rectangle with the round marker on its
+                 corner: at seventeen pixels the disc merges with the corner and
+                 the whole thing reads as a FOLDER. A pencil says "edit", which
+                 is what the reader does afterwards, not what happens here. The
+                 bubble is the one that needs no learning, and the line inside
+                 it is what makes it a remark somebody wrote rather than a
+                 conversation.
+
+                 AND THE COORDINATES ARE OURS, which is the whole licence
+                 question, as for the arrow on the other page. The idea of a
+                 speech bubble belongs to nobody; a `d` copied out of an icon
+                 set carries that set's licence with it -- MIT and ISC want
+                 their notice kept, Font Awesome Free's SVGs are CC BY and want
+                 visible attribution. Nothing is copied here, so this repository
+                 owes nobody a notice. -->
             <li class="between">
-                <svg class="ship" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
                      aria-hidden="true" focusable="false">
-                    <path d="M12 16V4m-5 5 5-5 5 5"/>
-                    <path d="M5 20h14"/>
+                    <path d="M20.5 14.4a2.6 2.6 0 0 1-2.6 2.6H9.4L4.5 20.6V6.6A2.6 2.6 0 0 1 7.1 4h10.8a2.6 2.6 0 0 1 2.6 2.6z"/>
+                    <path d="M8.8 10.4h7.4"/>
                 </svg>
                 Somebody annotates the page.
             </li>
