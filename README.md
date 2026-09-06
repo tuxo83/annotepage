@@ -18,8 +18,8 @@ off to a tracker and the trail ends there.
 One tag, at the end of `<body>`:
 
 ```html
-<script src="https://annotepage.com/annotepage-client-2.20.0.js"
-        integrity="sha384-KVPw51MY5AnBF9Ef+lJB1kJd/pbv58Ml7k2wvkcj99S3b4HDtrzSP+SGk7I0ylRs"
+<script src="https://annotepage.com/annotepage-client-2.21.0.js"
+        integrity="sha384-somAD2fmEFshhHeIPtH2osNOi6CvkCHukXSYrGu1h0EHoJODDc9OFbSzvq2jfq57"
         crossorigin="anonymous"
         data-server="https://your-server.example.com/annotepage/api.php"
         data-project="your-project-id"
