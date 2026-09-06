@@ -406,6 +406,29 @@ outage. The diagnostic does say so.
 
 ---
 
+## Running the candidate instead of the release
+
+One line, and it is the same address with one word changed:
+
+```php
+'update_source' => 'https://raw.githubusercontent.com/tuxo83/annotepage/next/server/webroot/',
+```
+
+`main` is what everybody runs. `next` is where a version is validated before
+they do — the same files, the same manifest, the same hash check on every one
+of them before anything is put in place. A candidate is verified exactly as a
+release is; what differs is who has looked at it.
+
+Put `main` back and the next check returns the server to the release. There is
+nothing to undo by hand: the update is a whole release or none of it.
+
+The client half is the same word, on the tag rather than in a file:
+`annotepage-client@next` instead of `annotepage-client@2`. The two are
+independent — a server on the candidate serves whatever client its pages ask
+for, and a page on the candidate talks to whatever server it is pointed at.
+
+---
+
 ## Letting the server update itself
 
 Optional, **off**, and it stays off until you write the key. Nothing below adds

@@ -189,6 +189,17 @@ return array(
     // the action does not exist -- unknown, not refused. 32 characters or more.
     // 'update_token' => 'the 43 characters of anything nobody can guess',
 
+    // WHICH BRANCH THIS SERVER FOLLOWS. `main` is what everybody runs and it
+    // is the default, so this line is only needed to leave it. `next` is where
+    // a version is validated before users get it: same files, same manifest,
+    // every one of them hashed before anything is put in place -- a candidate
+    // is verified exactly as a release is. Put it back to `main`, or delete
+    // the line, and the next check returns this server to the release.
+    //
+    // It is also what a fork or a mirror inside a network with no way out to
+    // GitHub is pointed at. HTTPS only, and no flag relaxes that.
+    // 'update_source' => 'https://raw.githubusercontent.com/tuxo83/annotepage/next/server/webroot/',
+
     // WHERE A BARE VISIT GOES. Empty: a visit to this directory with no path
     // gets a 404, and api.php is unaffected either way. An absolute http(s)
     // URL sends such a visit there with a 302 -- what a public relay wants, so

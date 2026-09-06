@@ -408,9 +408,20 @@ code {
                 talks to your server whichever code it is running.</p>
             </article>
 
-            <!-- WHY THE STABLE TAG IS NOT `@latest`. It looks like the obvious
-                 pair to `@next` and it is not: one is a range, the other is a
-                 moving pointer with no ceiling. -->
+            <!-- WHY THE STABLE TAG IS NOT `@latest`, AND IT IS NOT THE
+                 REASON THIS COMMENT USED TO GIVE. It said `@2` has a ceiling
+                 and `@latest` has none, which is false where it matters:
+                 measured against the client's own code, a page carrying `@2`
+                 still ends up on 3.0.0 the moment a server announces it -- the
+                 client rebuilds an exact-version address and replaces itself,
+                 major number included. The range decides which copy loads
+                 first, nothing more.
+
+                 The real reason is the ORDER. A major is the release allowed
+                 to change the protocol; the client is on a CDN and the server
+                 is on somebody's machine, so `@latest` puts the new client in
+                 front of servers that have not moved. Announced, the server is
+                 already running it before it says so. -->
             <article class="qa" data-tags="The tag on your page|Nothing appears">
                 <h3 class="qa-q">Why <code>@2</code> and not <code>@latest</code>?</h3>
                 <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
