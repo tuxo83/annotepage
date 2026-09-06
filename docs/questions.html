@@ -117,6 +117,19 @@ h1 + .lead { margin-top: 1.15rem; }
     font-size: .72rem; color: var(--dim);
 }
 .qa-a { margin: .85rem 0 0; color: var(--dim); }
+/* A LINE TO COPY, INSIDE A CARD. The site shows the thing rather than
+   describing it, and a channel is one word in a line -- so the line is here,
+   with that word in bold, rather than a sentence about where to put it. It
+   wraps: a card is narrower than these addresses, and a scrollbar inside a
+   card is a control nobody expects to find there. */
+.qa-code {
+    margin: .5rem 0 0; padding: .6rem .7rem;
+    border-radius: 8px;
+    background: var(--bg-soft); border: 1px solid var(--line-soft);
+    font-family: var(--mono); font-size: .78rem; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-all;
+}
+.qa-code b { color: var(--accent); font-weight: 700; }
 
 .faq-tools { margin: 0 0 2.2rem; }
 .faq-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 .8rem; }
@@ -379,16 +392,20 @@ code {
             <article class="qa" data-tags="Setting it up|The tag on your page">
                 <h3 class="qa-q">Can I run a version before everybody else?</h3>
                 <p class="qa-tags"><span class="qa-tag">Setting it up</span><span class="qa-tag">The tag on your page</span></p>
-                <p class="qa-a">Yes, in whichever of the three you want.
-                <b>The tag:</b> ask for
-                <code>annotepage-client@next</code> instead of
-                <code>annotepage-client@2</code>. <b>Your own notes server:</b>
-                point <code>update_source</code> at the
-                <code>recette</code> branch instead of <code>main</code>, in
-                <code>config-local.php</code> &mdash; it is a plain address, and
-                every file it fetches is still hashed against the manifest.
-                <b>The assistant:</b> nothing to change, the MCP talks to your
-                server whichever code it runs.</p>
+                <p class="qa-a">Yes, and it is one word in each place.</p>
+                <p class="qa-a"><b>The tag on your pages</b> &mdash; ask for
+                <code>@next</code> instead of <code>@2</code>:</p>
+<pre class="qa-code">https://cdn.jsdelivr.net/npm/annotepage-client<b>@next</b>/dist/annotepage.js</pre>
+                <p class="qa-a"><b>Your own notes server</b> &mdash; one line in
+                <code>internal/config-local.php</code>, pointing it at the
+                candidate branch:</p>
+<pre class="qa-code">'update_source' =&gt; 'https://raw.githubusercontent.com/tuxo83/annotepage/<b>recette</b>/server/webroot/',</pre>
+                <p class="qa-a">It stays hashed against the manifest either way:
+                a candidate is checked exactly as a release is. Put
+                <code>main</code> back and the next daily check returns it to
+                the stable one.</p>
+                <p class="qa-a"><b>The assistant</b> &mdash; nothing. The MCP
+                talks to your server whichever code it is running.</p>
             </article>
 
             <!-- WHY THE STABLE TAG IS NOT `@latest`. It looks like the obvious
