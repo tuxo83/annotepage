@@ -8,45 +8,23 @@
 The annotation layer of [annotepage](https://annotepage.com). One file, one
 `<script>` tag, no dependency, no bundler, no stylesheet of its own.
 
-## The tag
+## The attributes
 
-At the end of `<body>`. Needs a **secure context** — https, or localhost —
-because the encryption is WebCrypto's.
+**The tag itself is built for you by
+[the install page](https://annotepage.com/how-to-install-it.html)**, with your
+address, your key and the integrity digest for the version you take. What is
+here is the part it does not carry: the full list of attributes, which is the
+package's own contract rather than a step in an installation.
 
-```html
-<script src="https://cdn.jsdelivr.net/npm/annotepage-client@2.23.0/dist/annotepage.js"
-        integrity="sha384-3N2cyMhzg3iB8eohex9kcKadMt7xjORkxpv/BA7+jqrjhZSPnt6DwRFgDjBZPWkb"
-        crossorigin="anonymous"
-        data-server="https://api.annotepage.com/api.php"
-        data-setup
-        defer></script>
-```
-
-`data-server` is an **annotepage server**, which stores the notes.
-`api.annotepage.com` is a shared one, free and already running, so nothing has
-to be installed anywhere to try this; running your own is one PHP file, and the
-install page walks it.
-
-`data-setup` opens the setup screen once: it creates the project, shows the key
-— 43 characters, kept nowhere else — and prints the tag to keep, with
-`data-project` in its place.
+`npm install annotepage-client` gives you `dist/annotepage.js` — the file that
+tag loads, byte for byte — and `labels/fr.json`. Served from your own origin,
+one directory below `api.php`, `data-server` may be dropped: the client falls
+back to `../api.php` relative to its own `src`. From a CDN it is required,
+because a CDN's address says nothing about the site under review.
 
 It must stay a **classic script tag**: the tool reads its own attributes
 through `document.currentScript`, which is `null` inside a module. Loaded as a
 module it stops, silently, with one line in the console.
-
-## From npm
-
-`npm install annotepage-client` gives you `dist/annotepage.js` — the file the
-tag above loads, byte for byte — and `labels/fr.json`. Served from your own
-origin, one directory below `api.php`, `data-server` may be dropped: the client
-falls back to `../api.php` relative to its own `src`. From a CDN it is
-required, because a CDN's address says nothing about the site under review.
-
-## The attributes
-
-The only thing here the site does not say, because it is the package's own
-contract rather than a step in an installation.
 
 | Attribute | What it declares |
 |---|---|
@@ -79,13 +57,6 @@ you like without touching the code:
 
 A missing label falls back on English, so a partial translation is usable. A
 complete French set ships in the package, in `labels/fr.json`.
-
-## Key lost = notes lost
-
-No recovery, no escrow, no rotation:
-[why](https://annotepage.com/questions.html#no-recovery). Said here because
-this page is all an npm reader has, and said in one line because a second
-wording of it is a wording that can go stale.
 
 ## What it does not touch
 

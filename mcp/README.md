@@ -10,56 +10,42 @@ and a command line, over the same code.
 
 ## Install
 
-```
-npm install -g annotepage-mcp
-claude mcp add annotepage -- annotepage-mcp
-```
+**Installing it is on the site**, in the assistant chapter of
+[how you install it](https://annotepage.com/how-to-install-it.html) — two
+commands, and the page names them for the assistant you actually run.
 
-Node 18+. No dependency: this package holds project keys, and every dependency
-would be third-party code in the same process.
+Node 18 or newer. **No dependency**, and that is a decision rather than an
+accident: this package holds project keys, so every dependency would be
+third-party code in the same process.
 
 ## Configure
 
-One file, one entry per site, named after the site — so afterwards you say the
-site you are looking at and it is found. The annotation panel on your own page
-writes this file for you: **File for your assistant**, in its footer.
+**What the file looks like is on the site**, and the annotation panel on your
+own page writes it for you: *File for your assistant*, in its footer. What
+follows is what neither of them says, and all three are how a first attempt
+fails.
 
-`.annotepage.json` beside your work, or
-`~/.config/annotepage/annotepage.json` — **the first that exists wins**, and
-nothing is merged. `ANNOTEPAGE_CONFIG` names one outright, which is what to
-reach for when the MCP host starts the server from a directory that is not
-yours.
+**Where it is looked for, in this order**: `.annotepage.json` beside your work,
+then `~/.config/annotepage/annotepage.json`, then `~/.annotepage.json`. **The
+first that exists wins**, and nothing is merged — two half-filled files would
+make a configuration nobody can reread. `ANNOTEPAGE_CONFIG` names one outright,
+which is what to reach for when the MCP host starts the server from a directory
+that is not yours.
 
-```json
-{
-  "projects": {
-    "staging.example.com": {
-      "api": "https://staging.example.com/notes/api.php",
-      "key": "the 43 characters the setup screen showed you",
-      "origin": "https://staging.example.com",
-      "author": "Assistant"
-    }
-  }
-}
-```
+**`author` is required for every write.** A reply signed by nobody is a reply
+the reviewer cannot answer back to, so this package publishes nothing anonymous
+and says so rather than inventing a name.
 
-> **This file contains the key, which is every note there is.** `chmod 600` it,
-> keep it out of git, never paste it into a ticket or a conversation — and note
-> that a key cannot be replaced:
-> [why](https://annotepage.com/questions.html#no-recovery).
-
-`author` is **required for every write**: a reply signed by nobody is a reply
-the reviewer cannot answer back to. `"read_only": true` cuts every write, for
-plugging an assistant onto a review you do not know yet. `origin` matters
-facing a shared relay: it refuses a write that arrives without one.
-
-No file at all also works, and it is the shortest way to try this once:
+**No file at all also works**, and it is the shortest way to try this once:
 `ANNOTEPAGE_API`, `ANNOTEPAGE_KEY` and `ANNOTEPAGE_AUTHOR` describe one project
-between them, and take precedence over any file. A project whose key is already
-public in its page can likewise pass `api` and `key` on the call.
+between them, and take precedence over any file.
 
-The key itself comes from the client: the tag loaded with `data-setup` draws it
-in the browser, once, and it reaches no server in any form.
+`"read_only": true` cuts every write, for plugging an assistant onto a review
+you do not know yet. `origin` matters facing a shared relay: it refuses a write
+that arrives without one.
+
+> The file holds the key, which is every note there is. `chmod 600` it, keep it
+> out of git, and never paste it into a ticket or a conversation.
 
 ## From the command line
 
