@@ -866,6 +866,11 @@ const closePop = () => {
     pop.remove();
     pop = null;
     popNotes = null;
+    /* THE AIM COMES BACK, AND ON THE ELEMENT IT LEFT. onHover did not run while
+       the window was up, so nothing has moved `hovered`; without this line the
+       outline stays off until the pointer crosses another element, which on a
+       hand that has not moved is never. */
+    if (mode && hovered && document.contains(hovered)) showHighlight(hovered);
 };
 
 const openPop = (title, fill) => {
@@ -1568,7 +1573,17 @@ const openForm = (el, existingText) => {
 
 /* -- 17. Annotation mode ------------------------------------------------- */
 
+/* NOTHING IS AIMED AT WHILE A WINDOW IS OPEN. Reading a remark with the
+   pointer resting anywhere over the page meant the outline kept jumping from
+   paragraph to paragraph behind the window, and the label with it -- the tool
+   proposing the next thing to annotate to somebody who is busy reading the
+   last one. Reported as exactly that: it is distracting.
+
+   The aim is FROZEN, not merely hidden: `hovered` is left where it was, so
+   closing the window puts the reader back on the element they had, rather than
+   on whatever happens to be under a pointer that has not moved. */
 const onHover = (event) => {
+    if (pop) return;
     const el = event.target;
     if (!el || el.nodeType !== 1 || inTool(el)) return;
     if (el === document.body || el === document.documentElement) return;
@@ -1587,6 +1602,22 @@ const onClick = (event) => {
     event.preventDefault();
     event.stopPropagation();
     if (event.type !== 'click') return;
+    /* AND A CLICK OUTSIDE THE WINDOW CLOSES IT, rather than opening a form on
+       whatever was clicked. Same reason as the frozen aim, and the same rule
+       Escape follows: the window is the thing on top, so a click that is not
+       in it dismisses it -- one gesture, and the page is not annotated by the
+       gesture that puts the remark away. The next click aims and opens a form
+       as usual: nothing is trapped. */
+    if (pop) {
+        /* The click says where the pointer is, which is the one thing the
+           frozen aim does not know: taking it here means the outline comes
+           back UNDER THE HAND rather than on the element it was left on three
+           scrolls ago. */
+        if (el && el.nodeType === 1 && el !== document.body
+            && el !== document.documentElement) hovered = el;
+        closePop();
+        return;
+    }
     if (!el || el.nodeType !== 1) return;
     if (el === document.body || el === document.documentElement) return;
     openForm(el);
