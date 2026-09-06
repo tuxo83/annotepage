@@ -1,3 +1,4 @@
+2.16.0  sha384-QB+tq0EG1trJyenvehoa5a/J7HhbqLHOSek4CtcSCKTSVnhVgTAf7Jlm0vsGmjzJ  217399 bytes
 2.15.0  sha384-3qBS3h2DhpsgyVWJRXyEVuOWNvJCZsuONrsAzurVNmx7EuhullJuwsgrULbsjO1m  210898 bytes
 2.14.1  sha384-/X2c3Djys8eis4FwWywqKNbArldpMTNTW0C3DgcGnbxXjLGk/juniKBWRYoJAKtF  202680 bytes
 2.14.0  sha384-8F/sQvWRtsr9MxBOimy6eLPSJj0YcE0QglUkOxa+r8r723glcBG2E504t3a6kwm5  202680 bytes
