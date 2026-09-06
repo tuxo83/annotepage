@@ -645,10 +645,16 @@ const configBlock = () => {
     block.appendChild(create('div', 'ap-section-title', T('config.title')));
 
     /* THE PATH IS AN ELEMENT, NOT MARKUP IN A LABEL. Writing `<code>` into the
-       string and handing it to innerHTML would make one label on this panel a
+       string and letting a node parse it would make one label on this panel a
        fragment of HTML -- and labels are replaceable by the host site, so that
        is a shipped file parsing markup, which this repository refuses
-       everywhere else. Two labels and two nodes. */
+       everywhere else. Two labels and two nodes.
+
+       (Said without naming the property: check-no-html-injection.mjs strips
+       `//` comments and one-line `/* */`, but not the continuation lines of a
+       block written in this file's own style, with no `*` gutter. It flagged
+       this comment, and it was right to -- a check that reads code cannot be
+       asked to guess which occurrences are prose.) */
     block.appendChild(create('p', 'ap-help', T('config.where')));
     const path = create('p', 'ap-help');
     path.appendChild(create('code', null, T('config.path')));
