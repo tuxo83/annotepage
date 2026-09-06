@@ -17,7 +17,14 @@
 # ---------------------------------------------------------------------------
 set -u
 
-echo "--- garde-fou : noms, adresses, chemins"
+# LES DEUX MOITIES DU MEME GARDE-FOU.
+#
+# Celle-ci connait des NOMS et vit hors du depot, donc elle ne tourne que sur
+# cette machine. L'autre -- check-shapes.mjs, dans `npm run check` ci-dessous --
+# connait des FORMES et tourne partout, y compris en integration continue :
+# un chemin de home, une adresse e-mail, une adresse machine. Aucune des deux
+# ne remplace l'autre.
+echo "--- garde-fou local : noms (hors depot, expres)"
 "$(dirname "$0")/garde.sh" || exit 1
 
 echo "--- npm run check : bundle, sri, injection, css, html, shell, versions,"
