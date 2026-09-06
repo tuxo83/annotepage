@@ -536,6 +536,46 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
     --t-tool:    #5297f8;
 }
 
+/* -- the file the tool writes, drawn in the panel it is written in --------
+
+   EVERY PIECE HERE IS ALREADY IN base.css: the crop, the panel, its bar, the
+   form's title, help, label and actions. What is left to say is the three
+   things the config block has that a note form does not -- a path, a file, and
+   a second button that does not send. */
+/* `min-width: 0`, because the block below it is preformatted: without it the
+   file's longest line becomes the panel's minimum width, the panel grows past
+   its own flex basis, and the sentence under it is pushed out of the frame.
+   Measured before this line: the warning ran past the right edge. */
+.cf { padding: calc(.55rem * var(--ui)); min-width: 0; }
+.cf-path {
+    margin: calc(.3rem * var(--ui)) 0 0;
+    font-family: var(--mono); font-size: calc(.6rem * var(--ui));
+    color: var(--accent); word-break: break-all;
+}
+/* The file itself, in the terminal ink the other screens of this page use for
+   anything that is code. It does not scroll: it is a picture of a file, and a
+   scrollbar inside a figure is a control nobody can use. */
+.cf-json {
+    margin: calc(.3rem * var(--ui)) 0 0;
+    padding: calc(.5rem * var(--ui));
+    border-radius: calc(6px * var(--ui));
+    background: var(--t-ground); color: var(--t-dim);
+    font-family: var(--mono); font-size: calc(.56rem * var(--ui)); line-height: 1.5;
+    /* IT WRAPS RATHER THAN SCROLLING. A 43-character key on one line makes the
+       block wider than the panel it is in, and the two ways out of that are a
+       scrollbar -- a control nobody can use inside a figure -- or a key shown
+       cut, which would be a lie about its length. It folds. */
+    white-space: pre-wrap; word-break: break-all;
+}
+.cf-json .site { color: var(--t-ident); }
+.cf-json .val  { color: var(--t-text); }
+/* The one that cancels, beside the one that sends: drawn as the panel draws a
+   link, because that is what it is. */
+.cf-second {
+    margin-left: calc(.6rem * var(--ui));
+    font-size: calc(.64rem * var(--ui)); color: var(--dim);
+}
+
 /* The terminal is a .frame.term from base.css: same ground, same border, same
    pair of rules round the input. What it needs on top is a session's shape --
    a fixed pane that never scrolls, and a monospace size that holds the
@@ -1200,52 +1240,63 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
         <li class="if-secure">
             <div>
                 <p class="cap"><span class="n"></span> You give it the key, once</p>
-                <p class="say">One file, on the machine where your assistant runs. Write it
-                yourself, or hand it the key and let it write the file (less secure).</p>
-                <p class="say"><b>The address is on your tag.</b> The key is the one your
-                reviewers paste.</p>
+                <p class="say">The tool writes it for you: it already has the address and
+                the key. One button, one file, on the machine where your assistant runs.</p>
+                <p class="say"><b>Nothing is typed twice.</b> What comes out is what this
+                browser is using.</p>
             </div>
 
             <figure class="fig">
-                <!-- TWO WINDOWS, OVERLAPPING, AND THE MAT BEHIND THEM IS THE
-                     DESKTOP. The manager holds the folder open with the file
-                     selected; the editor holds the file itself, and the
-                     button that copies it sits inside the editor's own
-                     window. The manager is decorative -- everything it says
-                     the editor says again, in the title bar the reader can
-                     read and in the file they can copy -- so it is hidden
-                     from a screen reader and the button is not. -->
-                <div class="sc ui-large">
-                    <div class="sc-win sc-fm" aria-hidden="true">
-                        <p class="sc-bar">
-                            <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M2.6 15.4V4.6h4.6l1.7 2h8.5v8.8a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1z"/></svg>
-                            <span>annotepage</span>
-                        </p>
-                        <p class="sc-path"><span>~</span><span>&#8250;</span><span>.config</span><span>&#8250;</span><span>annotepage</span></p>
-                        <p class="sc-row on">
-                            <svg class="sc-ic" viewBox="0 0 20 20" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
-                            <span>annotepage.json</span>
-                        </p>
+                <!-- THE TOOL'S OWN SCREEN, NOT A DESKTOP. Two windows stood
+                     here -- a file manager and an editor, drawn -- and they
+                     showed the reader a file they had to build by hand from an
+                     address on a tag and a key in a browser. That is the
+                     shape of the answer, so it was the shape of the picture.
+
+                     The answer changed in client 2.14.0: the panel already
+                     holds both values, so it writes the file. What this shows
+                     now is the button that does it, in the panel it is in, on
+                     the page it is on -- the same crop this page uses for every
+                     other screen of the tool, and every line in it is a string
+                     of the client: `panel.title`, `config.title`,
+                     `config.where`, `config.path`, `config.file`,
+                     `config.download`, `note.cancel`, `config.warn`.
+
+                     THE DESKTOP GOES WITH THE WINDOWS. Where the file lands is
+                     a sentence in the panel now -- it says the path -- and a
+                     drawing of a folder would say it a second time, less
+                     precisely. -->
+                <div class="frame nt-frame ui-large crop" aria-hidden="true">
+                    <div class="pg">
+                        <div class="bar-line head"></div>
+                        <div class="bar-line w85"></div>
+                        <div class="bar-line w70"></div>
+                        <div class="bar-line w45"></div>
+                        <div class="bar-line w70 below"></div>
+                        <div class="bar-line w85"></div>
                     </div>
 
-                    <div class="sc-win sc-ed">
-                        <p class="sc-bar">
-                            <svg class="sc-ic" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M11.4 2.6H5.6a1 1 0 0 0-1 1v12.8a1 1 0 0 0 1 1h8.8a1 1 0 0 0 1-1V6.6z"/><path d="M11.4 2.6v4h4"/></svg>
-                            <span>annotepage.json</span>
-                        </p>
-                        <div class="sc-sheet">
-                            <button class="copy" type="button" data-copy="sc-json" aria-label="Copy the file">
-                                <svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg>
-                                <svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg>
-                            </button>
-<pre class="sc-body" id="sc-json">{
+                    <div class="nt-panel">
+                        <div class="nt-bar">Review notes</div>
+                        <div class="nt-body">
+                            <div class="cf">
+                                <p class="fm-title">The file your assistant needs</p>
+                                <p class="fm-help">On the machine where the assistant runs, save it as:</p>
+                                <p class="cf-path">~/.config/annotepage/annotepage.json</p>
+                                <p class="fm-label">annotepage.json</p>
+<pre class="cf-json">{
   "projects": {
     <span class="site">"staging.example.com"</span>: {
-      "api": <span class="val">"https://staging.example.com/notes/api.php"</span>,
-      "key": <span class="val">"W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw"</span>
+      "api": <span class="val">"https://api.staging.example.com/api.php"</span>,
+      "key": <span class="val">"W0iAHlP66ib_AzhuA7NVptEFBMIsbvZGiVD65cRWkaw"</span>,
+      "origin": <span class="val">"https://staging.example.com"</span>,
+      "author": <span class="val">"Assistant"</span>
     }
   }
 }</pre>
+                                <p class="fm-acts"><span class="fm-send">Download it</span><span class="cf-second">Cancel</span></p>
+                                <p class="fm-help">It carries your key. Anyone holding this file can read these notes and write them.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
