@@ -831,10 +831,15 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
    the screen, which pauses the dots in the same breath and by the same
    attribute, so the two come back together. */
 .lp-box { position: relative; }
+/* ENTIRELY INSIDE THE BOX, and that is the fix rather than the taste. It was
+   `inset: -1px` with an outer box-shadow, so the ring stood 2px proud of the
+   box on every side -- and the boxes at the edges of the square have the
+   scrolling frame right there, which cut it. An inset ring cannot be clipped by
+   anything, because it never leaves. */
 .lp-box::after {
-    content: ""; position: absolute; inset: -1px;
+    content: ""; position: absolute; inset: 0;
     border-radius: inherit; pointer-events: none;
-    box-shadow: 0 0 0 1px var(--accent), inset 0 0 0 1px var(--accent);
+    box-shadow: inset 0 0 0 2px var(--accent);
     opacity: 0;
     animation: lp-hit 4.6s linear infinite;
 }
@@ -1305,19 +1310,24 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <li>
                 <div>
                     <p class="cap"><span class="n"></span> Upload one PHP file</p>
+                    <!-- TWO SENTENCES, AND THEY ARE THE TWO GESTURES. This
+                         was four lines about a web root, a button and a
+                         MANIFEST -- the file's own screen says all of that
+                         while it runs, and none of it is something the reader
+                         does. What they do is fetch it and open it. -->
                     <p class="say">
-                        Anywhere under your web root. Open it: its button
-                        hashes the rest against the <code>MANIFEST</code>.
+                        Download it onto the server, then open it in your
+                        browser.
                     </p>
                     <p class="say">
-                        It ends by printing your API address. <b>Put it in the
-                        field at the top</b> and the blocks below follow it.
+                        It ends by printing your API address, for the field at
+                        the top.
                     </p>
                 </div>
                 <div>
                     <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-php" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-php"><code>https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php</code></pre>
+<pre id="snip-php"><code><span class="tg">curl</span> <span class="op">-O</span> https://raw.githubusercontent.com/tuxo83/annotepage/main/server/annotepage-install.php</code></pre>
                             </div>
 
                 </div>
