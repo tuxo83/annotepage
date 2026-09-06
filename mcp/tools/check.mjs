@@ -811,7 +811,7 @@ const WRITING_PROJECT = {
     id: PROJECT,
     name: 'check',
     api: 'https://server.invalid/annotepage/api.php',
-    author: 'Claude',
+    author: 'Assistant',
     keys: null,
     read_only: false,
 };

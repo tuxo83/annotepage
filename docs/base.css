@@ -131,7 +131,7 @@
     --t-ground:  #1a1a1a;   /* not #000: a pure black ground is the tell */
     --t-text:    #ffffff;
     --t-border:  #888888;
-    --t-claude:  #d77757;
+    --t-assistant:  #d77757;
     --t-dim:     #999999;
     /* AND WHAT THE WINDOW FIGURE NEEDS, which is not the replay. It moved here
        with the figure it paints -- the editor's title band and copy chip, the
@@ -357,7 +357,7 @@
     padding: calc(.85rem * var(--ui)) calc(.8rem * var(--ui));
     display: flex; flex-direction: column; justify-content: center; gap: calc(.5rem * var(--ui));
 }
-.mt-work { margin: 0; color: var(--t-claude); }
+.mt-work { margin: 0; color: var(--t-assistant); }
 .mt-work .g { display: inline-block; width: 2ch; }
 .mt-input {
     border-top: 1px solid var(--t-border);
@@ -1109,7 +1109,7 @@
    What the turn cost is said once, at the end, in the past tense. */
 .rp-work {
     visibility: hidden; min-height: 1.4em;
-    margin: .5rem .8rem .2rem; color: var(--t-claude);
+    margin: .5rem .8rem .2rem; color: var(--t-assistant);
 }
 .rp[data-play][data-working] .rp-work { visibility: visible; }
 /* The frame cell is always two columns wide, whatever glyph is in it. That
@@ -1156,7 +1156,7 @@
    matters, because this line REPLACES that indicator in the same cell. Its
    predecessor was in no frame of it, and at 12px on a phone it painted nothing
    at all. */
-.rp-worked .g { display: inline-block; width: 2ch; color: var(--t-claude); }
+.rp-worked .g { display: inline-block; width: 2ch; color: var(--t-assistant); }
 .rp[data-play][data-worked] .rp-worked { display: block; }
 .rp[data-play][data-worked] .rp-work { display: none; }
 /* The block cursor is not a separate box that could push the line about: it is
