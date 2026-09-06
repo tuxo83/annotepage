@@ -636,7 +636,7 @@ if ($method === 'POST') {
             'self'         => __FILE__,
             'method'       => 'GET',
             'outbound_url' => AP_B_SOURCE,
-            'lede'         => 'The server is downloaded. Two questions, and both have '
+            'lede'         => 'The server is downloaded. Three questions, and all three have '
                               . 'a default that works.',
             'report'       => array(
                 array('Release', $result['version'],

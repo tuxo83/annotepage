@@ -774,6 +774,59 @@ function ap_i_head($title)
         . "  td.v { white-space: nowrap; width: 9rem; font-variant-numeric: tabular-nums; }\n"
         . "  td.m { opacity: .75; font-size: .9rem; }\n"
         . "  .bad { color: #b00020; font-weight: 700; }\n"
+        /* THE SETTINGS BOX, AND IT IS THE SITE'S. how-to-install-it.html opens
+           on a small bordered box of "dials" -- an uppercase label, a row of
+           pills, one short sentence that follows the choice -- and the reader
+           who arrives here has just used it. Meeting two different ways of
+           asking the same two questions, ten minutes apart, is the tool
+           looking like two tools.
+
+           SAME SHAPE, SAME RULE FOR WHAT GOES IN IT. On that page a dial is a
+           choice that changes what the rest of the page SAYS; everything else
+           sits lower. The same line is drawn here: the audience and the
+           storage change what is installed, so they are dials; the update
+           options change nothing about the install and stay a section below.
+
+           NO SCRIPT, and that is not a preference: this page ships a
+           `default-src 'none'` policy, so the pills are real radios with their
+           label replaced, and the sentence that follows the choice is a
+           `:has()` rule. A browser without `:has()` shows every sentence at
+           once -- which is exactly what this page did before, so the fallback
+           is the old behaviour rather than a broken one. */
+        . "  .dials { margin: 0 0 1.6rem; padding: 1.1rem 1.2rem; border-radius: 10px;\n"
+        . "           border: 1px solid rgba(128,128,128,.3); background: rgba(128,128,128,.07); }\n"
+        . "  .dial-title { margin: 0 0 1.1rem; font-weight: 650; }\n"
+        . "  .dial-row { display: grid; gap: 1.4rem 2.4rem;\n"
+        . "              grid-template-columns: repeat(2, minmax(0, 1fr)); }\n"
+        . "  @media (max-width: 34rem) { .dial-row { grid-template-columns: minmax(0, 1fr); } }\n"
+        . "  .dial { border: 0; margin: 0; padding: 0; min-width: 0; }\n"
+        . "  .dial legend { padding: 0; font-size: .78rem; font-weight: 650;\n"
+        . "                 letter-spacing: .02em; text-transform: uppercase; opacity: .75; }\n"
+        . "  .seg { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }\n"
+        . "  .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }\n"
+        . "  .seg label { cursor: pointer; }\n"
+        . "  .seg span { display: inline-block; padding: .34rem .8rem; border-radius: 999px;\n"
+        . "              border: 1px solid rgba(128,128,128,.45); font-size: .86rem;\n"
+        . "              font-weight: 600; opacity: .8; }\n"
+        . "  .seg input:checked + span { border-color: #0b53c0; background: #0b53c0;\n"
+        . "              color: #fff; opacity: 1; }\n"
+        . "  .seg input:focus-visible + span { outline: 2px solid #0b53c0; outline-offset: 2px; }\n"
+        . "  @media (prefers-color-scheme: dark) {\n"
+        . "    .seg input:checked + span { border-color: #8ab4ff; background: #8ab4ff; color: #10151c; }\n"
+        . "    .seg input:focus-visible + span { outline-color: #8ab4ff; }\n"
+        . "  }\n"
+        . "  .dial-say { margin: .55rem 0 0; font-size: .85rem; opacity: .75; }\n"
+        . "  .dials:has(#a-anyone:checked) .if-one,\n"
+        . "  .dials:has(#a-one:checked) .if-anyone,\n"
+        . "  .dials:has(#s-mysql:checked) .if-sqlite,\n"
+        . "  .dials:has(#s-sqlite:checked) .if-mysql { display: none; }\n"
+        /* The third dial's own sentences, and the two paragraphs UNDER the box
+           that belong to two of its answers -- so this rule hangs off the form
+           rather than off the box. */
+        . "  form:has(#u-cron:checked) .if-url, form:has(#u-cron:checked) .if-self,\n"
+        . "  form:has(#u-url:checked) .if-cron, form:has(#u-url:checked) .if-self,\n"
+        . "  form:has(#u-self:checked) .if-cron, form:has(#u-self:checked) .if-url\n"
+        . "      { display: none; }\n"
         . "  fieldset { border: 1px solid rgba(128,128,128,.4); border-radius: 6px;\n"
         . "             margin: 0 0 1.25rem; padding: .9rem 1rem 1rem; }\n"
         . "  legend { font-weight: 700; padding: 0 .35rem; }\n"
@@ -968,7 +1021,18 @@ function ap_i_run(array $options)
 
     if ($method === 'POST') {
         $storage = isset($_POST['storage']) && $_POST['storage'] === 'mysql' ? 'mysql' : 'sqlite';
-        $autoUpdate = !empty($_POST['auto_update']);
+        /* ONE CHOICE OF THREE, AND IT ARRIVES AS ONE FIELD. It was two
+           independent checkboxes, which said "tick what you like" over a
+           paragraph explaining that ticking the second when the first is open
+           to you is a mistake. The site has drawn it as one choice of three
+           since the install page was rebuilt; the installer said something
+           else. Compared against exact strings, like the audience below and
+           for the same reason: anything unrecognised lands on the safest
+           answer, the cron that needs no permission granted to anybody. The
+           two flags the rest of this file reads are unchanged. */
+        $wants = isset($_POST['updates']) ? (string) $_POST['updates'] : 'cron';
+        $wantsUrl = ($wants === 'url');
+        $autoUpdate = ($wants === 'self');
 
         // WHO IT IS FOR. Compared against the one exact string the form sends,
         // never tested for truth: a missing field, a mangled one, a value from
@@ -982,7 +1046,7 @@ function ap_i_run(array $options)
            must not be guessable. Generated HERE and shown once: the installer
            is the only screen that will ever have a reason to print it. */
         $updateToken = '';
-        if (!empty($_POST['update_url'])) {
+        if ($wantsUrl) {
             $updateToken = rtrim(strtr(base64_encode(
                 function_exists('random_bytes') ? random_bytes(32)
                     : openssl_random_pseudo_bytes(32)), '+/', '-_'), '=');
@@ -1420,30 +1484,57 @@ function ap_i_run(array $options)
     echo '<h2>Install</h2>' . "\n";
     echo '<form method="post" action="' . ap_i_h($selfName) . '">' . "\n";
 
-    echo "<fieldset>\n<legend>Who this server is for</legend>\n";
-    echo '<label class="choice"><input type="radio" name="audience" value="one-site"'
-        . ($postedRelay ? '' : ' checked') . '> <strong>One site, mine</strong> '
-        . "&mdash; I declare its project by hand</label>\n";
-    echo '<label class="choice"><input type="radio" name="audience" value="anyone"'
-        . ($postedRelay ? ' checked' : '') . '> <strong>Anyone</strong> '
-        . "&mdash; a relay, open to projects nobody declared</label>\n";
-    echo '<p class="note">Then notes from people you have never heard of land on your '
-        . 'disk and in your hosting bill. They are encrypted with a key this server '
-        . 'never receives, so you keep what you cannot read and cannot moderate. The '
-        . 'generated configuration bounds it: 500 notes per project, nothing kept past '
-        . '90 days.</p>' . "\n";
+    /* THE TWO DIALS, IN THE SITE'S OWN BOX. Everything the reader of
+       how-to-install-it.html has just answered there, asked here in the same
+       shape -- and only the two that change what gets installed. The long
+       paragraph that used to sit under each radio is one sentence now, and it
+       follows the choice instead of describing both. What that paragraph
+       carried and is worth keeping is under the box, where it is read once
+       rather than twice. */
+    echo '<div class="dials">' . "\n";
+    echo '<p class="dial-title">What this server is, and where it puts the '
+        . "notes.</p>\n";
+    echo '<div class="dial-row">' . "\n";
+
+    echo '<fieldset class="dial"><legend>Who this server is for</legend>' . "\n";
+    echo '<div class="seg">' . "\n";
+    echo '<label><input type="radio" name="audience" value="one-site" id="a-one"'
+        . ($postedRelay ? '' : ' checked') . "><span>One site, mine</span></label>\n";
+    echo '<label><input type="radio" name="audience" value="anyone" id="a-anyone"'
+        . ($postedRelay ? ' checked' : '') . "><span>Anyone</span></label>\n";
+    echo "</div>\n";
+    echo '<p class="dial-say"><span class="if-one">You declare its project by '
+        . 'hand, and nothing else can write here.</span><span class="if-anyone">A '
+        . 'relay: projects nobody declared may write, bounded at 500 notes each '
+        . "and 90 days.</span></p>\n";
     echo "</fieldset>\n";
 
-    echo "<fieldset>\n<legend>Storage</legend>\n";
-    echo '<label class="choice"><input type="radio" name="storage" value="sqlite"'
-        . ($postedMysql ? '' : ' checked') . '> <strong>SQLite</strong> '
-        . "&mdash; a file, nothing to create</label>\n";
-    echo '<p class="note">The installer picks a location the web server does not serve, '
-        . 'creates the file, and then requests that file\'s own URL to confirm it comes '
-        . 'back refused. If it does not, nothing is installed.</p>' . "\n";
-    echo '<label class="choice"><input type="radio" name="storage" value="mysql"'
-        . ($postedMysql ? ' checked' : '') . '> <strong>MySQL</strong> '
-        . "&mdash; I already have a database</label>\n";
+    echo '<fieldset class="dial"><legend>Storage</legend>' . "\n";
+    echo '<div class="seg">' . "\n";
+    echo '<label><input type="radio" name="storage" value="sqlite" id="s-sqlite"'
+        . ($postedMysql ? '' : ' checked') . "><span>SQLite</span></label>\n";
+    echo '<label><input type="radio" name="storage" value="mysql" id="s-mysql"'
+        . ($postedMysql ? ' checked' : '') . "><span>MySQL</span></label>\n";
+    echo "</div>\n";
+    echo '<p class="dial-say"><span class="if-sqlite">One file. Nothing to '
+        . 'create, and the installer proves the web server refuses '
+        . 'it.</span><span class="if-mysql">A database you already have. The '
+        . "installer creates the tables.</span></p>\n";
+    echo "</fieldset>\n";
+
+    echo "</div>\n</div>\n";
+
+    /* WHAT THE SHORT SENTENCES LEAVE OUT, AND IT IS ONE SENTENCE EACH. A relay
+       costs disk and a hosting bill for notes nobody here can read; the SQLite
+       probe is a refusal to install rather than a warning. Both were a
+       paragraph under a radio, where they were read once and then scrolled
+       past twice. */
+    echo '<p class="note">A relay keeps what it cannot read: the notes are '
+        . 'encrypted with a key this server never receives, so they cannot be '
+        . 'moderated either. With SQLite, the file is placed where the web server '
+        . 'does not serve it and its own URL is then requested to confirm it comes '
+        . "back refused &mdash; if it does not, nothing is installed.</p>\n";
+
     echo "<details" . ($postedMysql ? ' open' : '') . ">\n";
     echo "<summary>MySQL connection details</summary>\n";
     echo '<p>Only if you chose MySQL above. The installer connects and creates the tables '
@@ -1457,64 +1548,64 @@ function ap_i_run(array $options)
     echo '<p><label>User<br><input type="text" name="user" value="'
         . ap_i_h($field('user')) . "\"></label></p>\n";
     echo '<p><label>Password<br><input type="password" name="password"></label></p>' . "\n";
-    echo "</details>\n</fieldset>\n";
+    echo "</details>\n";
 
-    /* THREE WAYS, AND THEY ARE NOT EQUAL. Two checkboxes side by side said
-       "pick one" and the honest answer is "pick the first, which is not a
-       checkbox at all". The order below is the order of preference, and the
-       last screen prints the exact line for each with this installation's own
-       path and address in it. */
-    echo "<fieldset>\n<legend>Keeping this server up to date</legend>\n";
-    echo '<p>Best, and nothing to tick: <code>php internal/update.php</code> '
-        . 'from cron, once a day. The code directory then stays writable by you and never '
-        . 'by the web server, so no request to this site can rewrite this code. The next '
-        . 'screen gives you that line with the real path already in it. The two boxes '
-        . "below are for a host that cannot do that.</p>\n";
-
-    /* PRE-TICKED WHERE IT IS THE ONLY WAY LEFT, AND THE HOST IS ASKED, NOT
-       GUESSED AT. The opportunistic path below needs an interface that can
-       hand the response to the visitor before working: php-fpm and LiteSpeed
-       can, `cgi-fcgi` and the rest cannot, and that is most of cheap hosting.
-       Somebody installing there should not have to know it to end up with a
-       server that gets its updates -- so the box is already ticked, and the
-       note says which interface answered. */
+    /* THREE WAYS, AND THEY ARE NOT EQUAL -- SO IT IS ONE CHOICE, IN ORDER.
+       Two checkboxes said "tick what you like" over a paragraph explaining
+       that the second is a mistake when the first is open to you. A dial says
+       that by construction: three answers, one chosen, the first being the one
+       that needs no permission granted to anybody. The site has drawn it this
+       way since the install page was rebuilt. */
     $canDefer = ap_i_can_defer();
-    $wantsUrl = ($method === 'POST') ? !empty($_POST['update_url']) : !$canDefer;
+    $wants = ($method === 'POST' && isset($_POST['updates']))
+        ? (string) $_POST['updates']
+        : ($canDefer ? 'cron' : 'url');
 
-    echo '<label class="choice"><input type="checkbox" name="update_url" value="1"'
-        . ($wantsUrl ? ' checked' : '')
-        . "> <strong>Second best</strong> &mdash; give me an address a scheduler can "
-        . "call, for a cron that can only fetch a URL</label>\n";
-    echo '<p class="note">For a host with no shell, or whose scheduler takes an address '
-        . 'and nothing else. A secret is written into the configuration and the address '
-        . 'is shown once, on the next screen and nowhere else. Whoever calls it waits '
-        . 'while the update runs &mdash; that is allowed there and nowhere else, because '
+    echo '<div class="dials">' . "\n";
+    echo '<p class="dial-title">How this server gets its updates.</p>' . "\n";
+    echo '<fieldset class="dial"><legend>Keeping this server up to date</legend>' . "\n";
+    echo '<div class="seg">' . "\n";
+    echo '<label><input type="radio" name="updates" value="cron" id="u-cron"'
+        . ($wants === 'cron' ? ' checked' : '') . "><span>A shell cron</span></label>\n";
+    echo '<label><input type="radio" name="updates" value="url" id="u-url"'
+        . ($wants === 'url' ? ' checked' : '') . "><span>An address to call</span></label>\n";
+    echo '<label><input type="radio" name="updates" value="self" id="u-self"'
+        . ($wants === 'self' ? ' checked' : '') . "><span>It updates itself</span></label>\n";
+    echo "</div>\n";
+    echo '<p class="dial-say"><span class="if-cron">Best, and nothing to grant: '
+        . '<code>php internal/update.php</code> once a day. The next screen gives you '
+        . 'that line with the real path in it.</span><span class="if-url">For a '
+        . 'scheduler that can only fetch a URL. The address is shown once, on the next '
+        . 'screen.</span><span class="if-self">Last resort. It costs a permission that '
+        . "outlives the choice &mdash; see below.</span></p>\n";
+    echo "</fieldset>\n</div>\n";
+
+    /* THE COST OF THE THIRD ANSWER, IN FULL, AND ONLY WHERE IT APPLIES. It is
+       the one thing on this page somebody can regret, and a sentence inside a
+       dial is not the size of it. */
+    echo '<p class="note if-self">Its cost: the code directory must be writable by the '
+        . 'user PHP runs as, and from that moment any bug anywhere on this account that '
+        . 'can write a file &mdash; in this code, in a neighbouring application, in a '
+        . 'plugin nobody remembers installing &mdash; stops being a defacement and '
+        . 'becomes permanent code execution. Setting the key back to false does not '
+        . "undo it: the permission stays until somebody takes it away.</p>\n";
+    echo '<p class="note if-url">A secret is written into the configuration and the '
+        . 'address is shown once, on the next screen and nowhere else. Whoever calls it '
+        . 'waits while the update runs &mdash; allowed there and nowhere else, because '
         . 'they came for it and no reader of a page is kept waiting. At most one real '
         . "check a day, however often it is called.</p>\n";
 
-    echo '<label class="choice"><input type="checkbox" name="auto_update" value="1"'
-        . (!empty($_POST['auto_update']) ? ' checked' : '')
-        . "> <strong>Last resort</strong> &mdash; let this server fetch and install its "
-        . "own updates from a web request</label>\n";
-    echo '<p class="note">Leave it off if either of the two above is open to you. It is '
-        . 'last because of what it costs: the code directory must be writable by the user '
-        . 'PHP runs as, and from that moment any bug anywhere on this account that can '
-        . 'write a file &mdash; in this code, in a neighbouring application, in a plugin '
-        . 'nobody remembers installing &mdash; stops being a defacement and becomes '
-        . 'permanent code execution. Setting the key back to false does not undo it: the '
-        . 'permission stays until somebody takes it away.</p>' . "\n";
     if (!$canDefer) {
-        echo '<p class="note bad">And it cannot work at all here: this PHP interface '
-            . '(<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot hand the response to the '
-            . 'visitor before doing more work, and a visitor must never wait on a fetch '
-            . 'to GitHub, so the key is read and declined on every write. The box above '
-            . "is the one that works on this host, and it is ticked for you.</p>\n";
+        echo '<p class="note bad">&ldquo;It updates itself&rdquo; cannot work on this '
+            . 'host: this PHP interface (<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot '
+            . 'hand the response to the visitor before doing more work, and a visitor '
+            . 'must never wait on a fetch to GitHub, so the key would be read and '
+            . "declined on every write. The address is chosen for you instead.</p>\n";
     }
     if (!$outbound) {
         echo '<p class="note bad">This server has no way out to HTTPS, so nothing here '
             . "can fetch anything until that is fixed.</p>\n";
     }
-    echo "</fieldset>\n";
 
     echo '<button type="submit">Install</button>' . "\n";
     echo "</form>\n";
