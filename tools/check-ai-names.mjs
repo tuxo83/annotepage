@@ -50,16 +50,17 @@ const SELF = 'tools/check-ai-names.mjs';
 /* The names that sign work. Word boundaries, case-insensitive. Add to it
    freely: a name that never appears costs one regular expression. */
 const NAMES = [
-    /* les fournisseurs */
+    /* the vendors */
     'claude', 'anthropic', 'openai', 'chatgpt', 'copilot', 'gemini',
     'codex', 'codeium', 'llama', 'bard', 'grok', 'deepseek', 'qwen',
     'kimi', 'windsurf', 'aider', 'tabnine',
-    /* les modeles, parce que le trailer qui a fuit ici disait "Opus 5" et
-       qu'un outil qui change son gabarit pour le nom du modele seul ne serait
-       plus vu. Aucun d'eux n'entre en collision avec un mot de ce depot --
-       verifie, un par un, avant d'etre ajoute. */
+    /* the models, because the trailer that leaked here named one rather than
+       a vendor -- a tool that changes its template to the model alone would
+       walk straight past a list of vendors. None of these collides with a word
+       this repository uses: checked one by one before being added. */
     'opus', 'sonnet', 'haiku', 'fable', 'mistral',
-    /* et les generations, y compris les suffixes que \b rate seul */
+    /* and the generations, suffixes included -- a word boundary alone misses
+       the ones that end in a letter or a decimal */
     'gpt-?[0-9]+(\\.[0-9]+)?[a-z]?',
 ];
 

@@ -7,7 +7,7 @@
 # -- the exact thing it exists to prevent. So it lives outside, and this file
 # holds only how to find it:
 #
-#     git config annotepage.garde /the/path/to/verifier-fuites.sh
+#     git config annotepage.guard /the/path/to/the-script
 #
 # NOT A DEFAULT PATH, EITHER. A path is a name too: it carries a user, a
 # directory, sometimes a client. This guard refused an earlier version of these
@@ -18,17 +18,21 @@
 # that refuses is one that shrugs.
 # ---------------------------------------------------------------------------
 set -u
-GARDE="$(git config --get annotepage.garde || true)"
-[ -n "${GARDE}" ] || GARDE="${ANNOTEPAGE_GARDE:-}"
+# `annotepage.garde` is read too: the key was French, and a clone configured
+# before the rename keeps working rather than refusing every commit until
+# somebody notices why.
+GUARD="$(git config --get annotepage.guard || true)"
+[ -n "${GUARD}" ] || GUARD="$(git config --get annotepage.garde || true)"
+[ -n "${GUARD}" ] || GUARD="${ANNOTEPAGE_GUARD:-}"
 
-if [ -z "${GARDE}" ]; then
-    echo "Le garde-fou n'est pas declare."
-    echo "  git config annotepage.garde <chemin du script de verification>"
-    echo "Il vit hors du depot, expres : ses motifs sont des noms."
+if [ -z "${GUARD}" ]; then
+    echo "The leak guard is not declared."
+    echo "  git config annotepage.guard <path to the checking script>"
+    echo "It lives outside this repository on purpose: its patterns are names."
     exit 1
 fi
-if [ ! -x "${GARDE}" ]; then
-    echo "Le garde-fou declare n'est pas executable."
+if [ ! -x "${GUARD}" ]; then
+    echo "The declared leak guard is not executable: ${GUARD}"
     exit 1
 fi
-exec "${GARDE}"
+exec "${GUARD}"

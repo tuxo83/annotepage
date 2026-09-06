@@ -18,4 +18,4 @@ here="$(dirname "$0")"
 # lines it removes, or the guard would forbid its own cleanup.
 node "${here}/../tools/check-ai-names.mjs" staged || exit 1
 
-exec "${here}/garde.sh"
+exec "${here}/guard.sh"

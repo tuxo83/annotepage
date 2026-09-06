@@ -176,13 +176,13 @@ for (const name of PAGES) {
 
    A link in any OTHER page counts, wherever it sits: the site's own way out of
    a page is the button that ends it, not the menu. */
-const ADRESSES = { 'index.html': ['/', 'index.html'] };
-for (const name of PAGES) if (!(name in ADRESSES)) ADRESSES[name] = [name, `/${name}`];
+const ADDRESSES = { 'index.html': ['/', 'index.html'] };
+for (const name of PAGES) if (!(name in ADDRESSES)) ADDRESSES[name] = [name, `/${name}`];
 for (const name of PAGES) {
-    const depuis = PAGES.filter((autre) => autre !== name
-        && ADRESSES[name].some((a) => new RegExp(`href="${a}(#[^"]*)?"`)
-            .test(readFileSync(join(DIR, autre), 'utf8'))));
-    if (!depuis.length) {
+    const linkedFrom = PAGES.filter((other) => other !== name
+        && ADDRESSES[name].some((a) => new RegExp(`href="${a}(#[^"]*)?"`)
+            .test(readFileSync(join(DIR, other), 'utf8'))));
+    if (!linkedFrom.length) {
         console.error(`${DIR}/${name}: no other page links to it.`);
         bad++;
     }

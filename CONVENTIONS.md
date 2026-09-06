@@ -31,9 +31,14 @@ In English, with no exception:
 The widget's strings are overridable, so a French site can stay French without
 patching the code. A French label file ships as an example, in `client/labels/`.
 
-`hooks/` breaks this today: a French file name, and refusals written in French.
-Either those are translated or this section is wrong. It is not both, and
-writing it down is how it stops being invisible.
+This was written down as broken, and it was: `hooks/` had a French file name
+and refused in French. A rule the repository breaks in the very files that
+enforce it is not a rule. Translated and renamed -- English messages
+throughout, `annotepage.guard` for the config key, and the old key still read
+so a clone configured before the rename does not start refusing every commit.
+
+The one French file left is `client/labels/fr.json`, which IS the translation.
+It is the exception this section exists to permit.
 
 ## 2. The words that are not interchangeable
 
@@ -90,5 +95,5 @@ is before the first push.
 
 A guard enforces it on every commit and every push. It lives outside the
 repository, because a list of words that must not be published cannot itself
-be published `hooks/garde.sh` says where to declare
+be published. `hooks/guard.sh` says where to declare
 it.

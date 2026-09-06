@@ -17,44 +17,43 @@
 # ---------------------------------------------------------------------------
 set -u
 
-# LES DEUX MOITIES DU MEME GARDE-FOU.
+# TWO HALVES OF ONE GUARD.
 #
-# Celle-ci connait des NOMS et vit hors du depot, donc elle ne tourne que sur
-# cette machine. L'autre -- check-shapes.mjs, dans `npm run check` ci-dessous --
-# connait des FORMES et tourne partout, y compris en integration continue :
-# un chemin de home, une adresse e-mail, une adresse machine. Aucune des deux
-# ne remplace l'autre.
-echo "--- garde-fou local : noms (hors depot, expres)"
-"$(dirname "$0")/garde.sh" || exit 1
+# This half knows NAMES and lives outside the repository, so it only ever runs
+# on this machine. The other -- check-shapes.mjs, inside `npm run check` below
+# -- knows SHAPES and runs everywhere, continuous integration included: a home
+# directory, an email address, a machine address. Neither replaces the other.
+echo "--- local guard: names (outside the repository, on purpose)"
+"$(dirname "$0")/guard.sh" || exit 1
 
-# LES MESSAGES DES COMMITS QUI PARTENT, et pas seulement les fichiers. Un
-# commit fabrique ailleurs -- une fusion, un rebase, une machine sans ces
-# crochets -- arrive ici sans etre jamais passe par commit-msg. C'est le
-# dernier endroit ou on peut le refuser avant qu'il soit public.
+# THE MESSAGES OF THE COMMITS BEING PUSHED, not only the files. A commit made
+# elsewhere -- a merge, a rebase, a machine without these hooks -- arrives here
+# having never passed commit-msg. This is the last place it can be refused
+# before it is public.
 #
-# CE QUI PART EST LU SUR L'ENTREE STANDARD, ce que git nous donne expres :
-# une ligne par ref poussee, "<ref locale> <sha local> <ref distante> <sha
-# distant>". La premiere version codait en dur "origin/main..HEAD" -- alors
-# une poussee de `next` regardait une portee vide et repartait au vert, et
-# c'est exactement la branche par laquelle des noms sont restes en ligne.
-# Un audit l'a trouve ; ce n'est pas une hypothese.
-echo "--- aucun assistant ne signe les commits qui partent"
-partent=0
-while read -r ref_locale sha_local ref_distante sha_distant; do
-    [ -z "${sha_local:-}" ] && continue
-    # une suppression de branche : rien ne part
-    case "$sha_local" in *[!0]*) : ;; *) continue ;; esac
-    if [ -z "${sha_distant:-}" ] || ! echo "$sha_distant" | grep -q '[1-9a-f]'; then
-        portee="$sha_local"                 # ref neuve : tout ce qu'elle porte
+# WHAT IS BEING PUSHED IS READ ON STANDARD INPUT, which is what git hands us
+# for exactly this: one line per ref, "<local ref> <local sha> <remote ref>
+# <remote sha>". The first version hardcoded one branch against HEAD, so
+# pushing the other looked at an empty range and went green -- and that is
+# precisely the branch by which names stayed online. An audit found it; it is
+# not a hypothesis.
+echo "--- no assistant signs the commits being pushed"
+pushing=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ -z "${local_sha:-}" ] && continue
+    # A branch deletion: nothing is going out.
+    case "$local_sha" in *[!0]*) : ;; *) continue ;; esac
+    if [ -z "${remote_sha:-}" ] || ! echo "$remote_sha" | grep -q '[1-9a-f]'; then
+        range="$local_sha"                  # a new ref: everything it carries
     else
-        portee="$sha_distant..$sha_local"   # ce que cette poussee ajoute
+        range="$remote_sha..$local_sha"     # what this push adds
     fi
-    node "$(dirname "$0")/../tools/check-ai-names.mjs" range "$portee" || exit 1
-    partent=1
+    node "$(dirname "$0")/../tools/check-ai-names.mjs" range "$range" || exit 1
+    pushing=1
 done
-# Rien sur l'entree standard -- appel a la main, ou git qui n'a rien a dire :
-# on ne peut pas conclure, donc on regarde tout ce que HEAD porte.
-if [ "$partent" = 0 ]; then
+# Nothing on standard input -- called by hand, or git with nothing to say: we
+# cannot conclude, so we look at everything HEAD carries.
+if [ "$pushing" = 0 ]; then
     node "$(dirname "$0")/../tools/check-ai-names.mjs" range HEAD || exit 1
 fi
 
@@ -62,16 +61,16 @@ echo "--- npm run check : bundle, sri, injection, css, html, shell, versions,"
 echo "    manifest, landing, client, mcp"
 if ! npm run check --silent; then
     echo
-    echo "REFUSE : la suite echoue. Rien ne part."
-    echo "Corriger la cause, jamais le controle."
+    echo "REFUSED: the suite fails. Nothing goes out."
+    echo "Fix the cause, never the check."
     exit 1
 fi
 
-echo "--- ce qui est deja en ligne sous ce numero"
+echo "--- what is already online under this version number"
 if ! node tools/check-published.mjs; then
     echo
-    echo "REFUSE : la version publiee et ce qui est ici ne sont pas le meme fichier."
+    echo "REFUSED: the published version and what is here are not the same file."
     exit 1
 fi
 
-echo "--- tout est vert"
+echo "--- all green"
