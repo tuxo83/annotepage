@@ -414,13 +414,25 @@ code {
             <article class="qa" data-tags="The tag on your page|Nothing appears">
                 <h3 class="qa-q">Why <code>@2</code> and not <code>@latest</code>?</h3>
                 <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
-                <p class="qa-a">Because <code>@2</code> has a ceiling and
-                <code>@latest</code> has none. A range stops at the next major
-                version, which is the one release allowed to break something;
-                <code>@latest</code> would put it on your pages the day it is
-                published, without anybody deciding. And a release candidate can
-                never arrive through <code>@2</code> either: ranges exclude
-                pre-releases, and the client refuses to install one on its
+                <p class="qa-a">Because it is not the ceiling it looks like.
+                A page carrying <code>@2</code> still ends up running version 3
+                &mdash; your notes server announces the client it works with, and
+                the client fetches that exact version and replaces itself, major
+                number included. What <code>@2</code> decides is only which copy
+                loads <b>first</b>.</p>
+                <p class="qa-a">And that order is the point. A major version is
+                the one release allowed to change the protocol; the client is on
+                a CDN and the server is on somebody's machine, so
+                <code>@latest</code> would deliver the new client to every page
+                the day it is published, in front of servers that have not moved
+                yet. Announced instead, the server is already running it before
+                it says so.</p>
+                <p class="qa-a">If you would rather have the newest whatever your
+                server is running, ask for it &mdash; it is the same one word:</p>
+<pre class="qa-code">https://cdn.jsdelivr.net/npm/annotepage-client<b>@latest</b>/dist/annotepage.js</pre>
+                <p class="qa-a">A release candidate never arrives through any of
+                the three: ranges exclude pre-releases, <code>latest</code> is
+                never moved to one, and the client refuses to install one on its
                 own.</p>
             </article>
 
