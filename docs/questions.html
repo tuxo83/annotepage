@@ -370,7 +370,44 @@ code {
                  a thing, and the two published packages were nowhere. Here they
                  are together -- and here rather than in a menu that unfolds,
                  because three links do not earn a control that opens. -->
-                        <article class="qa" data-tags="Cost and licence">
+                        <!-- THE CANDIDATE CHANNEL, IN THE THREE PLACES IT EXISTS. Asked
+                 as one question -- "can we say `latest` or `next` everywhere?"
+                 -- and it has three answers, because three different things
+                 fetch three different ways. The one that matters is the third:
+                 a RANGE refuses a future major and a TAG does not, so `@2` is
+                 not a clumsier `@latest`, it is a stricter one. -->
+            <article class="qa" data-tags="Setting it up|The tag on your page">
+                <h3 class="qa-q">Can I run a version before everybody else?</h3>
+                <p class="qa-tags"><span class="qa-tag">Setting it up</span><span class="qa-tag">The tag on your page</span></p>
+                <p class="qa-a">Yes, in whichever of the three you want.
+                <b>The tag:</b> ask for
+                <code>annotepage-client@next</code> instead of
+                <code>annotepage-client@2</code>. <b>Your own notes server:</b>
+                point <code>update_source</code> at the
+                <code>recette</code> branch instead of <code>main</code>, in
+                <code>config-local.php</code> &mdash; it is a plain address, and
+                every file it fetches is still hashed against the manifest.
+                <b>The assistant:</b> nothing to change, the MCP talks to your
+                server whichever code it runs.</p>
+            </article>
+
+            <!-- WHY THE STABLE TAG IS NOT `@latest`. It looks like the obvious
+                 pair to `@next` and it is not: one is a range, the other is a
+                 moving pointer with no ceiling. -->
+            <article class="qa" data-tags="The tag on your page|Nothing appears">
+                <h3 class="qa-q">Why <code>@2</code> and not <code>@latest</code>?</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
+                <p class="qa-a">Because <code>@2</code> has a ceiling and
+                <code>@latest</code> has none. A range stops at the next major
+                version, which is the one release allowed to break something;
+                <code>@latest</code> would put it on your pages the day it is
+                published, without anybody deciding. And a release candidate can
+                never arrive through <code>@2</code> either: ranges exclude
+                pre-releases, and the client refuses to install one on its
+                own.</p>
+            </article>
+
+            <article class="qa" data-tags="Cost and licence">
                 <h3 class="qa-q">Where is the source?</h3>
                 <p class="qa-tags"><span class="qa-tag">Cost and licence</span></p>
                 <p class="qa-a">All of it, MIT:
