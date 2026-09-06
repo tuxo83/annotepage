@@ -78,6 +78,14 @@ main .wrap > .dials { max-width: none; }
    the sentence keeps its own column one level deeper -- exactly as the usage
    page's steps do. */
 main .wrap > .use-steps { max-width: none; }
+/* AND THE WAY OUT TAKES THE COLUMN, WHICH IS WHY IT WAS NOT CENTRED. It is a
+   flex row with `justify-content: center`, and it was centring inside a box
+   the measure had capped at 704px starting at the left margin -- so the two
+   buttons sat centred on a half of the page, which reads as not centred at
+   all. questions.html carries this exact line for this exact reason; the line
+   was not copied when the block was. Measured: 704px against the 1296px every
+   other page's ending row takes. */
+main .wrap > .see-out { max-width: none; }
 
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
@@ -91,6 +99,15 @@ main .wrap > .use-steps { max-width: none; }
 
 section { padding: clamp(3rem, 8vw, 5.5rem) 0; border-top: 1px solid var(--line-soft); }
 section:first-of-type { border-top: 0; }
+/* EXCEPT THE WAY OUT, WHICH IS NOT A CHAPTER. The hairline separates chapters,
+   and on the landing page and the usage page the ending buttons sit INSIDE the
+   last one -- so no reader of those pages ever sees a rule directly above two
+   buttons. Here the buttons are a section of their own, so they inherited a
+   separator that separates them from nothing: reported as "why the bar at the
+   top of this area? it is not there on the other pages". It is the end of the
+   chapter above, and it is drawn as such. */
+#out { border-top: 0; padding-top: 0; }
+#out .see-out { margin-top: 0; }
 .hero { padding-top: clamp(1.6rem, 4vw, 2.6rem); }
 
 .lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; }
