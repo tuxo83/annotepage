@@ -3,46 +3,37 @@
 > ### The documentation is [annotepage.com](https://annotepage.com)
 > [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
 >
-> **This file is the package's own contract — the configuration, the command line, the tools. What annotepage is, and how it gets installed, is on the site.**
+> **This file is the package's own contract. What annotepage is, how it is installed, and what the configuration file looks like are on the site and are not repeated here.**
 
-The assistants' access to [annotepage](https://annotepage.com): an MCP server
-and a command line, over the same code.
-
-## Install
-
-**Installing it is on the site**, in the assistant chapter of
-[how you install it](https://annotepage.com/how-to-install-it.html) — two
-commands, and the page names them for the assistant you actually run.
-
-Node 18 or newer. **No dependency**, and that is a decision rather than an
-accident: this package holds project keys, so every dependency would be
+An assistant's access to annotepage: an MCP server and a command line, over the
+same code. Node 18 or newer, and **no dependency** — a decision rather than an
+accident, since this package holds project keys and every dependency would be
 third-party code in the same process.
 
-## Configure
+The [install page](https://annotepage.com/how-to-install-it.html) has the two
+commands that plug it in, and the annotation panel on your own page writes the
+configuration file for you: *File for your assistant*, in its footer.
 
-**What the file looks like is on the site**, and the annotation panel on your
-own page writes it for you: *File for your assistant*, in its footer. What
-follows is what neither of them says, and all three are how a first attempt
-fails.
+## Three things that are not on the site, and each one is a first attempt failing
 
-**Where it is looked for, in this order**: `.annotepage.json` beside your work,
-then `~/.config/annotepage/annotepage.json`, then `~/.annotepage.json`. **The
-first that exists wins**, and nothing is merged — two half-filled files would
-make a configuration nobody can reread. `ANNOTEPAGE_CONFIG` names one outright,
-which is what to reach for when the MCP host starts the server from a directory
-that is not yours.
+**Where the configuration is looked for, in this order:** `.annotepage.json`
+beside your work, then `~/.config/annotepage/annotepage.json`, then
+`~/.annotepage.json`. The **first that exists wins** and nothing is merged —
+two half-filled files would make a configuration nobody can reread.
+`ANNOTEPAGE_CONFIG` names one outright, which is what to reach for when the MCP
+host starts the server from a directory that is not yours.
 
 **`author` is required for every write.** A reply signed by nobody is a reply
 the reviewer cannot answer back to, so this package publishes nothing anonymous
-and says so rather than inventing a name.
+rather than inventing a name.
 
 **No file at all also works**, and it is the shortest way to try this once:
 `ANNOTEPAGE_API`, `ANNOTEPAGE_KEY` and `ANNOTEPAGE_AUTHOR` describe one project
 between them, and take precedence over any file.
 
-`"read_only": true` cuts every write, for plugging an assistant onto a review
-you do not know yet. `origin` matters facing a shared relay: it refuses a write
-that arrives without one.
+Two fields worth knowing beyond those: `"read_only": true` cuts every write,
+for plugging an assistant onto a review you do not know yet, and `origin` is
+what a shared relay demands — it refuses a write that arrives without one.
 
 > The file holds the key, which is every note there is. `chmod 600` it, keep it
 > out of git, and never paste it into a ticket or a conversation.
@@ -70,15 +61,15 @@ it vanish.
 
 ## From an assistant
 
-Nine tools, the same operations. Two rules are worth knowing before you wire
-one up:
+Nine tools, the same operations. Two rules are worth knowing before wiring one
+up:
 
 **Answer in the thread, not in your own terminal.** The person who wrote the
 remark is reading the page, not the console the assistant runs in. A question
 asked there is asked of nobody.
 
 **Say what you measured.** "The label holds one line down to 317px" is the
-answer; the account of how you found it is not. The reviewer reads it in a
+answer; the account of how it was found is not. The reviewer reads it in a
 narrow panel beside the page they were looking at.
 
 ## Or nothing at all
@@ -91,9 +82,9 @@ curl 'https://your-server.example.com/notes/api.php?action=text&project=<id>'
 ```
 
 That path must never break: it is what makes the tool usable with no
-integration. In encrypted mode the server has nothing to give — this package is
-the step that decrypts, and `annotepage text` prints exactly what that URL
-would have returned in the clear.
+integration at all. In encrypted mode the server has nothing to give — this
+package is the step that decrypts, and `annotepage text` prints exactly what
+that URL would have returned in the clear.
 
 ## Licence
 
