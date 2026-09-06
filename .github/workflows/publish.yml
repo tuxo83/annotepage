@@ -33,17 +33,25 @@ name: publish
 on:
   push:
     branches:
-      # main is what users get. `recette` is where a version is validated
-      # before they do: a version carrying a `-` publishes under npm's `next`
+      # main is what users get. `next` is where a version is validated before
+      # they do: a version carrying a `-` publishes under npm's `next`
       # dist-tag, so `annotepage-client@2` -- the range every install uses --
       # keeps resolving to the last stable one, and only somebody asking for
       # `@next` gets the candidate. jsDelivr resolves dist-tags, checked
       # against a package that publishes both.
       #
+      # THE BRANCH IS NAMED AFTER THE TAG IT PUBLISHES TO. It was `recette`
+      # first, which is the ordinary word for this in French and the only
+      # French word anywhere in this repository -- and it would have needed
+      # translating in somebody's head every time. Pushing to `next` publishes
+      # under `next`: there is nothing to map. `staging` was the other
+      # candidate and it is already taken here: staging.example.com is the site
+      # being reviewed, in every example on the site.
+      #
       # The whole gate runs on both: a candidate nobody can install by accident
       # is still a candidate that has to pass everything.
       - main
-      - recette
+      - next
   # Kept so a release can be forced by hand when the registry was unreachable
   # at the time of the push.
   workflow_dispatch:
