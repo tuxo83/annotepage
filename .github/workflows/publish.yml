@@ -46,7 +46,37 @@ permissions:
   contents: read
 
 jobs:
+  # NOTHING IS PUBLISHED UNTIL THE WHOLE REPOSITORY PASSES.
+  #
+  # The publish jobs below run `npm test` in the package's own directory, and
+  # `prepublishOnly` runs it again -- so npm itself refuses a package whose own
+  # tests fail. That was the whole gate, and it is not enough: the checks that
+  # caught the worst of this project's mistakes are none of them a package's
+  # own. The SRI digests written across six files, the built bundle actually
+  # being parseable JavaScript, the four menus agreeing, the three version
+  # numbers agreeing, the server manifest, the landing page's generator against
+  # the MCP's -- all of them live at the root, and a package could go out with
+  # every one of them failing.
+  #
+  # It happened. A release was pushed with `npm run check` failing, and the one
+  # after it shipped a bundle the browser refuses to parse. A local hook now
+  # refuses both, but a hook is on one machine and is skipped by --no-verify.
+  # This is the same refusal, where nobody can walk past it.
+  gate:
+    name: the whole suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      # No dependencies to install: nothing in this repository has any. `npm
+      # ci` would want a lock file that does not need to exist.
+      - name: npm run check
+        run: npm run check
+
   publish:
+    needs: gate
     strategy:
       # Never fail-fast: if the client cannot go out, that is no reason for the
       # mcp to stay behind. They are two packages, not two halves of one.

@@ -20,6 +20,25 @@ permissions:
   contents: read
 
 jobs:
+  # THE WHOLE SUITE, ON EVERY PUSH AND EVERY PULL REQUEST.
+  #
+  # The job below packs each package and runs its own tests. None of the checks
+  # that live at the root are a package's own -- the SRI digests written across
+  # six files, the built bundle being parseable at all, the four menus and the
+  # three version numbers agreeing -- and those are the ones that caught the
+  # mistakes worth catching. Running them here means a fork's pull request is
+  # measured by the same eleven as a release.
+  suite:
+    name: npm run check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      # Nothing here has dependencies, so there is nothing to install.
+      - run: npm run check
+
   packages:
     runs-on: ubuntu-latest
     strategy:
