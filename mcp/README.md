@@ -1,16 +1,16 @@
 # annotepage-mcp
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is the package's own contract — the configuration, the command line, the tools. What annotepage is, and how it gets installed, is on the site.**
+
 The assistants' access to [annotepage](https://annotepage.com): an MCP server
 and a command line, over the same code.
 
 A reviewer clicks an element of a page and writes what is wrong. This package
 is how an assistant reads those remarks, answers in the thread with what it
 measured, and resolves them stamped with the version the fix ships in.
-
-**What annotepage is, and how it gets installed, is on the site:**
-[how you use it](https://annotepage.com/how-to-use-it.html) ·
-[installing it](https://annotepage.com/how-to-install-it.html) ·
-[questions](https://annotepage.com/questions.html)
 
 ## Install
 

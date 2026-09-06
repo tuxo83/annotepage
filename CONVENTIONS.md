@@ -1,5 +1,10 @@
 # Language and naming conventions
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is for whoever writes code in this repository. Nothing here is needed in order to use annotepage.**
+
 How this repository is written. FORMAT.md is the reference for what goes on the
 wire; this file is the reference for the language it is written in. Where the
 two touch — a column name, an export key — FORMAT.md is right, because whoever

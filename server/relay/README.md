@@ -1,5 +1,10 @@
 # Standing up the free public relay
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is how the free public relay is stood up — one machine, one operator, once. Installing an ordinary server is on the site.**
+
 Everything needed to put `api.annotepage.com` online. It is one PHP directory
 and one database; there is no build step and nothing to compile.
 

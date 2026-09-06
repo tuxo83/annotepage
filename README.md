@@ -1,15 +1,13 @@
 # annotepage
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is the map of the code. What the tool does, and how you get it running, is on the site and is not repeated here.**
+
 Annotate a web page. A reviewer clicks an element and writes what is wrong. An
 assistant reads the notes, fixes the code, replies in the thread with what it
 measured, and resolves the remark stamped with the version the fix ships in.
-
-**Everything about using it is on the site — [annotepage.com](https://annotepage.com):**
-
-- [how you use it](https://annotepage.com/how-to-use-it.html)
-- [every way to install it](https://annotepage.com/how-to-install-it.html) — on
-  a shared server or your own; the page builds your tag
-- [the questions people ask](https://annotepage.com/questions.html)
 
 Free, MIT, no account, no tracking.
 
@@ -17,8 +15,6 @@ Free, MIT, no account, no tracking.
 never had the key. It is said here, and nowhere else in this repository,
 because it is the one thing that will hurt:
 [why](https://annotepage.com/questions.html#no-recovery).
-
-Nothing else about using annotepage is repeated below. This is the code.
 
 ## The three pieces
 

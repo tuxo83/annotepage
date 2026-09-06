@@ -1,5 +1,10 @@
 # annotepage for WordPress
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is for whoever reads this plugin's code. Its own page is `readme.txt`; what annotepage is, and every other way to install it, is on the site.**
+
 Writes the annotepage tag at the foot of your pages. One settings screen, the
 key drawn in your browser, nothing else.
 

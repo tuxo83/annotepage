@@ -1,5 +1,10 @@
 # What is coming, and what is ruled out
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is what is coming and what is ruled out. What the tool does TODAY is on the site.**
+
 One line per subject. **What has shipped has left this file** — the site says
 what the tool does today, and the code says how. A roadmap that also records
 its own history stops being read.

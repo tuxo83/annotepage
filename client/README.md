@@ -1,5 +1,10 @@
 # annotepage-client
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is the package's own contract — the tag, its attributes, and how to translate the interface. Everything else is on the site.**
+
 The annotation layer of [annotepage](https://annotepage.com). One file, one
 `<script>` tag, no dependency, no bundler, no stylesheet of its own.
 
@@ -7,11 +12,6 @@ A reviewer clicks an element of the page and writes what is wrong. The remark
 is encrypted in their browser and pinned to that element. An assistant reads
 the notes, fixes the code, replies in the thread with what it measured, and
 resolves the remark stamped with the version the fix ships in.
-
-**What annotepage is, and every way to get it running, is on the site:**
-[how you use it](https://annotepage.com/how-to-use-it.html) ·
-[installing it](https://annotepage.com/how-to-install-it.html) ·
-[questions](https://annotepage.com/questions.html)
 
 ## The tag
 

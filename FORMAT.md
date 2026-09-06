@@ -1,5 +1,10 @@
 # annotepage — exchange format and security model
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is the wire format and the security model — for whoever writes a second client or a second server. Nothing here is needed in order to USE annotepage.**
+
 Format version: **2**
 
 This document is the reference. The client, the PHP server and the MCP package

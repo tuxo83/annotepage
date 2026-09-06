@@ -1,5 +1,10 @@
 # annotepage — the server
 
+> ### The documentation is [annotepage.com](https://annotepage.com)
+> [How you use it](https://annotepage.com/how-to-use-it.html) &nbsp;·&nbsp; [Every way to install it](https://annotepage.com/how-to-install-it.html) &nbsp;·&nbsp; [Questions people ask](https://annotepage.com/questions.html)
+>
+> **This file is the server operator's reference — MySQL, the addresses, migration, the flags. **Installing a server is on the site**, which walks it step by step and builds your tag: [how you install it](https://annotepage.com/how-to-install-it.html). Come here for what that page does not cover.**
+
 annotepage's PHP server. It saves the notes, groups them by project and by page,
 and returns them — in JSON to the client, in plain text to an assistant.
 

@@ -1,8 +1,11 @@
 # What had to be done once, outside this repository
 
-Both workflows carry their reasoning in their own headers, beside the code that
-applies it — read those. What is here is the part that lives on npmjs.com,
-where no comment in this repository can reach it.
+> **Nothing here concerns using annotepage** — that is on
+> [annotepage.com](https://annotepage.com). This file is what had to be done
+> once on npmjs.com; the workflows carry their own reasoning in their headers.
+
+What is here is the part that lives on npmjs.com, where no comment in this
+repository can reach it.
 
 1. **The first publication of each name was done by hand.** A package that has
    never been published has no settings page on which to declare a trusted
