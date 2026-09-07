@@ -350,10 +350,89 @@ for (const [what, write] of Object.entries(fixtures)) {
     rmSync(dir, { recursive: true, force: true });
 }
 
+/* -- THE OTHER FACE, RUN THE WAY SOMEBODY WOULD RUN IT ------------------
+   The command line installs the same server through the same code. What is
+   checked here is not that it prints nicely: it is that it refuses the four
+   things it must refuse, and that a run it accepts really does write a
+   configuration. */
+
+const shell = async (dir, args) => {
+    const r = spawnSync('php', [join(dir, 'web', 'install.php'), ...args],
+        { encoding: 'utf8', cwd: join(dir, 'web') });
+    return { code: r.status, out: r.stdout || '', err: r.stderr || '' };
+};
+
+{
+    const dir = mkdtempSync(join(tmpdir(), 'annotepage-cli-'));
+    const root = join(dir, 'web');
+    cpSync(webroot, root, { recursive: true });
+    const port = await freePort();
+    const server = spawn('php', ['-S', '127.0.0.1:' + port], {
+        cwd: root, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: 'ignore',
+    });
+    for (let i = 0; i < 40; i += 1) {
+        await sleep(150);
+        try { await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' }); break; }
+        catch (e) { /* not listening yet */ }
+    }
+    const address = '--api-address=http://127.0.0.1:' + port + '/api.php';
+
+    /* An installer run with no arguments is a script that forgot them: it
+       prints what it takes and refuses, rather than installing defaults. */
+    const bare = await shell(dir, []);
+    check('a bare command line installed something', bare.code === 2 && !existsSync(
+        join(root, 'internal', 'config-local.php')), 'exit ' + bare.code);
+    check('--help does not answer', (await shell(dir, ['--help'])).code === 0);
+
+    const typo = await shell(dir, [address, '--answers-for=one-site', '--storaje=sqlite']);
+    check('a mistyped option was swallowed', typo.code === 2 && /Unknown option/.test(typo.err),
+        'exit ' + typo.code + '\n' + typo.err.slice(0, 200));
+
+    /* `relay` is the word the configuration uses and `anyone` the word the form
+       sends. Somebody will type the first. The browser face falls back to the
+       narrow answer on anything it does not recognise, which is right for a
+       radio button and wrong for a typed word. */
+    const wrongValue = await shell(dir, [address, '--answers-for=relay']);
+    check('a value outside the list was taken anyway',
+        wrongValue.code === 2 && /not one of/.test(wrongValue.err),
+        'exit ' + wrongValue.code);
+
+    const noAddress = await shell(dir, ['--answers-for=one-site']);
+    check('it installed without being told the address',
+        noAddress.code === 2 && /api-address is required/.test(noAddress.err),
+        'exit ' + noAddress.code);
+
+    const self = await shell(dir, [address, '--answers-for=one-site', '--updated-by=self']);
+    check('it accepted an answer it cannot measure from a shell',
+        self.code === 2 && /not offered here/.test(self.err), 'exit ' + self.code);
+
+    check('nothing above was supposed to write a configuration',
+        !existsSync(join(root, 'internal', 'config-local.php')));
+
+    const done = await shell(dir, [address, '--answers-for=one-site', '--storage=sqlite']);
+    check('a correct command line did not install', done.code === 0
+        && existsSync(join(root, 'internal', 'config-local.php')),
+        'exit ' + done.code + '\n' + done.err.slice(0, 300));
+    if (existsSync(join(root, 'internal', 'config-local.php'))) {
+        const written = readFileSync(join(root, 'internal', 'config-local.php'), 'utf8');
+        check('the command line wrote a different configuration from the form',
+            written.includes("'deployment' => 'self-hosted'")
+            && written.includes("'max_note_age_days'     => 90")
+            && written.includes("'publish_server_totals' => false"));
+    }
+
+    const again = await shell(dir, [address, '--answers-for=one-site']);
+    check('a second run did not say it had nothing to do',
+        again.code === 0 && /Already configured/.test(again.out), 'exit ' + again.code);
+
+    try { server.kill('SIGKILL'); } catch (e) { /* gone */ }
+    rmSync(dir, { recursive: true, force: true });
+}
+
 if (failures.length) {
     console.error('install:\n' + failures.map((f) => '  ' + f).join('\n'));
     process.exit(1);
 }
-console.log('install: four installations run end to end -- one site, a relay, a mistyped '
-    + 'audience and a run that could not finish -- plus two configurations from older '
-    + 'installers, still read');
+console.log('install: five installations run end to end -- one site, a relay, a mistyped '
+    + 'audience, a run that could not finish and one typed at a shell -- plus the four '
+    + 'refusals that shell owes, and two configurations from older installers');

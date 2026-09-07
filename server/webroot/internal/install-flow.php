@@ -124,8 +124,29 @@ if (!defined('AP_FORMAT')) {
  * absence means no web server (a command line), where '/' gives every caller
  * the same answer as the file name would.
  */
-function ap_i_script_name()
+function ap_i_script_name($force = null)
 {
+    /* FORCED, ON A COMMAND LINE, AND IT HAS TO BE. In CLI, PHP puts the path
+       AS TYPED in SCRIPT_NAME -- so `php x.php`, `php notes/x.php` and
+       `php /abs/notes/x.php` are three different answers to a question about
+       URLs, and ap_i_measured_document_root() turns each into a different
+       document root. Measured: one of them places the data file in a directory
+       the web server serves, while the configuration written says the opposite
+       was proven. The command line therefore gets its path from the address the
+       operator gives, and from nowhere else. */
+    static $forced = null;
+    if ($force !== null) {
+        $forced = (string) $force;
+    }
+    if ($forced !== null) {
+        return $forced;
+    }
+    if (PHP_SAPI === 'cli') {
+        /* Nothing has been forced and there is no request: refuse to invent
+           one. Every caller treats '/' as "no directory", which is the only
+           safe reading. */
+        return '/';
+    }
     return isset($_SERVER['SCRIPT_NAME']) && $_SERVER['SCRIPT_NAME'] !== ''
         ? (string) $_SERVER['SCRIPT_NAME']
         : '/';
@@ -194,8 +215,21 @@ function ap_i_cron_time()
  * that decides. A wrong host makes the control probe fail, and a failed
  * control probe stops the installation instead of blessing it.
  */
-function ap_i_base_url()
+function ap_i_base_url($force = null)
 {
+    /* Forced from --api-address on a command line, for the same reason as
+       ap_i_script_name(): the scheme, the host and the port are all read off a
+       request, and there is no request. Every one of the five sources
+       ap_request_scheme_detail() consults is absent in CLI, so it would answer
+       "http" for a site that is https, and the host would be the literal
+       `localhost` for everybody. */
+    static $forced = null;
+    if ($force !== null) {
+        $forced = rtrim((string) $force, '/') . '/';
+    }
+    if ($forced !== null) {
+        return $forced;
+    }
     // The SAME detector the redirect uses -- ap_request_scheme_detail() in
     // config.php. Two copies of this test would drift, and the day they
     // disagree the installer probes a URL the server would have redirected.
@@ -373,14 +407,28 @@ function ap_i_environment($here, $outboundUrl)
 {
     $lines = array();
 
+    /* THE TWO ROWS THAT DESCRIBE THE WRONG PHP WHEN NOBODY IS BROWSING. Run
+       from a shell, this measures the command-line interpreter -- another
+       version, another set of extensions, sometimes another user than the one
+       the web server runs as, which is the ordinary case on shared hosting.
+       The rows say which one they measured rather than claiming the other. */
+    $cli = (PHP_SAPI === 'cli');
+
     $lines[] = array('PHP version', PHP_VERSION,
         PHP_VERSION_ID >= 70400,
-        'The version the WEB SERVER runs, which is not always the one on the '
-        . 'command line. 7.4 or newer is required.');
+        $cli
+            ? 'The version on THIS command line. The web server may well run '
+              . 'another one, and nothing here can see it. 7.4 or newer is required.'
+            : 'The version the WEB SERVER runs, which is not always the one on the '
+              . 'command line. 7.4 or newer is required.');
 
     $lines[] = array('PHP interface', PHP_SAPI, true,
-        'How PHP is plugged into the web server. It decides nothing here; it is '
-        . 'the first thing a host asks you.');
+        $cli
+            ? 'How PHP is plugged in HERE, on this command line. How it is plugged '
+              . 'into the web server is a different answer, and this run cannot '
+              . 'measure it.'
+            : 'How PHP is plugged into the web server. It decides nothing here; it is '
+              . 'the first thing a host asks you.');
 
     $lines[] = array('pdo_sqlite', extension_loaded('pdo_sqlite') ? 'present' : 'MISSING',
         extension_loaded('pdo_sqlite'),
@@ -1064,6 +1112,716 @@ function ap_i_render_html(array $screen)
 }
 
 /**
+ * THE LAST SCREEN, BUILT AND NOT DRAWN.
+ *
+ * It returns the list of blocks; the caller decides whether they become a page
+ * or lines on a terminal. That is the whole reason it is a function: this is
+ * the one screen both faces have to show -- the address for the tag, the two
+ * crontab lines with the real path in them, the update token that appears here
+ * and nowhere else -- and a screen written twice is a screen that will
+ * disagree with itself.
+ */
+function ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
+                               array $report, $autoUpdate, $outboundUrl, $updateToken)
+{
+    /* THE SCREEN, BUILT BEFORE IT IS DRAWN. Every line below adds a block
+       to this list; nothing writes to the page until the end. The list is
+       what the command line will print as text -- the same screen, said
+       twice, from one place. */
+    $screen = array();
+    $screen[] = array('lede', 'Installed. One line left to paste.');
+
+    $screen[] = array('h2', 'The line');
+    $screen[] = array('p',
+        'The tag on the pages you want to annotate carries this address:');
+    $screen[] = array('pre', 'data-server="' . ap_i_h($serverUrl) . '"');
+    if ($installedRelay) {
+        $screen[] = array('p', 'The rest of the tag &mdash; the script source and the project id '
+            . '&mdash; comes from the client, and there is nothing to declare here: '
+            . 'this server answers about any project id it is given. The key never '
+            . 'reaches it, in any form: that is what makes the notes unreadable to '
+            . "it, and to you.");
+    } else {
+        $screen[] = array('p', 'The rest of the tag &mdash; the script source and the project id '
+            . '&mdash; comes from the client. Add the tag to a page, open it, and the '
+            . 'setup screen generates the key in your browser and hands you the block '
+            . 'to paste into <code>internal/config-local.php</code> under '
+            . '<code>projects</code>. The key never reaches this server, in any form: '
+            . "that is what makes the notes unreadable to it.");
+    }
+
+    /* THE ONE THING THIS INSTALLATION DOES THAT THE TOOL OTHERWISE PROMISES
+       NOT TO. Everywhere else "nothing is ever deleted" holds; here a
+       number was just written into the configuration, and the person who
+       pressed the button is the person who has to know it. Said on the
+       screen that reports what was done, not left to a comment inside a
+       file and a line in a diagnostic nobody opens. */
+    $screen[] = array('h2', 'How long a remark is kept');
+    $screen[] = array('p', 'Ninety days after the last message of its thread &mdash; a review '
+        . 'cycle with room to spare &mdash; and then the whole thread goes at '
+        . 'once, so a reply is never cut off its remark. Nobody chooses which: '
+        . 'there is no moderation here and no takedown, which is the point of '
+        . "saying age and only age.");
+    $screen[] = array('p', 'It is <code>\'max_note_age_days\' => 90</code> in the configuration '
+        . 'just written. Set it to <code>0</code> to keep everything for ever. '
+        . 'While it is set, the panel on your pages says so and every export '
+        . "carries it in its header &mdash; nobody discovers it late.");
+
+    /* WHAT ACTUALLY SWEEPS. Without this line the ceiling is kept by a die
+       rolled on writes -- which is enough on a busy relay and is nothing at
+       all on the case retention exists for: a project nobody has come back
+       to. A promise measured in days needs a job measured in days. */
+    $sweepScript = ap_i_update_script($here, 'maintenance.php');
+    $screen[] = array('p', 'One line makes it happen on time. Without it the sweep is a die '
+        . 'rolled on writes, which on a project nobody comes back to &mdash; the '
+        . 'very case this exists for &mdash; is never rolled at all:');
+    $screen[] = array('pre', ap_i_h(ap_i_cron_time()) . ' php ' . ap_i_h($sweepScript)
+        . " &gt;/dev/null");
+    $screen[] = array('p', 'Drawn for you, like the update line further down, so that a hundred '
+        . 'installations do not rewrite their databases at the same second. It '
+        . 'prints what it swept and exits 0 when there was nothing to do. It is '
+        . 'not reachable over the web, and there is no address for it: the only '
+        . 'thing that could buy anybody is making somebody else\'s deletions '
+        . "happen sooner.");
+    $screen[] = array('h2', 'What was measured');
+    $screen[] = array('table', $report);
+
+    $screen[] = array('h2', 'Check it, in one request');
+    $screen[] = array('pre', ap_i_h($serverUrl) . '?action=diagnostic');
+    $screen[] = array('p', 'Plain text, and short by default: the tool, its version, the format '
+        . 'and the verdict &mdash; running, or not, and what to do about it. That '
+        . 'page has no authentication, so what it publishes it publishes to '
+        . "everybody.");
+    $screen[] = array('p', 'The configuration just written carries '
+        . '<code>\'diagnostic\' => \'minimal\'</code>. Change it to '
+        . '<code>\'full\'</code> for the whole report &mdash; the PHP really '
+        . 'served, the storage and its state, the declared projects with their '
+        . 'origins &mdash; and change it back when you are done. No credential '
+        . "value ever appears there, under either value.");
+
+    // --- KEEPING IT UP TO DATE. THREE WAYS, RANKED, WITH THE REAL PATH AND
+    // THE REAL URL OF THIS INSTALLATION. An example is a thing to adapt, and
+    // the adaptation is where it goes wrong -- on the machines this tool
+    // targets, whose operator has a control panel and no shell, "replace
+    // /path/to with your path" is where the update stops being set up at all.
+    //
+    // WHAT IS SHOWN IS CUT TO WHAT THIS HOST CAN DO. By now we know the PHP
+    // interface, whether anything can get out to HTTPS, and whether a token
+    // was written. Offering the third way on a `cgi-fcgi` host would be
+    // offering a key that is read and declined on every write.
+    //
+    // THE TOKEN IS PRINTED HERE AND NOWHERE ELSE. Not in ?action=diagnostic,
+    // which has no authentication and answers whoever asks; not in a log.
+    // Whoever loses it writes a new one into config-local.php by hand.
+    $updateToken = (string) $updateToken;
+    $autoUpdateOn = (bool) $autoUpdate;
+    $canDefer = ap_i_can_defer();
+    $updateScript = ap_i_update_script($here);
+    $cronWhen = ap_i_cron_time();
+    $reach = ap_i_fetch($outboundUrl, 4);
+    $canReach = $reach['status'] !== null;
+
+    $screen[] = array('h2', 'Keeping it up to date');
+    $screen[] = array('p', 'Once a day is enough. A release is not an emergency, and a run '
+        . 'with nothing to fetch costs one version check and stops there. '
+        . "Three ways, best first &mdash; you need one of them.");
+    if (!$canReach) {
+        $screen[] = array('bad', 'This server could not reach the outside over '
+            . 'HTTPS just now, so nothing below can fetch anything until that is '
+            . 'fixed. A shell with <code>curl</code> may still get out where PHP '
+            . "cannot; the lines are here for when it does.");
+    }
+
+    $screen[] = array('h3', '1. Cron, from a shell &mdash; use this one');
+    $screen[] = array('p', 'It is the best of the three for one reason: the code directory stays '
+        . 'writable by <strong>you</strong> and never by the web server, so no '
+        . 'request to this site can rewrite this code whatever goes wrong in it. '
+        . 'Nothing to turn on and nothing to keep secret. Run it once by hand to '
+        . "watch it work, then give cron this line:");
+    $screen[] = array('pre', 'php ' . ap_i_h($updateScript) . "\n\n"
+        . ap_i_h($cronWhen) . ' php ' . ap_i_h($updateScript) . " &gt;/dev/null");
+    $screen[] = array('p', 'That minute and that hour were drawn for you, and any others do as '
+        . 'well: what matters is that every installation does not ask the same host '
+        . 'for the same file at the same second. It '
+        . 'exits 0 when there was nothing to do &mdash; which is most nights &mdash; '
+        . 'and 1 only when something really failed, so a scheduler that reports '
+        . 'failures has something to report on. Drop the <code>&gt;/dev/null</code> '
+        . "and it mails you the result of every run instead.");
+
+    $screen[] = array('h3', '2. Cron that can only fetch a URL');
+    if ($updateToken !== '') {
+        $screen[] = array('p', 'Much shared hosting has a scheduler that takes an address and '
+            . 'nothing else. This is the address, and <strong>this screen is the '
+            . 'only place it will ever appear</strong> &mdash; it is not in '
+            . '<code>?action=diagnostic</code> and not in any log. Copy it before '
+            . "you leave this page.");
+        $screen[] = array('pre',
+            ap_i_h($serverUrl . '?action=update&token=' . $updateToken));
+        $screen[] = array('p',
+            'Paste that into the panel. From a crontab, the same thing:');
+        $screen[] = array('pre', ap_i_h($cronWhen) . ' curl -fsS \''
+            . ap_i_h($serverUrl . '?action=update&token=' . $updateToken)
+            . "' &gt;/dev/null");
+        $screen[] = array('p', 'Whoever calls it waits while the update runs and is answered with '
+            . 'what it did &mdash; allowed at that address and nowhere else, because '
+            . 'they came for it and no reader of a page is kept waiting. At most one '
+            . 'real check a day however often it is called; add '
+            . '<code>&amp;force=1</code> to check anyway. To retire the address, '
+            . 'empty <code>update_token</code> in '
+            . '<code>internal/config-local.php</code> and it stops existing &mdash; '
+            . "unknown, not refused.");
+    } else {
+        $screen[] = array('p', 'Much shared hosting has a scheduler that takes an address and '
+            . 'nothing else. You did not ask for one, so none was written. To have '
+            . 'it, put a secret of 32 characters or more in '
+            . "<code>internal/config-local.php</code>:");
+        $screen[] = array('pre',
+            '\'update_token\' => \'32 characters or more, of your own\',');
+        $screen[] = array('p', 'and <code>' . ap_i_h($serverUrl)
+            . '?action=update&amp;token=&lt;that secret&gt;</code> then runs the '
+            . 'update during the request and answers with what it did. Until such a '
+            . 'key exists the action does not exist either &mdash; unknown, not '
+            . "refused.");
+    }
+
+    if (!$canDefer) {
+        $screen[] = array('h3',
+            '3. Letting the server update itself &mdash; impossible here');
+        $screen[] = array('p', 'This PHP interface (<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot '
+            . 'hand the response to the visitor before doing more work, and somebody '
+            . 'who came to read or write a note must never wait on a fetch to GitHub. '
+            . 'So <code>auto_update</code> is read and declined here on every write, '
+            . 'ticked or not. That is the ordinary case on shared hosting, and it is '
+            . "why the address above exists.");
+        if ($autoUpdateOn) {
+            $screen[] = array('bad', 'It is on in the configuration just written, '
+                . 'and it will do nothing but be declined. Set '
+                . '<code>\'auto_update\' => false</code> in '
+                . '<code>internal/config-local.php</code>, and do not give the web '
+                . "server write access to this directory.");
+        }
+    } else {
+        $screen[] = array('h3',
+            '3. Letting the server update itself &mdash; last resort');
+        $screen[] = array('p', 'Only if neither of the two above exists on this host. It costs '
+            . 'something the others do not: the code directory has to be '
+            . '<strong>writable by the user PHP runs as</strong>, and from that '
+            . 'moment any bug anywhere on this account that can write a file &mdash; '
+            . 'in this code, in a neighbouring application, in a plugin nobody '
+            . 'remembers installing &mdash; stops being a defacement and becomes '
+            . 'permanent code execution. Setting the key back to <code>false</code> '
+            . 'does not undo it: the permission stays until somebody takes it '
+            . "away.");
+        $screen[] = array('pre', '\'auto_update\' => true,');
+        $screen[] = array('p', 'in <code>internal/config-local.php</code>'
+            . ($autoUpdateOn ? ' &mdash; already written there, because you asked for '
+                . 'it on the form.' : ', where it is currently <code>false</code>.')
+            . ' The check then happens on a write, at most once a day, never on a '
+            . "read, and only after the reader already has their answer.");
+    }
+
+    $screen[] = array('h2', 'Now delete this file');
+    $screen[] = array('p', 'It has done its job. It refuses to act while the configuration exists, '
+        . 'but an installer that stays reachable and writable on a live server is a '
+        . 'liability all the same.');
+    $screen[] = array('button', 'delete_self', 'Delete ' . ap_i_h($selfName));
+
+
+    return $screen;
+}
+
+/* ===========================================================================
+   THE OTHER FACE. THE SAME INSTALLATION, TYPED RATHER THAN CLICKED.
+   ===========================================================================
+
+   It asks nothing. There is no prompt and no confirmation: a prompt with a
+   default is a prompt nobody sees in a scheduled run, and typing the command
+   is the consent -- the same sentence internal/update.php writes about its own
+   command line.
+
+   It shares everything that matters with the browser face: the questions come
+   from ap_i_questions(), the installation is ap_i_install(), the screen is the
+   same list of blocks. What differs is what a shell cannot know and a request
+   carries for free -- the address this server answers at -- and one answer
+   that cannot be measured from here, which is refused rather than guessed.
+   =========================================================================== */
+
+/**
+ * The options, derived from the questions rather than listed beside them.
+ *
+ * A second list would drift from the first at the first change. Every option
+ * below is either a question (its values ARE the question's values, the exact
+ * strings the installation compares against) or one of the four things a shell
+ * has to be told.
+ */
+function ap_i_cli_options()
+{
+    $options = array();
+
+    $named = array('audience' => 'answers-for', 'storage' => 'storage',
+                   'updates'  => 'updated-by');
+    foreach (ap_i_questions() as $question) {
+        $values = array();
+        foreach ($question['answers'] as $answer) {
+            $values[] = $answer['value'];
+        }
+        $options[$named[$question['key']]] = array(
+            'kind'   => 'choice',
+            'field'  => $question['key'],
+            'values' => $values,
+            'legend' => $question['legend'],
+        );
+    }
+
+    foreach (ap_i_credential_fields() as $box) {
+        $options['mysql-' . $box['name']] = array(
+            'kind'  => 'value',
+            'field' => $box['name'],
+            'label' => $box['label'],
+        );
+    }
+
+    /* THE PASSWORD, THE OTHER WAY. An argument is world-readable: /proc/<pid>/
+       cmdline is mode 444 on the hosting this tool targets, so every other
+       account on the machine can read it while the command runs, and the shell
+       keeps it in its history afterwards. The file is read once, here, and
+       what lands in the configuration is the value itself -- exactly what the
+       browser form writes. */
+    $options['mysql-password-file'] = array('kind' => 'value', 'field' => null,
+        'label' => 'A file holding the password');
+
+    $options['api-address'] = array('kind' => 'value', 'field' => null,
+        'label' => 'The address api.php will answer at');
+    $options['dir'] = array('kind' => 'value', 'field' => null,
+        'label' => 'The directory to install into');
+    $options['delete-installer'] = array('kind' => 'flag', 'field' => null,
+        'label' => 'Delete this file once the configuration is written');
+    $options['help'] = array('kind' => 'flag', 'field' => null, 'label' => 'This text');
+    $options['version'] = array('kind' => 'flag', 'field' => null,
+        'label' => 'The version of this file, and nothing else');
+
+    return $options;
+}
+
+/**
+ * Reads the command line. Refuses everything it does not recognise.
+ *
+ * A value that was ignored would install the default and read as a success --
+ * which is what the browser form does deliberately, because a radio always
+ * sends one of its own values and the narrow answer is the safe one. A shell
+ * has no such guarantee, so here an unknown option, an unknown value or a
+ * missing required one stops the run before anything is touched.
+ *
+ * @return array array('given' => …, 'errors' => …)
+ */
+function ap_i_parse_options(array $argv)
+{
+    $known  = ap_i_cli_options();
+    $given  = array();
+    $errors = array();
+
+    foreach (array_slice($argv, 1) as $argument) {
+        if ($argument === '--') {
+            continue;
+        }
+        if (substr($argument, 0, 2) !== '--') {
+            $errors[] = 'Not an option: ' . $argument
+                . '. Everything this takes is written --name=value.';
+            continue;
+        }
+        $body = substr($argument, 2);
+        $eq   = strpos($body, '=');
+        $name = $eq === false ? $body : substr($body, 0, $eq);
+        $value = $eq === false ? true : substr($body, $eq + 1);
+
+        if (!isset($known[$name])) {
+            $errors[] = 'Unknown option: --' . $name
+                . '. Run with --help for the ones there are.';
+            continue;
+        }
+        $shape = $known[$name];
+        if ($shape['kind'] === 'flag' && $value !== true) {
+            $errors[] = '--' . $name . ' takes no value.';
+            continue;
+        }
+        if ($shape['kind'] !== 'flag' && $value === true) {
+            $errors[] = '--' . $name . ' needs a value: --' . $name . '=…';
+            continue;
+        }
+        if ($shape['kind'] === 'choice' && !in_array($value, $shape['values'], true)) {
+            $errors[] = '--' . $name . '=' . $value . ' is not one of: '
+                . implode(', ', $shape['values']) . '.';
+            continue;
+        }
+        $given[$name] = $value;
+    }
+
+    return array('given' => $given, 'errors' => $errors);
+}
+
+/** Markup out of a sentence written for a screen. */
+function ap_i_plain($text, $keepLines = false)
+{
+    $text = str_replace(
+        array('&mdash;', '&nbsp;', '&amp;', '&quot;', '&#039;', '&lt;', '&gt;'),
+        array('--', ' ', '&', '"', "'", '<', '>'), (string) $text);
+    $text = strip_tags($text);
+    /* A `pre` block is the only place where a line break MEANS something: it
+       separates the command you run by hand from the crontab line. Collapsing
+       whitespace there glued the two into one line nobody could use. */
+    if ($keepLines) {
+        return trim($text, "\n");
+    }
+    return trim(preg_replace('/\s+/', ' ', $text));
+}
+
+/** A paragraph, folded at 78 columns, indented as asked. */
+function ap_i_wrap($text, $indent = '')
+{
+    /* The fold is 78 columns INCLUDING the indent: folding to 78 and then
+       pushing the whole block six spaces right gives 84, which wraps again in
+       an 80-column terminal, in the wrong place and twice. */
+    $width = 78 - strlen($indent);
+    if ($width < 24) { $width = 24; }
+    return $indent . str_replace("\n", "\n" . $indent,
+        wordwrap(ap_i_plain($text), $width, "\n", false));
+}
+
+/**
+ * The same screen the browser is shown, in text.
+ *
+ * It reads the very list ap_i_render_html() reads. Two renderings of one
+ * screen; no second wording anywhere.
+ */
+function ap_i_render_text(array $screen)
+{
+    $out = '';
+    foreach ($screen as $block) {
+        switch ($block[0]) {
+            case 'lede':
+                $out .= ($out === '' ? '' : "\n") . ap_i_wrap($block[1]) . "\n";
+                break;
+            case 'p':
+                $out .= "\n" . ap_i_wrap($block[1]) . "\n";
+                break;
+            case 'bad':
+                $out .= "\n" . ap_i_wrap($block[1], '!! ') . "\n";
+                break;
+            case 'h2':
+                $out .= "\n" . strtoupper(ap_i_plain($block[1])) . "\n"
+                    . str_repeat('=', strlen(ap_i_plain($block[1]))) . "\n";
+                break;
+            case 'h3':
+                $out .= "\n" . ap_i_plain($block[1]) . "\n"
+                    . str_repeat('-', strlen(ap_i_plain($block[1]))) . "\n";
+                break;
+            /* NOT WRAPPED, EVER. These are the lines somebody copies: a
+               crontab line, an address, a key. A fold inserted in one of them
+               would be copied with the fold. */
+            case 'pre':
+                $out .= "\n    "
+                    . str_replace("\n", "\n    ", ap_i_plain($block[1], true)) . "\n";
+                break;
+            case 'table':
+            case 'table-env':
+                $out .= "\n";
+                foreach ($block[1] as $line) {
+                    $meaning = $block[0] === 'table-env' ? $line[3] : $line[2];
+                    $out .= '  ' . $line[0] . ': ' . $line[1] . "\n"
+                        . ap_i_wrap($meaning, '      ') . "\n";
+                }
+                break;
+            /* A button is a button. What replaces it is the command that does
+               the same thing, which the caller prints where it belongs. */
+            case 'button':
+                break;
+        }
+    }
+    return $out;
+}
+
+/**
+ * `--help`, built from the same model the form is built from.
+ *
+ * Exhaustive by construction: an answer added to a question appears here
+ * without anybody remembering to write it down.
+ */
+function ap_i_render_help($selfName)
+{
+    $out = "annotepage -- install the notes server, from a shell.\n\n"
+        . ap_i_wrap('It does what the browser installer does, in the same order: it '
+            . 'creates the storage, requests that storage\'s own URL over HTTP and '
+            . 'refuses to finish unless the web server refuses it, then writes '
+            . 'internal/config-local.php and prints what it wrote and where.') . "\n\n"
+        . ap_i_wrap('It asks nothing. There is no prompt: typing the command is the '
+            . 'consent. An option it does not know stops it, because an option that '
+            . 'was ignored would install the default and read as a success. It never '
+            . 'writes over an existing internal/config-local.php, and no option makes '
+            . 'it.') . "\n\n"
+        . "  php " . $selfName . " --api-address=https://example.com/notes/api.php \\\n"
+        . "      --answers-for=one-site --storage=sqlite\n";
+
+    $out .= "\nTHE ADDRESS, WHICH IS THE ONE THING A SHELL CANNOT KNOW\n"
+        . str_repeat('=', 54) . "\n\n"
+        . "  --api-address=<url>\n"
+        . ap_i_wrap('REQUIRED. The address api.php will answer at once this is '
+            . 'installed -- what the tag on your pages carries as data-server. Opened '
+            . 'in a browser this installer reads that address off the request that '
+            . 'reached it; from a shell there is no request, and nothing may guess it. '
+            . 'Four things rest on it: whether this server is reached over https, the '
+            . 'control request that establishes that this directory really is served '
+            . 'at that address, the request that proves the data file is not '
+            . 'downloadable, and the line you paste into the tag.', '      ') . "\n\n"
+        . "  --dir=<path>\n"
+        . ap_i_wrap('The directory to install into. Default: the directory this file '
+            . 'sits in, which is where a browser would have installed it.', '      ')
+        . "\n";
+
+    foreach (ap_i_cli_options() as $name => $shape) {
+        if ($shape['kind'] !== 'choice') {
+            continue;
+        }
+        $question = ap_i_question($shape['field']);
+        $out .= "\n" . strtoupper($question['legend']) . "\n"
+            . str_repeat('=', strlen($question['legend'])) . "\n";
+        foreach ($question['answers'] as $answer) {
+            $out .= "\n  --" . $name . '=' . $answer['value']
+                . '   ' . ap_i_plain($answer['label']) . "\n"
+                . ap_i_wrap($answer['say'], '      ') . "\n";
+        }
+    }
+
+    $out .= "\n" . ap_i_wrap('There is no --updated-by=self, and the browser form offers '
+        . 'one. It is the answer for a host with neither a shell nor a scheduler, '
+        . 'which is not the host you are typing on -- and it cannot be checked from '
+        . 'here: whether this server may hand the response to a visitor and keep '
+        . 'working depends on the PHP interface the WEB SERVER runs, and from a '
+        . 'command line the only interface in sight is this one. The check would '
+        . 'always say yes, and be wrong on every host that runs cgi-fcgi. Write '
+        . "'auto_update' => true in internal/config-local.php if you mean it, and "
+        . 'read what it costs beside the key.') . "\n";
+
+    $out .= "\nWHERE THE MySQL SERVER IS\n" . str_repeat('=', 24) . "\n\n"
+        . ap_i_wrap('Required with --storage=mysql, except the host and the port. The '
+            . 'installer connects and creates the tables before it writes anything: a '
+            . 'configuration naming a database nobody can reach is a file that fails '
+            . 'later, on somebody else\'s screen.') . "\n\n";
+    foreach (ap_i_credential_fields() as $box) {
+        $out .= '  --mysql-' . $box['name']
+            . ($box['default'] ? '   default ' . $box['default'] : '') . "\n";
+    }
+    $out .= "\n  --mysql-password-file=<path>\n"
+        . ap_i_wrap('Read the password out of this file, once, now. A password on a '
+            . 'command line is visible in `ps` to every other account on the machine '
+            . 'and stays in your shell history; this is the way that is not. What is '
+            . 'written into the configuration is the value itself, exactly as the '
+            . 'browser form writes it.', '      ') . "\n";
+
+    $out .= "\nAFTERWARDS\n==========\n\n"
+        . "  --delete-installer\n"
+        . ap_i_wrap('Delete this file once the configuration is written, the way the '
+            . 'browser installer\'s last screen offers to. Off by default: from a shell '
+            . 'the file is one `rm` away and its path is printed.', '      ') . "\n\n"
+        . "  --help, --version\n";
+
+    $out .= "\nWHAT IT DOES NOT SET\n====================\n\n"
+        . ap_i_wrap('Everything else is in one file -- internal/config-local.php -- and '
+            . 'every key in it is commented next to itself; '
+            . 'internal/config-local.example.php sits beside it with every key there '
+            . 'is. There are no options for them, which is the same promise the install '
+            . 'page makes. In particular: your project and its origins, which descend '
+            . 'from a key your browser generates and this server never receives; how '
+            . 'long a remark is kept, which this installation writes as ninety days; '
+            . 'and the rate limits.') . "\n";
+
+    $out .= "\nEXIT CODES\n==========\n\n"
+        . "  0   Installed -- or already configured, and nothing was done.\n"
+        . "  1   It refused, or something failed. Nothing was configured, and\n"
+        . "      anything it had created has been taken back.\n"
+        . "  2   The command line itself: an unknown option, a missing required\n"
+        . "      one, or a value it does not accept. Nothing was touched.\n";
+
+    return $out;
+}
+
+/**
+ * The command line, from end to end.
+ *
+ * Reached from ap_i_run() when PHP is running on a terminal, before anything
+ * else happens. Everything it decides, it decides before touching the disk.
+ */
+function ap_i_cli(array $options)
+{
+    $here     = isset($options['here']) ? $options['here'] : dirname(__DIR__);
+    $selfName = basename(isset($options['self']) ? $options['self'] : 'install.php');
+    $argv     = isset($options['argv']) ? $options['argv']
+        : (isset($GLOBALS['argv']) ? $GLOBALS['argv'] : array());
+    $outboundUrl = isset($options['outbound_url'])
+        ? $options['outbound_url'] : 'https://raw.githubusercontent.com/';
+
+    $read   = ap_i_parse_options($argv);
+    $given  = $read['given'];
+    $errors = $read['errors'];
+
+    /* HELP FIRST, AND A BARE COMMAND IS NOT AN INSTALLATION. An installer run
+       with no arguments is a script that forgot them: it prints what it takes
+       and exits 2, so a broken pipeline stops instead of installing defaults. */
+    if (isset($given['help']) || count($argv) <= 1) {
+        echo ap_i_render_help($selfName);
+        exit(isset($given['help']) ? 0 : 2);
+    }
+    if (isset($given['version'])) {
+        echo ap_i_version($here) . "\n";
+        exit(0);
+    }
+
+    if (isset($given['dir'])) {
+        $here = rtrim($given['dir'], '/');
+    }
+    $configPath = $here . '/internal/config-local.php';
+
+    if (!isset($given['api-address'])) {
+        $errors[] = '--api-address is required. Opened in a browser this installer '
+            . 'reads that address off the request that reached it; from a shell there '
+            . 'is no request, and the proof that the data file is unreachable needs an '
+            . 'address to ask for.';
+    }
+    if (!isset($given['answers-for'])) {
+        $errors[] = '--answers-for is required, and has no default: the two answers are '
+            . 'silent when wrong, in opposite directions.';
+    }
+    if (isset($given['updated-by']) && $given['updated-by'] === 'self') {
+        $errors[] = '--updated-by=self is not offered here. Whether this server may hand '
+            . 'the response to a visitor and keep working depends on the PHP interface '
+            . 'the WEB SERVER runs, and from a command line the only interface in sight '
+            . "is this one. Write 'auto_update' => true in internal/config-local.php if "
+            . 'you mean it, and read what it costs beside the key.';
+    }
+    $storage = isset($given['storage']) ? $given['storage'] : 'sqlite';
+    if ($storage === 'mysql') {
+        foreach (array('mysql-name', 'mysql-user') as $needed) {
+            if (!isset($given[$needed]) || $given[$needed] === '') {
+                $errors[] = '--' . $needed . ' is required with --storage=mysql.';
+            }
+        }
+        if (!isset($given['mysql-password']) && !isset($given['mysql-password-file'])) {
+            $errors[] = 'A password is required with --storage=mysql: '
+                . '--mysql-password-file=<path> reads it from a file, which is the way '
+                . 'that does not put it in `ps` and in your shell history.';
+        }
+    }
+
+    $password = isset($given['mysql-password']) ? $given['mysql-password'] : '';
+    if (isset($given['mysql-password-file'])) {
+        $read = @file_get_contents($given['mysql-password-file']);
+        if ($read === false) {
+            $errors[] = 'Could not read ' . $given['mysql-password-file'] . '.';
+        } else {
+            // The trailing newline an editor adds is not part of a password.
+            $password = rtrim($read, "\r\n");
+        }
+    }
+
+    if ($errors) {
+        fwrite(STDERR, "Nothing was touched.\n\n");
+        foreach ($errors as $line) {
+            fwrite(STDERR, ap_i_wrap($line, '  ') . "\n\n");
+        }
+        fwrite(STDERR, 'Run  php ' . $selfName . " --help  for what this takes.\n");
+        exit(2);
+    }
+
+    /* ALREADY CONFIGURED IS A RESULT, NOT A REDIRECT -- BUT IT COMES AFTER THE
+       COMMAND LINE HAS BEEN READ. Measured: with this test first, a mistyped
+       option on an installed directory printed "already configured" and exited
+       0, and the typo was never named. A wrong command is wrong wherever it is
+       run, and swallowing it is exactly what this face must not do.
+
+       Zero, because re-running a provisioning step that had nothing to do is
+       not a failure -- the same answer `php internal/update.php` gives when
+       there is nothing to fetch. */
+    if (is_file($configPath)) {
+        echo 'Already configured: ' . $configPath . "\n"
+            . "Nothing was done, and nothing was overwritten. Delete that file\n"
+            . "yourself if you mean to install again -- it holds a project and a\n"
+            . "storage somebody is using.\n";
+        exit(0);
+    }
+
+    /* WHAT A REQUEST WOULD HAVE CARRIED, taken from the address instead. Both
+       of these refuse to answer at all in CLI until they are given something,
+       so nothing downstream can quietly fall back on a guess. */
+    $api    = $given['api-address'];
+    $parts  = parse_url($api);
+    if (!$parts || !isset($parts['scheme']) || !isset($parts['host'])) {
+        fwrite(STDERR, "--api-address is not an absolute http(s) URL.\n");
+        exit(2);
+    }
+    $urlDir = isset($parts['path']) ? rtrim(dirname($parts['path']), '/') : '';
+    $host   = $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+    ap_i_base_url($parts['scheme'] . '://' . $host . $urlDir);
+    ap_i_script_name(($urlDir === '' ? '' : $urlDir) . '/' . $selfName);
+
+    /* WHAT WAS MEASURED, AND ON WHICH PHP. The environment rows describe the
+       interpreter running this command, which on shared hosting is very often
+       not the one the web server runs -- different version, different
+       extensions, sometimes a different user. Said here rather than left to be
+       discovered. */
+    list($environment, $outbound) = ap_i_environment($here, $outboundUrl);
+    echo ap_i_render_text(array(
+        array('h2', 'What this command line offers'),
+        array('p', 'Measured on the PHP running THIS command, which on shared hosting '
+                   . 'is often not the one the web server runs. What was measured over '
+                   . 'HTTP below was measured against the real one.'),
+        array('table-env', $environment),
+    ));
+
+    $answers = array(
+        'audience' => $given['answers-for'],
+        'storage'  => $storage,
+        'updates'  => isset($given['updated-by']) ? $given['updated-by'] : 'cron',
+        'host'     => isset($given['mysql-host']) ? $given['mysql-host'] : '',
+        'port'     => isset($given['mysql-port']) ? $given['mysql-port'] : '',
+        'name'     => isset($given['mysql-name']) ? $given['mysql-name'] : '',
+        'user'     => isset($given['mysql-user']) ? $given['mysql-user'] : '',
+        'password' => $password,
+    );
+
+    $report = array();
+    $failed = array();
+    $done   = ap_i_install($answers, $here, $configPath, $selfName, $report, $failed);
+
+    if (!$done['installed']) {
+        echo ap_i_render_text(array(
+            array('h2', 'What was measured'),
+            array('table', $report),
+        ));
+        fwrite(STDERR, "\nNothing was installed.\n\n");
+        foreach ($failed as $line) {
+            fwrite(STDERR, ap_i_wrap($line, '  ') . "\n\n");
+        }
+        exit(1);
+    }
+
+    echo ap_i_render_text(ap_i_screen_installed($done['relay'], ap_i_base_url() . 'api.php',
+        $here, $selfName, $report, $done['auto'], $outboundUrl, $done['token']));
+
+    /* THE BUTTON HAS NO EQUIVALENT, SO THE COMMAND IS PRINTED INSTEAD. Never
+       done on its own: a script that deletes its own file after a successful
+       run cannot be re-run, and being re-runnable is what a provisioning tool
+       is owed. */
+    $self = isset($options['self']) ? $options['self'] : ($here . '/' . $selfName);
+    if (isset($given['delete-installer'])) {
+        list($gone, $said) = ap_i_delete_self($self);
+        echo "\n" . ap_i_wrap($said) . "\n";
+    } else {
+        // The screen above has just said why. Here, only the command.
+        echo "\n    rm " . $self . "\n";
+    }
+    exit(0);
+}
+
+/**
  * Builds internal/config-local.php.
  *
  * It says it was generated, when, and by what. That matters more than it
@@ -1500,6 +2258,15 @@ function ap_i_delete_self($path)
 
 function ap_i_run(array $options)
 {
+    /* THE OTHER FACE, BEFORE ANYTHING ELSE. Detected here rather than passed
+       in, exactly as internal/update.php detects its own: one convention for
+       the whole codebase, and a caller that cannot get it wrong. Nothing below
+       this line has any meaning without a request. */
+    if (PHP_SAPI === 'cli') {
+        ap_i_cli($options);
+        return;
+    }
+
     // --- Dispatch. -----------------------------------------------------------
 
     $here       = $options['here'];
@@ -1646,209 +2413,9 @@ function ap_i_run(array $options)
     ap_i_head($installed ? 'annotepage -- installed' : 'annotepage -- install');
 
     if ($installed) {
-        /* THE SCREEN, BUILT BEFORE IT IS DRAWN. Every line below adds a block
-           to this list; nothing writes to the page until the end. The list is
-           what the command line will print as text -- the same screen, said
-           twice, from one place. */
-        $screen = array();
-        $screen[] = array('lede', 'Installed. One line left to paste.');
-
-        $screen[] = array('h2', 'The line');
-        $screen[] = array('p',
-            'The tag on the pages you want to annotate carries this address:');
-        $screen[] = array('pre', 'data-server="' . ap_i_h($serverUrl) . '"');
-        if ($installedRelay) {
-            $screen[] = array('p', 'The rest of the tag &mdash; the script source and the project id '
-                . '&mdash; comes from the client, and there is nothing to declare here: '
-                . 'this server answers about any project id it is given. The key never '
-                . 'reaches it, in any form: that is what makes the notes unreadable to '
-                . "it, and to you.");
-        } else {
-            $screen[] = array('p', 'The rest of the tag &mdash; the script source and the project id '
-                . '&mdash; comes from the client. Add the tag to a page, open it, and the '
-                . 'setup screen generates the key in your browser and hands you the block '
-                . 'to paste into <code>internal/config-local.php</code> under '
-                . '<code>projects</code>. The key never reaches this server, in any form: '
-                . "that is what makes the notes unreadable to it.");
-        }
-
-        /* THE ONE THING THIS INSTALLATION DOES THAT THE TOOL OTHERWISE PROMISES
-           NOT TO. Everywhere else "nothing is ever deleted" holds; here a
-           number was just written into the configuration, and the person who
-           pressed the button is the person who has to know it. Said on the
-           screen that reports what was done, not left to a comment inside a
-           file and a line in a diagnostic nobody opens. */
-        $screen[] = array('h2', 'How long a remark is kept');
-        $screen[] = array('p', 'Ninety days after the last message of its thread &mdash; a review '
-            . 'cycle with room to spare &mdash; and then the whole thread goes at '
-            . 'once, so a reply is never cut off its remark. Nobody chooses which: '
-            . 'there is no moderation here and no takedown, which is the point of '
-            . "saying age and only age.");
-        $screen[] = array('p', 'It is <code>\'max_note_age_days\' => 90</code> in the configuration '
-            . 'just written. Set it to <code>0</code> to keep everything for ever. '
-            . 'While it is set, the panel on your pages says so and every export '
-            . "carries it in its header &mdash; nobody discovers it late.");
-
-        /* WHAT ACTUALLY SWEEPS. Without this line the ceiling is kept by a die
-           rolled on writes -- which is enough on a busy relay and is nothing at
-           all on the case retention exists for: a project nobody has come back
-           to. A promise measured in days needs a job measured in days. */
-        $sweepScript = ap_i_update_script($here, 'maintenance.php');
-        $screen[] = array('p', 'One line makes it happen on time. Without it the sweep is a die '
-            . 'rolled on writes, which on a project nobody comes back to &mdash; the '
-            . 'very case this exists for &mdash; is never rolled at all:');
-        $screen[] = array('pre', ap_i_h(ap_i_cron_time()) . ' php ' . ap_i_h($sweepScript)
-            . " &gt;/dev/null");
-        $screen[] = array('p', 'Drawn for you, like the update line further down, so that a hundred '
-            . 'installations do not rewrite their databases at the same second. It '
-            . 'prints what it swept and exits 0 when there was nothing to do. It is '
-            . 'not reachable over the web, and there is no address for it: the only '
-            . 'thing that could buy anybody is making somebody else\'s deletions '
-            . "happen sooner.");
-        $screen[] = array('h2', 'What was measured');
-        $screen[] = array('table', $report);
-
-        $screen[] = array('h2', 'Check it, in one request');
-        $screen[] = array('pre', ap_i_h($serverUrl) . '?action=diagnostic');
-        $screen[] = array('p', 'Plain text, and short by default: the tool, its version, the format '
-            . 'and the verdict &mdash; running, or not, and what to do about it. That '
-            . 'page has no authentication, so what it publishes it publishes to '
-            . "everybody.");
-        $screen[] = array('p', 'The configuration just written carries '
-            . '<code>\'diagnostic\' => \'minimal\'</code>. Change it to '
-            . '<code>\'full\'</code> for the whole report &mdash; the PHP really '
-            . 'served, the storage and its state, the declared projects with their '
-            . 'origins &mdash; and change it back when you are done. No credential '
-            . "value ever appears there, under either value.");
-
-        // --- KEEPING IT UP TO DATE. THREE WAYS, RANKED, WITH THE REAL PATH AND
-        // THE REAL URL OF THIS INSTALLATION. An example is a thing to adapt, and
-        // the adaptation is where it goes wrong -- on the machines this tool
-        // targets, whose operator has a control panel and no shell, "replace
-        // /path/to with your path" is where the update stops being set up at all.
-        //
-        // WHAT IS SHOWN IS CUT TO WHAT THIS HOST CAN DO. By now we know the PHP
-        // interface, whether anything can get out to HTTPS, and whether a token
-        // was written. Offering the third way on a `cgi-fcgi` host would be
-        // offering a key that is read and declined on every write.
-        //
-        // THE TOKEN IS PRINTED HERE AND NOWHERE ELSE. Not in ?action=diagnostic,
-        // which has no authentication and answers whoever asks; not in a log.
-        // Whoever loses it writes a new one into config-local.php by hand.
-        $updateToken = isset($updateToken) ? $updateToken : '';
-        $autoUpdateOn = isset($autoUpdate) ? (bool) $autoUpdate : false;
-        $canDefer = ap_i_can_defer();
-        $updateScript = ap_i_update_script($here);
-        $cronWhen = ap_i_cron_time();
-        $reach = ap_i_fetch($outboundUrl, 4);
-        $canReach = $reach['status'] !== null;
-
-        $screen[] = array('h2', 'Keeping it up to date');
-        $screen[] = array('p', 'Once a day is enough. A release is not an emergency, and a run '
-            . 'with nothing to fetch costs one version check and stops there. '
-            . "Three ways, best first &mdash; you need one of them.");
-        if (!$canReach) {
-            $screen[] = array('bad', 'This server could not reach the outside over '
-                . 'HTTPS just now, so nothing below can fetch anything until that is '
-                . 'fixed. A shell with <code>curl</code> may still get out where PHP '
-                . "cannot; the lines are here for when it does.");
-        }
-
-        $screen[] = array('h3', '1. Cron, from a shell &mdash; use this one');
-        $screen[] = array('p', 'It is the best of the three for one reason: the code directory stays '
-            . 'writable by <strong>you</strong> and never by the web server, so no '
-            . 'request to this site can rewrite this code whatever goes wrong in it. '
-            . 'Nothing to turn on and nothing to keep secret. Run it once by hand to '
-            . "watch it work, then give cron this line:");
-        $screen[] = array('pre', 'php ' . ap_i_h($updateScript) . "\n\n"
-            . ap_i_h($cronWhen) . ' php ' . ap_i_h($updateScript) . " &gt;/dev/null");
-        $screen[] = array('p', 'That minute and that hour were drawn for you, and any others do as '
-            . 'well: what matters is that every installation does not ask the same host '
-            . 'for the same file at the same second. It '
-            . 'exits 0 when there was nothing to do &mdash; which is most nights &mdash; '
-            . 'and 1 only when something really failed, so a scheduler that reports '
-            . 'failures has something to report on. Drop the <code>&gt;/dev/null</code> '
-            . "and it mails you the result of every run instead.");
-
-        $screen[] = array('h3', '2. Cron that can only fetch a URL');
-        if ($updateToken !== '') {
-            $screen[] = array('p', 'Much shared hosting has a scheduler that takes an address and '
-                . 'nothing else. This is the address, and <strong>this screen is the '
-                . 'only place it will ever appear</strong> &mdash; it is not in '
-                . '<code>?action=diagnostic</code> and not in any log. Copy it before '
-                . "you leave this page.");
-            $screen[] = array('pre',
-                ap_i_h($serverUrl . '?action=update&token=' . $updateToken));
-            $screen[] = array('p',
-                'Paste that into the panel. From a crontab, the same thing:');
-            $screen[] = array('pre', ap_i_h($cronWhen) . ' curl -fsS \''
-                . ap_i_h($serverUrl . '?action=update&token=' . $updateToken)
-                . "' &gt;/dev/null");
-            $screen[] = array('p', 'Whoever calls it waits while the update runs and is answered with '
-                . 'what it did &mdash; allowed at that address and nowhere else, because '
-                . 'they came for it and no reader of a page is kept waiting. At most one '
-                . 'real check a day however often it is called; add '
-                . '<code>&amp;force=1</code> to check anyway. To retire the address, '
-                . 'empty <code>update_token</code> in '
-                . '<code>internal/config-local.php</code> and it stops existing &mdash; '
-                . "unknown, not refused.");
-        } else {
-            $screen[] = array('p', 'Much shared hosting has a scheduler that takes an address and '
-                . 'nothing else. You did not ask for one, so none was written. To have '
-                . 'it, put a secret of 32 characters or more in '
-                . "<code>internal/config-local.php</code>:");
-            $screen[] = array('pre',
-                '\'update_token\' => \'32 characters or more, of your own\',');
-            $screen[] = array('p', 'and <code>' . ap_i_h($serverUrl)
-                . '?action=update&amp;token=&lt;that secret&gt;</code> then runs the '
-                . 'update during the request and answers with what it did. Until such a '
-                . 'key exists the action does not exist either &mdash; unknown, not '
-                . "refused.");
-        }
-
-        if (!$canDefer) {
-            $screen[] = array('h3',
-                '3. Letting the server update itself &mdash; impossible here');
-            $screen[] = array('p', 'This PHP interface (<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot '
-                . 'hand the response to the visitor before doing more work, and somebody '
-                . 'who came to read or write a note must never wait on a fetch to GitHub. '
-                . 'So <code>auto_update</code> is read and declined here on every write, '
-                . 'ticked or not. That is the ordinary case on shared hosting, and it is '
-                . "why the address above exists.");
-            if ($autoUpdateOn) {
-                $screen[] = array('bad', 'It is on in the configuration just written, '
-                    . 'and it will do nothing but be declined. Set '
-                    . '<code>\'auto_update\' => false</code> in '
-                    . '<code>internal/config-local.php</code>, and do not give the web '
-                    . "server write access to this directory.");
-            }
-        } else {
-            $screen[] = array('h3',
-                '3. Letting the server update itself &mdash; last resort');
-            $screen[] = array('p', 'Only if neither of the two above exists on this host. It costs '
-                . 'something the others do not: the code directory has to be '
-                . '<strong>writable by the user PHP runs as</strong>, and from that '
-                . 'moment any bug anywhere on this account that can write a file &mdash; '
-                . 'in this code, in a neighbouring application, in a plugin nobody '
-                . 'remembers installing &mdash; stops being a defacement and becomes '
-                . 'permanent code execution. Setting the key back to <code>false</code> '
-                . 'does not undo it: the permission stays until somebody takes it '
-                . "away.");
-            $screen[] = array('pre', '\'auto_update\' => true,');
-            $screen[] = array('p', 'in <code>internal/config-local.php</code>'
-                . ($autoUpdateOn ? ' &mdash; already written there, because you asked for '
-                    . 'it on the form.' : ', where it is currently <code>false</code>.')
-                . ' The check then happens on a write, at most once a day, never on a '
-                . "read, and only after the reader already has their answer.");
-        }
-
-        $screen[] = array('h2', 'Now delete this file');
-        $screen[] = array('p', 'It has done its job. It refuses to act while the configuration exists, '
-            . 'but an installer that stays reachable and writable on a live server is a '
-            . 'liability all the same.');
-        $screen[] = array('button', 'delete_self', 'Delete ' . ap_i_h($selfName));
+        $screen = ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
+                                        $report, $autoUpdate, $outboundUrl, $updateToken);
         ap_i_render_html($screen);
-
         ap_i_foot();
         exit;
     }
