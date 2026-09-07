@@ -222,7 +222,7 @@ return array(
     // 'rate_window_seconds'     => 300,
     // 'rate_writes_per_ip'      => 120,
     // 'rate_writes_per_project' => 300,
-    // 'rate_exports_per_ip'     => 20,
+    // 'rate_exports_per_ip'     => 90,   // three per remark for an assistant
     //
     // And `list`, the call every annotated page makes on load. 0 means the
     // counter is never touched, so a page load costs no database write --

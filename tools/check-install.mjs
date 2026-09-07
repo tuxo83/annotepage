@@ -265,10 +265,11 @@ if (relay.config) {
         ['plain mode refused', "'allow_plain_mode' => false"],
         ['Origin required', "'require_origin_on_writes' => true"],
         ['open registration', "'open_registration' => true"],
-        /* Counted in ROWS: a discussed thread is two or three, so a real
-           project of 122 remarks already holds about 370. 500 left a working
-           team a third of a campaign, and past the cap nobody can reply. */
-        ['a cap per project', "'max_notes_per_project' => 2000"],
+        /* Counted in ROWS: a discussed thread is three, so a real project of
+           122 remarks already holds about 370, and a simulated team of six
+           over three months writes 3600. 500, then 2000, both stopped a
+           working team mid-campaign -- and past the cap nobody can reply. */
+        ['a cap per project', "'max_notes_per_project' => 6000"],
         /* And on a relay they stay ON: there, an export is bandwidth a
            stranger can ask for, and a project id is public. */
 

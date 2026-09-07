@@ -143,6 +143,33 @@ export const retrieve = async (project, signal) => {
     const raw = await readCachedExport(project, signal);
     const read = readExport(raw);
 
+    /* THE COUNT THE SERVER DECLARED, AGAINST WHAT ARRIVED. An export is
+       streamed: the header says "notes 4231" and the rows follow, so anything
+       that cuts the stream after the headers went out -- a proxy timing out, a
+       connection dropped, or the server's own storage failing mid-walk, which
+       is measured and real: MySQL sorts the whole project into a temporary
+       file and that file can fill the disk -- produces a SHORT export behind a
+       200. Nothing else here would notice. An assistant would read fifty notes
+       of four thousand, find no open remark among them, and say the project is
+       done.
+       So it is counted. A shortfall is refused rather than reported quietly,
+       because the two things one can do with a truncated export -- retry it,
+       or tell somebody the storage is failing -- both start with knowing. */
+    const declared = parseInt(read.header.notes, 10);
+    if (Number.isFinite(declared)) {
+        const arrived = read.notes.reduce((n, m) => n + 1 + m.replies.length, 0)
+            + (parseInt(read.footer.skipped, 10) || 0);
+        if (arrived < declared) {
+            throw new ApiError('This export is INCOMPLETE: its header announces '
+                + declared + ' notes and it carries ' + arrived + '.\n'
+                + 'Nothing was changed, and nothing is lost on the server -- what '
+                + 'arrived is a cut stream, not the project.\n'
+                + 'Ask again. If it happens twice, the server could not read its own '
+                + 'storage to the end: open ?action=diagnostic on it, and look at the '
+                + 'error log of the machine rather than at this message.');
+        }
+    }
+
     const counts = {
         newer: 0, unreadable: 0, unknown: 0, noSalt: 0,
         unreadable_resolutions: 0, unreadable_titles: 0,

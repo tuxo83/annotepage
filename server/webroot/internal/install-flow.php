@@ -1091,21 +1091,23 @@ function ap_i_settings()
     return array(
         array('key' => 'max_notes_per_project', 'kind' => 'int', 'unit' => 'notes',
             'label' => 'Notes one project may hold',
+            'decided' => array('one-site' => 'no limit', 'anyone' => '6000 rows, about '
+                                                         . '2000 remarks'),
             'say'   => 'Counted in ROWS, not in remarks: a reply is a row of its own, '
                        . 'so a discussed thread costs two or three. Past it a write is '
                        . 'refused with a 403 and NOTHING is erased -- but a reply is a '
                        . 'write, so the project goes silent until somebody raises this. '
                        . '0 is no limit, which is what a server carrying one team\'s own '
-                       . 'notes wants, and what this installation writes for one. A '
-                       . 'relay needs one -- it stores for strangers -- and gets 2000 '
-                       . 'unless you say otherwise here.'),
+                       . 'notes wants. A relay needs one: it stores for strangers. '
+                       . 'Measured: six reviewers over three months write about 3600 '
+                       . 'rows, and a relay is capped at 6000 unless you say otherwise.'),
         array('key' => 'max_note_age_days', 'kind' => 'int', 'unit' => 'days',
             'label' => 'How long a thread is kept',
+            'decided' => array('one-site' => '90 days', 'anyone' => '90 days'),
             'say'   => 'Counted from its LAST message, so a live discussion is never '
                        . 'cut short, and the whole thread goes at once. 0 keeps '
                        . 'everything for ever, which is what config.php decides for a '
-                       . 'server that was never installed by this file; this '
-                       . 'installation writes 90 unless you say otherwise here.'),
+                       . 'server this file never installed.'),
         array('key' => 'rate_window_seconds', 'kind' => 'int', 'unit' => 'seconds',
             'label' => 'The window the limits below are counted in',
             'say'   => 'Fixed, not sliding: hitting a limit early in a window costs the '
@@ -1116,13 +1118,20 @@ function ap_i_settings()
                        . 'all of their projects together.'),
         array('key' => 'rate_writes_per_project', 'kind' => 'int', 'unit' => 'writes',
             'label' => 'Writes per project, per window',
+            'decided' => array('one-site' => '0, which is off -- everybody who can '
+                                             . 'write here is already behind your door',
+                               'anyone'   => '300'),
             'say'   => 'All of that project\'s writers together. It is the anti-abuse '
                        . 'ceiling, not the working budget.'),
         array('key' => 'rate_exports_per_ip', 'kind' => 'int', 'unit' => 'exports',
             'label' => 'Exports per address, per window',
+            'decided' => array('one-site' => '0, which is off -- the only reader of an '
+                                             . 'export here is your own assistant',
+                               'anyone'   => '90'),
             'say'   => 'An export is how an assistant READS: its whole loop -- read, '
-                       . 'reply, resolve -- costs about three per remark. This is the '
-                       . 'limit that bites first when somebody works with one.'),
+                       . 'reply, resolve -- costs about three per remark, so 90 per '
+                       . 'window is thirty remarks. Measured: at 20 an assistant met '
+                       . 'the refusal in the middle of its seventh remark, on day one.'),
         array('key' => 'rate_reads_per_ip', 'kind' => 'int', 'unit' => 'page loads',
             'label' => 'Page loads per address, per window',
             'say'   => 'OFF, and 0 means the counter is never touched: a page load then '
@@ -2010,12 +2019,27 @@ function ap_i_render_help($selfName)
            it the only way to learn what a limit is today is to read the source
            -- and knowing the number is most of deciding whether to change it. */
         $default = ap_i_setting_default($setting['key']);
-        $says = $setting['label'] . '. '
-            . ($default !== ''
-                ? "config.php's default: " . $default
-                    . ($setting['unit'] !== '' ? ' ' . $setting['unit'] : '') . '. '
-                : 'No default: unset unless you set it. ')
-            . $setting['say'];
+        if (isset($setting['decided'])) {
+            /* Four of them this command decides from --answers-for, and saying
+               "config.php's default" for those would name a number that will
+               not be written. What a reader needs here is what LEAVING IT OUT
+               gets them, which is not the same thing. */
+            $one = ap_i_plain($setting['decided']['one-site']);
+            $any = ap_i_plain($setting['decided']['anyone']);
+            $says = $setting['label'] . '. '
+                . ($one === $any
+                    ? 'Left out, this install writes ' . $one . '. '
+                    : 'Left out: ' . $one . ' with --answers-for=one-site, ' . $any
+                      . ' with --answers-for=anyone. ')
+                . $setting['say'];
+        } else {
+            $says = $setting['label'] . '. '
+                . ($default !== ''
+                    ? "config.php's default: " . $default
+                        . ($setting['unit'] !== '' ? ' ' . $setting['unit'] : '') . '. '
+                    : 'No default: unset unless you set it. ')
+                . $setting['say'];
+        }
         $out .= "\n  --" . str_replace('_', '-', $setting['key']) . '=' . $shape . "\n"
             . ap_i_wrap($says, '      ') . "\n";
     }
@@ -2589,7 +2613,7 @@ function ap_i_config_text(array $values)
     $unset('rate_writes_per_project',
         "    // 'rate_writes_per_project' => 300,   // per window, all writers together\n");
     $unset('rate_exports_per_ip',
-        "    // 'rate_exports_per_ip'     => 20,    // per window\n");
+        "    // 'rate_exports_per_ip'     => 90,    // per window; three per remark\n");
     if (!isset($chosen['rate_reads_per_ip'])) {
         $text .= "    //\n";
         $text .= "    // And `list`, the call every annotated page makes on load, counted\n";
@@ -2666,12 +2690,13 @@ function ap_i_config_text(array $values)
         $text .= "    // is erased, so a team whose id leaked cannot write either, until\n";
         $text .= "    // you raise it.\n";
         if (!isset($chosen['max_notes_per_project'])) {
-            $text .= "    // 500 until today, and it was measured too low: the cap counts\n";
-            $text .= "    // ROWS, and a discussed thread is two or three of them. A real\n";
-            $text .= "    // project of 122 remarks already holds about 370 rows, so 500\n";
-            $text .= "    // left a working team a third of a campaign -- and past it\n";
-            $text .= "    // nobody can even reply. 2000 is five such projects.\n";
-            $text .= "    'max_notes_per_project' => 2000,\n\n";
+            $text .= "    // 500, then 2000, and both were measured too low: the cap\n";
+            $text .= "    // counts ROWS, and a discussed thread is three of them. A\n";
+            $text .= "    // simulated team of six reviewers over three months writes\n";
+            $text .= "    // 1200 remarks -- 3600 rows -- so 2000 stopped them at week\n";
+            $text .= "    // two, and past the cap nobody can even reply. 6000 rows is\n";
+            $text .= "    // about 2000 remarks: 6.5 MB of storage and a 4.7 MB export.\n";
+            $text .= "    'max_notes_per_project' => 6000,\n\n";
         }
     } else {
         /* TWO OF THEM HAVE NO OBJECT HERE, SO THEY ARE TURNED OFF RATHER THAN
@@ -2879,8 +2904,13 @@ function ap_i_head($title)
         . "    .seg input:focus-visible + span { outline-color: #8ab4ff; }\n"
         . "  }\n"
         . "  .dial-say { margin: .55rem 0 0; font-size: .85rem; opacity: .75; }\n"
-        . "  .dials:has(#a-anyone:checked) .if-one,\n"
-        . "  .dials:has(#a-one:checked) .if-anyone,\n"
+        /* THE AUDIENCE PAIR HANGS OFF THE FORM, not off the box of dials: the
+           settings further down carry the same two classes to say what an
+           empty field becomes, and a rule scoped to .dials left both halves
+           showing there -- which reads as the installer contradicting
+           itself. */
+        . "  form:has(#a-anyone:checked) .if-one,\n"
+        . "  form:has(#a-one:checked) .if-anyone,\n"
         . "  .dials:has(#s-mysql:checked) .if-sqlite,\n"
         . "  .dials:has(#s-sqlite:checked) .if-mysql { display: none; }\n"
         /* The third dial's own sentences, and the two paragraphs UNDER the box
@@ -3340,7 +3370,17 @@ function ap_i_run(array $options)
                field it says what happens if nothing is typed, which is what the
                person reading wants to know. */
             $default = ap_i_setting_default($key);
-            $hint = trim($default . ' ' . $setting['unit']);
+            /* AND WHERE THE INSTALLER DECIDES INSTEAD OF config.php, THE
+               PLACEHOLDER SAYS NOTHING RATHER THAN SOMETHING FALSE. Four of
+               these are written by this install according to the answers
+               above -- a relay is capped at 2000 notes, a server carrying its
+               own site has two counters turned off -- and showing config.php's
+               number in the field would promise the opposite of what is about
+               to be written. The sentence below says what each answer gets,
+               and the CSS shows the half that applies. */
+            $hint = isset($setting['decided'])
+                ? $setting['unit']
+                : trim($default . ' ' . $setting['unit']);
             echo '<br><input type="' . ($setting['kind'] === 'int' ? 'number' : 'text')
                 . '" name="' . $key . '" value="' . ap_i_h($field($key)) . '"'
                 . ($hint !== '' ? ' placeholder="' . ap_i_h($hint) . '"' : '')
@@ -3348,6 +3388,12 @@ function ap_i_run(array $options)
         }
         echo "</label></p>\n";
         echo '<p class="note">' . $setting['say'] . "</p>\n";
+        if (isset($setting['decided'])) {
+            echo '<p class="note"><span class="if-one">Left empty, this install '
+                . 'writes ' . ap_i_h($setting['decided']['one-site']) . '.</span>'
+                . '<span class="if-anyone">Left empty, this install writes '
+                . ap_i_h($setting['decided']['anyone']) . ".</span></p>\n";
+        }
     }
     if ($ouvertBornes) {
         echo "</details>\n";

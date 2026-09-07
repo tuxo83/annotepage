@@ -68,9 +68,13 @@ const buildServer = (state) => createServer((request, response) => {
         if (url.searchParams.get('project') !== state.project) {
             return json({ ok: false, active: false, message: 'Unknown project.' });
         }
+        /* A STREAM CUT AFTER THE HEADER WENT OUT, which is what a proxy timing
+           out or a storage failing mid-walk produces: the count is the real
+           one, the rows are not all there, and the status is 200 because the
+           headers left before anything went wrong. */
         let out = 'tool annotepage\nformat 2\nversion 2.0.0\nproject ' + state.project
             + '\nencryption yes\nexport 2026-08-31T09:14:22+00:00\nnotes '
-            + state.rows.length + '\n\n';
+            + (state.declare || state.rows.length) + '\n\n';
         let first = true;
         for (const row of state.rows) {
             if (row.reply_to === null) {
@@ -621,6 +625,26 @@ await check('mcp: the projects tool reports the id a key derives, never the key'
         contains(text, 'written to disk no', 'and that nothing was kept');
         truthy(text.indexOf(KEY) === -1, 'the key itself appears nowhere');
     });
+
+/* A TRUNCATED EXPORT MUST NOT READ AS A SHORT PROJECT. The export is streamed,
+   so the header leaves before the rows: whatever cuts the stream afterwards --
+   a proxy, a timeout, a storage that fails mid-walk -- arrives as a 200 with
+   fewer notes than it announced. An assistant reading it would find no open
+   remark among the ones that came and say the work is done. */
+await check('cli: an export shorter than its own header is refused, loudly', async () => {
+    state.declare = state.rows.length + 40;
+    const { code, out, errors } = await cli('text');
+    state.declare = 0;
+    truthy(code !== 0, 'it exited 0 on a cut export:\n' + out);
+    contains(errors + out, 'INCOMPLETE', 'it says the export is incomplete');
+    contains(errors + out, 'nothing is lost on the server',
+        'it says the project itself is unharmed');
+});
+
+await check('cli: a complete export is not mistaken for a cut one', async () => {
+    const { code } = await cli('text');
+    truthy(code === 0, 'the guard fires on a whole export');
+});
 
 /* -- Verdict -------------------------------------------------------------- */
 

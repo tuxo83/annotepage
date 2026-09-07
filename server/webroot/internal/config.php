@@ -324,7 +324,17 @@ function ap_config_defaults()
         'rate_window_seconds'     => 300,
         'rate_writes_per_ip'      => 120,
         'rate_writes_per_project' => 300,
-        'rate_exports_per_ip'     => 20,
+        // 20 UNTIL TODAY, AND IT WAS MEASURED WRONG. An export is how an
+        // assistant READS, and its loop -- read, reply, resolve -- costs three
+        // of them per remark, because each write invalidates the ten-second
+        // cache on its side. 20 per five minutes is therefore 6.6 remarks, and
+        // a simulated assistant met the refusal in the MIDDLE OF THE SEVENTH,
+        // on day one, on a project of average size. 90 is thirty remarks per
+        // window, which leaves room for two assistants behind one office
+        // address. It is still a bound: at the relay cap below, an export is
+        // about 4.7 MB, so this is what an operator should look at first if
+        // bandwidth is what they are paying for.
+        'rate_exports_per_ip'     => 90,
 
         // AND `list`, WHICH IS COUNTED ONLY IF YOU SET THIS. It is the call
         // every annotated page makes on load, so counting it costs one

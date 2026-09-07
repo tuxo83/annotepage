@@ -374,11 +374,19 @@ code {
             configuration with a default that suits a review team. They are
             counted per five-minute window: <b>120 writes per IP address</b>,
             <b>300 writes per project</b> &mdash; everybody writing to it
-            together &mdash; and <b>20 exports per IP</b>. Past one of those the
+            together &mdash; and <b>90 exports per IP</b>. Past one of those the
             answer is a 429 saying when to come back. A request body over
             <b>64&nbsp;KB</b> gets a 413. And a project may be capped at a
-            number of notes, which a public relay sets to 2000 and a server
-            carrying one team&rsquo;s own notes leaves off.</p>
+            number of rows, which a public relay sets to 6000 &mdash; about
+            2000 remarks, since a discussed thread is three rows &mdash; and a
+            server carrying one team&rsquo;s own notes leaves off.</p>
+                <p class="qa-a">Those two numbers were both measured, on a simulated
+            project: an assistant&rsquo;s loop &mdash; read, reply, resolve
+            &mdash; costs three exports per remark, so the old limit of 20
+            refused it in the middle of its seventh remark on the first day;
+            and six reviewers over three months write about 3600 rows, so the
+            old cap of 2000 stopped them in week two, with nobody able to
+            reply.</p>
                 <p class="qa-a">Reading a page is <b>not counted unless you ask for
             it</b> &mdash; measured: five browsers opening the same annotated
             page make five requests and spend nothing. Counting them costs a
