@@ -12,6 +12,7 @@
 | Ask | It tells you |
 |---|---|
 | `<your server>/api.php?action=diagnostic` | what this installation is doing right now: PHP, storage, projects, origins, updates |
+| `php annotepage-install.php --help` | every option the shell face takes, what each answer costs, and the exit codes |
 | the installer's screens | what it measured **on your host**, and the three ways to keep the code current, with your real paths in them |
 | `internal/config-local.example.php` | every key you can write, commented next to itself |
 | `internal/config.php` | the default of every key, and why it is that |
@@ -179,6 +180,23 @@ reviewer's screen, and the reviewer is the person who has to know.
 It is most often a tag copied from another site.
 
 ---
+
+## The same install, from a shell
+
+The file you upload answers on a terminal too, and installs in one command:
+it fetches the release, verifies every file against the published manifest,
+and hands your options to it.
+
+```
+php annotepage-install.php --api-address=https://example.com/notes/api.php \
+                           --answers-for=one-site --storage=sqlite
+```
+
+`--help` lists what it takes and is the only place that list exists — this
+file will not carry a second copy of it. Two things are worth knowing before
+you read it: the address is **required**, because a browser reads it off the
+request that reached it and a shell has no request; and `--help` never fetches
+anything, so it answers on a host with no way out to HTTPS.
 
 ## Appendix — writing the configuration by hand
 

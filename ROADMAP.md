@@ -17,33 +17,6 @@ attached, which is the part worth keeping.
 
 ## Open
 
-- **The installer, self-contained, and the same options from a shell.**
-  Required, whatever else the install review decides. `annotepage-install.php`
-  runs today only in a browser: it reads `$_POST`, writes HTML, and asks three
-  questions. It has to run from a command line too, with proper options and a
-  `--help` that is readable on its own, and the two faces have to cover the
-  SAME set of options -- neither able to configure something the other cannot.
-
-  Measured, and the first measurement written here was wrong twice:
-  `config.php` recognises **35 top-level keys**, and the form does not write
-  two of them but **thirteen** -- it asks three questions and DECIDES thirteen
-  keys, two of which (`max_note_age_days => 90`, and a cap per project on a
-  relay) are deliberately not defaults in `config.php`, because defaulting
-  them there would start deleting threads on servers already in service.
-
-  That is the whole design question, and it is settled: only three keys are
-  questions (`deployment`, `storage`, and the database credentials under it),
-  three more are flags written BY a question, and the remaining twenty-nine
-  are caps, bounds and defaults nobody sets while installing. The command line
-  therefore carries about a dozen options, not thirty-five -- plus the one
-  thing a shell cannot deduce and a browser reads off its own request: the
-  address the API will answer at.
-
-  Also required, and cheaper: a CLI run must be non-interactive by
-  construction (no prompt with a default nobody sees in a script), must say
-  what it wrote and where, and must fail loudly on an unknown option rather
-  than ignoring it.
-
 - **Screenshots on a note.** Undecided, and the objections are the point: a
   note weighs a few hundred bytes and a screenshot a thousand times more; it
   would have to be encrypted too, so no relay could ever build a thumbnail;
