@@ -27,7 +27,7 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
-import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, readdirSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -68,10 +68,11 @@ const freePort = () => new Promise((resolve, reject) => {
 });
 
 /** A throwaway installation: its own directory, its own server, its own port. */
-const rehearse = async (port, body) => {
+const rehearse = async (port, body, prepare) => {
     const dir = mkdtempSync(join(tmpdir(), 'annotepage-install-'));
     const root = join(dir, 'web');
     cpSync(webroot, root, { recursive: true });
+    if (prepare) prepare(dir, root);
     const server = spawn('php', ['-S', '127.0.0.1:' + port], {
         cwd: root,
         env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' },
@@ -223,6 +224,36 @@ if (typo.config) {
     check('the mistyped run wrote no configuration', false, typo.done.slice(0, 300));
 }
 stop(typo);
+
+/* -- A RUN THAT FAILS LEAVES NOTHING BEHIND -----------------------------
+   The data file is created BEFORE the configuration is written, so every
+   failure after that point has something to undo. The undo used to live inside
+   the storage branch and therefore ran for a failed proof and not for the two
+   failures that come later -- and a SQLite database left in the web root,
+   belonging to nobody, is the exact outcome this installer's proof exists to
+   prevent.
+
+   Made to fail the honest way: internal/ is not writable, which is a real
+   hosting configuration and the one the installer already has a sentence
+   about. */
+
+const doomed = await rehearse(await freePort(), 'storage=sqlite&audience=mine&updates=cron',
+    (dir, root) => chmodSync(join(root, 'internal'), 0o555));
+check('the doomed run never came up', doomed.up);
+check('a run that could not write its configuration wrote one anyway',
+    doomed.config === null);
+const leftovers = [];
+const walk = (d) => {
+    for (const entry of readdirSync(d, { withFileTypes: true })) {
+        const path = join(d, entry.name);
+        if (entry.isDirectory()) walk(path);
+        else if (/\.sqlite(-wal|-shm)?$/.test(entry.name)) leftovers.push(path);
+    }
+};
+walk(doomed.dir);
+check('a failed run left a database behind', leftovers.length === 0, leftovers.join('\n'));
+chmodSync(join(doomed.root, 'internal'), 0o755);
+stop(doomed);
 
 if (failures.length) {
     console.error('install:\n' + failures.map((f) => '  ' + f).join('\n'));

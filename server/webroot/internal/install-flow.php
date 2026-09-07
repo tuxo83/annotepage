@@ -1127,6 +1127,13 @@ function ap_i_run(array $options)
             'password'    => '',
         );
 
+        /* WHAT THIS RUN CREATED, and it is declared HERE rather than inside the
+           SQLite branch: the undo below has to be reachable from after the
+           configuration is written, and a variable scoped to one branch is not.
+           On the MySQL route both stay empty and the undo does nothing. */
+        $created = array();
+        $location = null;
+
         if ($storage === 'mysql') {
 
             // --- MySQL: the credentials have to WORK before they are written. A
@@ -1200,9 +1207,6 @@ function ap_i_run(array $options)
                     : 'Measured by matching this file\'s URL against its path on disk, not '
                       . 'read from DOCUMENT_ROOT, which is empty or wrong often enough that '
                       . 'nothing here may depend on it.');
-
-            $created = array();
-            $location = null;
 
             if (!$errors) {
                 $location = ap_i_pick_location($here, $docRoot);
@@ -1292,16 +1296,6 @@ function ap_i_run(array $options)
                 }
             }
 
-            // Failed proof: undo. Leaving a database behind that we have just shown
-            // to be reachable would be worse than never having written it.
-            if ($errors && $created) {
-                foreach ($created as $path) {
-                    if (is_file($path)) { @unlink($path); }
-                }
-                if ($location !== null && is_dir($location['directory'])) {
-                    @rmdir($location['directory']);
-                }
-            }
         }
 
         // --- Writing the configuration. NEVER over an existing one: checked again
@@ -1309,16 +1303,30 @@ function ap_i_run(array $options)
         // that this file must not be able to destroy a configuration -- including
         // one that landed while this request was running.
         if (!$errors) {
-            if (is_file($configPath)) {
-                $errors[] = 'internal/config-local.php appeared while this page was '
-                    . 'working. Nothing was written.';
+            /* CREATED EXCLUSIVELY, not tested and then written. `is_file()`
+               followed by a write is two operations with a gap between them,
+               and two runs that both pass the test both write -- the last one
+               wins and BOTH announce success. `x` asks the kernel for the file
+               only if it does not exist, which is one operation and cannot be
+               raced. LOCK_EX was never the guard here: it serialises writers,
+               it does not refuse the second one. */
+            $handle = @fopen($configPath, 'x');
+            if ($handle === false) {
+                $errors[] = is_file($configPath)
+                    ? 'internal/config-local.php appeared while this page was '
+                      . 'working. Nothing was written.'
+                    : 'internal/config-local.php could not be written. Grant the '
+                      . 'user PHP runs as write permission on the internal/ directory, '
+                      . 'then reload this page. Path: ' . $configPath;
             } else {
                 $text = ap_i_config_text($values);
-                $written = @file_put_contents($configPath, $text, LOCK_EX);
-                if ($written === false) {
-                    $errors[] = 'internal/config-local.php could not be written. Grant the '
-                        . 'user PHP runs as write permission on the internal/ directory, '
-                        . 'then reload this page. Path: ' . $configPath;
+                $written = @fwrite($handle, $text);
+                @fclose($handle);
+                if ($written === false || $written < strlen($text)) {
+                    @unlink($configPath);
+                    $errors[] = 'internal/config-local.php could not be written in full, '
+                        . 'so it was removed rather than left half-written. Check the '
+                        . 'free space and the permissions on internal/. Path: ' . $configPath;
                 } else {
                     // It holds credentials on the MySQL route. 0600 rather than
                     // whatever umask the host happens to have.
@@ -1326,6 +1334,22 @@ function ap_i_run(array $options)
                     $installed = true;
                     $installedRelay = ($deployment === 'relay');
                 }
+            }
+        }
+
+        /* AND IF ANYTHING FAILED, UNDO WHAT THIS RUN CREATED. It used to live
+           inside the SQLite branch, so it ran for a failed proof and NOT for
+           the two failures that come later -- a configuration that appeared
+           while this one was working, and a configuration that could not be
+           written. Both left a database and its guard files behind, in the web
+           root on the "inside" placement, belonging to nobody and swept by
+           nothing. */
+        if ($errors && $created) {
+            foreach ($created as $path) {
+                if (is_file($path)) { @unlink($path); }
+            }
+            if ($location !== null && is_dir($location['directory'])) {
+                @rmdir($location['directory']);
             }
         }
     }

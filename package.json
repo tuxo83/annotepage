@@ -10,7 +10,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath hooks",
     "build": "node client/tools/build.mjs",
-    "check": "npm run check:shapes && npm run check:bundle && npm run check:installer && npm run check:sri && npm run check:injection && npm run check:css && npm run check:html && npm run check:shell && npm run check:sitelinks && npm run check:names && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp && npm run check:e2e && npm run check:store && npm run check:install",
+    "check": "npm run check:shapes && npm run check:bundle && npm run check:installer && npm run check:sri && npm run check:injection && npm run check:css && npm run check:html && npm run check:shell && npm run check:sitelinks && npm run check:names && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp && npm run check:e2e && npm run check:store && npm run check:install && npm run check:questions",
     "check:sri": "node tools/check-sri.mjs",
     "check:injection": "node tools/check-no-html-injection.mjs",
     "check:versions": "node tools/check-versions.mjs",
@@ -29,7 +29,8 @@
     "check:published": "node tools/check-published.mjs",
     "check:shapes": "node tools/check-shapes.mjs",
     "check:store": "node tools/check-store.mjs",
-    "check:install": "node tools/check-install.mjs"
+    "check:install": "node tools/check-install.mjs",
+    "check:questions": "node tools/check-install-questions.mjs"
   },
   "engines": {
     "node": ">=20"
