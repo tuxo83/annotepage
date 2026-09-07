@@ -1092,10 +1092,25 @@ function ap_update_diagnostic_lines(array $config)
         return array_merge($lines, ap_update_state_lines());
     }
     $add('update.https_outbound', 'yes -- certificate verified');
-    $add('update.published_version', $published
-        . ($published === ap_update_installed_version()
-            ? ' -- this installation is up to date'
-            : ' -- NEWER than what runs here'));
+    /* THREE ANSWERS, BECAUSE THERE ARE THREE. "Differs" was reported as
+       "NEWER", which is wrong on the two occasions somebody reads this line
+       most carefully: while running the candidate channel on purpose, and just
+       after following the rollback instructions -- where being told the thing
+       one has just undone is newer reads as the undo having failed.
+       version_compare understands the shape this project publishes; anything
+       it cannot order is reported as different, which is all that is known. */
+    $installedVersion = ap_update_installed_version();
+    if ($published === $installedVersion) {
+        $how = ' -- this installation is up to date';
+    } elseif (version_compare($published, $installedVersion, '>')) {
+        $how = ' -- NEWER than what runs here';
+    } elseif (version_compare($published, $installedVersion, '<')) {
+        $how = ' -- OLDER than what runs here, which is what running a candidate '
+             . 'or an undone update looks like';
+    } else {
+        $how = ' -- different from what runs here, and neither can be called newer';
+    }
+    $add('update.published_version', $published . $how);
 
     return array_merge($lines, ap_update_state_lines());
 }

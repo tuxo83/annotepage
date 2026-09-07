@@ -350,6 +350,12 @@ ns.defaultLabels = {
        so that the description can be asked for without a mouse. */
     'mode.public': 'Public',
     'mode.secure': 'Secure',
+    /* THE THIRD WORD, AND IT IS THE ONLY ONE THAT CONTRADICTS THE OTHER TWO.
+       Both of those say "end-to-end encrypted" in their sentence, which is
+       true of both -- and false where the site declared `plain`, where the
+       server stores what was typed. The badge used to read the key and say
+       encrypted anyway. */
+    'mode.plain': 'Readable',
     /* The write half is the one nobody expects, so AND write them carries
        the sentence. It ended on "the key gives both -- this format has no
        reader-only role", which restated the clause before it and then
@@ -362,6 +368,13 @@ ns.defaultLabels = {
     'mode.secure_detail':
         'End-to-end encrypted, and the key is not in this page: each browser '
         + 'pastes it once, and the server never receives it.',
+    /* What it costs, said to the person about to write, and whose decision it
+       was. Not an alarm: plain mode is a legitimate choice on a server behind
+       the same door as the site under review -- it is just not the promise the
+       other two make. */
+    'mode.plain_detail':
+        'Not encrypted: this site chose plain mode, so the server stores these '
+        + 'remarks as they are written and whoever administers it can read them.',
 
     /* -- A newer client exists, and this copy is not going to fetch it -
        Shown ONLY when the file is served by the site itself: a copy served

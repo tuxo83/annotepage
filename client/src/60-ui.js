@@ -1177,8 +1177,19 @@ const forgetForm = () => {
  * sentence, which is where somebody asking "and what does that mean" is.
  */
 const modeBadge = () => {
+    /* THREE STATES, NOT TWO, AND THE THIRD WAS SAYING THE OPPOSITE OF THE
+       TRUTH. This badge read the KEY -- is it in the tag or not -- and both of
+       its sentences begin "End-to-end encrypted", which is true of both key
+       arrangements and false of a project the site declared `plain`. Measured:
+       a note written in plain mode sat readable in the server's `text` column
+       while the panel above it said the server never sees the words.
+       Plain is the stronger fact, so it wins over the key: whoever is about to
+       write a remark is being told who can read it, and nothing else here
+       matters more than that. */
+    const isPlain = (MODE === 'plain');
     const isPublic = PUBLIC_KEY;
-    const block = create('div', 'ap-mode ' + (isPublic ? 'ap-mode-public' : 'ap-mode-secure'));
+    const which = isPlain ? 'plain' : (isPublic ? 'public' : 'secure');
+    const block = create('div', 'ap-mode ap-mode-' + which);
 
     /* The id is drawn, because the panel is redrawn: two badges alive at the
        same instant during a redraw must not both answer to one id, or the
@@ -1186,13 +1197,12 @@ const modeBadge = () => {
        the name field above. */
     const id = 'ap-mode-' + Math.random().toString(36).slice(2, 8);
 
-    const chip = create('span', 'ap-mode-chip', T(isPublic ? 'mode.public' : 'mode.secure'));
+    const chip = create('span', 'ap-mode-chip', T('mode.' + which));
     chip.setAttribute('role', 'note');
     chip.setAttribute('tabindex', '0');
     chip.setAttribute('aria-describedby', id);
 
-    const tip = create('span', 'ap-mode-tip',
-        T(isPublic ? 'mode.public_detail' : 'mode.secure_detail'));
+    const tip = create('span', 'ap-mode-tip', T('mode.' + which + '_detail'));
     tip.id = id;
     tip.setAttribute('role', 'tooltip');
 

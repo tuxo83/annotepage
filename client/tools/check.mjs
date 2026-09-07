@@ -200,6 +200,23 @@ const main = async () => {
         module.officialUrl(jsdelivr, '2.1.1?x=1'), null);
     check('no CDN, no address at all', module.officialUrl(null, newer), null);
 
+    /* -- THE SHIPPED TRANSLATION COVERS THE SHIPPED LABELS ---------------
+       A missing label falls back on English, which is the right behaviour and
+       the reason nobody ever noticed: a French panel with an English button
+       looks like a choice. Measured before this check: fifteen were missing,
+       including every label of the window that hands over the assistant's
+       file. The package ships this file, so the package answers for it. */
+    process.stdout.write('\nthe French set against the labels it translates\n');
+    const labels = readFileSync(join(SRC, '15-labels.js'), 'utf8');
+    const named = [...labels.matchAll(/^\s*'([a-z0-9_.]+)':/gm)].map((m) => m[1]);
+    const french = JSON.parse(readFileSync(join(HERE, '..', 'labels', 'fr.json'), 'utf8'));
+    const missing = named.filter((k) => !(k in french));
+    const extra = Object.keys(french).filter((k) => !named.includes(k));
+    check('every label has a French one', missing.length === 0 ? 'none missing' : missing.join(', '),
+        'none missing');
+    check('and none translates something that no longer exists',
+        extra.length === 0 ? 'none left over' : extra.join(', '), 'none left over');
+
     process.stdout.write(failures ? '\n' + failures + ' failure(s)\n' : '\neverything conforms\n');
     process.exit(failures ? 1 : 0);
 };

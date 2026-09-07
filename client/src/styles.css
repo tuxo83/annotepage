@@ -628,7 +628,12 @@
     outline-offset: 2px;
 }
 
-.ap-mode-public .ap-mode-chip {
+/* Plain wears the same coat as public, and for the same reason: both are a
+   choice somebody made on purpose, and both carry a consequence for whoever
+   is about to write. Neither is an incident, so neither takes an alert
+   colour. They cannot both be true at once. */
+.ap-mode-public .ap-mode-chip,
+.ap-mode-plain .ap-mode-chip {
     border-color: var(--ap-accent);
     background: var(--ap-accent-veil);
     color: var(--ap-accent-dark);
