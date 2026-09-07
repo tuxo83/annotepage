@@ -541,6 +541,314 @@ function ap_i_site_root_url($here, $docRoot, $baseUrl)
 // --- 4. Writing the configuration ------------------------------------------
 
 /**
+ * THE INSTALLATION ITSELF, AND IT NO LONGER READS THE REQUEST.
+ *
+ * Everything this function does used to sit inside `if ($method === 'POST')`,
+ * reading $_POST sixteen times. It contains NOT ONE `echo`: the decision and
+ * the rendering were already separate in this file, and nobody had drawn the
+ * line. Drawing it costs no rewritten output, and it is what lets a second
+ * face -- a command line -- hand the same answers to the same code rather
+ * than grow a second installer beside this one.
+ *
+ * WHAT IT IS HANDED is a plain array of answers, keyed exactly as the form
+ * names its fields. The comparisons against exact strings inside are unchanged
+ * to the character: `anyone`, `mysql`, `self`. They are what stops a relay
+ * being opened by a mistyped value, and they must go on refusing whatever they
+ * do not recognise, from whichever face it arrives.
+ *
+ * @param array $answers  the answers, keyed as the form names them
+ * @param array $report   filled with the [key, value, meaning] rows measured
+ * @param array $errors   filled with what went wrong; empty means installed
+ * @return array installed, relay, token, auto, wants -- what the last screen
+ *               needs and cannot recompute
+ */
+function ap_i_install(array $answers, $here, $configPath, $selfName,
+                      array &$report, array &$errors)
+{
+    $storage = isset($answers['storage']) && $answers['storage'] === 'mysql' ? 'mysql' : 'sqlite';
+    /* ONE CHOICE OF THREE, AND IT ARRIVES AS ONE FIELD. It was two
+       independent checkboxes, which said "tick what you like" over a
+       paragraph explaining that ticking the second when the first is open
+       to you is a mistake. The site has drawn it as one choice of three
+       since the install page was rebuilt; the installer said something
+       else. Compared against exact strings, like the audience below and
+       for the same reason: anything unrecognised lands on the safest
+       answer, the cron that needs no permission granted to anybody. The
+       two flags the rest of this file reads are unchanged. */
+    $wants = isset($answers['updates']) ? (string) $answers['updates'] : 'cron';
+    $wantsUrl = ($wants === 'url');
+    $autoUpdate = ($wants === 'self');
+
+    // WHO IT IS FOR. Compared against the one exact string the form sends,
+    // never tested for truth: a missing field, a mangled one, a value from
+    // an older form or a hand-made request all land on 'self-hosted'. The
+    // wrong answer in this direction costs a manual edit; the wrong answer
+    // in the other opens somebody's disk to strangers without them asking.
+    $deployment = (isset($answers['audience']) && $answers['audience'] === 'anyone')
+        ? 'relay' : 'self-hosted';
+
+    /* 32 bytes, base64url, from the same source as everything else that
+       must not be guessable. Generated HERE and shown once: the installer
+       is the only screen that will ever have a reason to print it. */
+    $updateToken = '';
+    if ($wantsUrl) {
+        $updateToken = rtrim(strtr(base64_encode(
+            function_exists('random_bytes') ? random_bytes(32)
+                : openssl_random_pseudo_bytes(32)), '+/', '-_'), '=');
+    }
+
+    $values = array(
+        'storage'      => $storage,
+        'deployment'   => $deployment,
+        'auto_update'  => $autoUpdate,
+        'update_token' => $updateToken,
+        'version'     => ap_i_version($here),
+        'installer'   => $selfName,
+        'file'        => '',
+        'host'        => '',
+        'port'        => 3306,
+        'name'        => '',
+        'user'        => '',
+        'password'    => '',
+    );
+
+    /* WHAT THIS RUN CREATED, and it is declared HERE rather than inside the
+       SQLite branch: the undo below has to be reachable from after the
+       configuration is written, and a variable scoped to one branch is not.
+       On the MySQL route both stay empty and the undo does nothing. */
+    $created = array();
+    $location = null;
+
+    if ($storage === 'mysql') {
+
+        // --- MySQL: the credentials have to WORK before they are written. A
+        // configuration file naming a database nobody can reach is a file that
+        // fails later, on somebody else's screen, with no clue where it came
+        // from.
+        $values['host'] = trim((string) (isset($answers['host']) ? $answers['host'] : ''));
+        $values['port'] = (int) (isset($answers['port']) ? $answers['port'] : 3306);
+        $values['name'] = trim((string) (isset($answers['name']) ? $answers['name'] : ''));
+        $values['user'] = trim((string) (isset($answers['user']) ? $answers['user'] : ''));
+        $values['password'] = (string) (isset($answers['password']) ? $answers['password'] : '');
+
+        if ($values['host'] === '') { $values['host'] = '127.0.0.1'; }
+        if ($values['port'] <= 0 || $values['port'] > 65535) { $values['port'] = 3306; }
+        if ($values['name'] === '') { $errors[] = 'The database name is empty.'; }
+        if ($values['user'] === '') { $errors[] = 'The database user is empty.'; }
+        if ($values['password'] === '') {
+            $errors[] = 'The database password is empty. The server refuses an empty '
+                . 'credential rather than fail later with a driver message nobody can '
+                . 'read; give the user a password.';
+        }
+        if (!extension_loaded('pdo_mysql')) {
+            $errors[] = 'The PHP extension pdo_mysql is missing on this server, so '
+                . 'MySQL cannot be used here. Choose SQLite, or ask the host to enable '
+                . 'pdo_mysql.';
+        }
+
+        if (!$errors) {
+            $config = array_merge(ap_config_defaults(), array(
+                'storage'  => 'mysql',
+                'database' => array(
+                    'host' => $values['host'], 'port' => $values['port'],
+                    'name' => $values['name'], 'user' => $values['user'],
+                    'password' => $values['password'],
+                ),
+            ));
+            try {
+                ap_require_store($config);
+                $store = new ApStore($config);
+                // ensureSchema and not a bare connection: it also proves the
+                // user may CREATE, which is the right that is missing half the
+                // time and the one whose absence surfaces at the first note.
+                $store->ensureSchema();
+                $report[] = array('MySQL connection', 'succeeded',
+                    'Connected to ' . $values['name'] . ' on ' . $values['host']
+                    . ':' . $values['port'] . ', and the tables are in place.');
+            } catch (Exception $e) {
+                // The password is stripped from the driver message before it is
+                // shown. The rest -- host, database, user -- was typed on this
+                // very screen by the person reading it.
+                $detail = str_replace($values['password'], '********', $e->getMessage());
+                $errors[] = 'MySQL refused: ' . substr($detail, 0, 400);
+            }
+        }
+
+    } else {
+
+        // --- SQLite: pick, create, and then PROVE.
+        if (!extension_loaded('pdo_sqlite')) {
+            $errors[] = 'The PHP extension pdo_sqlite is missing on this server. Ask '
+                . 'the host to enable it, or choose MySQL above.';
+        }
+
+        $docRoot = ap_i_measured_document_root($here);
+        $baseUrl = ap_i_base_url();
+        $report[] = array('Document root', $docRoot === null ? 'not measurable' : $docRoot,
+            $docRoot === null
+                ? 'This file\'s URL and its path on disk could not be matched, so the '
+                  . '"outside the document root" claim cannot be made. The data file '
+                  . 'goes in a guarded directory inside, and is probed like any other.'
+                : 'Measured by matching this file\'s URL against its path on disk, not '
+                  . 'read from DOCUMENT_ROOT, which is empty or wrong often enough that '
+                  . 'nothing here may depend on it.');
+
+        if (!$errors) {
+            $location = ap_i_pick_location($here, $docRoot);
+            $values['file'] = $location['file'];
+            $dirExisted = is_dir($location['directory']);
+
+            $config = array_merge(ap_config_defaults(), array(
+                'storage'  => 'sqlite',
+                'database' => array('file' => $location['file']),
+            ));
+            try {
+                ap_require_store($config);
+                $store = new ApStore($config);
+                $store->ensureSchema();
+                // A real read on the real file: if the schema were not there,
+                // this is where it would say so, not at the first note.
+                $store->count('0000000000000000000000');
+                $created = array($location['file'],
+                                 $location['file'] . '-wal', $location['file'] . '-shm');
+                if (!$dirExisted) {
+                    $created[] = $location['directory'] . '/.htaccess';
+                    $created[] = $location['directory'] . '/index.php';
+                }
+                $report[] = array('Data file', $location['file'],
+                    'Created, with its schema. Placed ' . $location['why'] . '.');
+            } catch (Exception $e) {
+                $errors[] = 'The data file could not be created: ' . $e->getMessage();
+            }
+        }
+
+        // --- THE PROOF. Nothing below reasons about protection; it requests
+        // and reads the status. The control request comes first: a probe that
+        // cannot reach the server proves nothing, and a "no answer" that got
+        // taken for a refusal is the exact failure this is here to prevent.
+        if (!$errors) {
+            $token = bin2hex(random_bytes(8));
+            $control = ap_i_fetch($baseUrl . rawurlencode($selfName) . '?probe=' . $token, 6);
+            $controlOk = $control['status'] === 200
+                && strpos($control['body'], 'annotepage-install-probe ' . $token) !== false;
+            $report[] = array('Control request',
+                $controlOk ? 'answered 200' : 'FAILED',
+                $controlOk
+                    ? 'This server can request its own URLs (' . $control['transport']
+                      . '), and ' . $baseUrl . ' really maps to this directory. Without '
+                      . 'that, nothing below would mean anything.'
+                    : 'Asked for ' . $baseUrl . $selfName . ' and did not get our own '
+                      . 'answer back'
+                      . ($control['error'] !== null ? ' (' . $control['error'] . ')' : '')
+                      . '. A single-worker development server deadlocks here; a real '
+                      . 'host does not.');
+            if (!$controlOk) {
+                $errors[] = 'This installation cannot check itself over HTTP, so it '
+                    . 'cannot prove the data file is unreachable, so it will not '
+                    . 'finish. Nothing was configured. Use MySQL instead, or fix '
+                    . 'whatever blocks this server from requesting its own address.';
+            }
+
+            if ($controlOk) {
+                $urls = ap_i_probe_urls($location['file'], $here, $docRoot, $baseUrl);
+                if (!$urls) {
+                    $report[] = array('Data file over HTTP', 'no URL maps to it',
+                        'The file is outside everything this web server serves, so there '
+                        . 'is no address to request. That is the case we wanted.');
+                }
+                foreach ($urls as $probe) {
+                    $answer = ap_i_fetch($probe['url'], 6);
+                    $safe = ap_i_answer_is_safe($answer, $probe['exact']);
+                    $first = preg_replace('/[^\x20-\x7E]/', '.',
+                        substr($answer['body'], 0, 60));
+                    $report[] = array('Data file over HTTP',
+                        ($answer['status'] === null ? 'no answer' : $answer['status'])
+                        . ($safe ? ' -- refused' : ' -- REACHABLE'),
+                        'Asked for ' . $probe['url']
+                        . ($probe['exact']
+                            ? ' (this URL maps to it)'
+                            : ' (the address a crawler would try; it maps to nothing here)')
+                        . ($answer['body'] !== ''
+                            ? '. First bytes: "' . $first . '"'
+                            : '. Empty body.')
+                        . ($answer['error'] !== null ? ' (' . $answer['error'] . ')' : ''));
+                    if (!$safe) {
+                        $errors[] = 'The web server does not refuse ' . $probe['url']
+                            . '. The database would be downloadable, so nothing was '
+                            . 'configured and the file just created has been removed.';
+                    }
+                }
+            }
+        }
+
+    }
+
+    // --- Writing the configuration. NEVER over an existing one: checked again
+    // here, and not only at the top of the request, because the whole point is
+    // that this file must not be able to destroy a configuration -- including
+    // one that landed while this request was running.
+    if (!$errors) {
+        /* CREATED EXCLUSIVELY, not tested and then written. `is_file()`
+           followed by a write is two operations with a gap between them,
+           and two runs that both pass the test both write -- the last one
+           wins and BOTH announce success. `x` asks the kernel for the file
+           only if it does not exist, which is one operation and cannot be
+           raced. LOCK_EX was never the guard here: it serialises writers,
+           it does not refuse the second one. */
+        $handle = @fopen($configPath, 'x');
+        if ($handle === false) {
+            $errors[] = is_file($configPath)
+                ? 'internal/config-local.php appeared while this page was '
+                  . 'working. Nothing was written.'
+                : 'internal/config-local.php could not be written. Grant the '
+                  . 'user PHP runs as write permission on the internal/ directory, '
+                  . 'then reload this page. Path: ' . $configPath;
+        } else {
+            $text = ap_i_config_text($values);
+            $written = @fwrite($handle, $text);
+            @fclose($handle);
+            if ($written === false || $written < strlen($text)) {
+                @unlink($configPath);
+                $errors[] = 'internal/config-local.php could not be written in full, '
+                    . 'so it was removed rather than left half-written. Check the '
+                    . 'free space and the permissions on internal/. Path: ' . $configPath;
+            } else {
+                // It holds credentials on the MySQL route. 0600 rather than
+                // whatever umask the host happens to have.
+                @chmod($configPath, 0600);
+                $installed = true;
+                $installedRelay = ($deployment === 'relay');
+            }
+        }
+    }
+
+    /* AND IF ANYTHING FAILED, UNDO WHAT THIS RUN CREATED. It used to live
+       inside the SQLite branch, so it ran for a failed proof and NOT for
+       the two failures that come later -- a configuration that appeared
+       while this one was working, and a configuration that could not be
+       written. Both left a database and its guard files behind, in the web
+       root on the "inside" placement, belonging to nobody and swept by
+       nothing. */
+    if ($errors && $created) {
+        foreach ($created as $path) {
+            if (is_file($path)) { @unlink($path); }
+        }
+        if ($location !== null && is_dir($location['directory'])) {
+            @rmdir($location['directory']);
+        }
+    }
+
+    return array(
+        'installed' => $installed,
+        'relay'     => $installedRelay,
+        'token'     => $updateToken,
+        'auto'      => $autoUpdate,
+        'wants'     => $wants,
+    );
+}
+
+
+/**
  * Builds internal/config-local.php.
  *
  * It says it was generated, when, and by what. That matters more than it
@@ -1080,278 +1388,15 @@ function ap_i_run(array $options)
     $serverUrl = ap_i_base_url() . 'api.php';
 
     if ($method === 'POST') {
-        $storage = isset($_POST['storage']) && $_POST['storage'] === 'mysql' ? 'mysql' : 'sqlite';
-        /* ONE CHOICE OF THREE, AND IT ARRIVES AS ONE FIELD. It was two
-           independent checkboxes, which said "tick what you like" over a
-           paragraph explaining that ticking the second when the first is open
-           to you is a mistake. The site has drawn it as one choice of three
-           since the install page was rebuilt; the installer said something
-           else. Compared against exact strings, like the audience below and
-           for the same reason: anything unrecognised lands on the safest
-           answer, the cron that needs no permission granted to anybody. The
-           two flags the rest of this file reads are unchanged. */
-        $wants = isset($_POST['updates']) ? (string) $_POST['updates'] : 'cron';
-        $wantsUrl = ($wants === 'url');
-        $autoUpdate = ($wants === 'self');
-
-        // WHO IT IS FOR. Compared against the one exact string the form sends,
-        // never tested for truth: a missing field, a mangled one, a value from
-        // an older form or a hand-made request all land on 'self-hosted'. The
-        // wrong answer in this direction costs a manual edit; the wrong answer
-        // in the other opens somebody's disk to strangers without them asking.
-        $deployment = (isset($_POST['audience']) && $_POST['audience'] === 'anyone')
-            ? 'relay' : 'self-hosted';
-
-        /* 32 bytes, base64url, from the same source as everything else that
-           must not be guessable. Generated HERE and shown once: the installer
-           is the only screen that will ever have a reason to print it. */
-        $updateToken = '';
-        if ($wantsUrl) {
-            $updateToken = rtrim(strtr(base64_encode(
-                function_exists('random_bytes') ? random_bytes(32)
-                    : openssl_random_pseudo_bytes(32)), '+/', '-_'), '=');
-        }
-
-        $values = array(
-            'storage'      => $storage,
-            'deployment'   => $deployment,
-            'auto_update'  => $autoUpdate,
-            'update_token' => $updateToken,
-            'version'     => ap_i_version($here),
-            'installer'   => $selfName,
-            'file'        => '',
-            'host'        => '',
-            'port'        => 3306,
-            'name'        => '',
-            'user'        => '',
-            'password'    => '',
-        );
-
-        /* WHAT THIS RUN CREATED, and it is declared HERE rather than inside the
-           SQLite branch: the undo below has to be reachable from after the
-           configuration is written, and a variable scoped to one branch is not.
-           On the MySQL route both stay empty and the undo does nothing. */
-        $created = array();
-        $location = null;
-
-        if ($storage === 'mysql') {
-
-            // --- MySQL: the credentials have to WORK before they are written. A
-            // configuration file naming a database nobody can reach is a file that
-            // fails later, on somebody else's screen, with no clue where it came
-            // from.
-            $values['host'] = trim((string) (isset($_POST['host']) ? $_POST['host'] : ''));
-            $values['port'] = (int) (isset($_POST['port']) ? $_POST['port'] : 3306);
-            $values['name'] = trim((string) (isset($_POST['name']) ? $_POST['name'] : ''));
-            $values['user'] = trim((string) (isset($_POST['user']) ? $_POST['user'] : ''));
-            $values['password'] = (string) (isset($_POST['password']) ? $_POST['password'] : '');
-
-            if ($values['host'] === '') { $values['host'] = '127.0.0.1'; }
-            if ($values['port'] <= 0 || $values['port'] > 65535) { $values['port'] = 3306; }
-            if ($values['name'] === '') { $errors[] = 'The database name is empty.'; }
-            if ($values['user'] === '') { $errors[] = 'The database user is empty.'; }
-            if ($values['password'] === '') {
-                $errors[] = 'The database password is empty. The server refuses an empty '
-                    . 'credential rather than fail later with a driver message nobody can '
-                    . 'read; give the user a password.';
-            }
-            if (!extension_loaded('pdo_mysql')) {
-                $errors[] = 'The PHP extension pdo_mysql is missing on this server, so '
-                    . 'MySQL cannot be used here. Choose SQLite, or ask the host to enable '
-                    . 'pdo_mysql.';
-            }
-
-            if (!$errors) {
-                $config = array_merge(ap_config_defaults(), array(
-                    'storage'  => 'mysql',
-                    'database' => array(
-                        'host' => $values['host'], 'port' => $values['port'],
-                        'name' => $values['name'], 'user' => $values['user'],
-                        'password' => $values['password'],
-                    ),
-                ));
-                try {
-                    ap_require_store($config);
-                    $store = new ApStore($config);
-                    // ensureSchema and not a bare connection: it also proves the
-                    // user may CREATE, which is the right that is missing half the
-                    // time and the one whose absence surfaces at the first note.
-                    $store->ensureSchema();
-                    $report[] = array('MySQL connection', 'succeeded',
-                        'Connected to ' . $values['name'] . ' on ' . $values['host']
-                        . ':' . $values['port'] . ', and the tables are in place.');
-                } catch (Exception $e) {
-                    // The password is stripped from the driver message before it is
-                    // shown. The rest -- host, database, user -- was typed on this
-                    // very screen by the person reading it.
-                    $detail = str_replace($values['password'], '********', $e->getMessage());
-                    $errors[] = 'MySQL refused: ' . substr($detail, 0, 400);
-                }
-            }
-
-        } else {
-
-            // --- SQLite: pick, create, and then PROVE.
-            if (!extension_loaded('pdo_sqlite')) {
-                $errors[] = 'The PHP extension pdo_sqlite is missing on this server. Ask '
-                    . 'the host to enable it, or choose MySQL above.';
-            }
-
-            $docRoot = ap_i_measured_document_root($here);
-            $baseUrl = ap_i_base_url();
-            $report[] = array('Document root', $docRoot === null ? 'not measurable' : $docRoot,
-                $docRoot === null
-                    ? 'This file\'s URL and its path on disk could not be matched, so the '
-                      . '"outside the document root" claim cannot be made. The data file '
-                      . 'goes in a guarded directory inside, and is probed like any other.'
-                    : 'Measured by matching this file\'s URL against its path on disk, not '
-                      . 'read from DOCUMENT_ROOT, which is empty or wrong often enough that '
-                      . 'nothing here may depend on it.');
-
-            if (!$errors) {
-                $location = ap_i_pick_location($here, $docRoot);
-                $values['file'] = $location['file'];
-                $dirExisted = is_dir($location['directory']);
-
-                $config = array_merge(ap_config_defaults(), array(
-                    'storage'  => 'sqlite',
-                    'database' => array('file' => $location['file']),
-                ));
-                try {
-                    ap_require_store($config);
-                    $store = new ApStore($config);
-                    $store->ensureSchema();
-                    // A real read on the real file: if the schema were not there,
-                    // this is where it would say so, not at the first note.
-                    $store->count('0000000000000000000000');
-                    $created = array($location['file'],
-                                     $location['file'] . '-wal', $location['file'] . '-shm');
-                    if (!$dirExisted) {
-                        $created[] = $location['directory'] . '/.htaccess';
-                        $created[] = $location['directory'] . '/index.php';
-                    }
-                    $report[] = array('Data file', $location['file'],
-                        'Created, with its schema. Placed ' . $location['why'] . '.');
-                } catch (Exception $e) {
-                    $errors[] = 'The data file could not be created: ' . $e->getMessage();
-                }
-            }
-
-            // --- THE PROOF. Nothing below reasons about protection; it requests
-            // and reads the status. The control request comes first: a probe that
-            // cannot reach the server proves nothing, and a "no answer" that got
-            // taken for a refusal is the exact failure this is here to prevent.
-            if (!$errors) {
-                $token = bin2hex(random_bytes(8));
-                $control = ap_i_fetch($baseUrl . rawurlencode($selfName) . '?probe=' . $token, 6);
-                $controlOk = $control['status'] === 200
-                    && strpos($control['body'], 'annotepage-install-probe ' . $token) !== false;
-                $report[] = array('Control request',
-                    $controlOk ? 'answered 200' : 'FAILED',
-                    $controlOk
-                        ? 'This server can request its own URLs (' . $control['transport']
-                          . '), and ' . $baseUrl . ' really maps to this directory. Without '
-                          . 'that, nothing below would mean anything.'
-                        : 'Asked for ' . $baseUrl . $selfName . ' and did not get our own '
-                          . 'answer back'
-                          . ($control['error'] !== null ? ' (' . $control['error'] . ')' : '')
-                          . '. A single-worker development server deadlocks here; a real '
-                          . 'host does not.');
-                if (!$controlOk) {
-                    $errors[] = 'This installation cannot check itself over HTTP, so it '
-                        . 'cannot prove the data file is unreachable, so it will not '
-                        . 'finish. Nothing was configured. Use MySQL instead, or fix '
-                        . 'whatever blocks this server from requesting its own address.';
-                }
-
-                if ($controlOk) {
-                    $urls = ap_i_probe_urls($location['file'], $here, $docRoot, $baseUrl);
-                    if (!$urls) {
-                        $report[] = array('Data file over HTTP', 'no URL maps to it',
-                            'The file is outside everything this web server serves, so there '
-                            . 'is no address to request. That is the case we wanted.');
-                    }
-                    foreach ($urls as $probe) {
-                        $answer = ap_i_fetch($probe['url'], 6);
-                        $safe = ap_i_answer_is_safe($answer, $probe['exact']);
-                        $first = preg_replace('/[^\x20-\x7E]/', '.',
-                            substr($answer['body'], 0, 60));
-                        $report[] = array('Data file over HTTP',
-                            ($answer['status'] === null ? 'no answer' : $answer['status'])
-                            . ($safe ? ' -- refused' : ' -- REACHABLE'),
-                            'Asked for ' . $probe['url']
-                            . ($probe['exact']
-                                ? ' (this URL maps to it)'
-                                : ' (the address a crawler would try; it maps to nothing here)')
-                            . ($answer['body'] !== ''
-                                ? '. First bytes: "' . $first . '"'
-                                : '. Empty body.')
-                            . ($answer['error'] !== null ? ' (' . $answer['error'] . ')' : ''));
-                        if (!$safe) {
-                            $errors[] = 'The web server does not refuse ' . $probe['url']
-                                . '. The database would be downloadable, so nothing was '
-                                . 'configured and the file just created has been removed.';
-                        }
-                    }
-                }
-            }
-
-        }
-
-        // --- Writing the configuration. NEVER over an existing one: checked again
-        // here, and not only at the top of the request, because the whole point is
-        // that this file must not be able to destroy a configuration -- including
-        // one that landed while this request was running.
-        if (!$errors) {
-            /* CREATED EXCLUSIVELY, not tested and then written. `is_file()`
-               followed by a write is two operations with a gap between them,
-               and two runs that both pass the test both write -- the last one
-               wins and BOTH announce success. `x` asks the kernel for the file
-               only if it does not exist, which is one operation and cannot be
-               raced. LOCK_EX was never the guard here: it serialises writers,
-               it does not refuse the second one. */
-            $handle = @fopen($configPath, 'x');
-            if ($handle === false) {
-                $errors[] = is_file($configPath)
-                    ? 'internal/config-local.php appeared while this page was '
-                      . 'working. Nothing was written.'
-                    : 'internal/config-local.php could not be written. Grant the '
-                      . 'user PHP runs as write permission on the internal/ directory, '
-                      . 'then reload this page. Path: ' . $configPath;
-            } else {
-                $text = ap_i_config_text($values);
-                $written = @fwrite($handle, $text);
-                @fclose($handle);
-                if ($written === false || $written < strlen($text)) {
-                    @unlink($configPath);
-                    $errors[] = 'internal/config-local.php could not be written in full, '
-                        . 'so it was removed rather than left half-written. Check the '
-                        . 'free space and the permissions on internal/. Path: ' . $configPath;
-                } else {
-                    // It holds credentials on the MySQL route. 0600 rather than
-                    // whatever umask the host happens to have.
-                    @chmod($configPath, 0600);
-                    $installed = true;
-                    $installedRelay = ($deployment === 'relay');
-                }
-            }
-        }
-
-        /* AND IF ANYTHING FAILED, UNDO WHAT THIS RUN CREATED. It used to live
-           inside the SQLite branch, so it ran for a failed proof and NOT for
-           the two failures that come later -- a configuration that appeared
-           while this one was working, and a configuration that could not be
-           written. Both left a database and its guard files behind, in the web
-           root on the "inside" placement, belonging to nobody and swept by
-           nothing. */
-        if ($errors && $created) {
-            foreach ($created as $path) {
-                if (is_file($path)) { @unlink($path); }
-            }
-            if ($location !== null && is_dir($location['directory'])) {
-                @rmdir($location['directory']);
-            }
-        }
+        /* The answers arrive from the form here, and from the command line in
+           the other face. Everything past this line is the same code either
+           way -- see ap_i_install(). */
+        $done = ap_i_install($_POST, $here, $configPath, $selfName, $report, $errors);
+        $installed      = $done['installed'];
+        $installedRelay = $done['relay'];
+        $updateToken    = $done['token'];
+        $autoUpdate     = $done['auto'];
+        $wants          = $done['wants'];
     }
 
     // --- The page. -----------------------------------------------------------
