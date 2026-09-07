@@ -399,7 +399,15 @@ const readServerTotals = (data) => {
     const n = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.floor(v) : null);
     const projects = n(s.projects), notes = n(s.notes), pages = n(s.pages);
     if (projects === null || notes === null || pages === null) return null;
-    return { projects: projects, notes: notes, pages: pages };
+    /* The two counts of what age took, server-wide. A server from before they
+       existed sends the three above and not these: they read as zero, which is
+       what a server with no retention would have answered anyway. */
+    const goneNotes = n(s.expired_notes), gonePages = n(s.expired_pages);
+    return {
+        projects: projects, notes: notes, pages: pages,
+        expiredNotes: goneNotes === null ? 0 : goneNotes,
+        expiredPages: gonePages === null ? 0 : gonePages,
+    };
 };
 
 const readList = (data) => {

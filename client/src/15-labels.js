@@ -98,7 +98,11 @@ ns.defaultLabels = {
 
        "Across the site" and not "in this project": the reviewer knows the site
        they are looking at; the word project belongs to whoever installed it. */
-    'panel.stats_label': 'Across the site',
+    /* THE WINDOW HOLDS TWO SCOPES NOW -- this site, and the whole server --
+       so its name can no longer be one of them. "Across the site" headed a
+       block about the server underneath it, which is the kind of small lie
+       that makes a reader stop trusting the figures. */
+    'panel.stats_label': 'The figures',
 
     /* -- The configuration the assistant needs ---------------------------
        THE TOOL ALREADY HOLDS ALL OF IT: the address it talks to, and the key
@@ -139,12 +143,13 @@ ns.defaultLabels = {
        comes back to a page they annotated and finds it bare deserves the
        figure that turns a hole into a fact. "Removed by age" and not
        "deleted": nobody chose these, which is the whole point. */
+    'panel.stats_here_label': 'On this site',
     'panel.stats_gone_label': 'Removed by age',
     'panel.stats_swept': 'last sweep {d}',
     /* THE WHOLE SERVER, on the servers that publish it -- most do not, and
        then this line is never drawn. "This server" and not "the API": the
        reviewer is being told about the machine holding their notes. */
-    'panel.stats_server_label': 'This server, altogether',
+    'panel.stats_server_label': 'On this whole server',
     'panel.refresh': 'Refresh',
 
     /* -- Notes whose element cannot be found any more ------------------- */

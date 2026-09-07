@@ -813,8 +813,11 @@ not know them ignored them, which is the rule of §7 working. Each note carries
 its plain columns (§2.1), its payload columns (§2.2) and its nested replies.
 
 A server whose operator has published them adds **`server`** —
-`{"projects":n,"notes":n,"pages":n}`, what the whole installation holds across
-every project. **It is absent by default and on nearly every server**: the
+`{"projects":n,"notes":n,"pages":n,"expired_notes":n,"expired_pages":n}`, what
+the whole installation holds across every project, and what age has taken from
+it. The two `expired_` fields came later than the other three: a reader that
+does not know them takes them as zero, which is what a server with no retention
+answers anyway. **It is absent by default and on nearly every server**: the
 figure says how many teams an operator serves, and any visitor of any
 annotated page could read it. Three integers, never a project id, never a
 page, never a date.

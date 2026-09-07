@@ -48,6 +48,10 @@ const script = join(dir, 'run.php');
 
 /* The scenario, and every number below is arrived at by hand:
  *
+ * The server total counts what REMAINS (2 threads on 2 pages, in 1 project --
+ * B lost its only one) and what age took across every project: 3 + 1 threads,
+ * 1 + 1 pages. A total that only counted what remains would shrink every night.
+ *
  *   project A, page 1  two old threads, one of them with an old reply  -> gone
  *   project A, page 2  one old thread, one fresh thread                -> half
  *   project A, page 3  one old thread whose reply is fresh             -> stays
@@ -121,7 +125,8 @@ is('what A lost', [report.A.notes, report.A.pages], [3, 1]);
 is('what B lost', [report.B.notes, report.B.pages], [1, 1]);
 is('a project that lost nothing', [report.C.notes, report.C.pages, report.C.last_sweep], [0, 0, null]);
 is('what A has left', report.left, { notes: 2, open: 2, pages: 2 });
-is('what the server holds', report.server, { projects: 1, notes: 2, pages: 2 });
+is('what the server holds', report.server,
+   { projects: 1, notes: 2, pages: 2, expired_notes: 4, expired_pages: 2 });
 is('the second sweep took nothing', report.again, 0);
 is('and did not move the tally', [report.A_after.notes, report.A_after.pages], [3, 1]);
 if (typeof report.A.last_sweep !== 'string') {

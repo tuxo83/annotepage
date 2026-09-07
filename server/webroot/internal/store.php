@@ -1031,6 +1031,13 @@ class ApStore
                 "SELECT COUNT(DISTINCT `project`), COUNT(*), COUNT(DISTINCT `page_index`) "
                 . "FROM `" . $this->table . "` WHERE `reply_to` IS NULL");
             $row = $req->fetch(PDO::FETCH_NUM);
+            /* AND WHAT IS NO LONGER THERE, summed over every project. A total
+               that counted only what remains would shrink every night on a
+               server with retention, and read as a project people are leaving.
+               SUM over no rows is NULL in both engines, hence the cast. */
+            $gone = $this->pdo()->query(
+                "SELECT SUM(`expired_notes`), SUM(`expired_pages`) FROM `"
+                . $this->tallyTable() . "`")->fetch(PDO::FETCH_NUM);
         } catch (PDOException $e) {
             return null;
         }
@@ -1038,9 +1045,11 @@ class ApStore
             return null;
         }
         return array(
-            'projects' => (int) $row[0],
-            'notes'    => (int) $row[1],
-            'pages'    => (int) $row[2],
+            'projects'      => (int) $row[0],
+            'notes'         => (int) $row[1],
+            'pages'         => (int) $row[2],
+            'expired_notes' => $gone ? (int) $gone[0] : 0,
+            'expired_pages' => $gone ? (int) $gone[1] : 0,
         );
     }
 
