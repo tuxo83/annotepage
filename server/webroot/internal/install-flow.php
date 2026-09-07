@@ -994,6 +994,63 @@ function ap_i_question($key)
 }
 
 /**
+ * A SCREEN, DRAWN. The blocks come in as a list of [type, ...] and go out as
+ * the markup this file has always written -- byte for byte, which is how the
+ * conversion was checked.
+ *
+ * Eight types cover the whole installer. That is not a design goal met by
+ * luck: the screens were counted before this was written -- 21 paragraphs,
+ * eight code blocks, six headings, four sub-headings, two warnings, one lede,
+ * one table, one button -- and nothing else appeared.
+ *
+ * WHY A LIST RATHER THAN echo. The same screen has to be said twice: to a
+ * browser, and to a shell that has no browser. Written twice it diverges, and
+ * this file's own header says the day it was two copies of one page is the day
+ * one of them started being wrong.
+ */
+function ap_i_render_html(array $screen)
+{
+    foreach ($screen as $block) {
+        switch ($block[0]) {
+            case 'lede':
+                echo '<p class="lede">' . $block[1] . "</p>\n";
+                break;
+            case 'p':
+                echo '<p>' . $block[1] . "</p>\n";
+                break;
+            case 'bad':
+                echo '<p class="note bad">' . $block[1] . "</p>\n";
+                break;
+            case 'h2':
+                echo '<h2>' . $block[1] . "</h2>\n";
+                break;
+            case 'h3':
+                echo '<h3>' . $block[1] . "</h3>\n";
+                break;
+            case 'pre':
+                echo '<pre>' . $block[1] . "</pre>\n";
+                break;
+            /* The three columns are escaped HERE and nowhere else: they are
+               the only blocks whose content is measured rather than written,
+               so they are the only ones that can carry a path somebody chose. */
+            case 'table':
+                echo "<table>\n";
+                foreach ($block[1] as $line) {
+                    echo '<tr><td class="k">' . ap_i_h($line[0]) . '</td><td class="v">'
+                        . ap_i_h($line[1]) . '</td><td class="m">' . ap_i_h($line[2])
+                        . "</td></tr>\n";
+                }
+                echo "</table>\n";
+                break;
+            case 'button':
+                echo '<form method="post"><button type="submit" name="' . $block[1]
+                    . '" value="1">' . $block[2] . "</button></form>\n";
+                break;
+        }
+    }
+}
+
+/**
  * Builds internal/config-local.php.
  *
  * It says it was generated, when, and by what. That matters more than it
@@ -1576,24 +1633,30 @@ function ap_i_run(array $options)
     ap_i_head($installed ? 'annotepage -- installed' : 'annotepage -- install');
 
     if ($installed) {
-        echo '<p class="lede">Installed. One line left to paste.</p>' . "\n";
+        /* THE SCREEN, BUILT BEFORE IT IS DRAWN. Every line below adds a block
+           to this list; nothing writes to the page until the end. The list is
+           what the command line will print as text -- the same screen, said
+           twice, from one place. */
+        $screen = array();
+        $screen[] = array('lede', 'Installed. One line left to paste.');
 
-        echo '<h2>The line</h2>' . "\n";
-        echo '<p>The tag on the pages you want to annotate carries this address:</p>' . "\n";
-        echo '<pre>data-server="' . ap_i_h($serverUrl) . '"</pre>' . "\n";
+        $screen[] = array('h2', 'The line');
+        $screen[] = array('p',
+            'The tag on the pages you want to annotate carries this address:');
+        $screen[] = array('pre', 'data-server="' . ap_i_h($serverUrl) . '"');
         if ($installedRelay) {
-            echo '<p>The rest of the tag &mdash; the script source and the project id '
+            $screen[] = array('p', 'The rest of the tag &mdash; the script source and the project id '
                 . '&mdash; comes from the client, and there is nothing to declare here: '
                 . 'this server answers about any project id it is given. The key never '
                 . 'reaches it, in any form: that is what makes the notes unreadable to '
-                . "it, and to you.</p>\n";
+                . "it, and to you.");
         } else {
-            echo '<p>The rest of the tag &mdash; the script source and the project id '
+            $screen[] = array('p', 'The rest of the tag &mdash; the script source and the project id '
                 . '&mdash; comes from the client. Add the tag to a page, open it, and the '
                 . 'setup screen generates the key in your browser and hands you the block '
                 . 'to paste into <code>internal/config-local.php</code> under '
                 . '<code>projects</code>. The key never reaches this server, in any form: '
-                . "that is what makes the notes unreadable to it.</p>\n";
+                . "that is what makes the notes unreadable to it.");
         }
 
         /* THE ONE THING THIS INSTALLATION DOES THAT THE TOOL OTHERWISE PROMISES
@@ -1602,53 +1665,48 @@ function ap_i_run(array $options)
            pressed the button is the person who has to know it. Said on the
            screen that reports what was done, not left to a comment inside a
            file and a line in a diagnostic nobody opens. */
-        echo '<h2>How long a remark is kept</h2>' . "\n";
-        echo '<p>Ninety days after the last message of its thread &mdash; a review '
+        $screen[] = array('h2', 'How long a remark is kept');
+        $screen[] = array('p', 'Ninety days after the last message of its thread &mdash; a review '
             . 'cycle with room to spare &mdash; and then the whole thread goes at '
             . 'once, so a reply is never cut off its remark. Nobody chooses which: '
             . 'there is no moderation here and no takedown, which is the point of '
-            . "saying age and only age.</p>\n";
-        echo '<p>It is <code>\'max_note_age_days\' => 90</code> in the configuration '
+            . "saying age and only age.");
+        $screen[] = array('p', 'It is <code>\'max_note_age_days\' => 90</code> in the configuration '
             . 'just written. Set it to <code>0</code> to keep everything for ever. '
             . 'While it is set, the panel on your pages says so and every export '
-            . "carries it in its header &mdash; nobody discovers it late.</p>\n";
+            . "carries it in its header &mdash; nobody discovers it late.");
 
         /* WHAT ACTUALLY SWEEPS. Without this line the ceiling is kept by a die
            rolled on writes -- which is enough on a busy relay and is nothing at
            all on the case retention exists for: a project nobody has come back
            to. A promise measured in days needs a job measured in days. */
         $sweepScript = ap_i_update_script($here, 'maintenance.php');
-        echo '<p>One line makes it happen on time. Without it the sweep is a die '
+        $screen[] = array('p', 'One line makes it happen on time. Without it the sweep is a die '
             . 'rolled on writes, which on a project nobody comes back to &mdash; the '
-            . 'very case this exists for &mdash; is never rolled at all:</p>' . "\n";
-        echo '<pre>' . ap_i_h(ap_i_cron_time()) . ' php ' . ap_i_h($sweepScript)
-            . " &gt;/dev/null</pre>\n";
-        echo '<p>Drawn for you, like the update line further down, so that a hundred '
+            . 'very case this exists for &mdash; is never rolled at all:');
+        $screen[] = array('pre', ap_i_h(ap_i_cron_time()) . ' php ' . ap_i_h($sweepScript)
+            . " &gt;/dev/null");
+        $screen[] = array('p', 'Drawn for you, like the update line further down, so that a hundred '
             . 'installations do not rewrite their databases at the same second. It '
             . 'prints what it swept and exits 0 when there was nothing to do. It is '
             . 'not reachable over the web, and there is no address for it: the only '
             . 'thing that could buy anybody is making somebody else\'s deletions '
-            . "happen sooner.</p>\n";
-        echo '<h2>What was measured</h2>' . "\n";
-        echo "<table>\n";
-        foreach ($report as $line) {
-            echo '<tr><td class="k">' . ap_i_h($line[0]) . '</td><td class="v">'
-                . ap_i_h($line[1]) . '</td><td class="m">' . ap_i_h($line[2]) . "</td></tr>\n";
-        }
-        echo "</table>\n";
+            . "happen sooner.");
+        $screen[] = array('h2', 'What was measured');
+        $screen[] = array('table', $report);
 
-        echo '<h2>Check it, in one request</h2>' . "\n";
-        echo '<pre>' . ap_i_h($serverUrl) . '?action=diagnostic</pre>' . "\n";
-        echo '<p>Plain text, and short by default: the tool, its version, the format '
+        $screen[] = array('h2', 'Check it, in one request');
+        $screen[] = array('pre', ap_i_h($serverUrl) . '?action=diagnostic');
+        $screen[] = array('p', 'Plain text, and short by default: the tool, its version, the format '
             . 'and the verdict &mdash; running, or not, and what to do about it. That '
             . 'page has no authentication, so what it publishes it publishes to '
-            . "everybody.</p>\n";
-        echo '<p>The configuration just written carries '
+            . "everybody.");
+        $screen[] = array('p', 'The configuration just written carries '
             . '<code>\'diagnostic\' => \'minimal\'</code>. Change it to '
             . '<code>\'full\'</code> for the whole report &mdash; the PHP really '
             . 'served, the storage and its state, the declared projects with their '
             . 'origins &mdash; and change it back when you are done. No credential '
-            . "value ever appears there, under either value.</p>\n";
+            . "value ever appears there, under either value.");
 
         // --- KEEPING IT UP TO DATE. THREE WAYS, RANKED, WITH THE REAL PATH AND
         // THE REAL URL OF THIS INSTALLATION. An example is a thing to adapt, and
@@ -1672,87 +1730,89 @@ function ap_i_run(array $options)
         $reach = ap_i_fetch($outboundUrl, 4);
         $canReach = $reach['status'] !== null;
 
-        echo '<h2>Keeping it up to date</h2>' . "\n";
-        echo '<p>Once a day is enough. A release is not an emergency, and a run '
+        $screen[] = array('h2', 'Keeping it up to date');
+        $screen[] = array('p', 'Once a day is enough. A release is not an emergency, and a run '
             . 'with nothing to fetch costs one version check and stops there. '
-            . "Three ways, best first &mdash; you need one of them.</p>\n";
+            . "Three ways, best first &mdash; you need one of them.");
         if (!$canReach) {
-            echo '<p class="note bad">This server could not reach the outside over '
+            $screen[] = array('bad', 'This server could not reach the outside over '
                 . 'HTTPS just now, so nothing below can fetch anything until that is '
                 . 'fixed. A shell with <code>curl</code> may still get out where PHP '
-                . "cannot; the lines are here for when it does.</p>\n";
+                . "cannot; the lines are here for when it does.");
         }
 
-        echo '<h3>1. Cron, from a shell &mdash; use this one</h3>' . "\n";
-        echo '<p>It is the best of the three for one reason: the code directory stays '
+        $screen[] = array('h3', '1. Cron, from a shell &mdash; use this one');
+        $screen[] = array('p', 'It is the best of the three for one reason: the code directory stays '
             . 'writable by <strong>you</strong> and never by the web server, so no '
             . 'request to this site can rewrite this code whatever goes wrong in it. '
             . 'Nothing to turn on and nothing to keep secret. Run it once by hand to '
-            . "watch it work, then give cron this line:</p>\n";
-        echo '<pre>php ' . ap_i_h($updateScript) . "\n\n"
-            . ap_i_h($cronWhen) . ' php ' . ap_i_h($updateScript) . " &gt;/dev/null</pre>\n";
-        echo '<p>That minute and that hour were drawn for you, and any others do as '
+            . "watch it work, then give cron this line:");
+        $screen[] = array('pre', 'php ' . ap_i_h($updateScript) . "\n\n"
+            . ap_i_h($cronWhen) . ' php ' . ap_i_h($updateScript) . " &gt;/dev/null");
+        $screen[] = array('p', 'That minute and that hour were drawn for you, and any others do as '
             . 'well: what matters is that every installation does not ask the same host '
             . 'for the same file at the same second. It '
             . 'exits 0 when there was nothing to do &mdash; which is most nights &mdash; '
             . 'and 1 only when something really failed, so a scheduler that reports '
             . 'failures has something to report on. Drop the <code>&gt;/dev/null</code> '
-            . "and it mails you the result of every run instead.</p>\n";
+            . "and it mails you the result of every run instead.");
 
-        echo '<h3>2. Cron that can only fetch a URL</h3>' . "\n";
+        $screen[] = array('h3', '2. Cron that can only fetch a URL');
         if ($updateToken !== '') {
-            echo '<p>Much shared hosting has a scheduler that takes an address and '
+            $screen[] = array('p', 'Much shared hosting has a scheduler that takes an address and '
                 . 'nothing else. This is the address, and <strong>this screen is the '
                 . 'only place it will ever appear</strong> &mdash; it is not in '
                 . '<code>?action=diagnostic</code> and not in any log. Copy it before '
-                . "you leave this page.</p>\n";
-            echo '<pre>' . ap_i_h($serverUrl . '?action=update&token=' . $updateToken)
-                . "</pre>\n";
-            echo '<p>Paste that into the panel. From a crontab, the same thing:</p>' . "\n";
-            echo '<pre>' . ap_i_h($cronWhen) . ' curl -fsS \''
+                . "you leave this page.");
+            $screen[] = array('pre',
+                ap_i_h($serverUrl . '?action=update&token=' . $updateToken));
+            $screen[] = array('p',
+                'Paste that into the panel. From a crontab, the same thing:');
+            $screen[] = array('pre', ap_i_h($cronWhen) . ' curl -fsS \''
                 . ap_i_h($serverUrl . '?action=update&token=' . $updateToken)
-                . "' &gt;/dev/null</pre>\n";
-            echo '<p>Whoever calls it waits while the update runs and is answered with '
+                . "' &gt;/dev/null");
+            $screen[] = array('p', 'Whoever calls it waits while the update runs and is answered with '
                 . 'what it did &mdash; allowed at that address and nowhere else, because '
                 . 'they came for it and no reader of a page is kept waiting. At most one '
                 . 'real check a day however often it is called; add '
                 . '<code>&amp;force=1</code> to check anyway. To retire the address, '
                 . 'empty <code>update_token</code> in '
                 . '<code>internal/config-local.php</code> and it stops existing &mdash; '
-                . "unknown, not refused.</p>\n";
+                . "unknown, not refused.");
         } else {
-            echo '<p>Much shared hosting has a scheduler that takes an address and '
+            $screen[] = array('p', 'Much shared hosting has a scheduler that takes an address and '
                 . 'nothing else. You did not ask for one, so none was written. To have '
                 . 'it, put a secret of 32 characters or more in '
-                . "<code>internal/config-local.php</code>:</p>\n";
-            echo '<pre>\'update_token\' => \'32 characters or more, of your own\',</pre>'
-                . "\n";
-            echo '<p>and <code>' . ap_i_h($serverUrl)
+                . "<code>internal/config-local.php</code>:");
+            $screen[] = array('pre',
+                '\'update_token\' => \'32 characters or more, of your own\',');
+            $screen[] = array('p', 'and <code>' . ap_i_h($serverUrl)
                 . '?action=update&amp;token=&lt;that secret&gt;</code> then runs the '
                 . 'update during the request and answers with what it did. Until such a '
                 . 'key exists the action does not exist either &mdash; unknown, not '
-                . "refused.</p>\n";
+                . "refused.");
         }
 
         if (!$canDefer) {
-            echo '<h3>3. Letting the server update itself &mdash; impossible here</h3>'
-                . "\n";
-            echo '<p>This PHP interface (<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot '
+            $screen[] = array('h3',
+                '3. Letting the server update itself &mdash; impossible here');
+            $screen[] = array('p', 'This PHP interface (<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot '
                 . 'hand the response to the visitor before doing more work, and somebody '
                 . 'who came to read or write a note must never wait on a fetch to GitHub. '
                 . 'So <code>auto_update</code> is read and declined here on every write, '
                 . 'ticked or not. That is the ordinary case on shared hosting, and it is '
-                . "why the address above exists.</p>\n";
+                . "why the address above exists.");
             if ($autoUpdateOn) {
-                echo '<p class="note bad">It is on in the configuration just written, '
+                $screen[] = array('bad', 'It is on in the configuration just written, '
                     . 'and it will do nothing but be declined. Set '
                     . '<code>\'auto_update\' => false</code> in '
                     . '<code>internal/config-local.php</code>, and do not give the web '
-                    . "server write access to this directory.</p>\n";
+                    . "server write access to this directory.");
             }
         } else {
-            echo '<h3>3. Letting the server update itself &mdash; last resort</h3>' . "\n";
-            echo '<p>Only if neither of the two above exists on this host. It costs '
+            $screen[] = array('h3',
+                '3. Letting the server update itself &mdash; last resort');
+            $screen[] = array('p', 'Only if neither of the two above exists on this host. It costs '
                 . 'something the others do not: the code directory has to be '
                 . '<strong>writable by the user PHP runs as</strong>, and from that '
                 . 'moment any bug anywhere on this account that can write a file &mdash; '
@@ -1760,21 +1820,22 @@ function ap_i_run(array $options)
                 . 'remembers installing &mdash; stops being a defacement and becomes '
                 . 'permanent code execution. Setting the key back to <code>false</code> '
                 . 'does not undo it: the permission stays until somebody takes it '
-                . "away.</p>\n";
-            echo '<pre>\'auto_update\' => true,</pre>' . "\n";
-            echo '<p>in <code>internal/config-local.php</code>'
+                . "away.");
+            $screen[] = array('pre', '\'auto_update\' => true,');
+            $screen[] = array('p', 'in <code>internal/config-local.php</code>'
                 . ($autoUpdateOn ? ' &mdash; already written there, because you asked for '
                     . 'it on the form.' : ', where it is currently <code>false</code>.')
                 . ' The check then happens on a write, at most once a day, never on a '
-                . "read, and only after the reader already has their answer.</p>\n";
+                . "read, and only after the reader already has their answer.");
         }
 
-        echo '<h2>Now delete this file</h2>' . "\n";
-        echo '<p>It has done its job. It refuses to act while the configuration exists, '
+        $screen[] = array('h2', 'Now delete this file');
+        $screen[] = array('p', 'It has done its job. It refuses to act while the configuration exists, '
             . 'but an installer that stays reachable and writable on a live server is a '
-            . 'liability all the same.</p>' . "\n";
-        echo '<form method="post"><button type="submit" name="delete_self" value="1">'
-            . 'Delete ' . ap_i_h($selfName) . "</button></form>\n";
+            . 'liability all the same.');
+        $screen[] = array('button', 'delete_self', 'Delete ' . ap_i_h($selfName));
+        ap_i_render_html($screen);
+
         ap_i_foot();
         exit;
     }
