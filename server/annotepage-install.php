@@ -574,10 +574,118 @@ function ap_b_foot()
     echo "</body>\n</html>\n";
 }
 
+
+/**
+ * THE COMMAND LINE, FOR THE ONE FILE SOMEBODY DOWNLOADS.
+ *
+ * IT NAMES NO OPTION OF THE RELEASE, and that is the same rule as everywhere
+ * else in this file: it knows nothing about what it installs -- not the file
+ * names, not the version, and not the options either. It carries three flags
+ * of its own and hands the rest of the command line over, verbatim, to the
+ * release once that is on disk.
+ *
+ * `--help` NEVER FETCHES ANYTHING. An aide that makes a network request is a
+ * surprise, and on a host with no way out to HTTPS the one command that must
+ * always answer would be the one that fails. So before the release is here it
+ * prints what THIS file knows, and says where the rest comes from; afterwards
+ * the release answers, in full.
+ *
+ * Anything else IS the consent to fetch. Typing the command is what pressing
+ * the button is on the web -- the same sentence internal/update.php writes
+ * about its own command line -- so a real command downloads, verifies, and
+ * installs in one go.
+ */
+function ap_b_cli($here, $flow)
+{
+    $argv = isset($GLOBALS['argv']) ? $GLOBALS['argv'] : array();
+    $self = basename(__FILE__);
+    $wantsHelp = in_array('--help', $argv, true) || in_array('-h', $argv, true);
+    $bare = count($argv) <= 1;
+
+    /* THE ONE FLAG OF ITS OWN, and it is consumed here rather than passed on:
+       the release has never heard of it and would refuse it, rightly. It
+       exists so that somebody can read the real options before running
+       anything that configures a server. */
+    $onlyFetch = in_array('--fetch', $argv, true);
+    $rest = array_values(array_filter($argv, function ($a) { return $a !== '--fetch'; }));
+
+    if ($flow === null && ($wantsHelp || $bare)) {
+        echo "annotepage -- one file that installs the notes server.\n\n"
+            . "  php " . $self . " --help          this text\n"
+            . "  php " . $self . " <options>       fetch the release, then install\n\n"
+            . "This file carries no release: it downloads one from\n"
+            . "  " . AP_B_SOURCE . "\n"
+            . "over HTTPS with certificate verification on, checks every file against\n"
+            . "the published MANIFEST's SHA-256 before putting it in place, and writes\n"
+            . "nothing at all if one hash disagrees. It knows no file name and no\n"
+            . "version of its own; it reads them from that manifest.\n\n"
+            . "THE OPTIONS THAT CONFIGURE THE SERVER BELONG TO THE RELEASE, not to\n"
+            . "this file, which is why they are not listed here -- a copy of that list\n"
+            . "would be wrong at the first one added. Any command line other than\n"
+            . "--help fetches the release and hands your options straight to it, so a\n"
+            . "single command installs. To read the options first, fetch and ask:\n\n"
+            . "  php " . $self . " --fetch\n"
+            . "  php " . $self . " --help\n\n"
+            . "Exit codes: 0 done, 1 the download or the install failed and nothing\n"
+            . "was left behind, 2 the command line itself.\n";
+        exit($wantsHelp ? 0 : 2);
+    }
+
+    if ($flow === null) {
+        /* FETCHING IS SAID, NOT SILENT. It is fifteen files off the network on
+           somebody's server; a command that does it without a word would be a
+           command nobody could audit from a log. */
+        fwrite(STDERR, 'Fetching the release from ' . AP_B_SOURCE . " ...\n");
+        $result = ap_b_install($here);
+        foreach ($result['lines'] as $line) {
+            fwrite(STDERR, '  ' . $line . "\n");
+        }
+        if (!$result['ok']) {
+            fwrite(STDERR, "\nNothing was installed, and nothing was left behind.\n");
+            if ($result['fallback']) {
+                fwrite(STDERR, "\n" . ap_b_fallback_sentence() . "\n");
+            }
+            exit(1);
+        }
+        $flow = ap_b_flow($here);
+        if ($flow === null) {
+            fwrite(STDERR, "The release was downloaded but its flow file is not "
+                . "readable.\n");
+            exit(1);
+        }
+        fwrite(STDERR, "\n");
+
+        if ($onlyFetch && count($rest) <= 1) {
+            echo "The release is here, version " . $result['version'] . ".\n"
+                . "  php " . $self . " --help    the options it takes\n";
+            exit(0);
+        }
+    }
+
+    /* AND THE RELEASE TAKES OVER, with the command line untouched. It reads it
+       itself: this file has no vocabulary to filter it with, and must not
+       acquire one. */
+    require $flow;
+    ap_i_run(array(
+        'here'         => $here,
+        'self'         => __FILE__,
+        'outbound_url' => AP_B_SOURCE,
+        'argv'         => $rest,
+    ));
+    exit;
+}
+
 // --- 8. Dispatch ------------------------------------------------------------
 
 $here = __DIR__;
 $flow = ap_b_flow($here);
+
+/* THE OTHER FACE, BEFORE ANY OF THE REQUEST HANDLING BELOW. Detected, never
+   passed in: one convention for the whole codebase -- internal/update.php and
+   internal/install-flow.php test PHP_SAPI the same way. */
+if (PHP_SAPI === 'cli') {
+    ap_b_cli($here, $flow);
+}
 $method = isset($_SERVER['REQUEST_METHOD'])
     ? strtoupper((string) $_SERVER['REQUEST_METHOD']) : 'GET';
 

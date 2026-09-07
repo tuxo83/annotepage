@@ -429,6 +429,32 @@ const shell = async (dir, args) => {
     rmSync(dir, { recursive: true, force: true });
 }
 
+/* -- THE FILE SOMEBODY DOWNLOADS, BEFORE IT HAS DOWNLOADED ANYTHING ------
+   Both cases run with no release on disk and touch no network: an aide that
+   fetches would be an aide that fails on a host with no way out, which is one
+   of the hosts this tool is for. */
+{
+    const dir = mkdtempSync(join(tmpdir(), 'annotepage-boot-'));
+    cpSync(join(here, '..', 'server', 'annotepage-install.php'),
+           join(dir, 'annotepage-install.php'));
+    const run = (args) => spawnSync('php', [join(dir, 'annotepage-install.php'), ...args],
+        { encoding: 'utf8', cwd: dir });
+
+    const help = run(['--help']);
+    check('the bootstrap does not answer --help before it has a release',
+        help.status === 0 && /one file that installs/.test(help.stdout || ''),
+        'exit ' + help.status);
+    check('asking for help downloaded something',
+        readdirSync(dir).length === 1, readdirSync(dir).join(' '));
+
+    const bare = run([]);
+    check('a bare bootstrap command line did not refuse', bare.status === 2);
+    check('a bare command line downloaded something',
+        readdirSync(dir).length === 1, readdirSync(dir).join(' '));
+
+    rmSync(dir, { recursive: true, force: true });
+}
+
 if (failures.length) {
     console.error('install:\n' + failures.map((f) => '  ' + f).join('\n'));
     process.exit(1);

@@ -100,6 +100,28 @@ const compare = (what, mine, theirs) => {
 compare('question', legends.map(entities), drawnLegends);
 compare('answer', answers.map(entities), drawnAnswers);
 
+/* THE FILE SOMEBODY DOWNLOADS KNOWS NO OPTION NAME, and that is the same rule
+   its own header states about file names and versions: it installs a release
+   it knows nothing about. A copy of the option list inside it would be wrong
+   at the first option added -- and it would be wrong SILENTLY, since the two
+   copies only meet on somebody else's server. */
+const bootstrap = readFileSync(join(here, '..', 'server', 'annotepage-install.php'), 'utf8');
+const optionNames = [...questions.map((q) => q.legend)];
+const derived = spawnSync('php', ['-r',
+    'define("AP_INTERNAL", 1); require ' + JSON.stringify(flowPath) + ';'
+    + ' echo implode(" ", array_keys(ap_i_cli_options()));'], { encoding: 'utf8' });
+for (const name of (derived.stdout || '').trim().split(/\s+/).filter(Boolean)) {
+    /* Its own three flags are its own: --help, --fetch and --version are what
+       it answers for, and it says so in its header. */
+    if (['help', 'version', 'fetch'].includes(name)) continue;
+    if (bootstrap.includes('--' + name)) {
+        failures.push(`annotepage-install.php names --${name}, which belongs to the`
+            + ' release. It installs a release it knows nothing about, and that has to'
+            + ' include the options.');
+    }
+}
+void optionNames;
+
 if (failures.length) {
     console.error('install questions:\n' + failures.map((f) => '  ' + f).join('\n'));
     process.exit(1);
