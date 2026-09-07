@@ -379,9 +379,21 @@ code {
             <b>64&nbsp;KB</b> gets a 413. And a project may be capped at a
             number of notes, which a public relay sets to 500 and a server
             carrying one team&rsquo;s own notes leaves off.</p>
-                <p class="qa-a">Reading a page is <b>never</b> counted. Counting it would
-            cost a database write every time somebody opens an annotated page,
-            to defend against a request that makes nothing grow.</p>
+                <p class="qa-a">Reading a page is <b>never</b> counted &mdash; measured:
+            five browsers opening the same annotated page make five requests
+            and spend nothing. Counting them would cost a database write every
+            time somebody opens a page, to defend against a request that makes
+            nothing grow. The export limit is spent by an <b>assistant</b>,
+            whose loop &mdash; read, reply, resolve &mdash; costs about three
+            per remark.</p>
+                <p class="qa-a"><b>On a server carrying your own site&rsquo;s notes, two of
+            them are switched off</b> when the installer writes your
+            configuration: everybody who can write is already behind the same
+            door as the site under review, so a ceiling on how fast your own
+            team may annotate protects nobody from anything. What stays on
+            there is the write count per address, which is not aimed at anybody
+            &mdash; it catches a client stuck in a loop. On a public relay they
+            all stay on: there, an export is bandwidth a stranger can ask for.</p>
                 <p class="qa-a">The installer writes all four into your configuration as
             comments, with the numbers already in them: uncomment a line to
             change it, leave it and the tool keeps deciding. Behind a proxy,

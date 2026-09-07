@@ -144,6 +144,12 @@ if (own.config) {
         ['retention', "'max_note_age_days'     => 90"],
         ['server totals, off', "'publish_server_totals' => false"],
         ['an empty projects array', "'projects' => array()"],
+        /* TURNED OFF, NOT LEFT TO BE MET. On a server carrying one site's own
+           notes there is nobody to defend against: everybody who can write is
+           already behind the same door as the site. A limit that can only ever
+           refuse honest work is friction wearing a security shape. */
+        ['the project write limit switched off', "'rate_writes_per_project' => 0"],
+        ['the export limit switched off', "'rate_exports_per_ip' => 0"],
     ]) {
         check(`the configuration does not declare ${what}`, own.config.includes(wanted));
     }
@@ -195,6 +201,11 @@ stop(own);
 const relay = await rehearse(await freePort(), 'storage=sqlite&audience=anyone&updates=cron');
 check('the relay run never came up', relay.up);
 if (relay.config) {
+    /* And on a relay they stay ON: there, an export is bandwidth a stranger can
+       ask for, and a project id is public. Written nowhere means the default
+       is in force, which is what "on" looks like in this file. */
+    check('a relay had its export limit switched off',
+        !relay.config.includes("'rate_exports_per_ip' => 0"));
     for (const [what, wanted] of [
         ['a relay', "'deployment' => 'relay'"],
         ['open registration', "'open_registration' => true"],
@@ -202,6 +213,9 @@ if (relay.config) {
            project of 122 remarks already holds about 370. 500 left a working
            team a third of a campaign, and past the cap nobody can reply. */
         ['a cap per project', "'max_notes_per_project' => 2000"],
+        /* And on a relay they stay ON: there, an export is bandwidth a
+           stranger can ask for, and a project id is public. */
+
     ]) {
         check(`the relay configuration does not declare ${what}`, relay.config.includes(wanted));
     }

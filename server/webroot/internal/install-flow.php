@@ -2492,6 +2492,33 @@ function ap_i_config_text(array $values)
             $text .= "    // nobody can even reply. 2000 is five such projects.\n";
             $text .= "    'max_notes_per_project' => 2000,\n\n";
         }
+    } else {
+        /* TWO OF THEM HAVE NO OBJECT HERE, SO THEY ARE TURNED OFF RATHER THAN
+           LEFT TO BE MET. On a server carrying one site's own notes, everybody
+           who can reach it is already behind the same door as the site under
+           review: there is nobody to defend against, and a limit that only
+           ever refuses honest work is friction with a security shape.
+
+           What stays on is the per-address write count, which is not aimed at
+           anybody -- it catches a client stuck in a loop, and it is the only
+           one of the three that would. */
+        if (!isset($chosen['rate_writes_per_project'])) {
+            $text .= "    // OFF, and deliberately: this server carries one site's notes,\n";
+            $text .= "    // and everybody who can write to it is already behind the same\n";
+            $text .= "    // access restriction as the site itself. A ceiling on how fast\n";
+            $text .= "    // a team may annotate their own site protects nobody from\n";
+            $text .= "    // anything. On a relay it is the opposite: see server/relay/.\n";
+            $text .= "    'rate_writes_per_project' => 0,\n\n";
+        }
+        if (!isset($chosen['rate_exports_per_ip'])) {
+            $text .= "    // OFF too. An export is how an assistant READS: its loop --\n";
+            $text .= "    // read, reply, resolve -- costs about three per remark, so this\n";
+            $text .= "    // is the limit that would bite first, and it would bite the one\n";
+            $text .= "    // consumer this tool has. It exists for a relay, where an\n";
+            $text .= "    // export is bandwidth a stranger can ask for; here the notes\n";
+            $text .= "    // are your own.\n";
+            $text .= "    'rate_exports_per_ip' => 0,\n\n";
+        }
     }
 
     if ($values['auto_update']) {
