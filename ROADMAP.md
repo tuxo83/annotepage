@@ -24,15 +24,20 @@ attached, which is the part worth keeping.
   `--help` that is readable on its own, and the two faces have to cover the
   SAME set of options -- neither able to configure something the other cannot.
 
-  Measured before promising anything: `config.php` recognises **34 top-level
-  keys**; the installer's form asks **nine fields** and writes **two keys**
-  into the configuration, leaving everything else at its default. So parity is
-  not "add a CLI beside the form": it is deciding what the installer is for.
-  Every key is not a question -- eleven of the thirty-four are length caps
-  nobody sets at install time -- and the design question the review has to
-  settle is which keys are *questions*, which are *flags for whoever knows
-  they want them*, and which are neither. Until that line is drawn, a CLI
-  would be a second incomplete interface rather than one complete one.
+  Measured, and the first measurement written here was wrong twice:
+  `config.php` recognises **35 top-level keys**, and the form does not write
+  two of them but **thirteen** -- it asks three questions and DECIDES thirteen
+  keys, two of which (`max_note_age_days => 90`, and a cap per project on a
+  relay) are deliberately not defaults in `config.php`, because defaulting
+  them there would start deleting threads on servers already in service.
+
+  That is the whole design question, and it is settled: only three keys are
+  questions (`deployment`, `storage`, and the database credentials under it),
+  three more are flags written BY a question, and the remaining twenty-nine
+  are caps, bounds and defaults nobody sets while installing. The command line
+  therefore carries about a dozen options, not thirty-five -- plus the one
+  thing a shell cannot deduce and a browser reads off its own request: the
+  address the API will answer at.
 
   Also required, and cheaper: a CLI run must be non-interactive by
   construction (no prompt with a default nobody sees in a script), must say
