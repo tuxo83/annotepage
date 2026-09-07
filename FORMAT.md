@@ -500,6 +500,14 @@ is **the length of the envelope: 24000 characters** for `payload`, 2000 for
 `resolution_payload`, 1000 for `title_payload`. Going over returns 400 naming the limit, never a silent
 truncation.
 
+They are enforced **in one place**: the server's input check, which answers 400
+naming the field and the limit. Not in the database — since server 2.15 the
+columns that hold what a person wrote have no width at all, in both stores. A
+width there was a second opinion on the same limit, and when two opinions
+disagree the database settles it badly: measured on MariaDB 10.11, a value
+longer than the column is an error that loses the text in strict mode, and a
+**silent truncation** on the permissive `sql_mode` shared hosting sets.
+
 **These thirteen numbers are not configuration.** They were keys of the
 server's configuration file until 2.14, and nine of them are the width of a
 MySQL column the day the table is created: raising one afterwards changed what

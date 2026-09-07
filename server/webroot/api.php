@@ -643,7 +643,14 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
     // knows what the storage is. We display "key value" pairs without
     // interpreting them.
     try {
-        $lines = (new ApStore($config))->diagnosticLines();
+        /* KEPT IN A VARIABLE, because what follows asks the same store a
+           second question. It was written as (new ApStore(...))->... and then
+           a later line asked $store, which existed nowhere: method_exists()
+           on nothing is false, so the check below printed NOTHING and looked
+           like a store that had nothing to say. Found by reading the output
+           of a server built for the occasion, not by reading the code. */
+        $store = new ApStore($config);
+        $lines = $store->diagnosticLines();
     } catch (ApFailure $e) {
         ap_diag_text($e->getMessage() . "\n\n");
         ap_diag_line('verdict', 'the storage cannot even be questioned.');
@@ -677,6 +684,23 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
           . (ap_store_kind($config) === 'sqlite' ? 'store-sqlite.php' : 'store.php')
           . ' with the one from the release, or carry those methods over.'
         : 'complete');
+
+    /* AND WHETHER THE TABLE CAN HOLD WHAT THIS SERVER ACCEPTS. A table created
+       before 2.15 has VARCHAR columns where this version writes TEXT, and
+       nothing rewrites it -- harmless while the widths are the numbers the
+       code enforces, which they are. This line is what makes it stay
+       harmless: the day the two disagree it says so here, in the one place
+       somebody looks when a write fails, instead of leaving a 500 and a line
+       in the PHP log. */
+    if (method_exists('ApStore', 'narrowColumns')) {
+        $narrow = $store->narrowColumns();
+        ap_diag_line('storage.widths', $narrow
+            ? 'TOO NARROW FOR THIS VERSION -- ' . implode(' ; ', $narrow)
+              . '. A write of that length would be refused by the database after '
+              . 'this server accepted it. Widen those columns to TEXT, or ask '
+              . 'whoever raised the limit for the migration.'
+            : 'every column can hold what this server accepts');
+    }
 }
 
 // --- 6. Routing -----------------------------------------------------------

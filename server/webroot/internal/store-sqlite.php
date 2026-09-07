@@ -14,11 +14,14 @@
  *
  * WHAT IS DIFFERENT FROM THE MySQL STORE, and none of it is hidden:
  *
- *   - THE COLUMN WIDTHS DO NOT EXIST. SQLite ignores VARCHAR(n); a text of any
- *     length goes in. The bounds of config.php are therefore applied by
- *     input.php alone, before the write, exactly as they already were -- the
- *     MySQL column was a second net, and here there is one net instead of two.
- *     Nothing accepted here would be refused there: input.php refuses first;
+ *   - THE COLUMN WIDTHS DO NOT EXIST -- and since 2.15 they do not exist in
+ *     the MySQL store either, so this is no longer a difference. SQLite always
+ *     ignored VARCHAR(n); MySQL enforced it, and enforcing it was the mistake:
+ *     measured on MariaDB, a value longer than the column is an error that
+ *     loses the text in strict mode and a SILENT TRUNCATION on a permissive
+ *     sql_mode. The bound that a reviewer can act on is input.php's, before
+ *     the write, in both stores. One net, and it is the one that explains
+ *     itself;
  *   - NO FORMAT-1 RENAME. A database written by "in-context notes" 1.2.0 is a
  *     MySQL database. No SQLite file in the world carries French column names,
  *     so the rename step of the MySQL store has nothing to do here and is not
@@ -397,9 +400,10 @@ class ApStore
      * The columns, SINGLE SOURCE: creation, catch-up and diagnostic read it.
      *
      * The names, the defaults and their meaning are the MySQL store's, to the
-     * letter -- they are the contract the rest of the server reads. What is not
-     * carried over is the WIDTH: SQLite ignores VARCHAR(n), so the bounds of
-     * config.php are enforced by input.php and only there. See the header.
+     * letter -- they are the contract the rest of the server reads. There is no
+     * WIDTH to carry over any more: since 2.15 the MySQL store writes TEXT for
+     * every column a human fills, for the reason set out there, and the bounds
+     * are enforced by input.php in both stores. See the header.
      *
      * Every column carries a default, for the same reason as in the MySQL
      * store: SQLite refuses to ADD a NOT NULL column with no default to a table
@@ -462,7 +466,10 @@ class ApStore
     {
         return array(
             $this->table . '_idx_project_index' => '"project", "page_index"',
-            $this->table . '_idx_page'          => '"page"',
+            /* No `_idx_page` any more, for the reason written out in the MySQL
+               store: nothing filters on `page`, and the export's sort does not
+               use it. Kept where it already exists -- dropping an index on
+               somebody's file buys nothing. */
             $this->table . '_idx_reply_to'      => '"reply_to"',
             /* THE ONE THE PANEL WAITS ON -- see the MySQL store, where it was
                measured: projectTotals() runs on EVERY load of an annotated

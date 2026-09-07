@@ -541,6 +541,68 @@ class ApStore
         }
     }
 
+    /**
+     * Columns a live table declares NARROWER than the code now enforces.
+     *
+     * THE ONE THING THAT COULD STILL LOSE TEXT, MADE VISIBLE INSTEAD OF LEFT
+     * TO BE MET. A table created before 2.15 carries VARCHAR(n) where this
+     * version writes TEXT, and nothing rewrites it: that is safe today,
+     * because those n are exactly the numbers ap_field() still refuses past.
+     * It stops being safe the day one of the AP_LEN_* constants GROWS -- the
+     * check would accept 900 characters that a VARCHAR(300) cannot hold, and
+     * the insert would either fail with a 500 or, on a permissive sql_mode,
+     * truncate in silence.
+     *
+     * So the comparison is made here rather than trusted to whoever changes a
+     * constant: every column the code fills with a bounded field is measured
+     * against the bound. Empty is the answer on a table this version created,
+     * and on every table in service today.
+     *
+     * No effect on anything: it reads the schema and returns a list.
+     *
+     * @return array of readable lines, empty when everything can hold what the
+     *               code accepts, or empty when the schema cannot be read
+     */
+    public function narrowColumns()
+    {
+        $bounds = array(
+            'page' => AP_LEN_PAGE, 'selector' => AP_LEN_SELECTOR,
+            'fingerprint' => AP_LEN_FINGERPRINT, 'excerpt' => AP_LEN_EXCERPT,
+            'author' => AP_LEN_AUTHOR, 'text' => AP_LEN_TEXT,
+            'version' => AP_LEN_VERSION, 'environment' => AP_LEN_ENVIRONMENT,
+            'viewport' => AP_LEN_VIEWPORT, 'title' => AP_LEN_TITLE,
+            'resolved_by' => AP_LEN_AUTHOR, 'resolved_version' => AP_LEN_VERSION,
+            'payload' => AP_LEN_PAYLOAD,
+            'resolution_payload' => AP_LEN_RESOLUTION_PAYLOAD,
+            'title_payload' => AP_LEN_TITLE_PAYLOAD,
+        );
+        try {
+            $req = $this->pdo()->prepare(
+                'SELECT column_name, character_maximum_length '
+                . 'FROM information_schema.columns '
+                . 'WHERE table_schema = DATABASE() AND table_name = ?');
+            $req->execute(array($this->table));
+            $rows = $req->fetchAll(PDO::FETCH_NUM);
+        } catch (PDOException $e) {
+            ap_log('cannot read the column widths : ' . $e->getMessage());
+            return array();
+        }
+
+        $narrow = array();
+        foreach ($rows as $row) {
+            $name = strtolower((string) $row[0]);
+            if (!isset($bounds[$name]) || $row[1] === null) {
+                continue;
+            }
+            $width = (int) $row[1];
+            if ($width > 0 && $width < $bounds[$name]) {
+                $narrow[] = $name . ' holds ' . $width . ' characters and this server '
+                    . 'accepts ' . $bounds[$name];
+            }
+        }
+        return $narrow;
+    }
+
     /** Indexes REALLY present, lowercased, or null. No effect. */
     private function presentIndexes()
     {
@@ -586,16 +648,50 @@ class ApStore
             // unknown mode, and an unknown mode means every row is skipped
             // (FORMAT.md section 2.1). Do not tighten it back.
             'mode'       => "VARCHAR(16) NOT NULL DEFAULT ''",
-            // Plain payload: filled in plain mode, empty in encrypted mode.
-            'page'        => 'VARCHAR(' . AP_LEN_PAGE . ") NOT NULL DEFAULT ''",
-            'selector'    => 'VARCHAR(' . AP_LEN_SELECTOR . ") NOT NULL DEFAULT ''",
-            'fingerprint' => 'VARCHAR(' . AP_LEN_FINGERPRINT . ") NOT NULL DEFAULT ''",
-            'excerpt'     => 'VARCHAR(' . AP_LEN_EXCERPT . ") NOT NULL DEFAULT ''",
-            'author'      => 'VARCHAR(' . AP_LEN_AUTHOR . ") NOT NULL DEFAULT ''",
-            'text'        => 'TEXT NOT NULL',
-            'version'     => 'VARCHAR(' . AP_LEN_VERSION . ") NOT NULL DEFAULT ''",
-            'environment' => 'VARCHAR(' . AP_LEN_ENVIRONMENT . ") NOT NULL DEFAULT ''",
-            'viewport'    => 'VARCHAR(' . AP_LEN_VIEWPORT . ") NOT NULL DEFAULT ''",
+            /* WHAT A HUMAN WROTE IS A TEXT COLUMN, WITH NO WIDTH AT ALL, and
+               that is the answer to a question this file used to get wrong.
+               These were VARCHAR(n), n coming from the same constants the
+               input check uses. A width in a column looks like a second line
+               of defence. It is not one -- measured, both ways, on MariaDB
+               10.11:
+
+                 - in strict mode (the default), a value longer than the
+                   column is an ERROR at the insert. If the check ever accepts
+                   what the column refuses, the reviewer gets a 500 and their
+                   text is gone;
+                 - with a permissive sql_mode -- which shared hosting sets and
+                   this tool does not control -- the same value is TRUNCATED
+                   and stored. 500 characters in, 300 kept, no error, nobody
+                   told. A remark cut mid-sentence.
+
+               Neither is a refusal anybody can act on. The refusal that is one
+               happens before both, in ap_field(): a 400 naming the field and
+               the limit. And SQLite, which is the default store and most of
+               the installations, never had a width at all -- it ignores
+               VARCHAR(n). So the width was not protecting anything; it was one
+               store behaving differently from the other, in the direction that
+               damages text.
+
+               NULL DEFAULT NULL and not NOT NULL DEFAULT '': a TEXT column
+               cannot carry a default before MySQL 8.0.13 and not at all on
+               MariaDB, and a NOT NULL column with no default does not ADD
+               cleanly to a table that already holds rows -- which is exactly
+               where the catch-up is useful. normalise() brings NULL back to
+               the empty string, once, on the way out.
+
+               An existing table keeps its VARCHARs: nothing here rewrites a
+               live table, and it does not need to, since the widths it has are
+               the numbers the code still enforces. narrowColumns() below is
+               what makes that safe to leave alone. */
+            'page'        => 'TEXT NULL DEFAULT NULL',
+            'selector'    => 'TEXT NULL DEFAULT NULL',
+            'fingerprint' => 'TEXT NULL DEFAULT NULL',
+            'excerpt'     => 'TEXT NULL DEFAULT NULL',
+            'author'      => 'TEXT NULL DEFAULT NULL',
+            'text'        => 'TEXT NULL DEFAULT NULL',
+            'version'     => 'TEXT NULL DEFAULT NULL',
+            'environment' => 'TEXT NULL DEFAULT NULL',
+            'viewport'    => 'TEXT NULL DEFAULT NULL',
             // Encrypted payload: the other way round. Declared NULL with a NULL
             // default rather than `NOT NULL`: a TEXT cannot carry a default
             // value before MySQL 8.0.13, and a NOT NULL column with no default
@@ -611,12 +707,12 @@ class ApStore
             // exactly like the resolution and for the same reason: it is
             // written LATER, by somebody else, and folding it in would
             // mean re-encrypting a remark nobody is allowed to rewrite.
-            'title'         => 'VARCHAR(' . AP_LEN_TITLE . ") NOT NULL DEFAULT ''",
+            'title'         => 'TEXT NULL DEFAULT NULL',
             'title_payload' => 'TEXT NULL DEFAULT NULL',
             // Resolution, plain part.
             'resolved_at'      => 'DATETIME NULL DEFAULT NULL',
-            'resolved_by'      => 'VARCHAR(' . AP_LEN_AUTHOR . ") NOT NULL DEFAULT ''",
-            'resolved_version' => 'VARCHAR(' . AP_LEN_VERSION . ") NOT NULL DEFAULT ''",
+            'resolved_by'      => 'TEXT NULL DEFAULT NULL',
+            'resolved_version' => 'TEXT NULL DEFAULT NULL',
             'created_at'       => "DATETIME NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT 'UTC, written by PHP'",
             'reply_to'         => 'INT UNSIGNED NULL DEFAULT NULL',
         );
@@ -635,7 +731,17 @@ class ApStore
     {
         return array(
             'idx_project_index' => '`project`, `page_index`',
-            'idx_page'          => '`page`',
+            /* `idx_page` IS GONE, and it is not a loss: no query of this file
+               has ever filtered on `page`. It served the export's ORDER BY,
+               which does not use it -- EXPLAIN on 14,000 rows says `type: ALL,
+               Using filesort` with the index in place, because the sort is on
+               five expressions and no index covers them. It cannot survive
+               `page` becoming a TEXT column anyway: MySQL refuses an index on
+               a TEXT without a prefix length, and a prefix index would serve
+               that sort no better than none.
+               A table that already carries it keeps it -- the catch-up adds
+               what is missing and drops nothing, which is the right way round
+               for something running on somebody else's data. */
             'idx_reply_to'      => '`reply_to`',
             /* THE ONE THE PANEL WAITS ON. projectTotals() runs on EVERY load of
                an annotated page -- three counts over one project -- and the
@@ -1661,12 +1767,19 @@ class ApStore
                             ? (int) $row['format'] : 1,
             'mode'       => isset($row['mode']) && (string) $row['mode'] !== ''
                             ? (string) $row['mode'] : 'plain',
-            'page'        => (string) $row['page'],
-            'selector'    => (string) $row['selector'],
-            'fingerprint' => (string) $row['fingerprint'],
-            'excerpt'     => (string) $row['excerpt'],
-            'author'      => (string) $row['author'],
-            'text'        => (string) $row['text'],
+            /* NULL COMES BACK AS THE EMPTY STRING, HERE AND NOWHERE ELSE.
+               These columns are TEXT NULL since 2.15 -- a TEXT cannot carry a
+               default on MariaDB, so the addable shape is the nullable one --
+               and a row written by an older version, or added by the catch-up
+               to a table that already held rows, carries NULL in them. Every
+               reader downstream expects a string, and (string) null is '' :
+               the cast is the conversion, and it is done once. */
+            'page'        => isset($row['page']) ? (string) $row['page'] : '',
+            'selector'    => isset($row['selector']) ? (string) $row['selector'] : '',
+            'fingerprint' => isset($row['fingerprint']) ? (string) $row['fingerprint'] : '',
+            'excerpt'     => isset($row['excerpt']) ? (string) $row['excerpt'] : '',
+            'author'      => isset($row['author']) ? (string) $row['author'] : '',
+            'text'        => isset($row['text']) ? (string) $row['text'] : '',
             'created_at'  => ap_iso_date($row['created_at']),
             // Note-taking context. Written at save time, it was not read back in
             // the original tool: the column filled up and nobody saw it.

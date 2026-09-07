@@ -330,6 +330,44 @@ if (tooMany) {
     rmSync(dir2, { recursive: true, force: true });
 }
 
+/* -- AND NO COLUMN CARRIES A WIDTH -----------------------------------------
+   A width in a column is not a second line of defence, it is a second
+   OPINION -- and when the two disagree the database wins in the worst way:
+   an error that loses the text in strict mode, a silent truncation on a
+   permissive sql_mode, both measured on MariaDB 10.11. The refusal that a
+   reviewer can act on is ap_field()'s 400, above. So the columns a human
+   writes into are TEXT, in both stores, and this is what keeps them that way
+   the next time somebody reaches for VARCHAR because it looks tidier.
+   Read out of the PHP, with no database in sight: it is a statement about
+   what the code would CREATE. */
+{
+    const columns = spawnSync('php', ['-r',
+        'define("AP_INTERNAL", 1); require "internal/errors.php";'
+        + ' require "internal/config.php"; require "internal/store.php";'
+        + ' $m = new ReflectionMethod("ApStore", "expectedColumns"); $m->setAccessible(true);'
+        + ' $s = new ApStore(array("table_prefix" => "notes_", "database" => array()));'
+        + ' foreach ($m->invoke($s) as $n => $d) { echo $n, "=", $d, "\n"; }'],
+        { encoding: 'utf8', cwd: webroot });
+    const declared = new Map((columns.stdout || '').trim().split('\n')
+        .filter(Boolean).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
+    check('expectedColumns() could not be read', declared.size > 10,
+        (columns.stdout || '') + (columns.stderr || ''));
+
+    /* Everything a person types or an assistant writes. `project`,
+       `page_index` and `mode` are not in the list on purpose: they are
+       machine values of a shape the format fixes -- 22 base64url characters,
+       and one word out of two -- and two of them are index columns. */
+    for (const column of ['page', 'selector', 'fingerprint', 'excerpt', 'author', 'text',
+                          'version', 'environment', 'viewport', 'title', 'resolved_by',
+                          'resolved_version']) {
+        const definition = declared.get(column) || '';
+        check(`the MySQL column "${column}" is declared ${definition.trim()} -- a width`
+            + ' there is a second opinion on a limit the code already enforces, and the'
+            + ' database settles the disagreement by erroring or by truncating',
+            /^TEXT/i.test(definition.trim()), definition);
+    }
+}
+
 /* -- AND THE ONE REQUEST THIS SERVER MAKES OF SOMEBODY ELSE ---------------
    ?action=diagnostic has no authentication, and in `full` it asks the release
    host for the published version. Unbounded, that is a 200-byte request from
@@ -373,4 +411,5 @@ console.log('limits: writes, exports, page loads, body size and the note cap eac
     + 'from the command line, crossed, and refused with the number they name; '
     + "the read counter off writes no row; the diagnostic's outbound probe is "
     + 'remembered, expires, and distrusts a clock from the future; a field length '
-    + 'is the code\'s, and a file that still sets one changes nothing');
+    + 'is the code\'s, a file that still sets one changes nothing, and no column '
+    + 'a human writes into carries a width');
