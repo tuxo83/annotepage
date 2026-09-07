@@ -27,7 +27,8 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
-import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, readdirSync, chmodSync } from 'node:fs';
+import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, readdirSync,
+         chmodSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -255,9 +256,104 @@ check('a failed run left a database behind', leftovers.length === 0, leftovers.j
 chmodSync(join(doomed.root, 'internal'), 0o755);
 stop(doomed);
 
+/* -- WHAT AN OLDER INSTALLER WROTE MUST GO ON BEING READ ----------------
+   internal/install-flow.php travels in the MANIFEST, so every rewrite of it
+   lands on every server already installed, at their next update. Their
+   configuration does not travel with it: it was written months ago, by a
+   version that did not know the keys this one writes. `config.php` merges its
+   defaults over whatever it finds, which is what makes that safe -- and this
+   is the only place that says so out loud.
+
+   TWO FIXTURES, AND THEY ARE FROZEN ON PURPOSE. One is what the installer
+   generated before today; the other is what somebody writes by hand, which
+   INSTALL.md tells them they may. Neither is regenerated from the current
+   code: a fixture that follows the code proves nothing. */
+
+const fixtures = {
+    'the 2.9.1 installer': (file) => `<?php
+/* Written by annotepage install.php 2.9.1 -- kept as a fixture. */
+return array(
+    'active' => true,
+    'deployment' => 'relay',
+    'open_registration' => true,
+    'storage'  => 'sqlite',
+    'database' => array('file' => '${file}'),
+    'projects' => array(),
+    'max_note_age_days'     => 90,
+    'max_notes_per_project' => 500,
+    'auto_update' => false,
+    'update_token' => 'a-token-of-more-than-thirty-two-characters',
+    'forward_root_to' => '',
+    'diagnostic' => 'minimal',
+);
+`,
+    'five lines written by hand': (file) => `<?php
+return array(
+    'active' => true,
+    'deployment' => 'self-hosted',
+    'storage' => 'sqlite',
+    'database' => array('file' => '${file}'),
+    'projects' => array(),
+);
+`,
+};
+
+for (const [what, write] of Object.entries(fixtures)) {
+    const dir = mkdtempSync(join(tmpdir(), 'annotepage-old-'));
+    const root = join(dir, 'web');
+    cpSync(webroot, root, { recursive: true });
+    writeFileSync(join(root, 'internal', 'config-local.php'),
+                  write(join(dir, 'notes.sqlite')));
+    const port = await freePort();
+    const server = spawn('php', ['-S', '127.0.0.1:' + port], {
+        cwd: root, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: 'ignore',
+    });
+    let text = '';
+    for (let i = 0; i < 40 && !text; i += 1) {
+        await sleep(150);
+        try {
+            /* The header, because the installed server answers plain http with
+               a 308 -- which the case above is there to prove. */
+            const r = await fetch('http://127.0.0.1:' + port + '/api.php?action=diagnostic',
+                                  { headers: { 'X-Forwarded-Proto': 'https' } });
+            text = await r.text();
+        } catch (e) { /* not listening yet */ }
+    }
+    /* WHAT IS BEING PROVED IS THAT IT WAS READ. "no database file yet: it is
+       created at the first note" is a healthy verdict on a fixture nobody has
+       written a note to -- taking it for a failure would have made this check
+       demand that old servers be busy. What must never appear is the sentence
+       that says the file could not be loaded at all. */
+    const verdict = (text.match(/^verdict (.*)$/m) || [])[1] || '(none)';
+    check(`a configuration from ${what} is no longer read`,
+        text.includes('tool annotepage') && !text.includes('could not be loaded'),
+        text.slice(0, 300));
+
+    /* And it does not merely parse: the store built from it answers. The
+       relay fixture serves any well-formed id, so `list` reaches the database
+       and creates it -- which is what turns the verdict above into
+       "operational" on a real server. */
+    if (what.includes('2.9.1')) {
+        let listed = '';
+        try {
+            const r = await fetch('http://127.0.0.1:' + port
+                + '/api.php?action=list&project=AAAAAAAAAAAAAAAAAAAAAA'
+                + '&index=BBBBBBBBBBBBBBBBBBBBBB',
+                { headers: { 'X-Forwarded-Proto': 'https', Origin: 'https://example.com' } });
+            listed = await r.text();
+        } catch (e) { listed = String(e); }
+        check('a store built from that old configuration does not answer',
+            listed.includes('"ok":true') && listed.includes('"totals"'), listed.slice(0, 300));
+    }
+    void verdict;
+    try { server.kill('SIGKILL'); } catch (e) { /* gone */ }
+    rmSync(dir, { recursive: true, force: true });
+}
+
 if (failures.length) {
     console.error('install:\n' + failures.map((f) => '  ' + f).join('\n'));
     process.exit(1);
 }
-console.log('install: two installations run end to end, self-hosted and relay, '
-    + 'configuration written, data file out of reach, second run refused');
+console.log('install: four installations run end to end -- one site, a relay, a mistyped '
+    + 'audience and a run that could not finish -- plus two configurations from older '
+    + 'installers, still read');
