@@ -2177,6 +2177,52 @@ function ap_i_config_text(array $values)
        page, what their own server is carrying. Written as `false` with the
        cost beside it, it is found by whoever opens this file; left out, it is
        found by whoever reads config.php, which is nobody. */
+    /* THE LIMITS, WRITTEN INTO EVERY CONFIGURATION AS COMMENTS. They have
+       always existed and have always been changeable -- and nobody knew,
+       because the only place they were named is a template file next to this
+       one that people open when they already suspect. The file an operator
+       actually reads is the one this installer writes, so the numbers belong
+       here, with what each one bounds.
+
+       COMMENTED AND NOT ACTIVE, deliberately: a value copied into this file
+       is a value frozen at install time, and these are the defaults of
+       internal/config.php, which is where they should keep coming from. The
+       line is there to be uncommented, with the number already in it. */
+    $text .= "    // WHAT BOUNDS WHAT, AND ALL OF IT IS YOURS TO CHANGE. These are the\n";
+    $text .= "    // defaults, shown so that you know they exist. Uncomment a line to\n";
+    $text .= "    // change it; leave it and internal/config.php keeps deciding, which\n";
+    $text .= "    // means a later version may raise it for you.\n";
+    $text .= "    //\n";
+    $text .= "    // Counted per IP address and per project, in a fixed window. What is\n";
+    $text .= "    // counted is WRITES (a note, a reply, a resolution) and EXPORTS --\n";
+    $text .= "    // never a page load, which would cost a database write to defend\n";
+    $text .= "    // against a request that makes nothing grow. Over the limit is a 429\n";
+    $text .= "    // with Retry-After; 0 on any of them switches that counter off.\n";
+    $text .= "    // 'rate_window_seconds'     => 300,   // five minutes\n";
+    $text .= "    // 'rate_writes_per_ip'      => 120,   // per window\n";
+    $text .= "    // 'rate_writes_per_project' => 300,   // per window, all writers together\n";
+    $text .= "    // 'rate_exports_per_ip'     => 20,    // per window\n";
+    $text .= "    //\n";
+    if (!$relay) {
+        /* On a relay the real line is written further down, with its own
+           reason; a commented duplicate above it would be two answers to one
+           question. */
+        $text .= "    // How many notes one project may hold, 0 being no limit -- which is\n";
+        $text .= "    // what a server carrying one team's own notes wants. It refuses the\n";
+        $text .= "    // write beyond, with a 403, and erases nothing.\n";
+        $text .= "    // 'max_notes_per_project' => 5000,\n";
+        $text .= "    //\n";
+    }
+    $text .= "    // The size of one request body, beyond which the answer is 413. A note\n";
+    $text .= "    // carrying an encrypted envelope fits with room to spare.\n";
+    $text .= "    // 'max_body_bytes' => 65536,\n";
+    $text .= "    //\n";
+    $text .= "    // Behind a proxy that rewrites it on every request, the header carrying\n";
+    $text .= "    // the real client address -- without it every visitor counts as one.\n";
+    $text .= "    // NULL by default, and that default is the point: a header a client can\n";
+    $text .= "    // write itself makes all of the above bypassable in one line.\n";
+    $text .= "    // 'client_ip_header' => 'HTTP_X_FORWARDED_FOR',\n\n";
+
     $text .= "    // WHAT THIS WHOLE SERVER HOLDS -- how many projects, how many notes,\n";
     $text .= "    // how many pages -- answered on the call every annotated page already\n";
     $text .= "    // makes, beside that project's own figures. Off, and no client draws\n";

@@ -16,6 +16,7 @@
 | the installer's screens | what it measured **on your host**, and the three ways to keep the code current, with your real paths in them |
 | `internal/config-local.example.php` | every key you can write, commented next to itself |
 | `internal/config.php` | the default of every key, and why it is that |
+| the configuration the installer wrote | what bounds what, in comments with the numbers already in them: the rate limits, the body size, the cap per project |
 | the header of any file under `internal/` | what that file is for |
 | [`FORMAT.md`](../FORMAT.md) | the envelope, the derivations, the export, the addresses |
 

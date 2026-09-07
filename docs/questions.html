@@ -361,6 +361,35 @@ code {
             ever.</p>
             </article>
 
+            <!-- CE QUI BORNE, ET IL A FALLU QU'ON DEMANDE. Ces limites
+                 existent depuis le premier jour et sont configurables depuis le
+                 premier jour -- et personne ne le savait, parce que le seul
+                 endroit qui les nommait etait un fichier modele que l'on ouvre
+                 quand on soupconne deja. Un garde-fou dont personne ne connait
+                 l'existence est un garde-fou qui sera pris pour une panne. -->
+            <article class="qa" data-tags="Your own server|Who can do what|Setting it up">
+                <h3 class="qa-q" id="limits">Is there a limit on what can be written?</h3>
+                <p class="qa-tags"><span class="qa-tag">Your own server</span><span class="qa-tag">Who can do what</span><span class="qa-tag">Setting it up</span></p>
+                <p class="qa-a">Yes, four of them, and every one is a line in your
+            configuration with a default that suits a review team. They are
+            counted per five-minute window: <b>120 writes per IP address</b>,
+            <b>300 writes per project</b> &mdash; everybody writing to it
+            together &mdash; and <b>20 exports per IP</b>. Past one of those the
+            answer is a 429 saying when to come back. A request body over
+            <b>64&nbsp;KB</b> gets a 413. And a project may be capped at a
+            number of notes, which a public relay sets to 500 and a server
+            carrying one team&rsquo;s own notes leaves off.</p>
+                <p class="qa-a">Reading a page is <b>never</b> counted. Counting it would
+            cost a database write every time somebody opens an annotated page,
+            to defend against a request that makes nothing grow.</p>
+                <p class="qa-a">The installer writes all four into your configuration as
+            comments, with the numbers already in them: uncomment a line to
+            change it, leave it and the tool keeps deciding. Behind a proxy,
+            set <code>client_ip_header</code> too &mdash; without it every
+            visitor arrives as one address, and the per-IP limits count them as
+            one person.</p>
+            </article>
+
                         <article class="qa" data-tags="Key|Privacy">
                 <h3 class="qa-q">Can I switch from open to secure later?</h3>
                 <p class="qa-tags"><span class="qa-tag">Key</span><span class="qa-tag">Privacy</span></p>
