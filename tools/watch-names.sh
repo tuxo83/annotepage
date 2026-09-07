@@ -25,6 +25,14 @@ set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 LOG="${ANNOTEPAGE_WATCH_LOG:-$REPO/../.backups/watch-names.log}"
 ORIGIN="$(git -C "$REPO" remote get-url origin 2>/dev/null)"
+
+# THE OTHER GUARD, THE ONE THIS FILE IS NOT ALLOWED TO KNOW. It looks for
+# names -- a company, a person, a supplier -- so it lives outside this
+# repository and only its PATH is asked for here. Absent on a machine that has
+# not declared one, and then this watch does what it always did and says so by
+# saying nothing about it.
+GUARD="$(git -C "$REPO" config --get annotepage.guard 2>/dev/null || true)"
+[ -n "$GUARD" ] || GUARD="$(git -C "$REPO" config --get annotepage.garde 2>/dev/null || true)"
 TEMP=$(mktemp -d)
 trap 'rm -rf "$TEMP"' EXIT
 
@@ -61,6 +69,18 @@ for b in $refs; do
         echo "$when  ALERT: files of $b" >> "$LOG"
         sed 's/^/    /' "$TEMP/report" >> "$LOG"
         trouble=1
+    fi
+
+    # AND THE LEAK GUARD, ON THE SAME UNPACKED TREE. The hooks refuse such a
+    # name on this machine; nothing refuses it on another, and this is the
+    # only place that looks at what is really online. Its report names a rank,
+    # never a word, so this log stays readable by anybody.
+    if [ -n "$GUARD" ] && [ -x "$GUARD" ] && [ -d "$TEMP/tree" ]; then
+        if ! "$GUARD" "$TEMP/tree" > "$TEMP/report" 2>&1; then
+            echo "$when  ALERT: leak guard on $b" >> "$LOG"
+            sed 's/^/    /' "$TEMP/report" >> "$LOG"
+            trouble=1
+        fi
     fi
 done
 
