@@ -16,8 +16,12 @@
  *                              read, for people who will never tidy up. Without
  *                              a ceiling it only grows. Ninety days is a review
  *                              cycle with room to spare
- *   max_notes_per_project      the only thing bounding what one abuser costs,
- *                              since an abuser cannot be told from a project
+ *   max_notes_per_project      stops ONE project from growing into an export
+ *                              nobody can serve. It does NOT bound an abuser:
+ *                              a project id costs nothing to invent, so they
+ *                              start another. What bounds them is the write
+ *                              rate per address, and what makes the total
+ *                              converge is the retention above
  *   forward_root_to            somebody who reaches the bare host of a relay
  *                              should land on the page explaining what the
  *                              thing is, not on nothing

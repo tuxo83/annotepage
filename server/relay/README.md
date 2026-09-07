@@ -70,11 +70,23 @@ those three lines without saying that the default hides them: the reader ran
 the command, saw four lines, and had nothing to conclude from.
 ## What it costs to run
 
-It stores sealed envelopes it cannot read. A note is a few hundred bytes; the
-ceiling that actually bounds the bill is `max_notes_per_project`, because
-nothing distinguishes an abuser from a project. With 500 notes per project and
-90 days of retention, a thousand active projects is on the order of tens of
-megabytes.
+It stores sealed envelopes it cannot read. A note is a few hundred bytes, and
+with 90 days of retention a thousand active projects is on the order of tens
+of megabytes.
+
+**The ceiling that actually bounds the bill is `max_note_age_days`, not
+`max_notes_per_project`.** This file used to say the opposite, and it was
+measured wrong: a cap per project bounds nothing against somebody who does not
+care which project they fill, because a project id costs them nothing to
+invent -- six unknown ids, six writes, six acceptances. What bounds one
+address is `rate_writes_per_ip`, which sets the SLOPE; what makes the total
+converge instead of growing for ever is retention, which is the only key here
+that ever takes anything back.
+
+`max_notes_per_project` still earns its place, for a different job than the
+one it was given: it is what stops ONE project from becoming an export nobody
+can serve. Past it a write is refused and nothing is erased -- which also
+means the team whose id leaked cannot write either, until you raise it.
 
 There is no scheduled task: retention runs opportunistically, one write in
 fifty, and the counters clean themselves the same way. Nothing to add to cron.

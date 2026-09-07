@@ -2467,10 +2467,23 @@ function ap_i_config_text(array $values)
     }
 
     if ($relay) {
-        $text .= "    // WHAT ELSE BOUNDS THE DISK ON A RELAY. It stores what it cannot\n";
-        $text .= "    // read, for people who will never come back to tidy up, and the cap\n";
-        $text .= "    // per project is the only thing bounding what a single abuser costs\n";
-        $text .= "    // -- since an abuser cannot be told from a project.\n";
+        /* WHAT THIS CAP DOES AND WHAT IT DOES NOT. It was written here as
+           "the only thing bounding what a single abuser costs, since an
+           abuser cannot be told from a project", and that was measured wrong:
+           a project id costs nothing to invent, so somebody who does not care
+           which project they fill is not bounded by a per-project cap at all.
+           Six unknown ids, six writes, six acceptances. */
+        $text .= "    // WHAT THIS CAP IS FOR, AND WHAT IT IS NOT. It stops ONE project\n";
+        $text .= "    // from growing into an export nobody can serve. It does NOT bound\n";
+        $text .= "    // what an abuser costs you: a project id costs them nothing to\n";
+        $text .= "    // invent, so they simply start another. Against that, what sets the\n";
+        $text .= "    // slope is rate_writes_per_ip, and what makes the total converge\n";
+        $text .= "    // rather than grow for ever is max_note_age_days above -- the only\n";
+        $text .= "    // key here that ever takes anything back.\n";
+        $text .= "    //\n";
+        $text .= "    // And the other edge: past this cap a write is refused and nothing\n";
+        $text .= "    // is erased, so a team whose id leaked cannot write either, until\n";
+        $text .= "    // you raise it.\n";
         if (!isset($chosen['max_notes_per_project'])) {
             $text .= "    'max_notes_per_project' => 500,\n\n";
         }
