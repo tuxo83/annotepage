@@ -198,7 +198,10 @@ if (relay.config) {
     for (const [what, wanted] of [
         ['a relay', "'deployment' => 'relay'"],
         ['open registration', "'open_registration' => true"],
-        ['a cap per project', "'max_notes_per_project' => 500"],
+        /* Counted in ROWS: a discussed thread is two or three, so a real
+           project of 122 remarks already holds about 370. 500 left a working
+           team a third of a campaign, and past the cap nobody can reply. */
+        ['a cap per project', "'max_notes_per_project' => 2000"],
     ]) {
         check(`the relay configuration does not declare ${what}`, relay.config.includes(wanted));
     }

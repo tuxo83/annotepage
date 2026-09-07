@@ -46,7 +46,7 @@ return array(
     // Retention. 0 would mean "keep everything forever", which on this machine
     // means "grow forever".
     'max_note_age_days'     => 90,
-    'max_notes_per_project' => 500,
+    'max_notes_per_project' => 2000,
 
     // Rate limiting. These are the defaults, repeated here so that whoever
     // operates the relay sees them without opening another file.

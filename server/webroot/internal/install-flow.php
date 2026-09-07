@@ -2485,7 +2485,12 @@ function ap_i_config_text(array $values)
         $text .= "    // is erased, so a team whose id leaked cannot write either, until\n";
         $text .= "    // you raise it.\n";
         if (!isset($chosen['max_notes_per_project'])) {
-            $text .= "    'max_notes_per_project' => 500,\n\n";
+            $text .= "    // 500 until today, and it was measured too low: the cap counts\n";
+            $text .= "    // ROWS, and a discussed thread is two or three of them. A real\n";
+            $text .= "    // project of 122 remarks already holds about 370 rows, so 500\n";
+            $text .= "    // left a working team a third of a campaign -- and past it\n";
+            $text .= "    // nobody can even reply. 2000 is five such projects.\n";
+            $text .= "    'max_notes_per_project' => 2000,\n\n";
         }
     }
 
