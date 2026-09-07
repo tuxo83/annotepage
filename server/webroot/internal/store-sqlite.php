@@ -464,6 +464,14 @@ class ApStore
             $this->table . '_idx_project_index' => '"project", "page_index"',
             $this->table . '_idx_page'          => '"page"',
             $this->table . '_idx_reply_to'      => '"reply_to"',
+            /* THE ONE THE PANEL WAITS ON -- see the MySQL store, where it was
+               measured: projectTotals() runs on EVERY load of an annotated
+               page, and the first index stops at `page_index`, so the engine
+               reads the rows to see `reply_to` and `resolved_at`. Same shape
+               here, same reason, and the catch-up path adds it to a file that
+               predates it like every other index. */
+            $this->table . '_idx_project_totals'
+                => '"project", "reply_to", "resolved_at", "page_index"',
         );
     }
 

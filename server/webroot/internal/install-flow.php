@@ -657,7 +657,19 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
                 : openssl_random_pseudo_bytes(32)), '+/', '-_'), '=');
     }
 
+    /* THE SETTINGS, FROM WHICHEVER FACE. Keyed exactly as config.php keys
+       them, so nothing is translated on the way in. Absent means absent: the
+       generated file then says nothing about that key and config.php goes on
+       deciding it, which is what an operator who did not touch it wants. */
+    $settings = array();
+    foreach (ap_i_settings() as $setting) {
+        if (isset($answers[$setting['key']]) && $answers[$setting['key']] !== '') {
+            $settings[$setting['key']] = (string) $answers[$setting['key']];
+        }
+    }
+
     $values = array(
+        'settings'     => $settings,
         'storage'      => $storage,
         'deployment'   => $deployment,
         'auto_update'  => $autoUpdate,
@@ -1038,6 +1050,126 @@ function ap_i_questions()
             ),
         ),
     );
+}
+
+/**
+ * EVERYTHING ELSE, AND ALL OF IT SETTABLE FROM EITHER FACE.
+ *
+ * The installer asks three questions and that does not change: they are what
+ * somebody must answer, and a fourth would be a fourth. But asking three is
+ * not the same as deciding the other fourteen behind their back -- and it did
+ * decide one of them, `max_notes_per_project`, which on a relay it wrote at
+ * 500 without a word. That is the cap whose arrival makes a project MUTE: a
+ * reply is a write like any other, so past it nobody can answer anybody, and
+ * nothing releases it but the operator.
+ *
+ * So: three questions in front, and this table behind a fold. Same source for
+ * both faces -- the form renders it, the command line derives one option per
+ * entry from it, and what is written into the configuration comes from the
+ * same place. A setting added here appears in all three without anybody
+ * remembering to.
+ *
+ * WHAT IS NOT HERE, and it is thirteen keys: the length bounds. They size
+ * columns at CREATE and they apply in plain mode only; three of them are
+ * fixed by FORMAT.md, and changing one means accepting that a note written
+ * here be refused elsewhere. They stay in the file, commented next to
+ * themselves, which is where a decision that belongs to the format belongs.
+ *
+ * `kind` is what the value IS, so that each face can render and check it:
+ * 'int', 'bool', 'text', 'choice'. `unit` is what the number counts, for the
+ * sentence. Nothing here carries a default: the default is config.php's, and
+ * an empty field means "leave it deciding".
+ */
+function ap_i_settings()
+{
+    return array(
+        array('key' => 'max_notes_per_project', 'kind' => 'int', 'unit' => 'notes',
+            'label' => 'Notes one project may hold',
+            'say'   => 'Counted in ROWS, not in remarks: a reply is a row of its own, '
+                       . 'so a discussed thread costs two or three. Past it a write is '
+                       . 'refused with a 403 and NOTHING is erased -- but a reply is a '
+                       . 'write, so the project goes silent until somebody raises this. '
+                       . '0 is no limit, which is what a server carrying one team\'s own '
+                       . 'notes wants. A relay needs one: it stores for strangers.'),
+        array('key' => 'max_note_age_days', 'kind' => 'int', 'unit' => 'days',
+            'label' => 'How long a thread is kept',
+            'say'   => 'Counted from its LAST message, so a live discussion is never '
+                       . 'cut short, and the whole thread goes at once. 0 keeps '
+                       . 'everything for ever. This installer writes 90.'),
+        array('key' => 'rate_window_seconds', 'kind' => 'int', 'unit' => 'seconds',
+            'label' => 'The window the limits below are counted in',
+            'say'   => 'Fixed, not sliding: hitting a limit early in a window costs the '
+                       . 'rest of it. A long window makes a refusal last longer.'),
+        array('key' => 'rate_writes_per_ip', 'kind' => 'int', 'unit' => 'writes',
+            'label' => 'Writes per address, per window',
+            'say'   => 'Everybody behind one office address counts as one machine, on '
+                       . 'all of their projects together.'),
+        array('key' => 'rate_writes_per_project', 'kind' => 'int', 'unit' => 'writes',
+            'label' => 'Writes per project, per window',
+            'say'   => 'All of that project\'s writers together. It is the anti-abuse '
+                       . 'ceiling, not the working budget.'),
+        array('key' => 'rate_exports_per_ip', 'kind' => 'int', 'unit' => 'exports',
+            'label' => 'Exports per address, per window',
+            'say'   => 'An export is how an assistant READS: its whole loop -- read, '
+                       . 'reply, resolve -- costs about three per remark. This is the '
+                       . 'limit that bites first when somebody works with one.'),
+        array('key' => 'max_body_bytes', 'kind' => 'int', 'unit' => 'bytes',
+            'label' => 'Largest request body',
+            'say'   => 'Read before anything is parsed; over it, a 413. Sized by the '
+                       . 'envelope bounds of the format, not by what people write: the '
+                       . 'longest remark measured on a real project used 5% of it.'),
+        array('key' => 'client_ip_header', 'kind' => 'text', 'unit' => '',
+            'label' => 'Header carrying the real address, behind a proxy',
+            'say'   => 'Empty unless a TRUSTED proxy rewrites it on every request: a '
+                       . 'header the client can set itself makes every limit above '
+                       . 'bypassable in one line. Without it, everyone behind that proxy '
+                       . 'counts as one machine.'),
+        array('key' => 'publish_server_totals', 'kind' => 'bool', 'unit' => '',
+            'label' => 'Publish what the whole server holds',
+            'say'   => 'Three integers -- projects, notes, pages -- answered to anybody '
+                       . 'who can open one annotated page. Counted on every page load: '
+                       . 'measured at 5.7 ms without it and 41.8 ms with it on 60,000 '
+                       . 'notes.'),
+        array('key' => 'forward_root_to', 'kind' => 'text', 'unit' => '',
+            'label' => 'Where a bare visit to this directory goes',
+            'say'   => 'Empty gives a 404. An absolute http(s) URL sends it there with a '
+                       . '302 -- what a public relay wants, so that somebody landing on '
+                       . 'the bare host reaches a page explaining what this is. It never '
+                       . 'applies to api.php.'),
+        array('key' => 'diagnostic', 'kind' => 'choice', 'unit' => '',
+            'values' => array('minimal', 'full', 'off'),
+            'label' => 'How much ?action=diagnostic tells',
+            'say'   => 'That page has no authentication, so what it publishes it '
+                       . 'publishes to everybody. `minimal` is four lines and answers '
+                       . 'even when the configuration cannot be read, which is when it '
+                       . 'is needed; `full` is the whole report, for the length of a '
+                       . 'diagnosis; `off` makes the action not exist.'),
+        array('key' => 'table_prefix', 'kind' => 'text', 'unit' => '',
+            'label' => 'Prefix of the table names',
+            'say'   => 'The tables are <prefix>notes, <prefix>rate and <prefix>tally. '
+                       . 'Only worth changing on a database shared with something else '
+                       . 'that already owns those names.'),
+        array('key' => 'update_source', 'kind' => 'text', 'unit' => '',
+            'label' => 'Where updates are fetched from',
+            'say'   => 'The release channel. `next` instead of `main` in that address '
+                       . 'runs the candidate; a fork or a mirror inside a closed network '
+                       . 'goes here too. HTTPS only, and no flag relaxes that.'),
+        array('key' => 'allow_plain_http', 'kind' => 'bool', 'unit' => '',
+            'label' => 'Answer over plain http',
+            'say'   => 'A way out, not a preference: without https there is no WebCrypto, '
+                       . 'so nothing can be encrypted in a browser. Turn it on only for a '
+                       . 'host that reports an https visitor as http and therefore '
+                       . 'redirects in a loop.'),
+    );
+}
+
+/** One setting by key, or null. */
+function ap_i_setting($key)
+{
+    foreach (ap_i_settings() as $setting) {
+        if ($setting['key'] === $key) { return $setting; }
+    }
+    return null;
 }
 
 /**
@@ -1447,6 +1579,18 @@ function ap_i_cli_options()
     $options['mysql-password-file'] = array('kind' => 'value', 'field' => null,
         'label' => 'A file holding the password');
 
+    /* ONE OPTION PER SETTING, and their names ARE their keys: somebody who has
+       read the configuration file, or the FAQ, already knows what to type.
+       Nothing is invented and nothing is renamed. */
+    foreach (ap_i_settings() as $setting) {
+        $options[str_replace('_', '-', $setting['key'])] = array(
+            'kind'    => 'value',
+            'field'   => null,
+            'setting' => $setting['key'],
+            'label'   => $setting['label'],
+        );
+    }
+
     $options['api-address'] = array('kind' => 'value', 'field' => null,
         'label' => 'The address api.php will answer at');
     $options['dir'] = array('kind' => 'value', 'field' => null,
@@ -1509,6 +1653,29 @@ function ap_i_parse_options(array $argv)
             $errors[] = '--' . $name . '=' . $value . ' is not one of: '
                 . implode(', ', $shape['values']) . '.';
             continue;
+        }
+        /* A SETTING IS CHECKED AGAINST WHAT IT IS. A ceiling that arrived as
+           `2 000` or `deux mille` and was read as 2 would be a limit nobody
+           asked for, reached in an afternoon. */
+        if (isset($shape['setting'])) {
+            $setting = ap_i_setting($shape['setting']);
+            if ($setting['kind'] === 'int' && !preg_match('/^\d+$/', (string) $value)) {
+                $errors[] = '--' . $name . ' takes a whole number of '
+                    . ($setting['unit'] !== '' ? $setting['unit'] : 'units')
+                    . ', and 0 where that means no limit. Given: ' . $value;
+                continue;
+            }
+            if ($setting['kind'] === 'bool'
+                && !in_array($value, array('true', 'false'), true)) {
+                $errors[] = '--' . $name . ' takes true or false. Given: ' . $value;
+                continue;
+            }
+            if ($setting['kind'] === 'choice'
+                && !in_array($value, $setting['values'], true)) {
+                $errors[] = '--' . $name . ' is not one of: '
+                    . implode(', ', $setting['values']) . '. Given: ' . $value;
+                continue;
+            }
         }
         /* SAID TWICE IS NOT SAID ONCE. `--answers-for=one-site
            --answers-for=anyone` took the last and opened a relay without a
@@ -1702,6 +1869,22 @@ function ap_i_render_help($selfName)
             . 'and stays in your shell history; this is the way that is not. What is '
             . 'written into the configuration is the value itself, exactly as the '
             . 'browser form writes it.', '      ') . "\n";
+
+    $out .= "\nEVERYTHING ELSE, AND IT IS ALL SETTABLE HERE\n"
+        . str_repeat('=', 44) . "\n\n"
+        . ap_i_wrap('Three questions are what you must answer; these are what you may. '
+            . 'Each one is a key of internal/config.php under its own name, so what you '
+            . 'type here is what you would have edited there. Leave one out and the '
+            . 'default stays in force -- and a later version may raise it for you, '
+            . 'which a value written into your file would prevent.') . "\n";
+    foreach (ap_i_settings() as $setting) {
+        $shape = $setting['kind'] === 'choice'
+            ? implode('|', $setting['values'])
+            : ($setting['kind'] === 'bool' ? 'true|false'
+                : ($setting['kind'] === 'int' ? '<' . $setting['unit'] . '>' : '<text>'));
+        $out .= "\n  --" . str_replace('_', '-', $setting['key']) . '=' . $shape . "\n"
+            . ap_i_wrap($setting['label'] . '. ' . $setting['say'], '      ') . "\n";
+    }
 
     $out .= "\nAFTERWARDS\n==========\n\n"
         . "  --delete-installer\n"
@@ -1971,6 +2154,12 @@ function ap_i_cli(array $options)
         'user'     => isset($given['mysql-user']) ? $given['mysql-user'] : '',
         'password' => $password,
     );
+    foreach (ap_i_settings() as $setting) {
+        $flag = str_replace('_', '-', $setting['key']);
+        if (isset($given[$flag])) {
+            $answers[$setting['key']] = $given[$flag];
+        }
+    }
 
     $report = array();
     $failed = array();
@@ -2169,7 +2358,9 @@ function ap_i_config_text(array $values)
     $text .= "    // days is a review cycle with room to spare. Set it to 0 to keep\n";
     $text .= "    // everything for ever -- the client stops announcing an age, and this\n";
     $text .= "    // server stops removing anything.\n";
-    $text .= "    'max_note_age_days'     => 90,\n\n";
+    if (!isset($chosen['max_note_age_days'])) {
+        $text .= "    'max_note_age_days'     => 90,\n\n";
+    }
 
     /* WHAT THE WHOLE SERVER HOLDS, AND WHY IT IS WRITTEN HERE TURNED OFF
        RATHER THAN LEFT OUT. It is a flag an operator wants to know exists --
@@ -2188,6 +2379,35 @@ function ap_i_config_text(array $values)
        is a value frozen at install time, and these are the defaults of
        internal/config.php, which is where they should keep coming from. The
        line is there to be uncommented, with the number already in it. */
+    /* WHAT THE OPERATOR SET, IN ACTIVE LINES, ABOVE THE COMMENTED DEFAULTS.
+       Given on the form or on the command line, a value is a decision: it is
+       written, with the sentence that goes with it, so that the next person to
+       open this file reads a choice rather than a number. What was not given
+       is not written at all -- config.php goes on deciding it, and a later
+       version may raise it. */
+    $chosen = isset($values['settings']) ? $values['settings'] : array();
+    if ($chosen) {
+        $text .= "    // WHAT YOU SET WHILE INSTALLING. Everything else keeps the default\n";
+        $text .= "    // from internal/config.php, which is listed below in comments.\n";
+        foreach (ap_i_settings() as $setting) {
+            $key = $setting['key'];
+            if (!isset($chosen[$key])) {
+                continue;
+            }
+            $raw = $chosen[$key];
+            if ($setting['kind'] === 'int') {
+                $written = (string) (int) $raw;
+            } elseif ($setting['kind'] === 'bool') {
+                $written = ($raw === 'true' || $raw === '1') ? 'true' : 'false';
+            } else {
+                $written = $q($raw);
+            }
+            $text .= "    // " . wordwrap(ap_i_plain($setting['say']), 68,
+                "\n    // ", false) . "\n";
+            $text .= "    '" . $key . "' => " . $written . ",\n\n";
+        }
+    }
+
     $text .= "    // WHAT BOUNDS WHAT, AND ALL OF IT IS YOURS TO CHANGE. These are the\n";
     $text .= "    // defaults, shown so that you know they exist. Uncomment a line to\n";
     $text .= "    // change it; leave it and internal/config.php keeps deciding, which\n";
@@ -2236,14 +2456,24 @@ function ap_i_config_text(array $values)
         : " -- here, that is a figure your own team\n"
           . "    // already knows.\n";
     $text .= "    // Never a project id, never a page, never a date.\n";
-    $text .= "    'publish_server_totals' => false,\n\n";
+    /* Written unless it was answered on the way in: a value set while
+       installing and then repeated as a default lower down would be silently
+       overruled by the second one -- PHP keeps the last. Measured, on
+       `diagnostic`, before these three guards existed. */
+    if (!isset($chosen['publish_server_totals'])) {
+        $text .= "    'publish_server_totals' => false,\n\n";
+    } else {
+        $text .= "    // Set while installing; the line is further up.\n\n";
+    }
 
     if ($relay) {
         $text .= "    // WHAT ELSE BOUNDS THE DISK ON A RELAY. It stores what it cannot\n";
         $text .= "    // read, for people who will never come back to tidy up, and the cap\n";
         $text .= "    // per project is the only thing bounding what a single abuser costs\n";
         $text .= "    // -- since an abuser cannot be told from a project.\n";
-        $text .= "    'max_notes_per_project' => 500,\n\n";
+        if (!isset($chosen['max_notes_per_project'])) {
+            $text .= "    'max_notes_per_project' => 500,\n\n";
+        }
     }
 
     if ($values['auto_update']) {
@@ -2292,14 +2522,22 @@ function ap_i_config_text(array $values)
         $text .= "    //\n";
         $text .= "    // Left empty because the installer does not know that page and a\n";
         $text .= "    // guessed redirect sends strangers somewhere you did not choose.\n";
-        $text .= "    'forward_root_to' => '',\n\n";
+        if (!isset($chosen['forward_root_to'])) {
+            $text .= "    'forward_root_to' => '',\n\n";
+        } else {
+            $text .= "    // Set while installing; the line is further up.\n\n";
+        }
     } else {
         $text .= "    // WHERE A BARE VISIT GOES. Empty: a visit to this directory with no\n";
         $text .= "    // path gets a 404 and api.php is unaffected either way. Put an\n";
         $text .= "    // absolute http(s) URL here and such a visit is sent there with a 302\n";
         $text .= "    // -- what a public relay wants, so somebody landing on the bare host\n";
         $text .= "    // reaches a page explaining what the thing is instead of nothing.\n";
-        $text .= "    'forward_root_to' => '',\n\n";
+        if (!isset($chosen['forward_root_to'])) {
+            $text .= "    'forward_root_to' => '',\n\n";
+        } else {
+            $text .= "    // Set while installing; the line is further up.\n\n";
+        }
     }
 
     // Written out although it is the default, like the two keys above it: the
@@ -2312,7 +2550,11 @@ function ap_i_config_text(array $values)
     $text .= "    // source, the caps and the declared projects: set it while you\n";
     $text .= "    // diagnose, and set it back. 'off' refuses the action like one nobody\n";
     $text .= "    // ever heard of.\n";
-    $text .= "    'diagnostic' => 'minimal',\n";
+    if (!isset($chosen['diagnostic'])) {
+        $text .= "    'diagnostic' => 'minimal',\n";
+    } else {
+        $text .= "    // Set while installing; the line is further up.\n";
+    }
     $text .= ");\n";
 
     return $text;
@@ -2813,6 +3055,53 @@ function ap_i_run(array $options)
         echo '<p class="note bad">This server has no way out to HTTPS, so nothing here '
             . "can fetch anything until that is fixed.</p>\n";
     }
+
+    /* AND EVERYTHING ELSE, FOLDED. The three questions stay the front door --
+       a fourth dial would be a fourth question, and the page that draws this
+       screen promises three. But asking three is not the same as deciding the
+       other fourteen behind somebody's back, and it did decide one: a relay
+       was given a cap of 500 notes without a word, and that cap makes a
+       project MUTE when it arrives.
+       Shut by default, so the screen is the length it was. Same table as the
+       command line reads, so neither face can offer what the other cannot. */
+    echo "<details>\n";
+    echo "<summary>Change anything else &mdash; every other setting, with its "
+        . "default</summary>\n";
+    echo '<p>Leave a field empty and the default stays in force, which also means a '
+        . 'later version may raise it for you. Fill one in and it is written into your '
+        . "configuration, with the sentence that explains it.</p>\n";
+    foreach (ap_i_settings() as $setting) {
+        $key = $setting['key'];
+        echo '<p><label>' . ap_i_h($setting['label']);
+        if ($setting['kind'] === 'choice') {
+            echo '<br><select name="' . $key . '">' . "\n";
+            echo '<option value="">(leave it as it is)</option>' . "\n";
+            foreach ($setting['values'] as $value) {
+                echo '<option value="' . ap_i_h($value) . '"'
+                    . ($field($key) === $value ? ' selected' : '') . '>'
+                    . ap_i_h($value) . "</option>\n";
+            }
+            echo "</select>\n";
+        } elseif ($setting['kind'] === 'bool') {
+            echo '<br><select name="' . $key . '">' . "\n";
+            echo '<option value="">(leave it as it is)</option>' . "\n";
+            foreach (array('true', 'false') as $value) {
+                echo '<option value="' . $value . '"'
+                    . ($field($key) === $value ? ' selected' : '') . '>'
+                    . $value . "</option>\n";
+            }
+            echo "</select>\n";
+        } else {
+            echo '<br><input type="' . ($setting['kind'] === 'int' ? 'number' : 'text')
+                . '" name="' . $key . '" value="' . ap_i_h($field($key)) . '"'
+                . ($setting['unit'] !== ''
+                    ? ' placeholder="' . ap_i_h($setting['unit']) . '"' : '')
+                . ">\n";
+        }
+        echo "</label></p>\n";
+        echo '<p class="note">' . $setting['say'] . "</p>\n";
+    }
+    echo "</details>\n";
 
     echo '<button type="submit">Install</button>' . "\n";
     echo "</form>\n";

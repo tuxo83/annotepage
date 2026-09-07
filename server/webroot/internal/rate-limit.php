@@ -174,11 +174,21 @@ function ap_apply_rate_limit(array $config, $store, $id, $action)
             if (!headers_sent()) {
                 header('Retry-After: ' . max(1, $left));
             }
+            /* THE LAST LINE FITS THE ACTION. "the text you typed is not lost"
+               is the one thing a reviewer wants to hear when a remark bounces,
+               and it is meaningless on an export -- where nobody typed
+               anything, and where the reader is very often an assistant
+               relaying this sentence to somebody else. Both say what is true
+               of them, and both say the limit and the wait, which is what
+               turns a refusal into something one can act on. */
             throw new ApFailure(
                 "Too many requests: " . $sentence . ".\n"
                 . "The limit is " . $cap . " per " . $duration
                 . " seconds. Try again in " . max(1, $left) . " seconds.\n"
-                . "Nothing was saved; the text you typed is not lost.",
+                . ($action === 'write'
+                    ? "Nothing was saved; the text you typed is not lost."
+                    : "Nothing was read. This is a limit of this server, not a "
+                      . "failure: the notes are there and unchanged."),
                 429);
         }
     }
