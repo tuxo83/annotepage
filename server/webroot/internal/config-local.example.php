@@ -246,6 +246,10 @@ return array(
     // this server carries; on a server holding one team's own notes it says
     // nothing that team does not know. Three integers, never a project id,
     // never a page, never a date.
+    //
+    // It is counted on every page load. Measured on SQLite: 5.7 ms a page
+    // without it, 41.8 ms with it on 60,000 notes, and the count alone takes
+    // 145 ms at 240,000. Worth knowing before turning it on on a busy relay.
     // 'publish_server_totals' => true,
 
     // MAXIMUM SIZE OF A REQUEST BODY, in bytes. Beyond it the answer is 413,

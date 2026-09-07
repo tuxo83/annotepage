@@ -125,8 +125,13 @@ is('what A lost', [report.A.notes, report.A.pages], [3, 1]);
 is('what B lost', [report.B.notes, report.B.pages], [1, 1]);
 is('a project that lost nothing', [report.C.notes, report.C.pages, report.C.last_sweep], [0, 0, null]);
 is('what A has left', report.left, { notes: 2, open: 2, pages: 2 });
+/* TWO projects, not one: B lost its only thread to the sweep, so it has no row
+   left among the notes -- and it is still a project this server carries, with
+   a tally saying what it lost. Counting it on the notes table alone said "1
+   site, 1 note removed by age", which reads as one team that lost a note
+   rather than two teams of which one is now empty. */
 is('what the server holds', report.server,
-   { projects: 1, notes: 2, pages: 2, expired_notes: 4, expired_pages: 2 });
+   { projects: 2, notes: 2, pages: 2, expired_notes: 4, expired_pages: 2 });
 is('the second sweep took nothing', report.again, 0);
 is('and did not move the tally', [report.A_after.notes, report.A_after.pages], [3, 1]);
 if (typeof report.A.last_sweep !== 'string') {

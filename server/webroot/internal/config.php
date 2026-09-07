@@ -340,9 +340,17 @@ function ap_config_defaults()
         // is carrying -- and someone deciding whether to trust a public relay
         // can see it is not empty.
         //
-        // WHAT IT COSTS: three counts over the whole notes table on every
-        // `list`, which is once per annotated page load. On a relay holding a
-        // lot of notes, that is not free.
+        // WHAT IT COSTS, MEASURED RATHER THAN HINTED AT: counts over the whole
+        // notes table on every `list`, which is once per annotated page load.
+        // On SQLite, one page load went from 5.7 ms to 41.8 ms on a database
+        // of 60,000 rows, and the count alone takes 145 ms at 240,000. MySQL
+        // pays the same at first and then hides it in its buffer pool for as
+        // long as the table fits there.
+        //
+        // The deployment this key is useful on -- a relay, so its operator can
+        // see from a page what their own server carries -- is also the one
+        // with the most rows. If that ever matters here, the answer is a cached
+        // triple recomputed every few minutes, not a faster count.
         //
         // WHAT IT NEVER SAYS: not one project id, not one page, not one date.
         // Three integers.

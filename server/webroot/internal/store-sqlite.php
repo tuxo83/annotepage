@@ -814,8 +814,20 @@ class ApStore
     {
         $this->ensureSchema();
         try {
+            /* PROJECTS COUNTED ON BOTH TABLES. A project whose every thread has
+               expired has no row left among the notes, so it fell out of the
+               count -- while its expired notes went on being summed below.
+               Measured: a relay serving two teams showed "1 site" and "1 note
+               removed by age", which reads as one team that lost a note rather
+               than two teams of which one is now empty. It is still a site
+               this server carries. */
             $req = $this->pdo()->query(
-                'SELECT COUNT(DISTINCT "project"), COUNT(*), COUNT(DISTINCT "page_index") '
+                'SELECT COUNT(*) FROM (SELECT "project" FROM "' . $this->table . '" '
+                . 'UNION SELECT "project" FROM "' . $this->tallyTable() . '")');
+            $projects = (int) $req->fetchColumn();
+
+            $req = $this->pdo()->query(
+                'SELECT COUNT(*), COUNT(DISTINCT "page_index") '
                 . 'FROM "' . $this->table . '" WHERE "reply_to" IS NULL');
             $row = $req->fetch(PDO::FETCH_NUM);
             /* AND WHAT IS NO LONGER THERE, summed over every project. A total
@@ -832,9 +844,9 @@ class ApStore
             return null;
         }
         return array(
-            'projects'      => (int) $row[0],
-            'notes'         => (int) $row[1],
-            'pages'         => (int) $row[2],
+            'projects'      => $projects,
+            'notes'         => (int) $row[0],
+            'pages'         => (int) $row[1],
             'expired_notes' => $gone ? (int) $gone[0] : 0,
             'expired_pages' => $gone ? (int) $gone[1] : 0,
         );
@@ -1145,6 +1157,7 @@ class ApStore
             'without_index'      => null,
             'rate_table'         => $this->rateTable,
             'rate_table_present' => null,
+            'tally_table_present' => null,
             'message'            => null,
         );
 
@@ -1172,6 +1185,14 @@ class ApStore
 
             $req->execute(array($this->rateTable));
             $state['rate_table_present'] = ((int) $req->fetchColumn()) > 0;
+
+            /* THE TALLY TOO. ensureTally() swallows its failure into the log --
+               housekeeping must never cost a note -- so a host where the user
+               cannot create a table gets zeroes on every screen and no reason
+               anywhere. The figures then read as "nothing was ever removed",
+               which is a statement, and the wrong one. */
+            $req->execute(array($this->tallyTable()));
+            $state['tally_table_present'] = ((int) $req->fetchColumn()) > 0;
 
             if ($state['table_present']) {
                 $present = $this->presentColumns();
@@ -1271,6 +1292,14 @@ class ApStore
             $state['file_present'] ? 'yes' : 'NO (created at the first note)');
         if ($state['table_present'] !== null) {
             $lines[] = array('storage.table_present', $state['table_present'] ? 'yes' : 'NO');
+        }
+        if ($state['tally_table_present'] !== null) {
+            $lines[] = array('storage.tally_table_present',
+                $state['tally_table_present']
+                    ? 'yes'
+                    : 'NO -- what age removes is not being counted, and the panel '
+                      . 'shows zeroes. Created on first need; if it never appears, '
+                      . 'this user cannot create a table.');
         }
         if ($state['rate_table_present'] !== null) {
             $lines[] = array('storage.rate_table_present',
