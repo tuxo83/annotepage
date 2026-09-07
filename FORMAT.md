@@ -753,10 +753,10 @@ genuinely readable document exists only on the machine that holds the key.
 
 ---
 
-## 6. The eight addresses
+## 6. The seven addresses
 
 Relative to the mount prefix. Format 1's five, with the project id added, plus
-`title`, `backfill` and `update`.
+`title` and `update`.
 
 ```
 GET      <base>/api.php?action=list&project=<id>&index=<page_index>
@@ -765,7 +765,6 @@ POST     <base>/api.php?action=resolve
 POST     <base>/api.php?action=title
 GET      <base>/api.php?action=text&project=<id>
 GET      <base>/api.php?action=diagnostic
-GET|POST <base>/api.php?action=backfill
 POST     <base>/api.php?action=update&token=<token>
 ```
 
@@ -781,12 +780,16 @@ them. A client written against format 2 before this action existed goes on
 working, and a server that has never heard of it answers 400 with the list --
 which is the same thing a typo gets.
 
-`backfill` is the one no client calls. It fills `page_index` for rows written
-before the blind index existed, and it is meant to be run by hand, once, after
-an upgrade -- see INSTALL.md. Its POST writes; its **GET reads**, and what it
-returns is the list of page paths still without an index, in the clear. That is
-why it exists only when self-hosted: on a relay it would enumerate somebody
-else's paths.
+There was an eighth, `backfill`, and it was removed. It filled `page_index` for
+rows written before the blind index existed, and it was meant to be run by hand
+after taking over a database from the tool's 1.2.0 ancestor. Nothing ever drove
+it: no client, no package and no tool in this repository could compute that
+index, since it descends from a key the server never receives. What remains of
+that migration is the part that needs nobody -- the columns are renamed and
+filled at the first call -- and a row whose index was never computed comes out
+of `?action=text` like any other, simply ungrouped. A server that still knows
+the action is older than this text; one that does not answers 400 with the
+list, which is what a typo gets.
 
 Every write stays POST, never GET: an action that changes state must not be
 triggered by a link somebody follows or a crawler explores. An unknown action

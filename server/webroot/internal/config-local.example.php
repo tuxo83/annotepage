@@ -65,11 +65,11 @@ return array(
     //
     //   'self-hosted' : on the site under review itself, behind the same access
     //                   restriction as it. Plain mode is possible there, the
-    //                   Origin header is optional, and the backfill action is
-    //                   available.
+    //                   Origin header is optional, and a database written by
+    //                   the tool's 1.2.0 ancestor is taken over here.
     //   'relay'       : on a third-party machine serving several sites. Plain
     //                   mode is IMPOSSIBLE there, the Origin header is required
-    //                   on writes, and the backfill is refused.
+    //                   on writes.
     //
     // There is no third value, and a typo is a failure: falling back in silence
     // on a default would serve plaintext to a third party without anyone

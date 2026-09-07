@@ -104,35 +104,23 @@ https tunnel, or forward the port so the phone sees `localhost`.
 ## Taking over an "in-context notes" 1.2.0 database
 
 Point the new server at it and the columns catch up on the first call — no
-export, no reimport, **no note lost**. Two things that migration cannot do for
-you:
+export, no reimport, **no note lost**. One thing that migration cannot do for
+you, and one it cannot do at all:
 
 **Declare your project before that first call.** The `project` column is filled
-in once, at the moment it appears, and only on a self-hosted server holding one
-project. After that it is empty rows and a backfill.
+in once, at the moment it appears, and only on a server holding one declared
+project. After that the rows keep an empty project and nothing fills it.
 
-**The page index cannot be computed by the server.** It is `HMAC(index_key,
-path)` and the server has never had the key. Until it is set, the old notes do
-come out of `?action=text` but do not group under their page in the panel —
-`backfill.notes_without_index` in the diagnostic counts them. One pass fixes
-it, and this is the only place that pass is written down:
+**The page index cannot be computed, by anything.** It is `HMAC(index_key,
+path)`, and that key descends from the project key, which never reaches the
+server. So a row written before the blind index existed keeps an empty index:
+it comes out of `?action=text` like any other and does not group under its page
+in the panel. `takeover.notes_without_index` in the diagnostic counts them.
 
-```
-GET  api.php?action=backfill&project=<id>
-     -> { "pages": ["/en/contact.html", "/en/pricing.html", ...],
-          "attached": 128 }
-
-POST api.php?action=backfill
-     project=<id>&page=/en/contact.html&index=<index computed by the client>
-     -> { "updated": 7, "remaining": 12 }
-```
-
-The client computes the index of each path — it has the key — and sends it
-back, one path per request. It is **idempotent**: only rows with no index are
-touched, so a replayed backfill cannot rewrite the index of a recent note. The
-action is refused on a relay, which never had a 1.2.0 database and would be
-enumerating somebody's paths in the clear; it may disappear the day no such
-database runs any more.
+An action once existed to let a client compute those indexes and hand them
+back. It was removed: nothing ever drove it — no client, no package and no tool
+in this project could compute that HMAC — and the storage that ships by default
+cannot hold such a row at all.
 
 ---
 

@@ -920,49 +920,8 @@ class ApStore
        them. Answering 0 with a wrong query would be worse than answering 0
        with a right one. */
 
-    public function pagesWithoutIndex($project)
-    {
-        $this->ensureSchema();
-        $req = $this->pdo()->prepare(
-            'SELECT DISTINCT "page" FROM "' . $this->table . '" '
-            . 'WHERE "project" = ? AND "page_index" = \'\' AND "page" <> \'\' '
-            . 'ORDER BY "page" ASC');
-        $req->execute(array((string) $project));
-        $pages = array();
-        foreach ($req->fetchAll(PDO::FETCH_NUM) as $row) {
-            $pages[] = (string) $row[0];
-        }
-        return $pages;
-    }
 
-    /**
-     * Sets the page index on the rows of a given path. Touches ONLY the rows
-     * that have none, so a replayed backfill cannot rewrite the index of a
-     * recent note -- a wrong index would make a note disappear from its page
-     * without a word.
-     */
-    public function assignIndex($project, $page, $index)
-    {
-        $this->ensureSchema();
-        $req = $this->pdo()->prepare(
-            'UPDATE "' . $this->table . '" SET "page_index" = ?, "format" = ? '
-            . 'WHERE "project" = ? AND "page" = ? AND "page_index" = \'\'');
-        $req->execute(array((string) $index, AP_FORMAT, (string) $project, (string) $page));
-        return $req->rowCount();
-    }
 
-    /**
-     * Attachment asked for explicitly (the backfill action).
-     *
-     * Nothing to attach: this store never carried a 1.2.0 database, so there
-     * are no rows with an empty `project`. We return 0 rather than throw --
-     * the backfill action has to be able to answer.
-     */
-    public function attachOrphans()
-    {
-        $this->ensureSchema();
-        return 0;
-    }
 
     /* -- Writing ----------------------------------------------------------- */
 
@@ -1325,10 +1284,10 @@ class ApStore
             $lines[] = array('storage.notes', $state['notes']);
         }
         if ($state['without_project'] !== null) {
-            $lines[] = array('backfill.notes_without_project', $state['without_project']);
+            $lines[] = array('takeover.notes_without_project', $state['without_project']);
         }
         if ($state['without_index'] !== null) {
-            $lines[] = array('backfill.notes_without_index', $state['without_index']);
+            $lines[] = array('takeover.notes_without_index', $state['without_index']);
         }
         if ($state['message'] !== null) {
             $lines[] = array('', '');

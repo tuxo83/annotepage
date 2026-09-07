@@ -179,7 +179,7 @@ function ap_write_text_export($version, $project, array $breakdown, $total, $not
                the excerpt is the text of the element, so it says WHERE the
                remark is; the title says what is wrong with it. Written only
                when it exists -- a reader that finds no `title` line knows the
-               remark has never been titled, which is what the backfill looks
+               remark has never been titled, which is what a reader looks
                for. */
             if (!$encrypted && $row['title'] !== '') {
                 echo "title " . ap_safe_value($row['title']) . "\n";

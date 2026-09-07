@@ -9,8 +9,8 @@
  * ONE CODE, TWO DEPLOYMENTS. The same file runs on the site under review
  * (self-hosted) and on a third-party machine (relay). The configuration says
  * which, and that value changes only three things, each written where it acts:
- * plain mode, the requirement for the Origin header, the backfill action. There
- * are NOT two implementations -- they would diverge at the second fix.
+ * plain mode, and the requirement for the Origin header. There are NOT two
+ * implementations -- they would diverge at the second fix.
  *
  * SIX SERVICE ACTIONS, PLUS ONE FOR MAINTENANCE
  *
@@ -68,18 +68,6 @@
  *        the id is what gives access to the rows.
  *        It answers EVEN when the local configuration is unreadable or
  *        malformed, because that is precisely when it is needed.
- *
- *   GET|POST api.php?action=backfill
- *        MAINTENANCE, refused in relay mode. It serves once, when taking over a
- *        database written by "in-context notes" 1.2.0: the server enumerates the
- *        page paths still without a blind index, the client computes each index
- *        (it has the key, the server does not) and sends it back. See the
- *        header of internal/store.php for what the server can and cannot take
- *        over on its own.
- *        This action is not one of the format's five addresses: it is an
- *        addition, and FORMAT.md section 7 says an added action does not change
- *        the format number. It can disappear the day no 1.2.0 database runs any
- *        more.
  *
  * RESPONSE CONTRACT, as the client must read it:
  *
@@ -365,8 +353,8 @@ function ap_require_post($what)
 // ONE SINGLE REQUEST, FROM OUTSIDE, must be enough to settle: is PHP executed,
 // in which version, with which extensions, are the credentials readable, does
 // the database answer, does the table exist, are the projects declared, and
-// what is left to backfill from a 1.2.0 database. Those are exactly the
-// questions one cannot settle without access to the server -- and nobody, on
+// and are the projects declared. Those are exactly the questions one cannot
+// settle without access to the server -- and nobody, on
 // this kind of hosting, has a shell.
 //
 // THREE RULES, without exception:
@@ -608,11 +596,6 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
             ap_diag_line('project.' . $short . '.origins',
                 implode(', ', $project['origins']));
         }
-        $backfill = ap_backfill_project($config);
-        ap_diag_line('projects.backfill_possible',
-            $backfill === null
-                ? 'no (relay, or several declared projects)'
-                : 'yes, towards ' . ap_short_project($backfill));
     } catch (ApFailure $e) {
         ap_diag_line('projects.declared', 'FAILED');
         ap_diag_text("\n" . $e->getMessage() . "\n\n");
@@ -683,7 +666,7 @@ $action = strtolower(trim($action));
 // two are read together, and an action missing here would be refused by the
 // message that announces it.
 $actions = array('list', 'add', 'resolve', 'title', 'text', 'diagnostic',
-                 'backfill', 'update');
+                 'update');
 
 /**
  * The refusal an action nobody knows gets.
@@ -713,7 +696,6 @@ function ap_unknown_action_failure($action)
         . "  ?action=title                            title a note (POST)\n"
         . "  ?action=text&project=<id>                every note (plain text)\n"
         . "  ?action=diagnostic                       state of the server (plain text)\n"
-        . "  ?action=backfill&project=<id>            backfill of a 1.2.0 database\n"
         . "  ?action=update&token=<token>             fetch and install the published version",
         400);
 }
@@ -920,12 +902,13 @@ $project = $projects[$id];
 
 // THE DOMAIN LOCK. Anti-abuse, and nothing else: see internal/origins.php.
 $write = ($action === 'add' || $action === 'resolve' || $action === 'title'
-          || $action === 'backfill');
+          );
 ap_apply_origin_lock($config, $id, $project, $write);
 
-// The store receives the backfill id through the configuration: it is the store
-// that will attach the format-1 rows when the `project` column appears, and it
-// does not have to know what an origin is for that.
+// The store receives, through the configuration, the project to attach the
+// format-1 rows to when the `project` column appears -- it does not have to
+// know what an origin is for that. This is what is left of the migration from
+// `in-context notes` 1.2.0: it happens by itself, once, and nobody drives it.
 $config['backfill_project'] = ap_backfill_project($config);
 $store = new ApStore($config);
 
@@ -1192,46 +1175,4 @@ switch ($action) {
             isset($config['max_note_age_days']) ? (int) $config['max_note_age_days'] : 0);
         break;
 
-    case 'backfill':
-        /* MAINTENANCE. Refused on a relay: a relay never had a 1.2.0 database
-           to take over, and this action enumerates page paths IN THE CLEAR --
-           which only makes sense where they are already readable, on the site
-           under review itself. */
-        if (!ap_is_self_hosted($config)) {
-            throw new ApFailure(
-                "The backfill only exists when self-hosted.\n"
-                . "It serves to attach the notes written by `in-context notes` 1.2.0, "
-                . "and it enumerates page paths in the clear: that only makes sense on "
-                . "the site under review itself.",
-                404);
-        }
-        $attached = $store->attachOrphans();
-
-        $method = strtoupper(isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : '');
-        if ($method !== 'POST') {
-            /* State of the backfill: what is left to do, and for which paths.
-               The client computes each index -- it has the key, the server never
-               will -- and sends them back one by one. */
-            ap_respond_json(ap_response_envelope(array(
-                'project'  => $id,
-                'attached' => $attached,
-                'pages'    => $store->pagesWithoutIndex($id),
-            )));
-        }
-
-        /* One pair per request. An array of pairs in an urlencoded body would
-           need an array syntax, hence a parser, and there is no other one in
-           this tool. A review database holds a few dozen pages: a few dozen
-           requests, once in the life of the installation. */
-        $page = ap_field_page($input, 'page', $config['max_page_length']);
-        $index = ap_field_index($input, 'index', true);
-        ap_respond_json(ap_response_envelope(array(
-            'project'   => $id,
-            'attached'  => $attached,
-            'page'      => $page,
-            'index'     => $index,
-            'updated'   => $store->assignIndex($id, $page, $index),
-            'remaining' => count($store->pagesWithoutIndex($id)),
-        )));
-        break;
 }

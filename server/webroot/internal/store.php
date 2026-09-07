@@ -25,8 +25,6 @@
  *   expiredTotals($p)       what retention has taken from one project
  *   serverTotals()          projects, notes and pages, across the server
  *   compact()               gives the freed space back, where that is cheap
- *   pagesWithoutIndex($p)   backfill of a 1.2.0 database: see below
- *   assignIndex(...)        backfill of a 1.2.0 database: see below
  *   state()                 state of the storage, with no effect (diagnostic)
  *   diagnosticLines()       what the diagnostic shows of the storage
  *   requiredExtensions()    what THIS store needs in order to work
@@ -48,8 +46,8 @@
  *
  * The model is APPEND-ONLY, with three exceptions, all named:
  *   - a note can be marked RESOLVED, and that mark can be undone;
- *   - the backfill of a 1.2.0 database writes `project` and `page_index` on
- *     rows that had none (see "BACKFILL" below);
+ *   - taking over a database written by "in-context notes" 1.2.0 fills
+ *     `project` on rows that had none, once, by itself;
  *   - the rate counter, which is not a note.
  * Nothing is ever deleted BY ANYONE -- a remark one erases is a remark one can
  * no longer contradict. Several reviewers can therefore annotate at the same
@@ -79,17 +77,17 @@
  *  - `project`: the server can fill it on its own, but only when self-hosted
  *    with ONE declared project -- there is then no ambiguity about who owns the
  *    rows. It is done once, at the moment the column appears;
- *  - `page_index`: the server CANNOT compute it. It is
- *    HMAC(index_key, path), and the key descends from the key, which never
- *    leaves the browser. That is the accepted price of the blind index. The
- *    backfill therefore happens in two steps, through the `backfill` action:
- *    the server enumerates the paths still without an index (it has them in the
- *    clear, they are format-1 rows), the client computes each index and sends
- *    it back.
+ *  - `page_index`: the server CANNOT compute it. It is HMAC(index_key, path),
+ *    and that key descends from the project key, which never leaves the
+ *    browser. That is the accepted price of the blind index.
  *
- * Until the backfill has happened, the old notes do come out of `?action=text`
- * but do not group under their page in the panel. That is unpleasant, it is
- * visible, and it is written here rather than discovered.
+ * So a format-1 row keeps an empty index for ever: it comes out of
+ * `?action=text` like any other, and it does not group under its page in the
+ * panel. An action once existed to let a client compute those indexes and send
+ * them back; it was removed, because nothing ever drove it -- no client, no
+ * package and no tool in this repository could compute that HMAC, and the
+ * store that ships by default cannot hold such a row at all. What is left is
+ * the part that happens by itself, above.
  */
 
 if (!defined('AP_INTERNAL')) {
@@ -512,12 +510,6 @@ class ApStore
         }
     }
 
-    /** Attachment asked for explicitly (the backfill action). */
-    public function attachOrphans()
-    {
-        $this->ensureSchema();
-        return $this->attachRowsWithoutProject();
-    }
 
     /**
      * Columns REALLY present, lowercased, or null if we could not find out. No
@@ -575,7 +567,7 @@ class ApStore
      * THE ORDER OF THE DEFAULTS IS WHAT MAKES THE BACKFILL POSSIBLE. A row
      * written by the original tool receives, when the columns are added:
      *   project = ''      -> attached further on, or visible as an orphan
-     *   page_index = ''   -> to be computed by the client (backfill action)
+     *   page_index = ''   -> a format-1 row, which cannot be computed here
      *   format = 1        -> that is what it is
      *   mode = ''         -> absent means `plain`: that is what it is
      * None of these four values is a stopgap: each describes exactly the row as
@@ -635,7 +627,7 @@ class ApStore
      *
      * `idx_project_index` carries EVERY service read: the server never reads
      * other than "this project, this page". `idx_page` now serves only the
-     * backfill of a 1.2.0 database and the sort of the export in plain mode; it
+     * takeover of a 1.2.0 database and the sort of the export in plain mode; it
      * is kept because it already exists on the databases in service and one
      * index fewer pays nothing back.
      */
@@ -1182,55 +1174,7 @@ class ApStore
         return $out;
     }
 
-    /**
-     * BACKFILL -- the paths still without a page index, for this project.
-     *
-     * These are the format-1 rows: the path is there in the clear, the index did
-     * not exist. The server enumerates them; it cannot compute their index,
-     * which descends from the key.
-     *
-     * @return array distinct paths
-     */
-    public function pagesWithoutIndex($project)
-    {
-        $this->ensureSchema();
-        $req = $this->pdo()->prepare(
-            "SELECT DISTINCT `page` FROM `" . $this->table . "` "
-            . "WHERE `project` = ? AND `page_index` = '' AND `page` <> '' "
-            . "ORDER BY `page` ASC");
-        $req->execute(array((string) $project));
-        $pages = array();
-        foreach ($req->fetchAll(PDO::FETCH_NUM) as $row) {
-            $pages[] = (string) $row[0];
-        }
-        return $pages;
-    }
 
-    /**
-     * BACKFILL -- sets the page index on the rows of a given path.
-     *
-     * Touches ONLY the rows that have none: the operation is idempotent, and a
-     * client that replays the backfill cannot rewrite the index of a recent
-     * note. That is the only guard that matters here -- a wrong index would make
-     * a note disappear from its page without a word.
-     *
-     * The `format` column moves to 2 at the same time, and that is not cosmetic:
-     * a row that carries a page index is no longer a format-1 row, since format
-     * 1 did not know that column. Its `mode` stays empty, which means `plain` --
-     * it really was written in the clear, and nothing we have just done changes
-     * that.
-     *
-     * @return int number of rows touched
-     */
-    public function assignIndex($project, $page, $index)
-    {
-        $this->ensureSchema();
-        $req = $this->pdo()->prepare(
-            "UPDATE `" . $this->table . "` SET `page_index` = ?, `format` = ? "
-            . "WHERE `project` = ? AND `page` = ? AND `page_index` = ''");
-        $req->execute(array((string) $index, AP_FORMAT, (string) $project, (string) $page));
-        return $req->rowCount();
-    }
 
     /**
      * State of the storage, for the diagnostic -- and WITH NO EFFECT WHATEVER.
@@ -1319,9 +1263,9 @@ class ApStore
                     ->query("SELECT COUNT(*) FROM `" . $this->table . "`")
                     ->fetchColumn();
 
-                // What is left to backfill. These two numbers are the only way,
-                // from a distance, to know that a 1.2.0 database has been caught
-                // up for its columns but not for its content.
+                // What a taken-over 1.2.0 database still carries. These two
+                // numbers are the only way, from a distance, to tell a database
+                // caught up for its columns from one caught up for its content.
                 if (is_array($state['missing_columns'])
                     && !in_array('project', $state['missing_columns'], true)) {
                     $state['without_project'] = (int) $pdo
@@ -1437,10 +1381,10 @@ class ApStore
             $lines[] = array('storage.notes', $state['notes']);
         }
         if ($state['without_project'] !== null) {
-            $lines[] = array('backfill.notes_without_project', $state['without_project']);
+            $lines[] = array('takeover.notes_without_project', $state['without_project']);
         }
         if ($state['without_index'] !== null) {
-            $lines[] = array('backfill.notes_without_index', $state['without_index']);
+            $lines[] = array('takeover.notes_without_index', $state['without_index']);
         }
         if ($state['message'] !== null) {
             $lines[] = array('', '');
@@ -1462,8 +1406,9 @@ class ApStore
         } elseif ($state['without_index']) {
             $lines[] = array('verdict',
                 'operational, but ' . $state['without_index'] . ' format-1 note(s) have '
-                . 'no page index yet: they come out of ?action=text but do not group '
-                . 'under their page. Run the backfill from the client.');
+                . 'no page index: they come out of ?action=text but do not group under '
+                . 'their page, and nothing can compute that index here -- it is derived '
+                . 'from a key this server never receives.');
         } else {
             $lines[] = array('verdict', 'operational.');
         }

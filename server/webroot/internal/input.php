@@ -418,7 +418,7 @@ function ap_field_envelope($source, $key, $max, $required, $label)
  * business here), so is the protocol-relative path `//host/...` and any `..`
  * segment, which would mix two pages into the same list of notes.
  *
- * Only called in plain mode and by the backfill action. In encrypted mode the
+ * Only called in plain mode. In encrypted mode the
  * path never crosses the browser.
  */
 function ap_field_page($source, $key, $max)

@@ -18,7 +18,7 @@
  * same table with the same query, and this value changes only three things,
  * each written in plain sight where it acts -- plain mode (impossible on a
  * relay), a missing Origin header (tolerated when self-hosted) and the
- * backfill action (refused on a relay).
+ * takeover of a 1.2.0 database (self-hosted, one project).
  *
  * See config-local.example.php for the template to copy.
  */

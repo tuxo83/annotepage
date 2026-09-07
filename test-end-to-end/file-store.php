@@ -159,13 +159,6 @@ class ApStore
         }
     }
 
-    public function attachOrphans()
-    {
-        // Nothing to attach: this store never carried a 1.2.0 database. We
-        // return 0 rather than throw — the backfill action has to be able to
-        // answer.
-        return 0;
-    }
 
     /* -- Rate ------------------------------------------------------------- */
 
@@ -286,37 +279,7 @@ class ApStore
         return $out;
     }
 
-    public function pagesWithoutIndex($project)
-    {
-        $pages = array();
-        foreach ($this->load()['notes'] as $row) {
-            if ((string) $row['project'] === (string) $project
-                && (string) $row['page_index'] === ''
-                && (string) $row['page'] !== '') {
-                $pages[(string) $row['page']] = true;
-            }
-        }
-        $list = array_keys($pages);
-        sort($list);
-        return $list;
-    }
 
-    public function assignIndex($project, $page, $index)
-    {
-        return $this->transaction(function (&$data) use ($project, $page, $index) {
-            $touched = 0;
-            foreach ($data['notes'] as $position => $row) {
-                if ((string) $row['project'] === (string) $project
-                    && (string) $row['page'] === (string) $page
-                    && (string) $row['page_index'] === '') {
-                    $data['notes'][$position]['page_index'] = (string) $index;
-                    $data['notes'][$position]['format'] = AP_FORMAT;
-                    $touched++;
-                }
-            }
-            return $touched;
-        });
-    }
 
     /* -- Writing ---------------------------------------------------------- */
 
