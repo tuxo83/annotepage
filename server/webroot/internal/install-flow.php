@@ -836,6 +836,17 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
         if ($location !== null && is_dir($location['directory'])) {
             @rmdir($location['directory']);
         }
+        /* AND THE REPORT HAS TO SAY SO. It went on carrying "Data file --
+           created, with its schema" over a run that had just deleted that file
+           and its directory: the undo was right and the screen was a step
+           behind it. A report describing a state that no longer exists is
+           worse than a shorter one. */
+        if ($location !== null) {
+            $report[] = array('Data file', 'removed again',
+                'Nothing was installed, so what this run created was taken back: the '
+                . 'file, its journals, and the directory when this run made it. The '
+                . 'directory is as it was before.');
+        }
     }
 
     return array(
@@ -1138,10 +1149,29 @@ function ap_i_head($title)
         . "  table { border-collapse: collapse; width: 100%; }\n"
         . "  td { padding: .45rem .5rem .45rem 0; vertical-align: top;\n"
         . "       border-bottom: 1px solid rgba(128,128,128,.25); }\n"
-        . "  td.k { white-space: nowrap; font-weight: 600; width: 11rem; }\n"
-        . "  td.v { white-space: nowrap; width: 9rem; font-variant-numeric: tabular-nums; }\n"
-        . "  td.m { opacity: .75; font-size: .9rem; }\n"
+        /* NO `nowrap` ON A CELL THAT HOLDS A PATH. It held one of 54 characters,
+           which made a 9rem column 597px wide, pushed the third column off the
+           page, and rendered the meaning -- the column carrying the whole
+           reasoning -- as a two-word ribbon cut off at the edge. At 390 the
+           document itself became 1027px wide and the entire page scrolled
+           sideways. `table-layout: fixed` makes the widths declared here the
+           widths used, whatever lands in them. */
+        . "  table { table-layout: fixed; }\n"
+        /* PROPORTIONS, NOT rem. Fixed layout obeys the widths declared here,
+           so 10rem + 12rem left the third column 16px on a 390px screen and it
+           overflowed anyway -- the page came out 493px wide and scrolled
+           sideways whole. Percentages cannot ask for more than there is. */
+        . "  td.k { font-weight: 600; width: 26%; overflow-wrap: anywhere; }\n"
+        . "  td.v { width: 30%; font-variant-numeric: tabular-nums;\n"
+        . "         overflow-wrap: anywhere; }\n"
+        . "  td.m { opacity: .75; font-size: .9rem; overflow-wrap: anywhere; }\n"
+        /* AND IT HAS A DARK ONE. #b00020 measures 7.33:1 on white and 2.56:1 on
+           the dark canvas -- 1.87:1 once `.note` drops it to .75 opacity --
+           which made the only red sentence on the screen the hardest thing to
+           read on it, and it is the sentence that says why an option is
+           impossible. The light value is unchanged. */
         . "  .bad { color: #b00020; font-weight: 700; }\n"
+        . "  @media (prefers-color-scheme: dark) { .bad { color: #ff8f8f; } }\n"
         /* THE SETTINGS BOX, AND IT IS THE SITE'S. how-to-install-it.html opens
            on a small bordered box of "dials" -- an uppercase label, a row of
            pills, one short sentence that follows the choice -- and the reader
@@ -1206,8 +1236,16 @@ function ap_i_head($title)
         . "      font: inherit; padding: .3rem .4rem; width: 22rem; max-width: 100%; }\n"
         . "  button { font: inherit; font-weight: 700; padding: .6rem 1.4rem;\n"
         . "           border-radius: 6px; cursor: pointer; }\n"
+        /* IT WRAPS, IT DOES NOT SCROLL. `overflow-x: auto` kept the text and
+           hid it: an overlay scrollbar shows nothing on a page nobody thinks
+           to drag sideways. Measured on the screen that says "this screen is
+           the only place it will ever appear" -- 58% of the update address
+           was invisible at 390px, and 36% of the curl line at 1400. A secret
+           shown once and cut in half is a secret lost. Long lines here are
+           paths, URLs and crontab lines: wrapping one is ugly, losing one is
+           not recoverable. */
         . "  pre { background: rgba(128,128,128,.14); padding: .8rem; border-radius: 6px;\n"
-        . "        overflow-x: auto; font-size: .9rem; }\n"
+        . "        white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; }\n"
         . "  code { background: rgba(128,128,128,.14); padding: .1rem .3rem;\n"
         . "         border-radius: 3px; }\n"
         . "</style>\n</head>\n<body>\n";
