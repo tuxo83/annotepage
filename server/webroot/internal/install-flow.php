@@ -860,6 +860,140 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
 
 
 /**
+ * THE QUESTIONS, AS DATA. THREE OF THEM, AND THE PAGE PROMISES THREE.
+ *
+ * WHY THIS EXISTS RATHER THAN THREE BLOCKS OF `echo`. The same three questions
+ * have to be asked twice: once as a form somebody clicks, once as options
+ * somebody types, with an aide that names every one of them. Written twice,
+ * they diverge at the first change -- which is not a fear, it is what already
+ * happened between this file and the page that draws it, and what
+ * tools/check-install-questions.mjs now watches.
+ *
+ * So the legend, the answers, the value each answer sends and the sentence
+ * that follows it are declared HERE, once. The form renders them. The command
+ * line will read them for `--help` and validate against the same `value`
+ * strings -- the exact strings the installation already compares against, and
+ * which are what stops a relay being opened by a typo.
+ *
+ * `say` and `note` carry markup, deliberately: they are written for a screen
+ * and this file has always written them as they are. The command line will
+ * have to strip the two tags they use, which is cheaper than keeping a second
+ * wording in a second place.
+ *
+ * @return array one entry per question, in the order they are asked
+ */
+function ap_i_questions()
+{
+    return array(
+        array(
+            'key'    => 'audience',
+            'legend' => 'Who this server is for',
+            'answers' => array(
+                array('value' => 'one-site', 'id' => 'a-one', 'class' => 'if-one',
+                      'label' => 'One site, mine',
+                      'say'   => 'You declare its project by hand, and nothing else '
+                                 . 'can write here.'),
+                array('value' => 'anyone', 'id' => 'a-anyone', 'class' => 'if-anyone',
+                      'label' => 'Anyone',
+                      'say'   => 'A relay: projects nobody declared may write, bounded '
+                                 . 'at 500 notes each and 90 days.'),
+            ),
+        ),
+        array(
+            'key'    => 'storage',
+            'legend' => 'Storage',
+            'answers' => array(
+                array('value' => 'sqlite', 'id' => 's-sqlite', 'class' => 'if-sqlite',
+                      'label' => 'SQLite',
+                      'say'   => 'One file. Nothing to create, and the installer proves '
+                                 . 'the web server refuses it.'),
+                array('value' => 'mysql', 'id' => 's-mysql', 'class' => 'if-mysql',
+                      'label' => 'MySQL',
+                      'say'   => 'A database you already have. The installer creates '
+                                 . 'the tables.'),
+            ),
+        ),
+        array(
+            'key'    => 'updates',
+            'legend' => 'Keeping this server up to date',
+            'answers' => array(
+                array('value' => 'cron', 'id' => 'u-cron', 'class' => 'if-cron',
+                      'label' => 'A shell cron',
+                      'say'   => 'Best, and nothing to grant: <code>php '
+                                 . 'internal/update.php</code> once a day. The next '
+                                 . 'screen gives you that line with the real path in it.'),
+                array('value' => 'url', 'id' => 'u-url', 'class' => 'if-url',
+                      'label' => 'An address to call',
+                      'say'   => 'For a scheduler that can only fetch a URL. The address '
+                                 . 'is shown once, on the next screen.'),
+                array('value' => 'self', 'id' => 'u-self', 'class' => 'if-self',
+                      'label' => 'It updates itself',
+                      'say'   => 'Last resort. It costs a permission that outlives the '
+                                 . 'choice &mdash; see below.'),
+            ),
+        ),
+    );
+}
+
+/**
+ * The one question that is not a choice: where the MySQL server is.
+ *
+ * Asked only by the answer above it, which is why it is not a fourth dial --
+ * the page promises three questions and a person choosing SQLite is asked
+ * nothing here. The command line reads this list too: every entry becomes
+ * `--mysql-<key>`, and none of them becomes anything else.
+ */
+function ap_i_credential_fields()
+{
+    return array(
+        array('name' => 'host', 'label' => 'Host', 'type' => 'text',
+              'default' => '127.0.0.1'),
+        array('name' => 'port', 'label' => 'Port', 'type' => 'number',
+              'default' => '3306'),
+        array('name' => 'name', 'label' => 'Database name', 'type' => 'text',
+              'default' => ''),
+        array('name' => 'user', 'label' => 'User', 'type' => 'text',
+              'default' => ''),
+        /* No value attribute, ever: a password sent back to the browser would
+           sit in the page's source and in its cache. Retyping it is the price. */
+        array('name' => 'password', 'label' => 'Password', 'type' => 'password',
+              'default' => null),
+    );
+}
+
+/**
+ * One question, drawn. The form is the only caller today; the command line
+ * renders the same model as text.
+ */
+function ap_i_render_dial(array $question, $chosen)
+{
+    echo '<fieldset class="dial"><legend>' . $question['legend'] . '</legend>' . "\n";
+    echo '<div class="seg">' . "\n";
+    foreach ($question['answers'] as $answer) {
+        echo '<label><input type="radio" name="' . $question['key']
+            . '" value="' . $answer['value'] . '" id="' . $answer['id'] . '"'
+            . ($chosen === $answer['value'] ? ' checked' : '')
+            . '><span>' . $answer['label'] . "</span></label>\n";
+    }
+    echo "</div>\n";
+    echo '<p class="dial-say">';
+    foreach ($question['answers'] as $answer) {
+        echo '<span class="' . $answer['class'] . '">' . $answer['say'] . '</span>';
+    }
+    echo "</p>\n";
+    echo "</fieldset>\n";
+}
+
+/** The question of the given key, or null. */
+function ap_i_question($key)
+{
+    foreach (ap_i_questions() as $question) {
+        if ($question['key'] === $key) { return $question; }
+    }
+    return null;
+}
+
+/**
  * Builds internal/config-local.php.
  *
  * It says it was generated, when, and by what. That matters more than it
@@ -1699,31 +1833,9 @@ function ap_i_run(array $options)
         . "notes.</p>\n";
     echo '<div class="dial-row">' . "\n";
 
-    echo '<fieldset class="dial"><legend>Who this server is for</legend>' . "\n";
-    echo '<div class="seg">' . "\n";
-    echo '<label><input type="radio" name="audience" value="one-site" id="a-one"'
-        . ($postedRelay ? '' : ' checked') . "><span>One site, mine</span></label>\n";
-    echo '<label><input type="radio" name="audience" value="anyone" id="a-anyone"'
-        . ($postedRelay ? ' checked' : '') . "><span>Anyone</span></label>\n";
-    echo "</div>\n";
-    echo '<p class="dial-say"><span class="if-one">You declare its project by '
-        . 'hand, and nothing else can write here.</span><span class="if-anyone">A '
-        . 'relay: projects nobody declared may write, bounded at 500 notes each '
-        . "and 90 days.</span></p>\n";
-    echo "</fieldset>\n";
+    ap_i_render_dial(ap_i_question('audience'), $postedRelay ? 'anyone' : 'one-site');
 
-    echo '<fieldset class="dial"><legend>Storage</legend>' . "\n";
-    echo '<div class="seg">' . "\n";
-    echo '<label><input type="radio" name="storage" value="sqlite" id="s-sqlite"'
-        . ($postedMysql ? '' : ' checked') . "><span>SQLite</span></label>\n";
-    echo '<label><input type="radio" name="storage" value="mysql" id="s-mysql"'
-        . ($postedMysql ? ' checked' : '') . "><span>MySQL</span></label>\n";
-    echo "</div>\n";
-    echo '<p class="dial-say"><span class="if-sqlite">One file. Nothing to '
-        . 'create, and the installer proves the web server refuses '
-        . 'it.</span><span class="if-mysql">A database you already have. The '
-        . "installer creates the tables.</span></p>\n";
-    echo "</fieldset>\n";
+    ap_i_render_dial(ap_i_question('storage'), $postedMysql ? 'mysql' : 'sqlite');
 
     echo "</div>\n</div>\n";
 
@@ -1742,15 +1854,14 @@ function ap_i_run(array $options)
     echo "<summary>MySQL connection details</summary>\n";
     echo '<p>Only if you chose MySQL above. The installer connects and creates the tables '
         . 'before writing anything.</p>' . "\n";
-    echo '<p><label>Host<br><input type="text" name="host" value="'
-        . ap_i_h($field('host', '127.0.0.1')) . "\"></label></p>\n";
-    echo '<p><label>Port<br><input type="number" name="port" value="'
-        . ap_i_h($field('port', '3306')) . "\"></label></p>\n";
-    echo '<p><label>Database name<br><input type="text" name="name" value="'
-        . ap_i_h($field('name')) . "\"></label></p>\n";
-    echo '<p><label>User<br><input type="text" name="user" value="'
-        . ap_i_h($field('user')) . "\"></label></p>\n";
-    echo '<p><label>Password<br><input type="password" name="password"></label></p>' . "\n";
+    foreach (ap_i_credential_fields() as $box) {
+        echo '<p><label>' . $box['label'] . '<br><input type="' . $box['type']
+            . '" name="' . $box['name'] . '"';
+        if ($box['default'] !== null) {
+            echo ' value="' . ap_i_h($field($box['name'], $box['default'])) . '"';
+        }
+        echo "></label></p>\n";
+    }
     echo "</details>\n";
 
     /* THREE WAYS, AND THEY ARE NOT EQUAL -- SO IT IS ONE CHOICE, IN ORDER.
@@ -1766,22 +1877,8 @@ function ap_i_run(array $options)
 
     echo '<div class="dials">' . "\n";
     echo '<p class="dial-title">How this server gets its updates.</p>' . "\n";
-    echo '<fieldset class="dial"><legend>Keeping this server up to date</legend>' . "\n";
-    echo '<div class="seg">' . "\n";
-    echo '<label><input type="radio" name="updates" value="cron" id="u-cron"'
-        . ($wants === 'cron' ? ' checked' : '') . "><span>A shell cron</span></label>\n";
-    echo '<label><input type="radio" name="updates" value="url" id="u-url"'
-        . ($wants === 'url' ? ' checked' : '') . "><span>An address to call</span></label>\n";
-    echo '<label><input type="radio" name="updates" value="self" id="u-self"'
-        . ($wants === 'self' ? ' checked' : '') . "><span>It updates itself</span></label>\n";
+    ap_i_render_dial(ap_i_question('updates'), $wants);
     echo "</div>\n";
-    echo '<p class="dial-say"><span class="if-cron">Best, and nothing to grant: '
-        . '<code>php internal/update.php</code> once a day. The next screen gives you '
-        . 'that line with the real path in it.</span><span class="if-url">For a '
-        . 'scheduler that can only fetch a URL. The address is shown once, on the next '
-        . 'screen.</span><span class="if-self">Last resort. It costs a permission that '
-        . "outlives the choice &mdash; see below.</span></p>\n";
-    echo "</fieldset>\n</div>\n";
 
     /* THE COST OF THE THIRD ANSWER, IN FULL, AND ONLY WHERE IT APPLIES. It is
        the one thing on this page somebody can regret, and a sentence inside a
