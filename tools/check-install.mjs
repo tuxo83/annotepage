@@ -429,6 +429,23 @@ const shell = async (dir, args) => {
     rmSync(dir, { recursive: true, force: true });
 }
 
+/* -- A FAILURE ON A COMMAND LINE HAS TO FAIL ITS CALLER ------------------
+   ap_respond_error() ends every uncaught defect. On the web it sets a status
+   and writes the sentence; in CLI header() and http_response_code() are
+   harmless no-ops, and `exit;` with no code is ZERO -- so a failure printed
+   its sentence on stdout and told the caller all was well. */
+{
+    const errors = join(here, '..', 'server', 'webroot', 'internal', 'errors.php');
+    const r = spawnSync('php', ['-r',
+        'define("AP_INTERNAL", 1); require ' + JSON.stringify(errors) + ';'
+        + ' ap_respond_error(500, "a failure");'], { encoding: 'utf8' });
+    check('a failure on a command line exits 0', r.status === 1, 'exit ' + r.status);
+    check('a failure on a command line writes to stdout',
+        (r.stdout || '') === '', JSON.stringify(r.stdout));
+    check('a failure on a command line says nothing on stderr',
+        /a failure/.test(r.stderr || ''), JSON.stringify(r.stderr));
+}
+
 /* -- THE FILE SOMEBODY DOWNLOADS, BEFORE IT HAS DOWNLOADED ANYTHING ------
    Both cases run with no release on disk and touch no network: an aide that
    fetches would be an aide that fails on a host with no way out, which is one

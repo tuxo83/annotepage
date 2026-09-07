@@ -109,6 +109,18 @@ function ap_log($message)
  */
 function ap_respond_error($status, $message)
 {
+    /* ON A COMMAND LINE THE OTHER TWO BRANCHES ARE A SILENT SUCCESS. header()
+       and http_response_code() are harmless no-ops there, but `exit;` with no
+       code is ZERO -- so an uncaught exception printed its sentence on stdout
+       and told the caller everything had gone well. A provisioning run that
+       fails must fail its caller: the message goes to stderr, and the code is
+       1. Nothing else about this function changes. */
+    if (PHP_SAPI === 'cli') {
+        $handle = defined('STDERR') ? STDERR : fopen('php://stderr', 'w');
+        fwrite($handle, $message . "\n");
+        exit(1);
+    }
+
     if (!headers_sent()) {
         while (ob_get_level() > 0) {
             ob_end_clean();
@@ -158,9 +170,15 @@ function ap_handle_exception($e)
     // Programming defect: the detail to the log, one sentence to the screen.
     ap_log(get_class($e) . ' : ' . $e->getMessage()
         . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')');
-    ap_respond_error(500,
-        "Internal failure of the notes tool. Your notes may not have been saved.\n"
-        . "The detail is in the server's PHP error log.");
+    /* THE SENTENCE FITS WHERE IT IS SAID. "Your notes may not have been saved"
+       is right on the path a reviewer is on and wrong on a command line, where
+       nobody was writing a note -- they were installing, updating or sweeping.
+       The log line above is identical in both. */
+    ap_respond_error(500, PHP_SAPI === 'cli'
+        ? "Internal failure of the notes tool. Whatever this command was doing did "
+          . "not finish.\nThe detail is in this host's PHP error log."
+        : "Internal failure of the notes tool. Your notes may not have been saved.\n"
+          . "The detail is in the server's PHP error log.");
 }
 
 /**

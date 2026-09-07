@@ -1652,6 +1652,15 @@ function ap_i_render_help($selfName)
  */
 function ap_i_cli(array $options)
 {
+    /* THE NETS, HERE AND NOT ON THE WEB PATH. Without them a defect in this
+       code prints a stack trace on somebody's terminal -- which can carry
+       fragments of a configuration -- and exits with whatever PHP chooses.
+       With them it is one sentence on stderr and exit 1, which is what a
+       provisioning run owes its caller. */
+    if (function_exists('ap_install_handlers')) {
+        ap_install_handlers();
+    }
+
     $here     = isset($options['here']) ? $options['here'] : dirname(__DIR__);
     $selfName = basename(isset($options['self']) ? $options['self'] : 'install.php');
     $argv     = isset($options['argv']) ? $options['argv']
