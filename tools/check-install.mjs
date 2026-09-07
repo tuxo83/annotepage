@@ -429,6 +429,135 @@ const shell = async (dir, args) => {
     rmSync(dir, { recursive: true, force: true });
 }
 
+/* -- A FAILED INSTALL MUST NOT TOUCH SOMEBODY ELSE'S DATABASE -----------
+   The data file's path is fixed -- <parent of the document root>/
+   annotepage-data/notes.sqlite -- so a second installation under the same
+   parent lands on the first one's database. Listing that file as "created"
+   made the undo delete it: measured, a failed run from a second copy
+   destroyed a live installation's notes, and the next request recreated an
+   empty file with its schema, so nothing anywhere said a word.
+
+   This is the check that must never pass by accident: it installs for real,
+   writes a row, then fails a second installer on purpose. */
+{
+    const parent = mkdtempSync(join(tmpdir(), 'annotepage-shared-'));
+    const first = join(parent, 'html');
+    const second = join(parent, 'html2');
+    cpSync(webroot, first, { recursive: true });
+    cpSync(webroot, second, { recursive: true });
+    const port = await freePort();
+    const server = spawn('php', ['-S', '127.0.0.1:' + port], {
+        cwd: first, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: 'ignore',
+    });
+    for (let i = 0; i < 40; i += 1) {
+        await sleep(150);
+        try { await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' }); break; }
+        catch (e) { /* not listening yet */ }
+    }
+    const ok = spawnSync('php', [join(first, 'install.php'),
+        '--api-address=http://127.0.0.1:' + port + '/api.php',
+        '--answers-for=one-site'], { encoding: 'utf8', cwd: first });
+    const config = existsSync(join(first, 'internal', 'config-local.php'))
+        ? readFileSync(join(first, 'internal', 'config-local.php'), 'utf8') : '';
+    const file = (config.match(/'file' => '([^']+)'/) || [])[1];
+    check('the first installation did not happen', ok.status === 0 && Boolean(file),
+        'exit ' + ok.status);
+
+    if (file) {
+        /* A row written straight into the file: what a team's notes are, as far
+           as this check is concerned. */
+        const wrote = spawnSync('php', ['-r',
+            '$d = new PDO("sqlite:" . $argv[1]);'
+            + ' $d->exec("INSERT INTO notes_notes (project, page, page_index, created_at,'
+            + ' mode, format, text, author, selector, fingerprint, excerpt)'
+            + ' VALUES (\'P\', \'/x\', \'i\', \'2020-01-01 00:00:00\', \'plain\', 2,'
+            + ' \'keep me\', \'somebody\', \'body\', \'f\', \'e\')");'
+            + ' echo $d->query("SELECT COUNT(*) FROM notes_notes")->fetchColumn();',
+            file], { encoding: 'utf8' });
+        check('the row could not be written for the check', (wrote.stdout || '') === '1',
+            wrote.stdout + wrote.stderr);
+
+        /* The second one fails on purpose: an address nothing answers at. It
+           reaches the data file first, which is the whole point. */
+        const doomed = spawnSync('php', [join(second, 'install.php'),
+            '--api-address=http://127.0.0.1:1/api.php', '--answers-for=one-site'],
+            { encoding: 'utf8', cwd: second });
+        check('the second installation was supposed to fail', doomed.status === 1,
+            'exit ' + doomed.status);
+        check('a failed install deleted a live installation\'s database',
+            existsSync(file), file);
+        const left = spawnSync('php', ['-r',
+            '$d = new PDO("sqlite:" . $argv[1]);'
+            + ' echo $d->query("SELECT COUNT(*) FROM notes_notes")->fetchColumn();',
+            file], { encoding: 'utf8' });
+        check('the notes did not survive a neighbour\'s failed install',
+            (left.stdout || '') === '1', JSON.stringify(left.stdout + left.stderr));
+        check('the screen did not say the file was left alone',
+            /left exactly as it was/.test(doomed.stdout || ''),
+            (doomed.stdout || '').slice(0, 200));
+    }
+
+    try { server.kill('SIGKILL'); } catch (e) { /* gone */ }
+    rmSync(parent, { recursive: true, force: true });
+}
+
+/* -- A STORE OLDER THAN THE SERVER AROUND IT ----------------------------
+   internal/update.php deliberately keeps a store file it did not ship -- one
+   somebody replaced, and also one it cannot recognise because the local
+   MANIFEST is gone. That file then stays where it was while the rest of the
+   server moves on. Measured before this was guarded: every annotated page
+   turned into a 500, `?action=text` went on working, and the diagnostic said
+   `operational`. The symptom reached the operator through their reviewers.
+
+   The old store here is the real one from the release before those methods
+   existed, taken out of the history rather than written for the occasion. */
+{
+    const old = spawnSync('git', ['show', 'bcc590f:server/webroot/internal/store-sqlite.php'],
+        { encoding: 'utf8', cwd: join(here, '..'), maxBuffer: 8 * 1024 * 1024 });
+    if (old.status !== 0) {
+        console.log('  (the pre-2.8.0 store is not in this clone, that case was skipped)');
+    } else {
+        const dir = mkdtempSync(join(tmpdir(), 'annotepage-oldstore-'));
+        const root = join(dir, 'web');
+        cpSync(webroot, root, { recursive: true });
+        writeFileSync(join(root, 'internal', 'store-sqlite.php'), old.stdout);
+        writeFileSync(join(root, 'internal', 'config-local.php'), `<?php
+return array('active' => true, 'allow_plain_http' => true,
+    'deployment' => 'self-hosted', 'storage' => 'sqlite',
+    'database' => array('file' => '${join(dir, 'notes.sqlite')}'),
+    'table_prefix' => 'notes_', 'diagnostic' => 'full',
+    'projects' => array('AAAAAAAAAAAAAAAAAAAAAA' => array(
+        'origins' => array('http://127.0.0.1'), 'mode' => 'plain')));
+`);
+        const port = await freePort();
+        const server = spawn('php', ['-S', '127.0.0.1:' + port], {
+            cwd: root, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: 'ignore',
+        });
+        let listed = null;
+        for (let i = 0; i < 40 && listed === null; i += 1) {
+            await sleep(150);
+            try {
+                listed = await fetch('http://127.0.0.1:' + port
+                    + '/api.php?action=list&project=AAAAAAAAAAAAAAAAAAAAAA'
+                    + '&index=BBBBBBBBBBBBBBBBBBBBBB', { redirect: 'manual' });
+            } catch (e) { /* not listening yet */ }
+        }
+        const body = listed ? await listed.text() : '';
+        check('a store older than the server kills every annotated page',
+            listed && listed.status === 200, 'HTTP ' + (listed && listed.status)
+            + '\n' + body.slice(0, 200));
+        check('the missing figure was invented rather than left out',
+            /"expired":null/.test(body), body.slice(0, 200));
+        const diag = await (await fetch('http://127.0.0.1:' + port
+            + '/api.php?action=diagnostic', { redirect: 'manual' })).text();
+        check('the diagnostic says nothing about a store that is behind',
+            /storage\.contract\s+OLDER/.test(diag),
+            (diag.match(/storage\.contract.*/) || ['(no line at all)'])[0]);
+        try { server.kill('SIGKILL'); } catch (e) { /* gone */ }
+        rmSync(dir, { recursive: true, force: true });
+    }
+}
+
 /* -- A FAILURE ON A COMMAND LINE HAS TO FAIL ITS CALLER ------------------
    ap_respond_error() ends every uncaught defect. On the web it sets a status
    and writes the sentence; in CLI header() and http_response_code() are
@@ -476,6 +605,6 @@ if (failures.length) {
     console.error('install:\n' + failures.map((f) => '  ' + f).join('\n'));
     process.exit(1);
 }
-console.log('install: five installations run end to end -- one site, a relay, a mistyped '
-    + 'audience, a run that could not finish and one typed at a shell -- plus the four '
-    + 'refusals that shell owes, and two configurations from older installers');
+console.log('install: seven installations run end to end, the four refusals a shell owes, '
+    + "a neighbour's database left alone by a failed run, a store older than the server "
+    + 'around it, and two configurations from older installers');

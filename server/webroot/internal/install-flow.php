@@ -496,8 +496,14 @@ function ap_i_pick_location($here, $docRoot)
         // not a plan. Fall through to the guarded directory inside.
         if ($parent !== '' && $parent !== '/' && $parent !== $docRoot && is_dir($parent)) {
             $candidate = $parent . '/annotepage-data';
-            $usable = (is_dir($candidate) && is_writable($candidate))
-                || (!is_dir($candidate) && is_writable($parent));
+            /* A SYMLINK IS NOT A DIRECTORY WE CHOSE. The name is fixed and
+               guessable, so anybody who can write next to the document root
+               can point it wherever they like -- measured: at /tmp, and at a
+               served directory, where the database then answers 200 to a
+               plain GET while this file's report says no URL reaches it. */
+            $usable = !is_link($candidate)
+                && ((is_dir($candidate) && is_writable($candidate))
+                    || (!is_dir($candidate) && is_writable($parent)));
             if ($usable && ap_i_under($candidate, $docRoot) !== true) {
                 return array(
                     'directory' => $candidate,
@@ -613,6 +619,12 @@ function ap_i_site_root_url($here, $docRoot, $baseUrl)
 function ap_i_install(array $answers, $here, $configPath, $selfName,
                       array &$report, array &$errors)
 {
+    // Assigned only on success further down, and read at the end whatever
+    // happens: two PHP warnings on every failed run, which worked only
+    // because an undefined variable reads as false.
+    $installed = false;
+    $installedRelay = false;
+
     $storage = isset($answers['storage']) && $answers['storage'] === 'mysql' ? 'mysql' : 'sqlite';
     /* ONE CHOICE OF THREE, AND IT ARRIVES AS ONE FIELD. It was two
        independent checkboxes, which said "tick what you like" over a
@@ -744,7 +756,21 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
         if (!$errors) {
             $location = ap_i_pick_location($here, $docRoot);
             $values['file'] = $location['file'];
-            $dirExisted = is_dir($location['directory']);
+            /* WHAT WAS ALREADY THERE IS NOT OURS TO UNDO. The path is fixed --
+               <parent of the document root>/annotepage-data/notes.sqlite --
+               so a second installation under the same parent lands on the
+               first one's database. Listing that file as "created" made the
+               undo below delete it: measured, a failed run from a second copy
+               destroyed a live installation's notes, and the next request
+               recreated an empty file with its schema, so nothing anywhere
+               said a word. Two runs racing did the same to each other.
+
+               So each of the three is judged on its own, before anything is
+               written, and the undo can only take back what this run made. */
+            $dirExisted  = is_dir($location['directory']);
+            $fileExisted = is_file($location['file']);
+            $walExisted  = is_file($location['file'] . '-wal');
+            $shmExisted  = is_file($location['file'] . '-shm');
 
             $config = array_merge(ap_config_defaults(), array(
                 'storage'  => 'sqlite',
@@ -757,14 +783,26 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
                 // A real read on the real file: if the schema were not there,
                 // this is where it would say so, not at the first note.
                 $store->count('0000000000000000000000');
-                $created = array($location['file'],
-                                 $location['file'] . '-wal', $location['file'] . '-shm');
+                $created = array();
+                if (!$fileExisted) { $created[] = $location['file']; }
+                if (!$walExisted)  { $created[] = $location['file'] . '-wal'; }
+                if (!$shmExisted)  { $created[] = $location['file'] . '-shm'; }
                 if (!$dirExisted) {
                     $created[] = $location['directory'] . '/.htaccess';
                     $created[] = $location['directory'] . '/index.php';
                 }
+                /* AND ADOPTION IS SAID OUT LOUD. A database that was already
+                   there is kept, notes and all -- the store is multi-tenant, so
+                   two installations CAN share one file -- but somebody who did
+                   not mean to share has to be able to see it on this screen
+                   rather than discover it later. */
                 $report[] = array('Data file', $location['file'],
-                    'Created, with its schema. Placed ' . $location['why'] . '.');
+                    ($fileExisted
+                        ? 'ALREADY THERE, and taken as it is: its notes are kept and '
+                          . 'this installation will write into the same file. Nothing '
+                          . 'of it will be removed, even if this run fails. '
+                        : 'Created, with its schema. ')
+                    . 'Placed ' . $location['why'] . '.');
             } catch (Exception $e) {
                 $errors[] = 'The data file could not be created: ' . $e->getMessage();
             }
@@ -890,10 +928,15 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
            behind it. A report describing a state that no longer exists is
            worse than a shorter one. */
         if ($location !== null) {
-            $report[] = array('Data file', 'removed again',
-                'Nothing was installed, so what this run created was taken back: the '
-                . 'file, its journals, and the directory when this run made it. The '
-                . 'directory is as it was before.');
+            $report[] = $fileExisted
+                ? array('Data file', 'left exactly as it was',
+                    'That file was already there when this run started, so it is not '
+                    . 'this run\'s to take back: its notes are untouched. Only what '
+                    . 'this run created has been removed.')
+                : array('Data file', 'removed again',
+                    'Nothing was installed, so what this run created was taken back: '
+                    . 'the file, its journals, and the directory when this run made '
+                    . 'it. The directory is as it was before.');
         }
     }
 
@@ -1453,6 +1496,15 @@ function ap_i_parse_options(array $argv)
                 . implode(', ', $shape['values']) . '.';
             continue;
         }
+        /* SAID TWICE IS NOT SAID ONCE. `--answers-for=one-site
+           --answers-for=anyone` took the last and opened a relay without a
+           word -- which is the very outcome the exact-string comparisons in
+           this file exist to prevent, reached by a generated command line that
+           appends an override after a default. */
+        if (isset($given[$name])) {
+            $errors[] = '--' . $name . ' was given twice. Which one did you mean?';
+            continue;
+        }
         $given[$name] = $value;
     }
 
@@ -1686,8 +1738,26 @@ function ap_i_cli(array $options)
 
     if (isset($given['dir'])) {
         $here = rtrim($given['dir'], '/');
+        /* AN EMPTY --dir IS NOT THE ROOT, AND / IS NOT AN INSTALLATION.
+           `--dir=/` trimmed to '', and realpath('') is the SHELL'S working
+           directory: the measured document root became wherever the operator
+           happened to stand. */
+        if ($here === '') {
+            $errors[] = '--dir needs a directory. `/` is not one to install into.';
+        }
     }
     $configPath = $here . '/internal/config-local.php';
+
+    /* AND IT HAS TO BE AN INSTALLATION. A mistyped --dir installed a
+       configuration into an empty directory and called it success: no api.php
+       next to it, no VERSION, nothing that would ever serve a note. The only
+       exception is the file that downloads the release, which legitimately
+       runs where nothing is yet. */
+    if (isset($given['dir']) && $here !== ''
+        && !is_file($here . '/api.php') && !is_file($here . '/MANIFEST')) {
+        $errors[] = $here . ' does not hold a server: no api.php and no MANIFEST. '
+            . 'Point --dir at the directory the release was unpacked into.';
+    }
 
     if (!isset($given['api-address'])) {
         $errors[] = '--api-address is required. Opened in a browser this installer '
@@ -1740,6 +1810,27 @@ function ap_i_cli(array $options)
         exit(2);
     }
 
+    /* THE ADDRESS IS READ WITH THE REST OF THE COMMAND LINE, not after the
+       disk has been consulted. Measured: `--api-address=notaurl` exited 2 on a
+       fresh directory and 0 on an installed one, so the same wrong command was
+       named in one place and swallowed in the other. */
+    $parts = isset($given['api-address']) ? parse_url($given['api-address']) : null;
+    if (isset($given['api-address'])
+        && (!$parts || !isset($parts['scheme']) || !isset($parts['host'])
+            || !in_array(strtolower($parts['scheme']), array('http', 'https'), true))) {
+        $errors[] = '--api-address must be an absolute http:// or https:// URL, '
+            . 'ending in the path api.php will answer at.';
+    }
+
+    if ($errors) {
+        fwrite(STDERR, "Nothing was touched.\n\n");
+        foreach ($errors as $line) {
+            fwrite(STDERR, ap_i_wrap($line, '  ') . "\n\n");
+        }
+        fwrite(STDERR, 'Run  php ' . $selfName . " --help  for what this takes.\n");
+        exit(2);
+    }
+
     /* ALREADY CONFIGURED IS A RESULT, NOT A REDIRECT -- BUT IT COMES AFTER THE
        COMMAND LINE HAS BEEN READ. Measured: with this test first, a mistyped
        option on an installed directory printed "already configured" and exited
@@ -1760,12 +1851,6 @@ function ap_i_cli(array $options)
     /* WHAT A REQUEST WOULD HAVE CARRIED, taken from the address instead. Both
        of these refuse to answer at all in CLI until they are given something,
        so nothing downstream can quietly fall back on a guess. */
-    $api    = $given['api-address'];
-    $parts  = parse_url($api);
-    if (!$parts || !isset($parts['scheme']) || !isset($parts['host'])) {
-        fwrite(STDERR, "--api-address is not an absolute http(s) URL.\n");
-        exit(2);
-    }
     $urlDir = isset($parts['path']) ? rtrim(dirname($parts['path']), '/') : '';
     $host   = $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
     ap_i_base_url($parts['scheme'] . '://' . $host . $urlDir);

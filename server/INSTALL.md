@@ -162,9 +162,12 @@ in its own header. Three things those headers cannot say:
   it.
 - **`storage` names a FILE, not an engine.** `'mysql'` selects
   `internal/store.php` and `'sqlite'` selects `internal/store-sqlite.php`,
-  whatever either of them really talks to. That is the property that makes a
-  store of your own a drop-in: write it, put it at one of those two paths, and
-  nothing upstream knows.
+  whatever either of them really talks to. **You may replace either file with
+  a store of your own**: write it, put it at one of those two paths, and
+  nothing upstream knows — three comments in the code point here for that
+  permission. The updater then leaves your file alone, which means it also
+  stops gaining what later versions add: `?action=diagnostic` says under
+  `storage.contract` what a kept store can no longer answer.
 - **`index.php` exists so that a bare visit is a 404** and not a directory
   listing.
 

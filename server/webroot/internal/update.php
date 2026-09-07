@@ -598,14 +598,26 @@ function ap_update_run(array $config)
             // with it. When there is no local manifest we cannot tell -- and
             // then we also do not touch it, because the wrong guess here is
             // unrecoverable.
+            /* AND THE CONSEQUENCE IS SAID, because it is not obvious and it
+               is not small. A kept store stays where it was while everything
+               around it moves on, so the calls this server has learned since
+               answer nothing. Measured, before api.php and maintenance.php
+               were taught to ask first: every annotated page turned into a
+               500 while ?action=diagnostic went on saying `operational`. Both
+               of them ask now, and ?action=diagnostic names what the store
+               cannot answer -- but somebody reading this line is the person
+               who can fix it, and they were being told nothing. */
+            $why = ' Nothing is wrong with your server, but this file is now older'
+                . ' than the rest of it: ?action=diagnostic says under'
+                . ' storage.contract what it can no longer answer.';
             if ($local === null || !isset($local[$path])) {
                 $kept[] = $path . ' (kept: no local manifest, so we cannot tell '
-                    . 'ours from a replacement)';
+                    . 'ours from a replacement.' . $why . ')';
                 continue;
             }
             if ($current !== null && $current !== $local[$path]) {
                 $kept[] = $path . ' (kept: it differs from the one we shipped, '
-                    . 'so it was replaced on purpose)';
+                    . 'so it was replaced on purpose.' . $why . ')';
                 continue;
             }
         }

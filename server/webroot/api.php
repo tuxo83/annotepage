@@ -648,6 +648,27 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
         }
         ap_diag_line($line[0], $line[1]);
     }
+
+    /* AND WHETHER THIS STORE IS AS OLD AS THIS SERVER IS NEW.
+       internal/update.php keeps a store file it did not ship -- one somebody
+       replaced on purpose, and also one it cannot recognise because the local
+       MANIFEST is gone. That file then stays behind while everything around it
+       moves, and the calls added since answer nothing.
+       This page said `operational` over exactly that, on a server whose every
+       annotated page had stopped working. It names it now: what is asked of a
+       store is knowable, so not asking was a choice, and the wrong one. */
+    $behind = array();
+    foreach (array('expiredTotals', 'serverTotals', 'compact', 'setTitle') as $needed) {
+        if (!method_exists('ApStore', $needed)) {
+            $behind[] = $needed . '()';
+        }
+    }
+    ap_diag_line('storage.contract', $behind
+        ? 'OLDER THAN THIS SERVER -- it cannot answer ' . implode(', ', $behind)
+          . '. This file was kept by an update: replace internal/'
+          . (ap_store_kind($config) === 'sqlite' ? 'store-sqlite.php' : 'store.php')
+          . ' with the one from the release, or carry those methods over.'
+        : 'complete');
 }
 
 // --- 6. Routing -----------------------------------------------------------
@@ -920,7 +941,8 @@ $store = new ApStore($config);
 // database errors and returns 0, because a relay that refused a remark over its
 // own housekeeping would be worse than one that grows. Running before also means
 // the note just written is never a candidate -- the cutoff is days in the past.
-if ($write && !empty($config['max_note_age_days']) && mt_rand(1, 50) === 1) {
+if ($write && !empty($config['max_note_age_days']) && mt_rand(1, 50) === 1
+    && method_exists($store, 'expireOlderThan')) {
     $store->expireOlderThan($config['max_note_age_days']);
 }
 
@@ -969,7 +991,19 @@ switch ($action) {
             'index'     => $index,
             'notes'     => $store->byPage($id, $index),
             'totals'    => $store->projectTotals($id),
-            'expired'   => $store->expiredTotals($id),
+            /* ASKED ONLY IF THE STORE CAN ANSWER IT. A store can be OLDER than
+               the rest of this server: internal/update.php deliberately keeps a
+               store file it did not ship -- one somebody replaced, and also one
+               it cannot recognise because the local MANIFEST is gone. That kept
+               file has never heard of a method added since. Measured: an
+               unguarded call turned every annotated page into a 500 while the
+               diagnostic went on saying `operational`, because this field is
+               read on the one call the client makes on every page load.
+
+               A missing field is a contract this client already keeps: it draws
+               no figure. A fatal is not. */
+            'expired'   => method_exists($store, 'expiredTotals')
+                           ? $store->expiredTotals($id) : null,
             'retention' => isset($config['max_note_age_days'])
                            ? (int) $config['max_note_age_days'] : 0,
         );
@@ -978,7 +1012,7 @@ switch ($action) {
            says at length why. Absent from the response otherwise: a client
            that gets no field draws no figure, and that is every client
            talking to every server that has not opted in. */
-        if (!empty($config['publish_server_totals'])) {
+        if (!empty($config['publish_server_totals']) && method_exists($store, 'serverTotals')) {
             $server = $store->serverTotals();
             if ($server !== null) {
                 $payload['server'] = $server;
@@ -1128,6 +1162,17 @@ switch ($action) {
            titled it, and the reader falls back on the excerpt as before. That
            is a state the tool already knows how to draw, so it needs no third
            case. */
+        /* SAME REASON AS `expired` ON THE LIST: a store kept by an update can
+           be older than this code. There the field is left out, because a
+           missing figure is a state the client draws; here it is refused,
+           because writing a title is an action and pretending it happened
+           would lose it silently. */
+        if (!method_exists($store, 'setTitle')) {
+            throw new ApFailure(
+                "This server's storage file is older than the rest of it and cannot "
+                . "write a title.\nIt was kept by an update -- see storage.contract in "
+                . "?action=diagnostic.", 503);
+        }
         ap_respond_json(ap_response_envelope(array(
             'project' => $id,
             'note'    => $store->setTitle($noteId, $id, $title, $titlePayload),

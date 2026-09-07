@@ -62,8 +62,14 @@ $gone = $store->expireOlderThan($days);
    rewriting a whole database nightly to reclaim nothing is the kind of job
    that gets switched off. The store decides whether it has anything to do:
    the MySQL one answers false and says why, and this script does not have to
-   know which one is behind it. */
-$shrunk = ($gone > 0) ? $store->compact() : false;
+   know which one is behind it.
+
+   AND THE STORE MAY BE OLDER THAN THIS SCRIPT. update.php keeps a store file
+   it did not ship, so a server can run today's maintenance against a store
+   that has never heard of compact(). Unguarded, this line killed the sweep --
+   AFTER the deletion, so the notes were gone and only the report failed, on
+   the first night something actually expired and not before. */
+$shrunk = ($gone > 0 && method_exists($store, 'compact')) ? $store->compact() : false;
 
 /* ROWS, not threads: a thread is one remark and its replies, and all of them
    went. The count of threads is the one kept in the tally, project by project,
