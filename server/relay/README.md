@@ -88,6 +88,14 @@ one it was given: it is what stops ONE project from becoming an export nobody
 can serve. Past it a write is refused and nothing is erased -- which also
 means the team whose id leaked cannot write either, until you raise it.
 
+It counts ROWS, and a discussed thread is three of them. Measured on a
+simulated project: six reviewers over three months write 1200 remarks, which
+is 3600 rows, so the 2000 this file used to set stopped them in week two --
+and the project did not slow down, it went mute. It is 6000 now, about 2000
+remarks, 6.5 MB of storage and a 4.7 MB export. Whoever raises it should know
+what they are buying: about 1.1 KB per row on disk, 0.8 KB per row in an
+export, and 1.15 KB per row in the answer a page load already asks for.
+
 There is no scheduled task: retention runs opportunistically, one write in
 fifty, and the counters clean themselves the same way. Nothing to add to cron.
 

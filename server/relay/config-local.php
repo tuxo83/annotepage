@@ -50,14 +50,33 @@ return array(
     // Retention. 0 would mean "keep everything forever", which on this machine
     // means "grow forever".
     'max_note_age_days'     => 90,
-    'max_notes_per_project' => 2000,
+    // ROWS, not remarks: a discussed thread is three of them. Simulated, six
+    // reviewers over three months write 1200 remarks -- 3600 rows -- so the
+    // 2000 this file used to carry stopped a working team in week two, and
+    // past the cap nobody can even reply. 6000 is about 2000 remarks: 6.5 MB
+    // of storage and a 4.7 MB export.
+    'max_notes_per_project' => 6000,
 
     // Rate limiting. These are the defaults, repeated here so that whoever
     // operates the relay sees them without opening another file.
     'rate_window_seconds'     => 300,
     'rate_writes_per_ip'      => 120,
     'rate_writes_per_project' => 300,
-    'rate_exports_per_ip'     => 20,
+    // Three exports per remark for an assistant -- read, reply, resolve, each
+    // write dropping its ten-second cache. At 20 the simulated assistant was
+    // refused in the middle of its seventh remark, on day one. 90 is thirty
+    // remarks per window, with room for two assistants behind one address.
+    'rate_exports_per_ip'     => 90,
+
+    // AND `list`, THE CALL EVERY ANNOTATED PAGE MAKES. Off, as everywhere: 0
+    // means the counter is never touched, so a page load costs no database
+    // write. It is here, named rather than left out, because a relay is
+    // exactly the machine that may one day need it -- a loop asking for one
+    // page's notes is 200 bytes in and several hundred kilobytes out, and
+    // nothing else bounds it. If this machine has a request cap in front of
+    // PHP, that is the better place; if it does not, 600 is two a second and
+    // no reviewer will ever meet it.
+    'rate_reads_per_ip'       => 0,
 
     // WHERE A BARE VISIT GOES. Only the directory itself and install.php --
     // never api.php, never an action, never the diagnostic: a redirect on an
