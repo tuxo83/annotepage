@@ -53,6 +53,16 @@
  * short read, a source that answers something else -- everything this file
  * created is removed before the page is drawn. A failed run leaves the
  * directory as it found it: this file, and nothing else.
+ *
+ * WHERE THAT PROMISE STOPS, AND IT IS WORTH KNOWING: it covers everything up
+ * to and including the verification. A release whose MANIFEST is VALID but
+ * incomplete -- every hash right, one file simply not listed -- passes, is
+ * written, and then fails when something requires the file nobody sent. What
+ * is on disk then is a half release, and this file cannot take it back: it
+ * has no list of its own to compare against, by design, and PHP cannot catch
+ * a failed `require`. That is a defect of the published manifest, which the
+ * release's own tooling checks before publishing; if it ever happens, the
+ * directory is emptied by hand and the run started again.
  */
 
 // --- 1. PHP version -------------------------------------------------------

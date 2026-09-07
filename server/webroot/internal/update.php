@@ -816,9 +816,21 @@ function ap_update_run(array $config)
     // recorded in .update/state.json and shown by the diagnostic; an absolute
     // path there would publish where this installation sits on disk, for no
     // gain to whoever has to go and move the files back.
+    /* AND THERE IS ONLY SOMETHING TO UNDO IF SOMETHING WAS REPLACED. A first
+       install replaces nothing, so the backup directory is created empty and
+       then removed -- while this line told the operator their previous version
+       was kept there, and where. Pointing somebody at a directory that does
+       not exist, in the one sentence they will come back to when they want to
+       roll back, is worse than saying nothing. */
+    $kept = is_dir($backup) && count(array_diff((array) @scandir($backup),
+        array('.', '..'))) > 0;
     $summary = 'updated ' . $installed . ' -> ' . $published . ', '
-        . count($installedFiles) . ' file(s) replaced. Previous version kept in '
-        . '.update/' . $backupName . ' -- to undo, move those files back.';
+        . count($installedFiles) . ' file(s) replaced.'
+        . ($kept
+            ? ' Previous version kept in .update/' . $backupName
+              . ' -- to undo, move those files back.'
+            : ' Nothing was replaced, so there is nothing to undo: this'
+              . ' directory had no release in it.');
     $say($summary);
     return array('ok' => true, 'changed' => true, 'published' => $published,
                  'summary' => $summary, 'lines' => $lines);

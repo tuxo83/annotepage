@@ -729,8 +729,22 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
                 // The password is stripped from the driver message before it is
                 // shown. The rest -- host, database, user -- was typed on this
                 // very screen by the person reading it.
+                /* THE STORE'S SENTENCE IS WRITTEN FOR A REVIEWER, NOT FOR AN
+                   INSTALLATION. It says "your notes are NOT saved. The tool has
+                   lost nothing of what was already saved" -- true and useful on
+                   the path somebody is reading a page, and absurd here, where no
+                   note exists yet and the person is holding the credentials that
+                   were just refused. The database server's own words go to the
+                   log, which is stderr on a command line: named, so the operator
+                   knows to look up rather than at this line. */
                 $detail = str_replace($values['password'], '********', $e->getMessage());
-                $errors[] = 'MySQL refused: ' . substr($detail, 0, 400);
+                $errors[] = 'MySQL refused the connection, so nothing was written. '
+                    . 'The database server said why, in this host\'s PHP error log, on '
+                    . 'the line beginning [annotepage] -- from a command line that is '
+                    . 'the line printed just above. It is nearly always one of three: '
+                    . 'the password, the database name, or a user without the right to '
+                    . 'create tables. What this tool was told: '
+                    . substr($detail, 0, 400);
             }
         }
 
@@ -1534,15 +1548,24 @@ function ap_i_plain($text, $keepLines = false)
 }
 
 /** A paragraph, folded at 78 columns, indented as asked. */
-function ap_i_wrap($text, $indent = '')
+/** Entities decoded, tags left alone: for what a server answered. */
+function ap_i_entities($text)
+{
+    return str_replace(
+        array('&mdash;', '&nbsp;', '&amp;', '&quot;', '&#039;', '&lt;', '&gt;'),
+        array('--', ' ', '&', '"', "'", '<', '>'), (string) $text);
+}
+
+function ap_i_wrap($text, $indent = '', $strip = true)
 {
     /* The fold is 78 columns INCLUDING the indent: folding to 78 and then
        pushing the whole block six spaces right gives 84, which wraps again in
        an 80-column terminal, in the wrong place and twice. */
     $width = 78 - strlen($indent);
     if ($width < 24) { $width = 24; }
+    $body = $strip ? ap_i_plain($text) : trim(preg_replace('/\s+/', ' ', (string) $text));
     return $indent . str_replace("\n", "\n" . $indent,
-        wordwrap(ap_i_plain($text), $width, "\n", false));
+        wordwrap($body, $width, "\n", false));
 }
 
 /**
@@ -1580,13 +1603,18 @@ function ap_i_render_text(array $screen)
                 $out .= "\n    "
                     . str_replace("\n", "\n    ", ap_i_plain($block[1], true)) . "\n";
                 break;
+            /* MEASURED VALUES, NOT PROSE. These cells hold what a server
+               answered -- "First bytes: <!doctype html><html>..." is the
+               evidence of a refusal, and running it through strip_tags ate it
+               from the first `<` onwards, closing quote included. Entities are
+               still decoded; tags are left exactly as they came back. */
             case 'table':
             case 'table-env':
                 $out .= "\n";
                 foreach ($block[1] as $line) {
                     $meaning = $block[0] === 'table-env' ? $line[3] : $line[2];
-                    $out .= '  ' . $line[0] . ': ' . $line[1] . "\n"
-                        . ap_i_wrap($meaning, '      ') . "\n";
+                    $out .= '  ' . $line[0] . ': ' . ap_i_entities($line[1]) . "\n"
+                        . ap_i_wrap(ap_i_entities($meaning), '      ', false) . "\n";
                 }
                 break;
             /* A button is a button. What replaces it is the command that does
@@ -1734,8 +1762,17 @@ function ap_i_cli(array $options)
        with no arguments is a script that forgot them: it prints what it takes
        and exits 2, so a broken pipeline stops instead of installing defaults. */
     if (isset($given['help']) || count($argv) <= 1) {
-        echo ap_i_render_help($selfName);
-        exit(isset($given['help']) ? 0 : 2);
+        /* ASKED FOR, IT IS AN ANSWER; PRINTED TO REFUSE, IT IS AN ERROR.
+           `php install.php > install.log` on a bare command wrote five
+           kilobytes of aide into the log and nothing on stderr, so a pipeline
+           that watches stderr saw a silent success that had installed
+           nothing. */
+        if (isset($given['help'])) {
+            echo ap_i_render_help($selfName);
+            exit(0);
+        }
+        fwrite(STDERR, ap_i_render_help($selfName));
+        exit(2);
     }
     if (isset($given['version'])) {
         echo ap_i_version($here) . "\n";
@@ -1940,10 +1977,13 @@ function ap_i_cli(array $options)
     $done   = ap_i_install($answers, $here, $configPath, $selfName, $report, $failed);
 
     if (!$done['installed']) {
-        echo ap_i_render_text(array(
+        /* An empty table under a heading is furniture: the MySQL route measures
+           nothing before it connects, so a failure there had a title and a
+           blank space under it. */
+        echo $report ? ap_i_render_text(array(
             array('h2', 'What was measured'),
             array('table', $report),
-        ));
+        )) : '';
         fwrite(STDERR, "\nNothing was installed.\n\n");
         foreach ($failed as $line) {
             fwrite(STDERR, ap_i_wrap($line, '  ') . "\n\n");
@@ -1951,6 +1991,7 @@ function ap_i_cli(array $options)
         exit(1);
     }
 
+    echo "\n";
     echo ap_i_render_text(ap_i_screen_installed($done['relay'], ap_i_base_url() . 'api.php',
         $here, $selfName, $report, $done['auto'], $outboundUrl, $done['token']));
 
