@@ -85,6 +85,9 @@ if (!defined('AP_INTERNAL')) {
     define('AP_UPDATE_CLI', 1);
     require __DIR__ . '/errors.php';
     require __DIR__ . '/config.php';
+    // The same nets, for the same reason: this runs from a crontab, and a
+    // stack trace is not a report.
+    ap_install_handlers();
 }
 
 /**

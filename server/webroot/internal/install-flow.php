@@ -1514,10 +1514,16 @@ function ap_i_parse_options(array $argv)
 /** Markup out of a sentence written for a screen. */
 function ap_i_plain($text, $keepLines = false)
 {
+    /* STRIPPED FIRST, DECODED AFTER, AND THE ORDER IS THE WHOLE POINT.
+       Decoding `&lt;that secret&gt;` into `<that secret>` and THEN stripping
+       tags fed it to strip_tags as an element: the browser printed
+       "token=<that secret> then runs", the terminal printed "token= then
+       runs". The one placeholder somebody has to replace was the thing that
+       disappeared. */
+    $text = strip_tags((string) $text);
     $text = str_replace(
         array('&mdash;', '&nbsp;', '&amp;', '&quot;', '&#039;', '&lt;', '&gt;'),
-        array('--', ' ', '&', '"', "'", '<', '>'), (string) $text);
-    $text = strip_tags($text);
+        array('--', ' ', '&', '"', "'", '<', '>'), $text);
     /* A `pre` block is the only place where a line break MEANS something: it
        separates the command you run by hand from the crontab line. Collapsing
        whitespace there glued the two into one line nobody could use. */
@@ -1855,6 +1861,54 @@ function ap_i_cli(array $options)
     $host   = $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
     ap_i_base_url($parts['scheme'] . '://' . $host . $urlDir);
     ap_i_script_name(($urlDir === '' ? '' : $urlDir) . '/' . $selfName);
+
+    /* THE ADDRESS AND THE DIRECTORY, TIED TOGETHER, AND NOTHING ELSE CAN DO IT.
+       Opened in a browser they are one thing: the request arrived at this
+       file, so the directory it sits in IS the directory served at that
+       address. On a command line they are two independent inputs that nobody
+       had ever compared. The control request further down proves only that AN
+       annotepage installer answers there -- install.php replies to ?probe=
+       before requiring anything, so any copy at the site root validates any
+       directory.
+
+       Measured, before this existed: a release unpacked in /apps/notes/ and
+       given the site root as its address installed with exit 0, wrote "placed
+       one level above the document root, where no URL reaches it", and left
+       the database answering 200 to a plain GET. The configuration it wrote
+       said the installer had requested it over HTTP and confirmed the refusal.
+
+       So: a file with a random name and a random token is written HERE, asked
+       for THERE, and removed either way. If the answer is not the token, the
+       address does not lead to this directory -- and every measurement that
+       follows would be about somebody else's. Nothing is touched. */
+    $witness = 'ap-check-' . bin2hex(random_bytes(8)) . '.txt';
+    $token   = bin2hex(random_bytes(16));
+    $witnessPath = $here . '/' . $witness;
+    if (@file_put_contents($witnessPath, $token) === false) {
+        fwrite(STDERR, ap_i_wrap('Cannot write into ' . $here . ', so this run cannot '
+            . 'even check that the address leads here. Grant write permission on that '
+            . 'directory, install, and take it away again.') . "\n");
+        exit(1);
+    }
+    $answer = ap_i_fetch(ap_i_base_url() . $witness, 8);
+    @unlink($witnessPath);
+    if ($answer['status'] === null || trim((string) $answer['body']) !== $token) {
+        fwrite(STDERR, "Nothing was touched.\n\n"
+            . ap_i_wrap('--api-address does not lead to this directory. A file was '
+                . 'written here and asked for there, and what came back was '
+                . ($answer['status'] === null
+                    ? 'nothing at all (' . (string) $answer['error'] . ')'
+                    : 'not it (HTTP ' . $answer['status'] . ')')
+                . '.', '  ') . "\n\n"
+            . ap_i_wrap('Asked for: ' . ap_i_base_url() . $witness, '  ') . "\n"
+            . ap_i_wrap('Written in: ' . $here, '  ') . "\n\n"
+            . ap_i_wrap('Give the address this directory really answers at, or point '
+                . '--dir at the directory that address serves. Without that, every '
+                . 'measurement below would be about somebody else\'s directory -- '
+                . 'including the one that proves the database cannot be downloaded.',
+                '  ') . "\n");
+        exit(2);
+    }
 
     /* WHAT WAS MEASURED, AND ON WHICH PHP. The environment rows describe the
        interpreter running this command, which on shared hosting is very often

@@ -36,6 +36,12 @@ if (!defined('AP_INTERNAL')) {
     define('AP_INTERNAL', 1);
     require __DIR__ . '/errors.php';
     require __DIR__ . '/config.php';
+    /* THE NETS. Without them a configuration this file cannot read ends in a
+       raw PHP fatal and exit 255 -- with a stack trace naming the path of that
+       configuration, on the terminal of whoever runs the cron. With them it is
+       one sentence on stderr and exit 1, which is what this file's own header
+       promises a scheduler. */
+    ap_install_handlers();
 }
 
 $config = ap_config();

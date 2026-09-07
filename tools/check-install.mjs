@@ -429,6 +429,53 @@ const shell = async (dir, args) => {
     rmSync(dir, { recursive: true, force: true });
 }
 
+/* -- THE ADDRESS HAS TO LEAD TO THE DIRECTORY BEING INSTALLED -----------
+   In a browser they are one thing: the request arrived at this file. On a
+   command line they are two independent inputs, and nothing compared them.
+   Measured before this was tied: a release unpacked one directory down and
+   given the site root as its address installed with exit 0, said the database
+   was placed where no URL reaches it, and left it answering 200 to a GET. */
+{
+    const dir = mkdtempSync(join(tmpdir(), 'annotepage-tie-'));
+    const site = join(dir, 'html');
+    const deeper = join(site, 'apps', 'notes');
+    cpSync(webroot, deeper, { recursive: true });
+    cpSync(join(webroot, 'install.php'), join(site, 'install.php'));
+    cpSync(join(webroot, 'internal'), join(site, 'internal'), { recursive: true });
+    const port = await freePort();
+    const server = spawn('php', ['-S', '127.0.0.1:' + port], {
+        cwd: site, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: 'ignore',
+    });
+    for (let i = 0; i < 40; i += 1) {
+        await sleep(150);
+        try { await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' }); break; }
+        catch (e) { /* not listening yet */ }
+    }
+    /* The site root answers `?probe=` too -- that is exactly why the control
+       request alone proved nothing. */
+    const lie = spawnSync('php', [join(deeper, 'install.php'),
+        '--api-address=http://127.0.0.1:' + port + '/api.php', '--answers-for=one-site'],
+        { encoding: 'utf8', cwd: deeper });
+    check('an address that leads somewhere else was accepted',
+        lie.status === 2 && /does not lead to this directory/.test(lie.stderr || ''),
+        'exit ' + lie.status + '\n' + (lie.stderr || '').slice(0, 200));
+    check('nothing was written by the refused run',
+        !existsSync(join(deeper, 'internal', 'config-local.php')));
+    check('the witness file was left behind',
+        readdirSync(deeper).filter((f) => f.startsWith('ap-check-')).length === 0
+        && readdirSync(site).filter((f) => f.startsWith('ap-check-')).length === 0);
+
+    const right = spawnSync('php', [join(deeper, 'install.php'),
+        '--api-address=http://127.0.0.1:' + port + '/apps/notes/api.php',
+        '--answers-for=one-site'], { encoding: 'utf8', cwd: deeper });
+    check('the address that does lead here was refused', right.status === 0
+        && existsSync(join(deeper, 'internal', 'config-local.php')),
+        'exit ' + right.status + '\n' + (right.stderr || '').slice(0, 300));
+
+    try { server.kill('SIGKILL'); } catch (e) { /* gone */ }
+    rmSync(dir, { recursive: true, force: true });
+}
+
 /* -- A FAILED INSTALL MUST NOT TOUCH SOMEBODY ELSE'S DATABASE -----------
    The data file's path is fixed -- <parent of the document root>/
    annotepage-data/notes.sqlite -- so a second installation under the same
@@ -477,11 +524,27 @@ const shell = async (dir, args) => {
         check('the row could not be written for the check', (wrote.stdout || '') === '1',
             wrote.stdout + wrote.stderr);
 
-        /* The second one fails on purpose: an address nothing answers at. It
-           reaches the data file first, which is the whole point. */
+        /* The second one is served too -- it has to be, or it would fail on
+           the address tie before ever reaching the data file, and this case is
+           about what the UNDO does. It fails at the last step instead: its
+           internal/ cannot be written, which is a real hosting state and the
+           one the installer already has a sentence for. */
+        const port2 = await freePort();
+        const server2 = spawn('php', ['-S', '127.0.0.1:' + port2], {
+            cwd: second, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' },
+            stdio: 'ignore',
+        });
+        for (let i = 0; i < 40; i += 1) {
+            await sleep(150);
+            try { await fetch('http://127.0.0.1:' + port2 + '/install.php', { redirect: 'manual' }); break; }
+            catch (e) { /* not listening yet */ }
+        }
+        chmodSync(join(second, 'internal'), 0o555);
         const doomed = spawnSync('php', [join(second, 'install.php'),
-            '--api-address=http://127.0.0.1:1/api.php', '--answers-for=one-site'],
-            { encoding: 'utf8', cwd: second });
+            '--api-address=http://127.0.0.1:' + port2 + '/api.php',
+            '--answers-for=one-site'], { encoding: 'utf8', cwd: second });
+        chmodSync(join(second, 'internal'), 0o755);
+        try { server2.kill('SIGKILL'); } catch (e) { /* gone */ }
         check('the second installation was supposed to fail', doomed.status === 1,
             'exit ' + doomed.status);
         check('a failed install deleted a live installation\'s database',
@@ -573,6 +636,30 @@ return array('active' => true, 'allow_plain_http' => true,
         (r.stdout || '') === '', JSON.stringify(r.stdout));
     check('a failure on a command line says nothing on stderr',
         /a failure/.test(r.stderr || ''), JSON.stringify(r.stderr));
+}
+
+/* -- THE TWO CRON ENTRIES REPORT, THEY DO NOT CRASH ---------------------
+   maintenance.php promises a scheduler "it exits 0 when there was nothing to
+   do, so a scheduler that reports failures has something to report on", and
+   --help announces 0/1/2. Measured before the nets were installed there: a
+   configuration it could not read gave a raw PHP fatal, exit 255, and a stack
+   trace naming the path of that configuration on the operator's terminal. */
+{
+    const dir = mkdtempSync(join(tmpdir(), 'annotepage-cron-'));
+    const root = join(dir, 'web');
+    cpSync(webroot, root, { recursive: true });
+    writeFileSync(join(root, 'internal', 'config-local.php'),
+        "<?php\nreturn array('active' => true, 'deployment' => 'nonsense');\n");
+    for (const script of ['maintenance.php', 'update.php']) {
+        const r = spawnSync('php', [join(root, 'internal', script)], { encoding: 'utf8' });
+        check(`${script} crashes on a configuration it cannot read`,
+            r.status === 1, 'exit ' + r.status);
+        check(`${script} writes its failure on stdout`,
+            (r.stdout || '') === '', JSON.stringify((r.stdout || '').slice(0, 120)));
+        check(`${script} says nothing about what is wrong`,
+            /deployment/.test(r.stderr || ''), JSON.stringify((r.stderr || '').slice(0, 120)));
+    }
+    rmSync(dir, { recursive: true, force: true });
 }
 
 /* -- THE FILE SOMEBODY DOWNLOADS, BEFORE IT HAS DOWNLOADED ANYTHING ------
