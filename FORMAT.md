@@ -799,15 +799,25 @@ sending the path in plain mode and the index in encrypted mode would make two
 code paths, and the second would be the less tested one.
 
 Response: `{"ok":true,"tool":"annotepage","format":2,"version":"...",
-"project":"...","index":"...","notes":[...],"totals":{...},"retention":<days>}`.
+"project":"...","index":"...","notes":[...],"totals":{...},"expired":{...},
+"retention":<days>}`.
 
 `totals` counts the whole project — notes, still open, pages carrying one —
 and `retention` is how many days a thread is kept after its last message, `0`
-when nothing expires. Both are answered on this call rather than on one of
-their own, so a page load never costs a second request. Both were added after
-this section was first written, and a reader that did not know them ignored
-them, which is the rule of §7 working. Each note carries its plain
-columns (§2.1), its payload columns (§2.2) and its nested replies.
+when nothing expires. `expired` is what retention has already taken from this
+project — `notes`, `pages`, and `last_sweep`, an ISO date or `null` — zeroes
+on a server that has never swept. All three are answered on this call rather
+than on ones of their own, so a page load never costs a second request. All
+three were added after this section was first written, and a reader that did
+not know them ignored them, which is the rule of §7 working. Each note carries
+its plain columns (§2.1), its payload columns (§2.2) and its nested replies.
+
+A server whose operator has published them adds **`server`** —
+`{"projects":n,"notes":n,"pages":n}`, what the whole installation holds across
+every project. **It is absent by default and on nearly every server**: the
+figure says how many teams an operator serves, and any visitor of any
+annotated page could read it. Three integers, never a project id, never a
+page, never a date.
 
 It may also carry **`client_version`**, the version of the browser client the
 server believes to be current — a plain `x.y.z`, and `version` above stays the

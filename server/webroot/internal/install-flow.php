@@ -162,11 +162,27 @@ function ap_i_can_defer()
         || function_exists('litespeed_finish_request');
 }
 
-/** The absolute path of internal/update.php, for the cron line to paste. */
-function ap_i_update_script($here)
+/** The absolute path of a script under internal/, for a cron line to paste. */
+function ap_i_update_script($here, $script = 'update.php')
 {
     $real = realpath($here);
-    return ($real === false ? $here : str_replace('\\', '/', $real)) . '/internal/update.php';
+    return ($real === false ? $here : str_replace('\\', '/', $real)) . '/internal/' . $script;
+}
+
+/**
+ * A MINUTE AND AN HOUR DRAWN FOR THIS INSTALL, for a crontab line.
+ *
+ * The line used to read `17 4` for everybody, and everybody who pasted it
+ * asked the same host for the same file at the same second. That is a spike
+ * this project builds into somebody else's server -- and, for the sweep, a
+ * pile of databases rewriting themselves at once on shared hosting.
+ *
+ * Drawn once per screen, so the two lines on it do not fire together either.
+ * Nothing depends on the value: any minute of any hour does the same work.
+ */
+function ap_i_cron_time()
+{
+    return sprintf('%d %d * * *', random_int(0, 59), random_int(0, 23));
 }
 
 /**
@@ -684,6 +700,27 @@ function ap_i_config_text(array $values)
     $text .= "    // everything for ever -- the client stops announcing an age, and this\n";
     $text .= "    // server stops removing anything.\n";
     $text .= "    'max_note_age_days'     => 90,\n\n";
+
+    /* WHAT THE WHOLE SERVER HOLDS, AND WHY IT IS WRITTEN HERE TURNED OFF
+       RATHER THAN LEFT OUT. It is a flag an operator wants to know exists --
+       one running a relay for other people has no other way to see, from a
+       page, what their own server is carrying. Written as `false` with the
+       cost beside it, it is found by whoever opens this file; left out, it is
+       found by whoever reads config.php, which is nobody. */
+    $text .= "    // WHAT THIS WHOLE SERVER HOLDS -- how many projects, how many notes,\n";
+    $text .= "    // how many pages -- answered on the call every annotated page already\n";
+    $text .= "    // makes, beside that project's own figures. Off, and no client draws\n";
+    $text .= "    // it.\n";
+    $text .= "    //\n";
+    $text .= "    // Turning it on publishes those three integers to anybody who can\n";
+    $text .= "    // open one annotated page";
+    $text .= $relay
+        ? " -- on this server, that is every visitor of\n"
+          . "    // every site using it, learning how many teams you carry.\n"
+        : " -- here, that is a figure your own team\n"
+          . "    // already knows.\n";
+    $text .= "    // Never a project id, never a page, never a date.\n";
+    $text .= "    'publish_server_totals' => false,\n\n";
 
     if ($relay) {
         $text .= "    // WHAT ELSE BOUNDS THE DISK ON A RELAY. It stores what it cannot\n";
@@ -1334,6 +1371,23 @@ function ap_i_run(array $options)
             . 'just written. Set it to <code>0</code> to keep everything for ever. '
             . 'While it is set, the panel on your pages says so and every export '
             . "carries it in its header &mdash; nobody discovers it late.</p>\n";
+
+        /* WHAT ACTUALLY SWEEPS. Without this line the ceiling is kept by a die
+           rolled on writes -- which is enough on a busy relay and is nothing at
+           all on the case retention exists for: a project nobody has come back
+           to. A promise measured in days needs a job measured in days. */
+        $sweepScript = ap_i_update_script($here, 'maintenance.php');
+        echo '<p>One line makes it happen on time. Without it the sweep is a die '
+            . 'rolled on writes, which on a project nobody comes back to &mdash; the '
+            . 'very case this exists for &mdash; is never rolled at all:</p>' . "\n";
+        echo '<pre>' . ap_i_h(ap_i_cron_time()) . ' php ' . ap_i_h($sweepScript)
+            . " &gt;/dev/null</pre>\n";
+        echo '<p>Drawn for you, like the update line further down, so that a hundred '
+            . 'installations do not rewrite their databases at the same second. It '
+            . 'prints what it swept and exits 0 when there was nothing to do. It is '
+            . 'not reachable over the web, and there is no address for it: the only '
+            . 'thing that could buy anybody is making somebody else\'s deletions '
+            . "happen sooner.</p>\n";
         echo '<h2>What was measured</h2>' . "\n";
         echo "<table>\n";
         foreach ($report as $line) {
@@ -1373,6 +1427,7 @@ function ap_i_run(array $options)
         $autoUpdateOn = isset($autoUpdate) ? (bool) $autoUpdate : false;
         $canDefer = ap_i_can_defer();
         $updateScript = ap_i_update_script($here);
+        $cronWhen = ap_i_cron_time();
         $reach = ap_i_fetch($outboundUrl, 4);
         $canReach = $reach['status'] !== null;
 
@@ -1394,8 +1449,10 @@ function ap_i_run(array $options)
             . 'Nothing to turn on and nothing to keep secret. Run it once by hand to '
             . "watch it work, then give cron this line:</p>\n";
         echo '<pre>php ' . ap_i_h($updateScript) . "\n\n"
-            . '17 4 * * * php ' . ap_i_h($updateScript) . " &gt;/dev/null</pre>\n";
-        echo '<p>Any minute of any hour does; that one is no better than another. It '
+            . ap_i_h($cronWhen) . ' php ' . ap_i_h($updateScript) . " &gt;/dev/null</pre>\n";
+        echo '<p>That minute and that hour were drawn for you, and any others do as '
+            . 'well: what matters is that every installation does not ask the same host '
+            . 'for the same file at the same second. It '
             . 'exits 0 when there was nothing to do &mdash; which is most nights &mdash; '
             . 'and 1 only when something really failed, so a scheduler that reports '
             . 'failures has something to report on. Drop the <code>&gt;/dev/null</code> '
@@ -1411,7 +1468,7 @@ function ap_i_run(array $options)
             echo '<pre>' . ap_i_h($serverUrl . '?action=update&token=' . $updateToken)
                 . "</pre>\n";
             echo '<p>Paste that into the panel. From a crontab, the same thing:</p>' . "\n";
-            echo '<pre>17 4 * * * curl -fsS \''
+            echo '<pre>' . ap_i_h($cronWhen) . ' curl -fsS \''
                 . ap_i_h($serverUrl . '?action=update&token=' . $updateToken)
                 . "' &gt;/dev/null</pre>\n";
             echo '<p>Whoever calls it waits while the update runs and is answered with '

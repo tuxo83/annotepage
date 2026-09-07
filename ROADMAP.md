@@ -72,9 +72,12 @@ attached, which is the part worth keeping.
   wrongly by whoever writes it, and the refusal is the only place it shows.
 - **Accounts, logins, moderation.** None of the three, ever. A remark one can
   erase is a remark one can no longer contradict.
-- **Deleting a note.** Resolved goes to the history and stays. The one
-  exception is age, on a relay configured for it, and such a server says so in
-  its diagnostic and in every export.
+- **Deleting a note.** Resolved goes to the history and stays. Nobody can
+  point at a remark and make it go. The one exception is age — every
+  installation the installer creates keeps a thread ninety days after its last
+  message — and a server where that is set says so in its diagnostic, in every
+  export, and in the panel on the annotated pages, which also counts what has
+  already gone that way.
 - **Shipping `src/` in the client tarball.** Only `dist/`, `labels/` and the
   readme. The sources are on GitHub and the build is reproducible from there;
   shipping them tripled the tarball for nothing.

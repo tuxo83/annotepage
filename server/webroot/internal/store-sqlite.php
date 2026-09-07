@@ -76,6 +76,9 @@ class ApStore
     /** @var string name of the rate counter table */
     private $rateTable;
 
+    /** @var string full name of the retention tally table */
+    private $tallyTable;
+
     public function __construct(array $config)
     {
         $this->config = $config;
@@ -92,6 +95,7 @@ class ApStore
         }
         $this->table     = $prefix . 'notes';
         $this->rateTable = $prefix . 'rate';
+        $this->tallyTable = $prefix . 'tally';
         $this->file      = self::resolveFile($config);
     }
 
@@ -331,6 +335,7 @@ class ApStore
             $this->addMissingColumns($present);
         }
         $this->completeIndexes();
+        $this->ensureTally();
 
         $this->schemaEnsured = true;
     }
@@ -431,7 +436,9 @@ class ApStore
             // exactly like the resolution and for the same reason: it is
             // written LATER, by somebody else, and folding it in would
             // mean re-encrypting a remark nobody is allowed to rewrite.
-            'title'         => 'VARCHAR(' . (int) $c['max_title_length'] . ") NOT NULL DEFAULT ''",
+            // No width here either, and $c never existed in this method: the
+            // bound on a title is input.php's, like every other bound.
+            'title'         => "TEXT NOT NULL DEFAULT ''",
             'title_payload' => 'TEXT NULL DEFAULT NULL',
             // Resolution, plain part.
             'resolved_at'      => 'TEXT NULL DEFAULT NULL',
@@ -708,6 +715,138 @@ class ApStore
      *
      * @return array{notes:int,open:int,pages:int}
      */
+    /**
+     * THE SECOND TABLE, AND IT HOLDS NUMBERS RATHER THAN NOTES.
+     *
+     * A note that has expired cannot be counted: it is gone. So the count is
+     * taken at the moment of the deletion and kept -- one row per project,
+     * three numbers and a date. Nothing in it identifies anything: a project id
+     * is already the key of every row of the other table, and a count is a
+     * count. There is no page path here, no text, no name.
+     *
+     * WHY A SECOND TABLE RATHER THAN A COLUMN. A tally belongs to a PROJECT,
+     * and the notes table has one row per note; the count would have had to be
+     * written on every row and read from an arbitrary one. And a counter row
+     * hidden among the notes would appear in the export, which is a contract.
+     *
+     * Created on the same lazy path as the columns above, so a server that
+     * updates gains it at its first call, with nothing to run by hand.
+     */
+    private function ensureTally()
+    {
+        try {
+            $this->pdo()->exec(
+                'CREATE TABLE IF NOT EXISTS "' . $this->tallyTable() . '" ('
+                . '"project" VARCHAR(22) NOT NULL PRIMARY KEY, '
+                . '"expired_notes" INTEGER NOT NULL DEFAULT 0, '
+                . '"expired_pages" INTEGER NOT NULL DEFAULT 0, '
+                . '"last_sweep" DATETIME NULL DEFAULT NULL)');
+        } catch (PDOException $e) {
+            /* HOUSEKEEPING MUST NEVER COST A NOTE. Without this table the
+               figures are simply absent, which the client already knows how to
+               draw: it is the state of every server older than this one. */
+            ap_log('tally table: ' . $e->getMessage());
+        }
+    }
+
+    private function tallyTable()
+    {
+        return $this->tallyTable;
+    }
+
+    /** What was swept, per project, added to what was swept before. */
+    private function recordSweep(array $perProject)
+    {
+        foreach ($perProject as $project => $counts) {
+            try {
+                $this->pdo()->prepare(
+                    'INSERT INTO "' . $this->tallyTable() . '" '
+                    . '("project", "expired_notes", "expired_pages", "last_sweep") '
+                    . 'VALUES (?, ?, ?, ?) '
+                    . 'ON CONFLICT("project") DO UPDATE SET '
+                    . '"expired_notes" = "expired_notes" + ?, '
+                    . '"expired_pages" = "expired_pages" + ?, '
+                    . '"last_sweep" = ?')
+                    ->execute(array(
+                        (string) $project, (int) $counts['notes'], (int) $counts['pages'],
+                        gmdate('Y-m-d H:i:s'),
+                        (int) $counts['notes'], (int) $counts['pages'],
+                        gmdate('Y-m-d H:i:s')));
+            } catch (PDOException $e) {
+                ap_log('tally write: ' . $e->getMessage());
+            }
+        }
+    }
+
+    /** The tally of one project, zeroes when it has never been swept. */
+    public function expiredTotals($project)
+    {
+        $this->ensureSchema();
+        try {
+            $req = $this->pdo()->prepare(
+                'SELECT "expired_notes", "expired_pages", "last_sweep" FROM "'
+                . $this->tallyTable() . '" WHERE "project" = ?');
+            $req->execute(array((string) $project));
+            $row = $req->fetch(PDO::FETCH_NUM);
+        } catch (PDOException $e) {
+            return array('notes' => 0, 'pages' => 0, 'last_sweep' => null);
+        }
+        if (!$row) {
+            return array('notes' => 0, 'pages' => 0, 'last_sweep' => null);
+        }
+        return array(
+            'notes' => (int) $row[0],
+            'pages' => (int) $row[1],
+            'last_sweep' => $row[2] === null ? null : ap_iso_date($row[2]),
+        );
+    }
+
+    /**
+     * WHAT THIS SERVER HOLDS ALTOGETHER, across every project.
+     *
+     * Answered only where the operator has asked for it to be -- see
+     * `publish_server_totals` in config.php. On a relay it tells any visitor of
+     * any annotated page how many teams use it, which is nobody's business but
+     * the operator's; on a server holding one team's own notes it is a figure
+     * that team already knows.
+     */
+    public function serverTotals()
+    {
+        $this->ensureSchema();
+        try {
+            $req = $this->pdo()->query(
+                'SELECT COUNT(DISTINCT "project"), COUNT(*), COUNT(DISTINCT "page_index") '
+                . 'FROM "' . $this->table . '" WHERE "reply_to" IS NULL');
+            $row = $req->fetch(PDO::FETCH_NUM);
+        } catch (PDOException $e) {
+            return null;
+        }
+        if (!$row) {
+            return null;
+        }
+        return array(
+            'projects' => (int) $row[0],
+            'notes'    => (int) $row[1],
+            'pages'    => (int) $row[2],
+        );
+    }
+
+    /**
+     * Gives the freed pages back to the filesystem. SQLite marks them reusable
+     * and keeps the file's size, so a database that held a year of notes stays
+     * that size for ever unless it is rewritten.
+     */
+    public function compact()
+    {
+        try {
+            $this->pdo()->exec('VACUUM');
+            return true;
+        } catch (PDOException $e) {
+            ap_log('vacuum: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function projectTotals($project)
     {
         $this->ensureSchema();
@@ -904,14 +1043,73 @@ class ApStore
              . 'GROUP BY COALESCE("reply_to", "id") '
              . 'HAVING MAX("created_at") < ?)';
 
+        // What is about to go, per project, MEASURED BEFORE THE DELETE: after
+        // it there is nothing left to count. A tally that cost a sweep would
+        // not be worth having, so a failure here is logged and the sweep goes
+        // ahead unrecorded.
+        $swept = $this->sweepCounts($cutoff);
+
         try {
             $req = $this->pdo()->prepare($sql);
             $req->execute(array($cutoff));
-            return (int) $req->rowCount();
+            $rows = (int) $req->rowCount();
         } catch (PDOException $e) {
             ap_log('retention: ' . $e->getMessage());
             return 0;
         }
+
+        if ($rows > 0 && $swept) {
+            $this->recordSweep($swept);
+        }
+        return $rows;
+    }
+
+    /**
+     * How many threads, and how many whole pages, the cutoff is about to take
+     * -- counted per project, in the units the panel already draws: a thread
+     * is one note, its replies are not notes.
+     *
+     * A PAGE COUNTS AS GONE when every remark on it goes. The condition is the
+     * same one the delete uses: the newest row on the page is older than the
+     * cutoff. A page holding one thread whose reply came yesterday keeps that
+     * thread, so the page stays, and so it is not counted.
+     */
+    private function sweepCounts($cutoff)
+    {
+        $table = $this->table;
+        $out   = array();
+
+        try {
+            $req = $this->pdo()->prepare(
+                'SELECT "project", COUNT(*) FROM ('
+                . 'SELECT "project", COALESCE("reply_to", "id") AS "root", '
+                . 'MAX("created_at") AS "last" FROM "' . $table . '" '
+                . 'GROUP BY "project", COALESCE("reply_to", "id")'
+                . ') WHERE "last" < ? GROUP BY "project"');
+            $req->execute(array($cutoff));
+            foreach ($req->fetchAll(PDO::FETCH_NUM) as $row) {
+                $out[(string) $row[0]] = array('notes' => (int) $row[1], 'pages' => 0);
+            }
+
+            $req = $this->pdo()->prepare(
+                'SELECT "project", COUNT(*) FROM ('
+                . 'SELECT "project", "page_index" FROM "' . $table . '" '
+                . 'GROUP BY "project", "page_index" HAVING MAX("created_at") < ?'
+                . ') GROUP BY "project"');
+            $req->execute(array($cutoff));
+            foreach ($req->fetchAll(PDO::FETCH_NUM) as $row) {
+                $key = (string) $row[0];
+                if (!isset($out[$key])) {
+                    $out[$key] = array('notes' => 0, 'pages' => 0);
+                }
+                $out[$key]['pages'] = (int) $row[1];
+            }
+        } catch (PDOException $e) {
+            ap_log('tally count: ' . $e->getMessage());
+            return array();
+        }
+
+        return $out;
     }
 
     /* -- Diagnostic --------------------------------------------------------

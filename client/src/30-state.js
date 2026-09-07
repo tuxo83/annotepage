@@ -15,6 +15,13 @@ let retention = 0;          // days a thread is kept after its last message, 0
                             // when nothing expires. A server older than 2.7.0
                             // sends nothing, which reads as 0 -- the promise
                             // it made before this key existed
+let expired = null;         // { notes, pages, last_sweep } : what retention has
+                            // already taken from this project. null on a server
+                            // that does not count, which is not the same thing
+                            // as a project it has never taken anything from
+let serverWide = null;      // { projects, notes, pages } for the WHOLE server,
+                            // and only where its operator published them.
+                            // Absent everywhere else, on purpose
 let target = null;          // element being annotated
 let hovered = null;         // element under the pointer
 let currentFailure = null;  // { title, detail } shown in the panel

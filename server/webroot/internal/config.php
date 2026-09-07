@@ -144,9 +144,10 @@ function ap_config_defaults()
         // The web path above cannot run everywhere: it hands the response to
         // the visitor first and then works, and only php-fpm and LiteSpeed can
         // guarantee that. On anything else -- `cgi-fcgi` among them -- it
-        // declines, and says so in ?action=diagnostic. INSTALL.md then points
-        // at `php internal/update.php` from cron, which is the right answer
-        // for anybody who has cron. Plenty of hosting has neither.
+        // declines, and says so in ?action=diagnostic. The installer's last
+        // screen then hands over `php internal/update.php` from cron, with the
+        // real path in it, which is the right answer for anybody who has cron.
+        // Plenty of hosting has neither.
         //
         // Written here, this token turns on `?action=update&token=...`, which
         // runs the update IN the request and answers with what it did. Nobody
@@ -323,6 +324,30 @@ function ap_config_defaults()
         // quietly.
         'max_note_age_days' => 0,
 
+        // WHAT THE WHOLE SERVER HOLDS -- how many projects, how many notes,
+        // how many pages -- answered on `list` next to the project's own
+        // figures. OFF, and it stays off until an operator writes this line.
+        //
+        // WHY IT IS NOT ON. Anyone who can open one annotated page can read
+        // this answer, and on a relay that means every visitor of every site
+        // using it learns how many teams the operator serves and how much they
+        // write. That is the operator's business, not the visitor's. A server
+        // holding one team's own notes gives away nothing new -- there, it is
+        // simply a figure that team already knows.
+        //
+        // WHY IT IS WORTH TURNING ON ANYWAY: an operator running a relay for
+        // others has no other way to see, from a page, what their own server
+        // is carrying -- and someone deciding whether to trust a public relay
+        // can see it is not empty.
+        //
+        // WHAT IT COSTS: three counts over the whole notes table on every
+        // `list`, which is once per annotated page load. On a relay holding a
+        // lot of notes, that is not free.
+        //
+        // WHAT IT NEVER SAYS: not one project id, not one page, not one date.
+        // Three integers.
+        'publish_server_totals' => false,
+
         // Header carrying the client address when a proxy sits in front (for
         // example 'HTTP_X_FORWARDED_FOR'). NULL BY DEFAULT, and that default is
         // the point: a header the client can write itself would make rate
@@ -403,8 +428,8 @@ function ap_config_defaults()
         // here, and all of it shortens somebody else's afternoon.
         //
         // `full` is meant to be set for the length of a diagnosis and set back
-        // -- it costs nothing to turn on, and INSTALL.md says so where it
-        // documents the page. `minimal` still answers when this very file is
+        // -- it costs nothing to turn on, and config-local.example.php says so
+        // beside the key itself. `minimal` still answers when this very file is
         // unreadable or malformed, which is the moment the page exists for.
         //
         // An unknown value is read as `minimal`, and logged. It is not a

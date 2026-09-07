@@ -188,18 +188,59 @@ const buildUi = () => {
 
 const statsRow = () => {
     if (totals === null) return null;
-    const row = create('div', 'ap-panel-stats');
-    row.appendChild(create('span', 'ap-stat-label', T('panel.stats_label')));
-    const chiffre = (n, mot) => {
+    const rows = create('div', 'ap-stats');
+    /* ONE, AND THEN THE PLURAL. "1 pages" beside a figure the tool is asking
+       to be believed reads as carelessness. The singular label is looked up
+       first and English is the fallback for a translation that has not written
+       one, which is the rule everywhere else here. */
+    const figure = (n, word) => {
         const box = create('span', 'ap-stat');
         box.appendChild(create('span', 'ap-stat-n', String(n)));
-        box.appendChild(create('span', 'ap-stat-w', T(mot)));
+        box.appendChild(create('span', 'ap-stat-w', T(n === 1 ? word + '_one' : word)));
         return box;
     };
-    row.appendChild(chiffre(totals.notes, 'panel.stats_notes'));
-    row.appendChild(chiffre(totals.open, 'panel.stats_open'));
-    row.appendChild(chiffre(totals.pages, 'panel.stats_pages'));
-    return row;
+    const group = (label) => {
+        const row = create('div', 'ap-panel-stats');
+        if (label) row.appendChild(create('span', 'ap-stat-label', T(label)));
+        rows.appendChild(row);
+        return row;
+    };
+
+    /* NO LABEL ON THE FIRST ROW: the window's own title is that label, and a
+       heading repeating the title one line under it is furniture. The two rows
+       below carry theirs, because they are a different scope. */
+    const here = group(null);
+    here.appendChild(figure(totals.notes, 'panel.stats_notes'));
+    here.appendChild(figure(totals.open, 'panel.stats_open'));
+    here.appendChild(figure(totals.pages, 'panel.stats_pages'));
+
+    /* WHAT IS NO LONGER THERE, and it is the reason this window has a second
+       row at all. A reviewer coming back to a page they annotated in April
+       finds it empty; the retention line above says notes go, and this says
+       how many went. Drawn only where the server counts AND something can go:
+       a server with no retention has nothing to report, and one that has never
+       swept says zero, which is an answer and not a blank. */
+    if (expired !== null && (retention > 0 || expired.notes > 0 || expired.pages > 0)) {
+        const gone = group('panel.stats_gone_label');
+        gone.appendChild(figure(expired.notes, 'panel.stats_notes'));
+        gone.appendChild(figure(expired.pages, 'panel.stats_pages'));
+        if (expired.last) {
+            gone.appendChild(create('span', 'ap-stat-when',
+                T('panel.stats_swept', { d: readableDate(expired.last) })));
+        }
+    }
+
+    /* AND WHAT THE WHOLE SERVER CARRIES, on the servers whose operator chose
+       to publish it. Absent everywhere else -- see `publish_server_totals`,
+       which is off until somebody writes it. */
+    if (serverWide !== null) {
+        const all = group('panel.stats_server_label');
+        all.appendChild(figure(serverWide.projects, 'panel.stats_sites'));
+        all.appendChild(figure(serverWide.notes, 'panel.stats_notes'));
+        all.appendChild(figure(serverWide.pages, 'panel.stats_pages'));
+    }
+
+    return rows;
 };
 
 /* -- The side the panel sits on ------------------------------------------

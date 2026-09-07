@@ -21,6 +21,8 @@ const reload = () =>
         }
         totals = readTotals(r.data);
         retention = readRetention(r.data);
+        expired = readExpired(r.data);
+        serverWide = readServerTotals(r.data);
         return readList(r.data).then((read) => {
             notes = read;
             currentFailure = null;
@@ -200,6 +202,8 @@ function proceed(first) {
         if (first.ok) {
             totals = readTotals(first.data);
             retention = readRetention(first.data);
+            expired = readExpired(first.data);
+            serverWide = readServerTotals(first.data);
             return readList(first.data).then((read) => {
                 notes = read;
                 redraw();

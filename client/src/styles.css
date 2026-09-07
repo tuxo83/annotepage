@@ -479,6 +479,7 @@
 .ap-pop-body .ap-config { margin: 0; padding: 0; border: 0; background: none; }
 .ap-pop-body .ap-forget { margin: 0; }
 .ap-pop-body .ap-panel-stats { margin: 0; }
+.ap-pop-body .ap-stats { margin: 0; }
 /* A WINDOW HAS ROOM, SO THE FILE GETS IT. In the panel this field was two or
    four lines because the column had nothing to spare; here it can show the
    whole thing without being scrolled. */
@@ -514,6 +515,15 @@
 }
 .ap-stat-n { font-size: 15px; font-weight: 650; color: var(--ap-text); }
 .ap-stat-w { font-size: 12px; color: var(--ap-text-soft); }
+/* THE ROWS STACK, AND ONLY THE FIRST IS ALWAYS THERE. What this project holds,
+   what age has taken from it, and -- where the operator published it -- what
+   the whole server carries. Same shape three times: a label, then figures. */
+.ap-stats { display: flex; flex-direction: column; gap: 12px; }
+.ap-stats .ap-panel-stats { margin-bottom: 0; }
+/* The date of the last sweep is context for the two figures beside it, not a
+   fourth figure: it takes the soft ink and the smaller size, and it wraps
+   under them rather than stretching the row. */
+.ap-stat-when { font-size: 12px; color: var(--ap-text-soft); align-self: baseline; }
 .ap-panel-instructions {
     padding: 10px 14px;
     border-bottom: 1px solid var(--ap-border);

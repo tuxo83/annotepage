@@ -1106,8 +1106,8 @@ if (defined('AP_UPDATE_CLI')) {
     // Typing this command IS the consent, so `auto_update` does not gate it:
     // it gates the WEB path, where nobody typed anything. A host that will
     // never make its code directory writable to the web server can still be
-    // updated from a shell or from cron, which is the arrangement INSTALL.md
-    // recommends.
+    // updated from a shell or from cron, which is the arrangement the
+    // installer puts first.
     $config = ap_config();
     $report = ap_update_run($config);
     foreach ($report['lines'] as $line) {

@@ -572,6 +572,10 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
         empty($config['max_note_age_days'])
             ? '0 -- nothing expires'
             : ((int) $config['max_note_age_days']) . ' -- threads older than this are removed');
+    ap_diag_line('config.publish_server_totals',
+        empty($config['publish_server_totals'])
+            ? 'no -- `list` answers this project\'s figures only'
+            : 'yes -- `list` also answers what the whole server holds');
     ap_diag_line('config.max_text_length', $config['max_text_length']);
     ap_diag_line('config.max_author_length', $config['max_author_length']);
     ap_diag_line('config.max_payload_length', $config['max_payload_length']);
@@ -954,14 +958,33 @@ switch ($action) {
            to be able to say so where somebody is about to write -- not only in
            a diagnostic nobody opens and an export header nobody reads. Zero
            means nothing expires, and the client says nothing. */
-        ap_respond_json(ap_response_envelope(array(
+        /* WHAT RETENTION HAS ALREADY TAKEN, from this project. A count, and
+           nothing else: no text, no page, no date beyond the last sweep. It is
+           what turns a hole into a fact -- a reviewer coming back to a page
+           they annotated in April finds it empty, and this is the only thing
+           that can tell them why. Zeroes on a server that has never swept,
+           which is every server where retention is off. */
+        $payload = array(
             'project'   => $id,
             'index'     => $index,
             'notes'     => $store->byPage($id, $index),
             'totals'    => $store->projectTotals($id),
+            'expired'   => $store->expiredTotals($id),
             'retention' => isset($config['max_note_age_days'])
                            ? (int) $config['max_note_age_days'] : 0,
-        )));
+        );
+        /* WHAT THE WHOLE SERVER HOLDS, only where the operator has said so --
+           see `publish_server_totals` in internal/config.php, which is off and
+           says at length why. Absent from the response otherwise: a client
+           that gets no field draws no figure, and that is every client
+           talking to every server that has not opted in. */
+        if (!empty($config['publish_server_totals'])) {
+            $server = $store->serverTotals();
+            if ($server !== null) {
+                $payload['server'] = $server;
+            }
+        }
+        ap_respond_json(ap_response_envelope($payload));
         break;
 
     case 'add':

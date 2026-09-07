@@ -29,8 +29,9 @@ because it is the one thing that will hurt:
 - [`FORMAT.md`](FORMAT.md) — the exchange format and the security model. It is
   the reference; where any other file disagrees with it, it is right.
 - [`CONVENTIONS.md`](CONVENTIONS.md) — how this repository is written.
-- [`server/INSTALL.md`](server/INSTALL.md) — running a server, past the install
-  page: MySQL, the addresses, migration, the flags.
+- [`server/INSTALL.md`](server/INSTALL.md) — for whoever operates a server:
+  what to look at when something is wrong, and what nothing else in the code
+  says. Installing one is on the site.
 - [`ROADMAP.md`](ROADMAP.md) — what is coming, and what is ruled out for good.
 
 ```

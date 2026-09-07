@@ -369,6 +369,39 @@ const readRetention = (data) => {
     return (typeof v === 'number' && isFinite(v) && v > 0) ? Math.floor(v) : 0;
 };
 
+/* WHAT RETENTION HAS ALREADY TAKEN. Two counts and a date, and the same rule
+   as the totals above: absent or malformed reads as null, and null draws
+   nothing. A project that has never lost a note answers zeroes, which is a
+   different statement from a server that does not count -- the first is worth
+   drawing, the second is not. */
+const readExpired = (data) => {
+    const e = data && data.expired;
+    if (!e || typeof e !== 'object') return null;
+    const n = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.floor(v) : null);
+    const notes = n(e.notes), pages = n(e.pages);
+    if (notes === null || pages === null) return null;
+    return {
+        notes: notes,
+        pages: pages,
+        /* A date the server wrote, shown as it stands or not at all: parsing
+           it here to reformat it would invent a timezone. */
+        last: typeof e.last_sweep === 'string' && e.last_sweep !== '' ? e.last_sweep : null,
+    };
+};
+
+/* WHAT THE WHOLE SERVER HOLDS, WHEN ITS OPERATOR PUBLISHED IT. The field is
+   absent from every server that has not turned it on, which is all of them
+   until somebody writes the key -- so this reads null far more often than not,
+   and null draws nothing. */
+const readServerTotals = (data) => {
+    const s = data && data.server;
+    if (!s || typeof s !== 'object') return null;
+    const n = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.floor(v) : null);
+    const projects = n(s.projects), notes = n(s.notes), pages = n(s.pages);
+    if (projects === null || notes === null || pages === null) return null;
+    return { projects: projects, notes: notes, pages: pages };
+};
+
 const readList = (data) => {
     skipped = { newer: 0, unreadable: 0, unknown: 0 };
     const raw = data && Array.isArray(data.notes) ? data.notes : [];

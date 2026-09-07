@@ -126,6 +126,25 @@ ns.defaultLabels = {
     'panel.stats_notes': 'notes',
     'panel.stats_open': 'still open',
     'panel.stats_pages': 'pages',
+    'panel.stats_sites': 'sites',
+    /* THE SINGULAR OF EACH, looked up when the figure is 1. A translation
+       that writes none of these falls back on the plural above, in English,
+       like every other missing label. */
+    'panel.stats_notes_one': 'note',
+    'panel.stats_open_one': 'still open',
+    'panel.stats_pages_one': 'page',
+    'panel.stats_sites_one': 'site',
+    /* WHAT WENT, AND WHY THE WINDOW SAYS IT AT ALL. The panel already warns
+       that this server removes a thread after so many days; a reviewer who
+       comes back to a page they annotated and finds it bare deserves the
+       figure that turns a hole into a fact. "Removed by age" and not
+       "deleted": nobody chose these, which is the whole point. */
+    'panel.stats_gone_label': 'Removed by age',
+    'panel.stats_swept': 'last sweep {d}',
+    /* THE WHOLE SERVER, on the servers that publish it -- most do not, and
+       then this line is never drawn. "This server" and not "the API": the
+       reviewer is being told about the machine holding their notes. */
+    'panel.stats_server_label': 'This server, altogether',
     'panel.refresh': 'Refresh',
 
     /* -- Notes whose element cannot be found any more ------------------- */

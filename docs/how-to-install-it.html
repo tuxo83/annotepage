@@ -1550,7 +1550,10 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <p class="cap"><span class="n"></span> Keep it up to date</p>
                     <p class="say">
                         One line in your crontab, once a day. The last screen
-                        gives it to you with the real path already in it.
+                        gives it to you with the real path already in it, and
+                        with a minute and an hour <b>drawn for your install</b>
+                        &mdash; so that every server running this does not knock
+                        at the same second. Any others do as well.
                     </p>
                 </div>
                 <div>
@@ -1574,6 +1577,33 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-cronurl" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-cronurl"><code id="cron-code"><span class="op">17 4 * * *</span> <span class="tg">curl</span> <span class="op">-fsS</span> <span class="st">'https://api.staging.example.com/api.php?action=update&amp;token=&lt;the secret&gt;'</span></code></pre>
+                            </div>
+                </div>
+            </li>
+
+            <!-- THE SWEEP, AND IT IS NOT ON THE UPDATE DIAL. Retention is set on
+                 every installation this installer creates, whichever way that
+                 installation takes its updates -- so this step is shown to
+                 everybody, and it is the only one on this page that is. What it
+                 keeps is a promise made in two other places: the panel on the
+                 annotated pages, and the header of every export. -->
+            <li>
+                <div>
+                    <p class="cap"><span class="n"></span> Let it tidy up</p>
+                    <p class="say">
+                        Your server keeps a thread ninety days after its last
+                        message, then removes it &mdash;
+                        <a href="questions.html#kept">what that means</a>. This
+                        line is what makes it happen on time, and its minute and
+                        hour are drawn for you too. With no shell to run it, the
+                        sweep still happens on writes, now and then: enough on a
+                        busy site, never on a quiet one.
+                    </p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-cronsweep" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-cronsweep"><code id="cron-sweep"><span class="op">42 3 * * *</span> <span class="tg">php</span> &lt;your install&gt;/internal/maintenance.php <span class="op">&gt;</span>/dev/null</code></pre>
                             </div>
                 </div>
             </li>
