@@ -318,15 +318,31 @@ function ap_config_defaults()
         // writes nothing to disk, and there is no shared cache on this kind of
         // hosting). A value of 0 disables the matching counter.
         //
-        // What is counted: WRITES (add, resolve) and EXPORTS (text). Not
-        // `list`: counting it would cost one database write per page load, to
-        // defend against a request that makes nothing grow. The abuse that
-        // matters is the one that fills the database or drains a whole
-        // project; those two are the ones that are bounded.
+        // What is counted always: WRITES (add, resolve, title) and EXPORTS
+        // (text). The abuse that matters is the one that fills the database,
+        // and the one that drains a whole project in a loop.
         'rate_window_seconds'     => 300,
         'rate_writes_per_ip'      => 120,
         'rate_writes_per_project' => 300,
         'rate_exports_per_ip'     => 20,
+
+        // AND `list`, WHICH IS COUNTED ONLY IF YOU SET THIS. It is the call
+        // every annotated page makes on load, so counting it costs one
+        // database write per page load -- which is why it is 0, and why 0
+        // means the counter is never touched at all rather than touched and
+        // ignored.
+        //
+        // What it is for, said plainly because the honest version was in a
+        // comment here for a long time saying nothing could be done: a `list`
+        // is 200 bytes in and, on a heavily annotated page, several hundred
+        // kilobytes out. Nothing above bounds it. In front of PHP a request
+        // cap is still the better answer; where there is no such thing to put
+        // in front -- shared hosting, which is most of them -- this is the
+        // answer there is. Set it high enough that nobody reviewing hits it:
+        // one page load is one `list`, and a person moving through a site
+        // makes a few per minute, so 600 in five minutes is two a second
+        // sustained and no reviewer will ever see it.
+        'rate_reads_per_ip'       => 0,
 
         // Maximum number of notes per project, 0 = no limit. FORMAT.md section
         // 8.6 leaves quota and retention OPEN: this cap is therefore a tool,

@@ -10,18 +10,24 @@
  *
  * WHAT IS COUNTED, AND WHAT IS NOT
  *
- * Counted: WRITES (add, resolve) and EXPORTS (text).
- * Not counted: `list`. Counting it would cost one database write per page load,
- * to defend against a request that makes nothing grow and whose cost is bounded
- * by what it can return. The abuse that matters is the one that fills the
- * database, and the one that drains a whole project in a loop; those two are
- * the ones that are bounded.
+ * Counted always: WRITES (add, resolve, title) and EXPORTS (text). The abuse
+ * that matters is the one that fills the database, and the one that drains a
+ * whole project in a loop.
  *
- * A consequence to write down rather than hide: a loop of `list` on a known
- * page index is bounded by nothing here. It returns only one page's notes,
- * encrypted if the project is, but it does consume server. If that ever became
- * a problem, the answer would be a request cap in front of PHP, not a database
- * counter on every read.
+ * Counted only if the operator asks: `list`, the call every annotated page
+ * makes on load. `rate_reads_per_ip` is 0 by default and 0 means the counter
+ * is never touched -- so a server that has not asked for it pays nothing, and
+ * a page load still costs no database write.
+ *
+ * This paragraph used to end differently. It wrote down, honestly, that a loop
+ * of `list` on a known page index was bounded by nothing here, and concluded
+ * that the answer would be a request cap in front of PHP rather than a counter
+ * on every read. The first half was measured and true -- 200 bytes in, several
+ * hundred kilobytes out. The second half was true only for whoever HAS
+ * something to put in front of PHP, and on the shared hosting this tool is
+ * written for there is nothing. So the counter exists, it is off, and the
+ * operator who needs it can turn it on: an amplification nobody can bound is
+ * not made better by being documented.
  *
  * TWO COUNTERS, NOT ONE
  *
@@ -121,7 +127,7 @@ function ap_rate_key($scope, $value)
 /**
  * Applies rate limiting for a given action.
  *
- * @param string $action 'write' or 'export'
+ * @param string $action 'write', 'export' or 'read'
  */
 function ap_apply_rate_limit(array $config, $store, $id, $action)
 {
@@ -141,6 +147,14 @@ function ap_apply_rate_limit(array $config, $store, $id, $action)
             ap_rate_key('w-pr', $id),
             (int) $config['rate_writes_per_project'],
             "too many writes on this project");
+    } elseif ($action === 'read') {
+        /* Its own scope, so that turning reads on does not spend the export
+           budget of an assistant working from the same address as the
+           reviewer sitting next to it. */
+        $limits[] = array('ip',
+            ap_rate_key('r-ip', ap_client_address($config)),
+            isset($config['rate_reads_per_ip']) ? (int) $config['rate_reads_per_ip'] : 0,
+            "too many page loads from this machine");
     } else {
         $limits[] = array('ip',
             ap_rate_key('x-ip', ap_client_address($config)),
@@ -192,8 +206,11 @@ function ap_apply_rate_limit(array $config, $store, $id, $action)
                 . " seconds. Try again in " . max(1, $left) . " seconds.\n"
                 . ($action === 'write'
                     ? "Nothing was saved; the text you typed is not lost."
-                    : "Nothing was read. This is a limit of this server, not a "
-                      . "failure: the notes are there and unchanged."),
+                    : ($action === 'read'
+                        ? "The page is unaffected: only its notes did not load, "
+                          . "and reloading after the wait shows them."
+                        : "Nothing was read. This is a limit of this server, not a "
+                          . "failure: the notes are there and unchanged.")),
                 429);
         }
     }

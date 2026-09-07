@@ -589,6 +589,8 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
     ap_diag_line('rate.writes_per_ip', $config['rate_writes_per_ip']);
     ap_diag_line('rate.writes_per_project', $config['rate_writes_per_project']);
     ap_diag_line('rate.exports_per_ip', $config['rate_exports_per_ip']);
+    ap_diag_line('rate.reads_per_ip',
+        isset($config['rate_reads_per_ip']) ? $config['rate_reads_per_ip'] : 0);
     ap_diag_line('rate.client_ip_header',
         $config['client_ip_header'] === null ? 'none (REMOTE_ADDR)' : $config['client_ip_header']);
     ap_diag_line('quota.notes_per_project',
@@ -964,6 +966,12 @@ if ($write) {
 switch ($action) {
 
     case 'list':
+        /* COUNTED ONLY WHERE THE OPERATOR ASKED FOR IT: rate_reads_per_ip is 0
+           by default, and 0 makes this call touch no counter at all -- the
+           check returns before any database write. Where it is set, this is
+           the one thing that bounds a loop of `list`, which is 200 bytes in
+           and, on a heavily annotated page, several hundred kilobytes out. */
+        ap_apply_rate_limit($config, $store, $id, 'read');
         $index = ap_field_index($input, 'index', true);
         /* THE WHOLE PROJECT'S SHAPE, ON THE CALL THE CLIENT ALREADY MAKES.
            Three counts -- notes, still open, pages carrying one -- so the tool

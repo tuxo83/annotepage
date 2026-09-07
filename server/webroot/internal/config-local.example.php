@@ -198,6 +198,22 @@ return array(
     // not know where the author ends.
     // 'max_text_length'   => 4000,
     // 'max_author_length' => 80,
+    // 'max_page_length'        => 300,
+    // 'max_selector_length'    => 500,
+    // 'max_fingerprint_length' => 255,
+    // 'max_excerpt_length'     => 300,
+    // 'max_title_length'       => 70,
+    // 'max_version_length'     => 60,
+    // 'max_environment_length' => 20,
+    // 'max_viewport_length'    => 20,
+
+    // The bounds of the sealed envelopes, in characters, and the only ones
+    // that apply in encrypted mode. FORMAT.md section 3.6 fixes them: lowering
+    // one means a note written elsewhere is refused here, and its author is
+    // told nothing that helps.
+    // 'max_payload_length'            => 24000,
+    // 'max_resolution_payload_length' => 2000,
+    // 'max_title_payload_length'      => 1000,
 
     // RATE LIMITING. The values below are the defaults; they suit a review
     // team. On a public relay, lowering them is wiser than raising them. A
@@ -207,6 +223,14 @@ return array(
     // 'rate_writes_per_ip'      => 120,
     // 'rate_writes_per_project' => 300,
     // 'rate_exports_per_ip'     => 20,
+    //
+    // And `list`, the call every annotated page makes on load. 0 means the
+    // counter is never touched, so a page load costs no database write --
+    // which is why it is the default. Set it far above a person on a server
+    // open to strangers with nothing in front of PHP that can cap requests:
+    // 600 in five minutes is two a second, and it bounds a loop asking for
+    // the same page's notes for ever.
+    // 'rate_reads_per_ip'       => 0,
 
     // Maximum number of notes per project; 0 = no limit. Erases nothing and
     // expires nothing: refuses the write beyond, and says so.

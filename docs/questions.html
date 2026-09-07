@@ -377,15 +377,20 @@ code {
             together &mdash; and <b>20 exports per IP</b>. Past one of those the
             answer is a 429 saying when to come back. A request body over
             <b>64&nbsp;KB</b> gets a 413. And a project may be capped at a
-            number of notes, which a public relay sets to 500 and a server
+            number of notes, which a public relay sets to 2000 and a server
             carrying one team&rsquo;s own notes leaves off.</p>
-                <p class="qa-a">Reading a page is <b>never</b> counted &mdash; measured:
-            five browsers opening the same annotated page make five requests
-            and spend nothing. Counting them would cost a database write every
-            time somebody opens a page, to defend against a request that makes
-            nothing grow. The export limit is spent by an <b>assistant</b>,
-            whose loop &mdash; read, reply, resolve &mdash; costs about three
-            per remark.</p>
+                <p class="qa-a">Reading a page is <b>not counted unless you ask for
+            it</b> &mdash; measured: five browsers opening the same annotated
+            page make five requests and spend nothing. Counting them costs a
+            database write every time somebody opens a page, which is why
+            <code>rate_reads_per_ip</code> is 0 and why 0 means the counter is
+            never touched at all. It is there for a server open to strangers
+            with nothing in front of it that can cap requests: set far above a
+            person &mdash; 600 in five minutes is two a second &mdash; it
+            bounds a loop asking for the same page&rsquo;s notes for ever, and
+            no reviewer will meet it. The export limit is spent by an
+            <b>assistant</b>, whose loop &mdash; read, reply, resolve &mdash;
+            costs about three per remark.</p>
                 <p class="qa-a"><b>On a server carrying your own site&rsquo;s notes, two of
             them are switched off</b> when the installer writes your
             configuration: everybody who can write is already behind the same
@@ -394,12 +399,17 @@ code {
             there is the write count per address, which is not aimed at anybody
             &mdash; it catches a client stuck in a loop. On a public relay they
             all stay on: there, an export is bandwidth a stranger can ask for.</p>
-                <p class="qa-a">The installer writes all four into your configuration as
-            comments, with the numbers already in them: uncomment a line to
-            change it, leave it and the tool keeps deciding. Behind a proxy,
-            set <code>client_ip_header</code> too &mdash; without it every
-            visitor arrives as one address, and the per-IP limits count them as
-            one person.</p>
+                <p class="qa-a">You do not have to find them afterwards: <b>the installer
+            has a field for every one</b>, folded under &ldquo;change anything
+            else&rdquo;, with the number that applies if you leave it empty
+            shown in the field &mdash; and the same on the command line, where
+            <code>--help</code> lists each one with its default. What you set
+            is written as a live line with the sentence that explains it; what
+            you leave is written as a comment with the number already in it, so
+            the file names every limit either way. Behind a proxy, set
+            <code>client_ip_header</code> too &mdash; without it every visitor
+            arrives as one address, and the per-IP limits count them as one
+            person.</p>
             </article>
 
                         <article class="qa" data-tags="Key|Privacy">

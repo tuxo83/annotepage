@@ -1069,16 +1069,22 @@ function ap_i_questions()
  * same place. A setting added here appears in all three without anybody
  * remembering to.
  *
- * WHAT IS NOT HERE, and it is thirteen keys: the length bounds. They size
- * columns at CREATE and they apply in plain mode only; three of them are
- * fixed by FORMAT.md, and changing one means accepting that a note written
- * here be refused elsewhere. They stay in the file, commented next to
- * themselves, which is where a decision that belongs to the format belongs.
+ * NOTHING IS LEFT OUT OF IT. The thirteen length bounds were, for a while,
+ * with a reason: they size columns at CREATE, ten of them apply in plain mode
+ * only and three are fixed by FORMAT.md. But a person looking for a field had
+ * no way to tell whether it existed and they had missed it, or did not exist
+ * at all -- so they are here, marked `group => 'bounds'`, which puts them
+ * behind a fold of their own on the form and under their own heading in
+ * --help. Every key of internal/config.php an operator may set is in this
+ * table; what is not settable here is not settable at install time at all,
+ * and --help says which four those are and why.
  *
  * `kind` is what the value IS, so that each face can render and check it:
  * 'int', 'bool', 'text', 'choice'. `unit` is what the number counts, for the
- * sentence. Nothing here carries a default: the default is config.php's, and
- * an empty field means "leave it deciding".
+ * sentence. `group` folds a setting one level further down. No entry carries
+ * a default -- ap_i_setting_default() reads the live one out of config.php,
+ * so the number shown beside a field cannot drift from the number in force,
+ * and an empty field still means "leave it deciding".
  */
 function ap_i_settings()
 {
@@ -1090,12 +1096,16 @@ function ap_i_settings()
                        . 'refused with a 403 and NOTHING is erased -- but a reply is a '
                        . 'write, so the project goes silent until somebody raises this. '
                        . '0 is no limit, which is what a server carrying one team\'s own '
-                       . 'notes wants. A relay needs one: it stores for strangers.'),
+                       . 'notes wants, and what this installation writes for one. A '
+                       . 'relay needs one -- it stores for strangers -- and gets 2000 '
+                       . 'unless you say otherwise here.'),
         array('key' => 'max_note_age_days', 'kind' => 'int', 'unit' => 'days',
             'label' => 'How long a thread is kept',
             'say'   => 'Counted from its LAST message, so a live discussion is never '
                        . 'cut short, and the whole thread goes at once. 0 keeps '
-                       . 'everything for ever. This installer writes 90.'),
+                       . 'everything for ever, which is what config.php decides for a '
+                       . 'server that was never installed by this file; this '
+                       . 'installation writes 90 unless you say otherwise here.'),
         array('key' => 'rate_window_seconds', 'kind' => 'int', 'unit' => 'seconds',
             'label' => 'The window the limits below are counted in',
             'say'   => 'Fixed, not sliding: hitting a limit early in a window costs the '
@@ -1113,6 +1123,16 @@ function ap_i_settings()
             'say'   => 'An export is how an assistant READS: its whole loop -- read, '
                        . 'reply, resolve -- costs about three per remark. This is the '
                        . 'limit that bites first when somebody works with one.'),
+        array('key' => 'rate_reads_per_ip', 'kind' => 'int', 'unit' => 'page loads',
+            'label' => 'Page loads per address, per window',
+            'say'   => 'OFF, and 0 means the counter is never touched: a page load then '
+                       . 'costs no database write, which is why it is the default. It is '
+                       . 'the only thing that bounds a loop of `list` -- 200 bytes asked, '
+                       . 'several hundred kilobytes answered on a heavily annotated page '
+                       . '-- so a server open to strangers with nothing in front of PHP '
+                       . 'wants it. Set it far above a person: one page load is one call, '
+                       . 'so 600 in five minutes is two a second and no reviewer will '
+                       . 'ever meet it.'),
         array('key' => 'max_body_bytes', 'kind' => 'int', 'unit' => 'bytes',
             'label' => 'Largest request body',
             'say'   => 'Read before anything is parsed; over it, a 413. Sized by the '
@@ -1154,6 +1174,70 @@ function ap_i_settings()
             'say'   => 'The release channel. `next` instead of `main` in that address '
                        . 'runs the candidate; a fork or a mirror inside a closed network '
                        . 'goes here too. HTTPS only, and no flag relaxes that.'),
+        /* THE THIRTEEN BOUNDS, IN THEIR OWN GROUP AND NOT LEFT OUT. They were
+           kept out of this table at first, with a defensible reason -- they
+           size columns at CREATE, ten of them apply in plain mode only, and
+           three are fixed by the format. But leaving them out meant the file
+           an operator reads does not show every field there is, and somebody
+           looking for one had no way to know whether it existed at all. They
+           are here, behind their own fold, with what each one bounds. */
+        array('key' => 'max_text_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'A remark',
+            'say'   => 'Plain mode only: in encrypted mode this server sees an envelope '
+                       . 'and does not know where the text ends. It also sizes the column '
+                       . 'when the table is CREATED, so raising it later does not widen a '
+                       . 'column that already exists.'),
+        array('key' => 'max_author_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'A name',
+            'say'   => 'Plain mode only. The name a reviewer types once and that appears '
+                       . 'beside their remarks.'),
+        array('key' => 'max_page_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'A page path',
+            'say'   => 'Plain mode only. In encrypted mode the path never reaches this '
+                       . 'server at all -- only its blind index does.'),
+        array('key' => 'max_selector_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'The selector of an element',
+            'say'   => 'Plain mode only. A CSS path down to the annotated element; deep '
+                       . 'markup makes long ones.'),
+        array('key' => 'max_fingerprint_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'The fingerprint of an element',
+            'say'   => 'Plain mode only. What lets a remark find its element again after '
+                       . 'the page has changed.'),
+        array('key' => 'max_excerpt_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'The excerpt of an element',
+            'say'   => 'Plain mode only. The few words of the page shown beside the '
+                       . 'remark, so a reader knows what it is about.'),
+        array('key' => 'max_title_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'The title of a remark',
+            'say'   => 'Plain mode only. Written by an assistant in the same call as its '
+                       . 'reply, and meant to be very short.'),
+        array('key' => 'max_version_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'A version string',
+            'say'   => 'Plain mode only. What the tag announces as the version really '
+                       . 'served, and what a fix is stamped with.'),
+        array('key' => 'max_environment_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'An environment name',
+            'say'   => 'Plain mode only. `staging`, `production` -- whatever the tag '
+                       . 'carries.'),
+        array('key' => 'max_viewport_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'A viewport',
+            'say'   => 'Plain mode only. The size of the window the remark was written '
+                       . 'in, as `1408x900`.'),
+        array('key' => 'max_payload_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'A sealed envelope',
+            'say'   => 'THIS ONE IS THE FORMAT\'S, not yours: FORMAT.md fixes it, and '
+                       . 'lowering it means a remark written elsewhere is refused here '
+                       . 'while its author is told nothing useful. It is also what sizes '
+                       . 'max_body_bytes above.'),
+        array('key' => 'max_resolution_payload_length', 'kind' => 'int',
+            'unit' => 'characters', 'group' => 'bounds',
+            'label' => 'A sealed resolution',
+            'say'   => 'The format\'s too. What an assistant writes when it says what it '
+                       . 'measured and closes a remark.'),
+        array('key' => 'max_title_payload_length', 'kind' => 'int', 'unit' => 'characters',
+            'group' => 'bounds', 'label' => 'A sealed title',
+            'say'   => 'The format\'s too.'),
+
         array('key' => 'allow_plain_http', 'kind' => 'bool', 'unit' => '',
             'label' => 'Answer over plain http',
             'say'   => 'A way out, not a preference: without https there is no WebCrypto, '
@@ -1161,6 +1245,32 @@ function ap_i_settings()
                        . 'host that reports an https visitor as http and therefore '
                        . 'redirects in a loop.'),
     );
+}
+
+/**
+ * The default really in force for a setting, as text, for showing beside its
+ * field.
+ *
+ * READ OUT OF config.php AT THE MOMENT IT IS SHOWN, never copied into the
+ * table above: a copy would go on saying 4000 the day config.php says 8000,
+ * and a number shown beside an empty field is a promise about what happens if
+ * the field stays empty. Booleans read `true`/`false` as they will be
+ * written; a null reads as nothing, because that is what it is.
+ */
+function ap_i_setting_default($key)
+{
+    $defaults = ap_config_defaults();
+    if (!array_key_exists($key, $defaults)) {
+        return '';
+    }
+    $value = $defaults[$key];
+    if (is_bool($value)) {
+        return $value ? 'true' : 'false';
+    }
+    if ($value === null) {
+        return '';
+    }
+    return (string) $value;
 }
 
 /** One setting by key, or null. */
@@ -1877,13 +1987,37 @@ function ap_i_render_help($selfName)
             . 'type here is what you would have edited there. Leave one out and the '
             . 'default stays in force -- and a later version may raise it for you, '
             . 'which a value written into your file would prevent.') . "\n";
+    $heading = false;
     foreach (ap_i_settings() as $setting) {
+        /* The bounds under their own heading, the way the form puts them
+           behind their own fold: they are all here, and a reader can see at a
+           glance that the thirteen of them are one subject and not thirteen. */
+        if (isset($setting['group']) && !$heading) {
+            $heading = true;
+            $out .= "\nTHE LENGTH OF EACH FIELD\n" . str_repeat('=', 24) . "\n\n"
+                . ap_i_wrap('These size the columns when the tables are CREATED: raising '
+                    . 'one afterwards does not widen a column that already exists. Ten '
+                    . 'of them apply in plain mode only -- in encrypted mode this server '
+                    . 'sees an envelope and does not know where any field ends -- and '
+                    . 'the last three belong to FORMAT.md rather than to you: lowering '
+                    . 'one means a remark written elsewhere is refused here.') . "\n";
+        }
         $shape = $setting['kind'] === 'choice'
             ? implode('|', $setting['values'])
             : ($setting['kind'] === 'bool' ? 'true|false'
                 : ($setting['kind'] === 'int' ? '<' . $setting['unit'] . '>' : '<text>'));
+        /* The default beside the option, read live out of config.php. Without
+           it the only way to learn what a limit is today is to read the source
+           -- and knowing the number is most of deciding whether to change it. */
+        $default = ap_i_setting_default($setting['key']);
+        $says = $setting['label'] . '. '
+            . ($default !== ''
+                ? "config.php's default: " . $default
+                    . ($setting['unit'] !== '' ? ' ' . $setting['unit'] : '') . '. '
+                : 'No default: unset unless you set it. ')
+            . $setting['say'];
         $out .= "\n  --" . str_replace('_', '-', $setting['key']) . '=' . $shape . "\n"
-            . ap_i_wrap($setting['label'] . '. ' . $setting['say'], '      ') . "\n";
+            . ap_i_wrap($says, '      ') . "\n";
     }
 
     $out .= "\nAFTERWARDS\n==========\n\n"
@@ -1894,14 +2028,15 @@ function ap_i_render_help($selfName)
         . "  --help, --version\n";
 
     $out .= "\nWHAT IT DOES NOT SET\n====================\n\n"
-        . ap_i_wrap('Everything else is in one file -- internal/config-local.php -- and '
-            . 'every key in it is commented next to itself; '
-            . 'internal/config-local.example.php sits beside it with every key there '
-            . 'is. There are no options for them, which is the same promise the install '
-            . 'page makes. In particular: your project and its origins, which descend '
-            . 'from a key your browser generates and this server never receives; how '
-            . 'long a remark is kept, which this installation writes as ninety days; '
-            . 'and the rate limits.') . "\n";
+        . ap_i_wrap('Two things, and they are the same thing: your project and the '
+            . 'origins it answers to. A project descends from a key YOUR BROWSER '
+            . 'generates and this server never receives, so no shell can declare one '
+            . 'here -- the install page hands you the block to paste into '
+            . 'internal/config-local.php, where every key is commented next to itself '
+            . 'and internal/config-local.example.php sits beside it with every key '
+            . 'there is. Everything else this server reads is either answered by the '
+            . 'three questions above or offered as an option above -- there is no key '
+            . 'left that this command cannot set.') . "\n";
 
     $out .= "\nEXIT CODES\n==========\n\n"
         . "  0   Installed -- or already configured, and nothing was done.\n"
@@ -2437,10 +2572,32 @@ function ap_i_config_text(array $values)
     $text .= "    // never a page load, which would cost a database write to defend\n";
     $text .= "    // against a request that makes nothing grow. Over the limit is a 429\n";
     $text .= "    // with Retry-After; 0 on any of them switches that counter off.\n";
-    $text .= "    // 'rate_window_seconds'     => 300,   // five minutes\n";
-    $text .= "    // 'rate_writes_per_ip'      => 120,   // per window\n";
-    $text .= "    // 'rate_writes_per_project' => 300,   // per window, all writers together\n";
-    $text .= "    // 'rate_exports_per_ip'     => 20,    // per window\n";
+    /* A COMMENTED DEFAULT IS NOT WRITTEN BESIDE A LINE THAT SETS THE SAME KEY.
+       It was, and it read as two answers to one question: the operator's 3600
+       above, and `// 'rate_window_seconds' => 300` thirty lines below, with
+       nothing saying which one the server obeys. Whoever set it knows what
+       they set; the comment is for the keys nobody touched. */
+    $unset = function ($key, $line) use ($chosen, &$text) {
+        if (!isset($chosen[$key])) {
+            $text .= $line;
+        }
+    };
+    $unset('rate_window_seconds',
+        "    // 'rate_window_seconds'     => 300,   // five minutes\n");
+    $unset('rate_writes_per_ip',
+        "    // 'rate_writes_per_ip'      => 120,   // per window\n");
+    $unset('rate_writes_per_project',
+        "    // 'rate_writes_per_project' => 300,   // per window, all writers together\n");
+    $unset('rate_exports_per_ip',
+        "    // 'rate_exports_per_ip'     => 20,    // per window\n");
+    if (!isset($chosen['rate_reads_per_ip'])) {
+        $text .= "    //\n";
+        $text .= "    // And `list`, the call every annotated page makes on load, counted\n";
+        $text .= "    // only if you set this. 0 means the counter is never touched, so a\n";
+        $text .= "    // page load costs no database write. Set it far above a person:\n";
+        $text .= "    // 600 in five minutes is two a second.\n";
+        $text .= "    // 'rate_reads_per_ip'       => 0,\n";
+    }
     $text .= "    //\n";
     if (!$relay) {
         /* On a relay the real line is written further down, with its own
@@ -2452,15 +2609,20 @@ function ap_i_config_text(array $values)
         $text .= "    // 'max_notes_per_project' => 5000,\n";
         $text .= "    //\n";
     }
-    $text .= "    // The size of one request body, beyond which the answer is 413. A note\n";
-    $text .= "    // carrying an encrypted envelope fits with room to spare.\n";
-    $text .= "    // 'max_body_bytes' => 65536,\n";
-    $text .= "    //\n";
-    $text .= "    // Behind a proxy that rewrites it on every request, the header carrying\n";
-    $text .= "    // the real client address -- without it every visitor counts as one.\n";
-    $text .= "    // NULL by default, and that default is the point: a header a client can\n";
-    $text .= "    // write itself makes all of the above bypassable in one line.\n";
-    $text .= "    // 'client_ip_header' => 'HTTP_X_FORWARDED_FOR',\n\n";
+    if (!isset($chosen['max_body_bytes'])) {
+        $text .= "    // The size of one request body, beyond which the answer is 413. A note\n";
+        $text .= "    // carrying an encrypted envelope fits with room to spare.\n";
+        $text .= "    // 'max_body_bytes' => 65536,\n";
+        $text .= "    //\n";
+    }
+    if (!isset($chosen['client_ip_header'])) {
+        $text .= "    // Behind a proxy that rewrites it on every request, the header carrying\n";
+        $text .= "    // the real client address -- without it every visitor counts as one.\n";
+        $text .= "    // NULL by default, and that default is the point: a header a client can\n";
+        $text .= "    // write itself makes all of the above bypassable in one line.\n";
+        $text .= "    // 'client_ip_header' => 'HTTP_X_FORWARDED_FOR',\n";
+    }
+    $text .= "\n";
 
     $text .= "    // WHAT THIS WHOLE SERVER HOLDS -- how many projects, how many notes,\n";
     $text .= "    // how many pages -- answered on the call every annotated page already\n";
@@ -3134,8 +3296,24 @@ function ap_i_run(array $options)
     echo '<p>Leave a field empty and the default stays in force, which also means a '
         . 'later version may raise it for you. Fill one in and it is written into your '
         . "configuration, with the sentence that explains it.</p>\n";
+    $ouvertBornes = false;
     foreach (ap_i_settings() as $setting) {
         $key = $setting['key'];
+        /* THE BOUNDS GET A FOLD OF THEIR OWN, INSIDE THIS ONE. They are here
+           because every field there is has to be here -- somebody looking for
+           one must be able to see whether it exists -- and they are one level
+           further down because ten of them apply in plain mode only and three
+           belong to the format rather than to the operator. */
+        if (isset($setting['group']) && !$ouvertBornes) {
+            $ouvertBornes = true;
+            echo "<details>\n";
+            echo "<summary>The length of each field &mdash; ten of them apply in "
+                . "plain mode only, three belong to the format</summary>\n";
+            echo '<p>These size the columns when the tables are CREATED: raising one '
+                . 'afterwards does not widen a column that already exists. In encrypted '
+                . 'mode this server sees an envelope and does not know where any field '
+                . "ends, so ten of them never apply at all.</p>\n";
+        }
         echo '<p><label>' . ap_i_h($setting['label']);
         if ($setting['kind'] === 'choice') {
             echo '<br><select name="' . $key . '">' . "\n";
@@ -3156,14 +3334,23 @@ function ap_i_run(array $options)
             }
             echo "</select>\n";
         } else {
+            /* THE DEFAULT IS THE PLACEHOLDER, not the value. Written into the
+               field it would be submitted, and every default would freeze into
+               the file as though somebody had chosen it; greyed behind an empty
+               field it says what happens if nothing is typed, which is what the
+               person reading wants to know. */
+            $default = ap_i_setting_default($key);
+            $hint = trim($default . ' ' . $setting['unit']);
             echo '<br><input type="' . ($setting['kind'] === 'int' ? 'number' : 'text')
                 . '" name="' . $key . '" value="' . ap_i_h($field($key)) . '"'
-                . ($setting['unit'] !== ''
-                    ? ' placeholder="' . ap_i_h($setting['unit']) . '"' : '')
+                . ($hint !== '' ? ' placeholder="' . ap_i_h($hint) . '"' : '')
                 . ">\n";
         }
         echo "</label></p>\n";
         echo '<p class="note">' . $setting['say'] . "</p>\n";
+    }
+    if ($ouvertBornes) {
+        echo "</details>\n";
     }
     echo "</details>\n";
 

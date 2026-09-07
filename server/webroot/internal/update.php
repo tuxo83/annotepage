@@ -115,6 +115,18 @@ define('AP_UPDATE_MAX_MANIFEST_BYTES', 65536);
 define('AP_UPDATE_MAX_VERSION_BYTES', 64);
 /** The diagnostic's probe is shorter still: somebody is waiting for the page. */
 define('AP_UPDATE_PROBE_TIMEOUT', 5);
+/**
+ * And it is made at most this often, whoever asks.
+ *
+ * ?action=diagnostic has no authentication -- deliberately, it is the page one
+ * reads when nothing else answers -- and in `full` it fetched the published
+ * VERSION on EVERY hit. That is a stranger's 200-byte request turned into an
+ * outbound HTTPS connection from this host, as fast as they care to ask: this
+ * server aimed at somebody else, and paid for by its own operator. Fifteen
+ * minutes is short enough that an operator watching a release land sees it on
+ * their second cup, and long enough that the amplifier is worth nobody's time.
+ */
+define('AP_UPDATE_PROBE_CACHE', 900);
 
 /** The served directory -- this file lives one level down, in internal/. */
 function ap_update_root()
@@ -1090,6 +1102,29 @@ function ap_update_diagnostic_lines(array $config)
         return array_merge($lines, ap_update_state_lines());
     }
 
+    /* REMEMBERED FIRST, AND THE CLAIM IS STAKED BEFORE THE FETCH. The order
+       matters: recording the attempt and then making it means a host that
+       cannot record -- a read-only code directory, which is the safe state and
+       a supported one -- makes no request at all rather than one per hit for
+       ever. It loses the comparison and says so, with the command that gives
+       it from a shell, where whoever types it has already consented. */
+    $remembered = ap_update_probe_remembered($age);
+    if ($remembered !== null) {
+        $add('update.https_outbound', 'yes -- certificate verified ' . $age);
+        $add('update.published_version', $remembered
+            . ap_update_compare($remembered) . ' (' . $age . ')');
+        return array_merge($lines, ap_update_state_lines());
+    }
+    if (!ap_update_probe_claim()) {
+        $add('update.https_outbound', 'NOT TESTED -- this host cannot record the '
+            . 'result (' . ap_update_workdir() . ' is not writable), and a check that '
+            . 'cannot be remembered would be made again on every hit of this page, '
+            . 'which anybody can call');
+        $add('update.published_version', 'unknown -- run `php internal/update.php` '
+            . 'from a shell, where the request is made by whoever typed it');
+        return array_merge($lines, ap_update_state_lines());
+    }
+
     $answer = ap_update_fetch($source . 'VERSION', AP_UPDATE_MAX_VERSION_BYTES,
                               AP_UPDATE_PROBE_TIMEOUT);
     if (!$answer['ok']) {
@@ -1104,38 +1139,106 @@ function ap_update_diagnostic_lines(array $config)
         return array_merge($lines, ap_update_state_lines());
     }
     $add('update.https_outbound', 'yes -- certificate verified');
-    /* THREE ANSWERS, BECAUSE THERE ARE THREE. "Differs" was reported as
-       "NEWER", which is wrong on the two occasions somebody reads this line
-       most carefully: while running the candidate channel on purpose, and just
-       after following the rollback instructions -- where being told the thing
-       one has just undone is newer reads as the undo having failed.
-       version_compare understands the shape this project publishes; anything
-       it cannot order is reported as different, which is all that is known. */
-    $installedVersion = ap_update_installed_version();
-    if ($published === $installedVersion) {
-        $how = ' -- this installation is up to date';
-    } elseif (version_compare($published, $installedVersion, '>')) {
-        $how = ' -- NEWER than what runs here';
-    } elseif (version_compare($published, $installedVersion, '<')) {
-        $how = ' -- OLDER than what runs here, which is what running a candidate '
-             . 'or an undone update looks like';
-    } else {
-        $how = ' -- different from what runs here, and neither can be called newer';
-    }
-    $add('update.published_version', $published . $how);
+    ap_update_probe_remember($published);
+    $add('update.published_version', $published . ap_update_compare($published));
 
     return array_merge($lines, ap_update_state_lines());
+}
+
+/**
+ * How a published version stands against the running one.
+ *
+ * THREE ANSWERS, BECAUSE THERE ARE THREE. "Differs" was reported as "NEWER",
+ * which is wrong on the two occasions somebody reads this line most carefully:
+ * while running the candidate channel on purpose, and just after following the
+ * rollback instructions -- where being told the thing one has just undone is
+ * newer reads as the undo having failed. version_compare understands the shape
+ * this project publishes; anything it cannot order is reported as different,
+ * which is all that is known.
+ */
+function ap_update_compare($published)
+{
+    $installedVersion = ap_update_installed_version();
+    if ($published === $installedVersion) {
+        return ' -- this installation is up to date';
+    }
+    if (version_compare($published, $installedVersion, '>')) {
+        return ' -- NEWER than what runs here';
+    }
+    if (version_compare($published, $installedVersion, '<')) {
+        return ' -- OLDER than what runs here, which is what running a candidate '
+             . 'or an undone update looks like';
+    }
+    return ' -- different from what runs here, and neither can be called newer';
+}
+
+/**
+ * The published version this host last saw, if it saw it recently enough.
+ *
+ * @param string|null $age filled in with how long ago, for the line
+ * @return string|null
+ */
+function ap_update_probe_remembered(&$age = null)
+{
+    $state = ap_update_state();
+    if (empty($state['probe_published']) || empty($state['probe_at'])) {
+        return null;
+    }
+    $since = time() - (int) $state['probe_at'];
+    /* A state file from the future -- a clock put back, a copied directory --
+       is not trusted to expire, which would pin this line for as long as the
+       difference. It is treated as no memory at all. */
+    if ($since < 0 || $since > AP_UPDATE_PROBE_CACHE) {
+        return null;
+    }
+    $minutes = (int) round($since / 60);
+    $age = $since < 60
+        ? 'asked ' . max(1, $since) . ' seconds ago'
+        : 'asked ' . ($minutes === 1 ? 'a minute' : $minutes . ' minutes') . ' ago, and '
+          . 'asked again at most every '
+          . (int) round(AP_UPDATE_PROBE_CACHE / 60) . ' minutes';
+    return (string) $state['probe_published'];
+}
+
+/**
+ * Stakes the claim: the attempt is recorded BEFORE it is made.
+ *
+ * A failed fetch therefore counts too, and that is the point -- a host whose
+ * way out is broken must not be made to try again on every hit by whoever
+ * discovered the page. It answers false when nothing could be written, which
+ * is the signal not to fetch at all.
+ */
+function ap_update_probe_claim()
+{
+    $state = ap_update_state();
+    $state['probe_at'] = time();
+    unset($state['probe_published']);
+    return ap_update_save_state($state);
+}
+
+/** Records what the probe found, keeping the time the claim already stamped. */
+function ap_update_probe_remember($published)
+{
+    $state = ap_update_state();
+    $state['probe_published'] = (string) $published;
+    if (empty($state['probe_at'])) {
+        $state['probe_at'] = time();
+    }
+    ap_update_save_state($state);
 }
 
 /** What the last opportunistic check recorded, if there ever was one. */
 function ap_update_state_lines()
 {
     $state = ap_update_state();
-    if (!$state) {
+    /* `when` AND NOT MERELY A STATE FILE. The diagnostic's own probe writes
+       into this file too, so its existence stopped meaning "a check has run"
+       -- and the line went from "never", which is a fact, to "unknown", which
+       reads as a fault. What is asked here is when an UPDATE last looked. */
+    if (empty($state['when'])) {
         return array(array('update.last_check', 'never'));
     }
-    $lines = array(array('update.last_check',
-        isset($state['when']) ? $state['when'] : 'unknown'));
+    $lines = array(array('update.last_check', $state['when']));
     if (isset($state['result'])) {
         $lines[] = array('update.last_result', str_replace("\n", ' ', (string) $state['result']));
     }
