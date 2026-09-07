@@ -8,7 +8,10 @@
  *
  * WHAT THIS SETS, AND WHY EACH ONE
  *
- *   deployment => relay        it serves several sites, not one
+ *   allow_plain_mode => false  it holds other people's notes, so none of them
+ *                              may be kept readable
+ *   require_origin_on_writes   a write here comes from another domain, and a
+ *                       => true  browser always says so
  *   open_registration => true  it serves projects nobody declared, which is
  *                              what makes a copied tag work with nothing to ask
  *   projects => array()        stays empty; declaring nothing is the point
@@ -39,7 +42,8 @@ if (!defined('AP_INTERNAL')) {
 return array(
 
     'active'            => true,
-    'deployment'        => 'relay',
+    'allow_plain_mode'         => false,
+    'require_origin_on_writes' => true,
     'open_registration' => true,
     'projects'          => array(),
 

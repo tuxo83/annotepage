@@ -139,7 +139,11 @@ if (own.config) {
     check('the configuration it wrote does not parse', parses.status === 0, parses.stdout);
 
     for (const [what, wanted] of [
-        ['deployment', "'deployment' => 'self-hosted'"],
+        /* The word that used to say both is gone; the two things it decided
+           are written as themselves. An older configuration still carrying it
+           is read as before -- there are two such fixtures below. */
+        ['plain mode allowed', "'allow_plain_mode' => true"],
+        ['no Origin required', "'require_origin_on_writes' => false"],
         ['storage', "'storage'  => 'sqlite'"],
         ['retention', "'max_note_age_days'     => 90"],
         ['server totals, off', "'publish_server_totals' => false"],
@@ -207,7 +211,8 @@ if (relay.config) {
     check('a relay had its export limit switched off',
         !relay.config.includes("'rate_exports_per_ip' => 0"));
     for (const [what, wanted] of [
-        ['a relay', "'deployment' => 'relay'"],
+        ['plain mode refused', "'allow_plain_mode' => false"],
+        ['Origin required', "'require_origin_on_writes' => true"],
         ['open registration', "'open_registration' => true"],
         /* Counted in ROWS: a discussed thread is two or three, so a real
            project of 122 remarks already holds about 370. 500 left a working
@@ -236,7 +241,7 @@ const typo = await rehearse(await freePort(), 'storage=sqlite&audience=Anyone&up
 check('a mistyped audience never came up', typo.up);
 if (typo.config) {
     check('a mistyped audience opened a relay',
-        typo.config.includes("'deployment' => 'self-hosted'")
+        typo.config.includes("'allow_plain_mode' => true")
         && !typo.config.includes("'open_registration' => true"));
 } else {
     check('the mistyped run wrote no configuration', false, typo.done.slice(0, 300));
@@ -433,7 +438,7 @@ const shell = async (dir, args) => {
     if (existsSync(join(root, 'internal', 'config-local.php'))) {
         const written = readFileSync(join(root, 'internal', 'config-local.php'), 'utf8');
         check('the command line wrote a different configuration from the form',
-            written.includes("'deployment' => 'self-hosted'")
+            written.includes("'allow_plain_mode' => true")
             && written.includes("'max_note_age_days'     => 90")
             && written.includes("'publish_server_totals' => false"));
     }

@@ -2255,11 +2255,20 @@ function ap_i_config_text(array $values)
     $text .= "    // Nothing answers until this is true.\n";
     $text .= "    'active' => true,\n\n";
     if ($relay) {
-        $text .= "    // THIS SERVER IS OPEN TO ANYBODY, which is what was asked for at\n";
-        $text .= "    // install time. It serves several sites and not one, so none of\n";
-        $text .= "    // the shortcuts a single-tenant install may take apply here --\n";
-        $text .= "    // see internal/config.php for what the two modes change.\n";
-        $text .= "    'deployment' => 'relay',\n\n";
+        $text .= "    // THIS SERVER HOLDS OTHER PEOPLE'S NOTES, which is what was asked\n";
+        $text .= "    // for at install time. Two consequences, and they are written as\n";
+        $text .= "    // what they are rather than hidden behind one word:\n";
+        $text .= "    //\n";
+        $text .= "    // No project here may keep its words readable. Plain mode is only\n";
+        $text .= "    // ever acceptable where the notes sit behind the same door as the\n";
+        $text .= "    // site they annotate; here it would hand this machine's operator\n";
+        $text .= "    // every path, every label and every remark of every site using it.\n";
+        $text .= "    'allow_plain_mode' => false,\n\n";
+        $text .= "    // And a write must carry an Origin header. On this machine a write\n";
+        $text .= "    // necessarily comes from another domain, and a browser always\n";
+        $text .= "    // attaches that header -- so its absence means the caller is not a\n";
+        $text .= "    // browser.\n";
+        $text .= "    'require_origin_on_writes' => true,\n\n";
 
         $text .= "    // It serves projects nobody declared, which is what makes a tag\n";
         $text .= "    // copied from a web page work with nothing to ask and nobody to\n";
@@ -2278,10 +2287,20 @@ function ap_i_config_text(array $values)
         $text .= "    // code, not in this file.\n";
         $text .= "    'open_registration' => true,\n\n";
     } else {
-        $text .= "    // This server sits on the site under review, behind the same access\n";
-        $text .= "    // restriction as it. Change to 'relay' only on a machine serving\n";
-        $text .= "    // several sites -- see internal/config.php for what that changes.\n";
-        $text .= "    'deployment' => 'self-hosted',\n\n";
+        $text .= "    // THIS SERVER SITS ON THE SITE UNDER REVIEW, behind the same access\n";
+        $text .= "    // restriction as it. Two consequences follow, and they are written\n";
+        $text .= "    // as what they are rather than hidden behind one word:\n";
+        $text .= "    //\n";
+        $text .= "    // A project may declare mode `plain`, and this server then keeps\n";
+        $text .= "    // the words as they were typed. That protects exactly as much as\n";
+        $text .= "    // the site itself does, which is the whole argument -- and it is\n";
+        $text .= "    // false the day these notes live anywhere else. Set it back to\n";
+        $text .= "    // false and every project here is encrypted, whatever it declares.\n";
+        $text .= "    'allow_plain_mode' => true,\n\n";
+        $text .= "    // And a write need not carry an Origin header, because it may\n";
+        $text .= "    // legitimately come from this same origin. On a machine holding\n";
+        $text .= "    // somebody else's notes this is true instead.\n";
+        $text .= "    'require_origin_on_writes' => false,\n\n";
     }
 
     if ($storage === 'sqlite') {

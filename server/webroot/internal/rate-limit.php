@@ -156,11 +156,16 @@ function ap_apply_rate_limit(array $config, $store, $id, $action)
         try {
             $count = $store->consumeRate($key, $window);
         } catch (ApFailure $e) {
-            // See the header: we refuse on a relay, we let it through when
-            // self-hosted. In both cases we log it, because a broken counter
-            // always ends up being discovered too late.
+            /* See the header: where the notes are somebody else's, a broken
+               counter must not silently disable the only thing bounding what
+               they cost -- so the write is refused. Where they are the site's
+               own, refusing a remark over a stumbling counter would be worse
+               than letting it through. The question is the same one the
+               Origin rule asks: is this machine the site, or is it holding
+               notes for somebody else. Logged either way, because a broken
+               counter is always found too late. */
             ap_log('rate counter unavailable (' . $scope . ')');
-            if (ap_is_self_hosted($config)) {
+            if (!ap_requires_origin_on_writes($config)) {
                 return;
             }
             throw $e;

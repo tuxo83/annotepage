@@ -44,7 +44,37 @@ function ap_config_defaults()
         // Origin header, which shows up at once. The other way round -- a relay
         // taken for a self-hosted install -- would serve plaintext to a third
         // party without anyone noticing.
-        'deployment' => 'relay',
+        /* THE THREE KEYS THAT WERE ONE WORD.
+           `deployment` said `self-hosted` or `relay`, and that word decided
+           these three. It was not a setting: it was a preset, and it read as a
+           kind of server -- which made whoever opened this file believe there
+           are two products, and left them unable to change one of the three
+           without changing the other two.
+           Each default here is the STRICT one, so a file that says nothing
+           lands in the careful posture -- which is exactly what an unknown
+           `deployment` value used to do. `deployment` is still read, as a
+           shorthand, for the configurations already written: see below. */
+
+        // May a project declare `mode => plain`, so that the server keeps the
+        // words as they were typed? Only ever acceptable where the notes sit
+        // behind the same access restriction as the site under review -- that
+        // is, on the machine serving that site. Anywhere else, plain mode makes
+        // somebody else's remarks readable by whoever operates the storage.
+        'allow_plain_mode' => false,
+
+        // Must a write carry an `Origin` header? On a machine that is not the
+        // site under review, a write necessarily comes from another domain and
+        // a browser always attaches it, so its absence means the caller is not
+        // a browser. On the site's own machine the header is optional, because
+        // the write may legitimately come from the same origin.
+        'require_origin_on_writes' => true,
+
+        // Legacy shorthand, still read: `self-hosted` sets the two keys above
+        // to true and false, `relay` to false and true, and either one forces
+        // `open_registration` the way it always did. Written by every installer
+        // before 2.12, and left alone here so that those files go on behaving
+        // exactly as they did. New installations do not write it.
+        'deployment' => null,
 
         // THE PROJECTS. Key = project id (22 base64url characters, derived
         // from the key IN THE BROWSER: see FORMAT.md section 1.3). The server
@@ -508,27 +538,72 @@ function ap_config()
     $config['local_config'] = $local;
     $config['local_config_present'] = is_file($local);
 
-    // The deployment is normalised HERE, and an unknown value is a FAILURE,
-    // never a silent fallback. `realy` instead of `relay` would fall back on
-    // the default, and the default is precisely the other mode: we would serve
-    // plaintext to a third party while believing the opposite.
-    $deployment = isset($config['deployment']) ? strtolower(trim((string) $config['deployment'])) : '';
-    if ($deployment !== 'self-hosted' && $deployment !== 'relay') {
-        throw new ApFailure(
-            "Invalid configuration: `deployment` is `"
-            . substr(preg_replace('/[^\x20-\x7E]/', '', $deployment), 0, 30)
-            . "`.\nThe only two accepted values are `self-hosted` and `relay`.",
-            500);
+    $config['allow_plain_mode'] = !empty($config['allow_plain_mode']);
+    $config['require_origin_on_writes'] = !isset($config['require_origin_on_writes'])
+        || !empty($config['require_origin_on_writes']);
+
+    /* THE SHORTHAND, APPLIED OVER THE THREE KEYS AND NOT UNDER THEM.
+       A file that carries `deployment` was written when that word decided all
+       three, so it must go on deciding all three -- including a value the
+       operator also wrote by hand, which in such a file is at best a
+       contradiction and at worst a misreading of what the word did. Files
+       written from 2.12 on carry the keys and not the word.
+
+       An unknown value is still a FAILURE and never a silent fallback:
+       `realy` instead of `relay` would otherwise land on the defaults, and
+       the defaults are the strict posture -- we would refuse writes on the
+       site's own machine while believing the opposite. */
+    if (isset($config['deployment']) && $config['deployment'] !== null
+        && $config['deployment'] !== '') {
+        $deployment = strtolower(trim((string) $config['deployment']));
+        if ($deployment !== 'self-hosted' && $deployment !== 'relay') {
+            throw new ApFailure(
+                "Invalid configuration: `deployment` is `"
+                . substr(preg_replace('/[^\x20-\x7E]/', '', $deployment), 0, 30)
+                . "`.\nThe only two accepted values are `self-hosted` and `relay`."
+                . "\nThat key is a shorthand kept for older files: what it sets is "
+                . "`allow_plain_mode` and `require_origin_on_writes`, which can be "
+                . "written directly instead.",
+                500);
+        }
+        $config['deployment'] = $deployment;
+        $config['allow_plain_mode'] = ($deployment === 'self-hosted');
+        $config['require_origin_on_writes'] = ($deployment === 'relay');
+        if ($deployment === 'self-hosted') {
+            // As before: the word forced this one off, whatever the file said.
+            $config['open_registration'] = false;
+        }
+    } else {
+        $config['deployment'] = null;
     }
-    $config['deployment'] = $deployment;
 
     return $config;
 }
 
-/** True if the tool sits on the site it reviews. */
-function ap_is_self_hosted(array $config)
+/**
+ * True where a project may keep its words readable.
+ *
+ * The question this asks is not "which kind of server is this" -- there is
+ * only one kind -- but "are these notes behind the same door as the site they
+ * annotate". Only then does plain mode protect exactly as much as the site
+ * already does.
+ */
+function ap_allows_plain_mode(array $config)
 {
-    return $config['deployment'] === 'self-hosted';
+    return !empty($config['allow_plain_mode']);
+}
+
+/**
+ * True where a write must carry an Origin header.
+ *
+ * On a machine that is not the site under review, a write necessarily comes
+ * from another domain, and a browser always attaches the header: its absence
+ * therefore means the caller is not a browser. That is also the signal used
+ * where the code needs to know it is holding somebody else's notes.
+ */
+function ap_requires_origin_on_writes(array $config)
+{
+    return !empty($config['require_origin_on_writes']);
 }
 
 /**
@@ -541,7 +616,10 @@ function ap_is_self_hosted(array $config)
  */
 function ap_open_registration(array $config)
 {
-    return !empty($config['open_registration']) && !ap_is_self_hosted($config);
+    /* No gate any more. The word that used to force this off on one kind of
+       server does it itself, above, for the files that carry it -- and a file
+       that says `open_registration => true` without that word means it. */
+    return !empty($config['open_registration']);
 }
 
 /**

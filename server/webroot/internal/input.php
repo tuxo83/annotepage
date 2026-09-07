@@ -319,10 +319,10 @@ function ap_field_mode($source, array $config, $id, array $project)
             "The `mode` field expects `plain` or `encrypted`. Received: "
             . ap_readable_excerpt($raw) . ".", 400);
     }
-    if ($raw === 'plain' && !(ap_is_self_hosted($config) && $project['mode'] === 'plain')) {
+    if ($raw === 'plain' && !(ap_allows_plain_mode($config) && $project['mode'] === 'plain')) {
         throw new ApFailure(
             "Plain write refused for project " . ap_short_project($id) . ".\n"
-            . (ap_is_self_hosted($config)
+            . (ap_allows_plain_mode($config)
                 ? "This project is declared in `encrypted` mode: there is no going back, "
                   . "the database does not decrypt itself."
                 : "This server is a relay. Plain mode is impossible here: it has no "

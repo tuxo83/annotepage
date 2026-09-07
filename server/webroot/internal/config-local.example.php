@@ -61,20 +61,32 @@ return array(
     // Nothing answers until this is true.
     'active' => true,
 
-    // WHERE IS THIS SERVER DROPPED?
+    // WHOSE NOTES DOES THIS SERVER HOLD? Two keys, because there are two
+    // consequences, and one word used to hide both.
     //
-    //   'self-hosted' : on the site under review itself, behind the same access
-    //                   restriction as it. Plain mode is possible there, the
-    //                   Origin header is optional, and a database written by
-    //                   the tool's 1.2.0 ancestor is taken over here.
-    //   'relay'       : on a third-party machine serving several sites. Plain
-    //                   mode is IMPOSSIBLE there, the Origin header is required
-    //                   on writes.
+    // A server that sits on the site under review holds notes that are behind
+    // the same access restriction as what they annotate. A server on another
+    // machine holds somebody else's.
     //
-    // There is no third value, and a typo is a failure: falling back in silence
-    // on a default would serve plaintext to a third party without anyone
-    // noticing.
-    'deployment' => 'self-hosted',
+    // MAY A PROJECT KEEP ITS WORDS READABLE? Only true where the notes are
+    // behind that same door: plain mode then protects exactly as much as the
+    // site already does. Anywhere else it hands whoever operates the storage
+    // every path, every label and every remark. False refuses `mode => plain`
+    // when the configuration is READ, not at the first note.
+    'allow_plain_mode' => true,
+
+    // MUST A WRITE CARRY AN Origin HEADER? On a machine that is not the site,
+    // a write necessarily comes from another domain and a browser always
+    // attaches the header, so its absence means the caller is not a browser.
+    // On the site's own machine the header is optional: the write may come
+    // from this same origin. It is an ANTI-ABUSE measure and NOT a protection
+    // against XSS, which runs inside the page itself.
+    'require_origin_on_writes' => false,
+
+    // `deployment` was one word for those two, `self-hosted` or `relay`. It is
+    // still read, for the files written before 2.12, and it then decides both
+    // whatever they say. New files do not carry it: two settings that can be
+    // set are clearer than one word that cannot be half-set.
 
     // SERVING A PROJECT THAT IS NOT DECLARED BELOW. Off, and only a relay can
     // turn it on -- a self-hosted server ignores the key, because an id it

@@ -103,7 +103,7 @@ function ap_declared_projects(array $config)
         // READING THE CONFIGURATION, not at write time: an installation that
         // believes itself protected must learn otherwise at the first
         // diagnostic, not at the first note.
-        if ($mode === 'plain' && !ap_is_self_hosted($config)) {
+        if ($mode === 'plain' && !ap_allows_plain_mode($config)) {
             throw new ApFailure(
                 "Configuration refused: project " . ap_short_project($id)
                 . " declares mode `plain` on a `relay` deployment.\n"
@@ -289,11 +289,12 @@ function ap_apply_origin_lock(array $config, $id, array $project, $write)
     $origin = ap_request_origin();
 
     if ($origin === null) {
-        if (!ap_is_self_hosted($config) && $write) {
+        if (ap_requires_origin_on_writes($config) && $write) {
             throw new ApFailure(
                 "Write refused: the request carries no Origin header.\n"
-                . "On a relay a write necessarily comes from another domain, and a "
-                . "browser always attaches that header.\n"
+                . "This server requires one on a write, which is what "
+                . "`require_origin_on_writes` says: a write reaching it comes from "
+                . "another domain, and a browser always attaches that header.\n"
                 . "A request with no Origin therefore does not come from a page: it is "
                 . "refused.",
                 403);
@@ -356,7 +357,11 @@ function ap_apply_origin_lock(array $config, $id, array $project, $write)
  */
 function ap_backfill_project(array $config)
 {
-    if (!ap_is_self_hosted($config)) {
+    /* The rows of a 1.2.0 database are attached only where the notes belong to
+       the site that serves them -- the same condition that lets a project keep
+       its words readable. Attaching them anywhere else could give one team's
+       notes to another, and nothing in the database would let anyone undo it. */
+    if (!ap_allows_plain_mode($config)) {
         return null;
     }
     $projects = ap_declared_projects($config);

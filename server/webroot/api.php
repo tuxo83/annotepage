@@ -530,7 +530,24 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
 
     ap_diag_line('config.loading', 'SUCCEEDED');
     ap_diag_line('config.active', ap_yes_no($config['active']));
-    ap_diag_line('config.deployment', $config['deployment']);
+    /* THE TWO KEYS, AND THE SHORTHAND ONLY IF THE FILE CARRIES IT. `deployment`
+       was one word deciding both; a file written from 2.12 on has neither the
+       word nor a reason for it, and reporting an empty line would send an
+       operator looking for a key that is not there. */
+    ap_diag_line('config.allow_plain_mode',
+        ap_allows_plain_mode($config)
+            ? 'yes -- a project may declare mode `plain`, and this server then keeps '
+              . 'the words as they were typed'
+            : 'no -- every project here is encrypted, whatever it declares');
+    ap_diag_line('config.require_origin_on_writes',
+        ap_requires_origin_on_writes($config)
+            ? 'yes -- a write with no Origin header is refused'
+            : 'no -- a write may come from this same origin');
+    if (isset($config['deployment']) && $config['deployment'] !== null) {
+        ap_diag_line('config.deployment',
+            $config['deployment'] . ' -- shorthand, kept for files written before '
+            . '2.12: it sets the two lines above');
+    }
     // WHICH STORE IS ANSWERING. Two are shipped and either may be in service:
     // reading it here is the only way, from a distance, to be sure which file
     // holds the notes.
