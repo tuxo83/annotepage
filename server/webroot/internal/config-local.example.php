@@ -192,28 +192,14 @@ return array(
     // To be changed if the database is shared.
     'table_prefix' => 'notes_',
 
-    // Input bounds. They size the columns when the table is CREATED: raising
-    // them afterwards does not widen an existing table. They apply IN PLAIN
-    // MODE ONLY -- in encrypted mode the server sees only an envelope, and does
-    // not know where the author ends.
-    // 'max_text_length'   => 4000,
-    // 'max_author_length' => 80,
-    // 'max_page_length'        => 300,
-    // 'max_selector_length'    => 500,
-    // 'max_fingerprint_length' => 255,
-    // 'max_excerpt_length'     => 300,
-    // 'max_title_length'       => 70,
-    // 'max_version_length'     => 60,
-    // 'max_environment_length' => 20,
-    // 'max_viewport_length'    => 20,
-
-    // The bounds of the sealed envelopes, in characters, and the only ones
-    // that apply in encrypted mode. FORMAT.md section 3.6 fixes them: lowering
-    // one means a note written elsewhere is refused here, and its author is
-    // told nothing that helps.
-    // 'max_payload_length'            => 24000,
-    // 'max_resolution_payload_length' => 2000,
-    // 'max_title_payload_length'      => 1000,
+    // THE LENGTH OF EACH FIELD IS NOT A KEY. A remark, a name, a page, a
+    // selector, an excerpt, a title, an envelope: thirteen lengths, and all of
+    // them are constants at the bottom of internal/config.php, where the
+    // reason is written out. In short: nine of them are the width of a MySQL
+    // column the day the table is created, so a number raised here afterwards
+    // would make this server accept a remark its own table cannot hold -- a
+    // 500, and the reviewer's text lost. Setting one of them in this file does
+    // NOTHING; the server logs a line saying so and carries on.
 
     // RATE LIMITING. The values below are the defaults; they suit a review
     // team. On a public relay, lowering them is wiser than raising them. A

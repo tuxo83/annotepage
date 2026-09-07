@@ -581,9 +581,15 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
         empty($config['publish_server_totals'])
             ? 'no -- `list` answers this project\'s figures only'
             : 'yes -- `list` also answers what the whole server holds');
-    ap_diag_line('config.max_text_length', $config['max_text_length']);
-    ap_diag_line('config.max_author_length', $config['max_author_length']);
-    ap_diag_line('config.max_payload_length', $config['max_payload_length']);
+    /* `format.` and no longer `config.`, because that is what they are: the
+       length of each field is fixed by the code, not by this server's
+       configuration, and a line that says `config.` invites somebody to go
+       and change it. The three shown are the three worth knowing from
+       outside -- a remark, a name, and the envelope every encrypted note
+       arrives in. */
+    ap_diag_line('format.max_text_length', AP_LEN_TEXT . ' -- plain mode only');
+    ap_diag_line('format.max_author_length', AP_LEN_AUTHOR . ' -- plain mode only');
+    ap_diag_line('format.max_payload_length', AP_LEN_PAYLOAD);
     ap_diag_line('config.max_body_bytes', $config['max_body_bytes']);
     ap_diag_line('rate.window_seconds', $config['rate_window_seconds']);
     ap_diag_line('rate.writes_per_ip', $config['rate_writes_per_ip']);
@@ -1088,7 +1094,7 @@ switch ($action) {
                together would force re-encrypting a remark nobody is allowed to
                rewrite. */
             $resolutionPayload = ap_field_envelope(
-                $input, 'resolution_payload', $config['max_resolution_payload_length'],
+                $input, 'resolution_payload', AP_LEN_RESOLUTION_PAYLOAD,
                 $resolved, 'resolution_payload');
             ap_reject_field($input, 'by', 'by',
                 "this project is in encrypted mode, and the fixer's name would travel in "
@@ -1101,10 +1107,10 @@ switch ($action) {
                reopen, it used to be demanded and then thrown away by the store,
                which sets resolved_by back to empty -- we were asking for the
                fixer's name in order to cancel the fix. */
-            $by = ap_field($input, 'by', $config['max_author_length'],
+            $by = ap_field($input, 'by', AP_LEN_AUTHOR,
                            $resolved, 'by');
             $fixVersion = ap_field($input, 'version',
-                                   $config['max_version_length'], false, 'version');
+                                   AP_LEN_VERSION, false, 'version');
         }
 
         ap_respond_json(ap_response_envelope(array(
@@ -1155,13 +1161,13 @@ switch ($action) {
                that is wrong with the site -- which is the exact thing encrypted
                mode exists to prevent. */
             $titlePayload = ap_field_envelope(
-                $input, 'title_payload', $config['max_title_payload_length'],
+                $input, 'title_payload', AP_LEN_TITLE_PAYLOAD,
                 false, 'title_payload');
             ap_reject_field($input, 'title', 'title',
                 "this project is in encrypted mode, and the title would travel in "
                 . "the clear to the server.");
         } else {
-            $title = ap_field($input, 'title', $config['max_title_length'],
+            $title = ap_field($input, 'title', AP_LEN_TITLE,
                               false, 'title');
         }
 

@@ -528,7 +528,7 @@ function ap_note_from_request($source, array $config, $store, $id, $mode)
         // reviewers -- that is, a good part of what a staging site has not
         // published yet. See FORMAT.md section 2.3.
         $note['payload'] = ap_field_envelope(
-            $source, 'payload', $config['max_payload_length'], true, 'payload');
+            $source, 'payload', AP_LEN_PAYLOAD, true, 'payload');
 
         foreach (array('author', 'text', 'page', 'selector', 'fingerprint',
                        'excerpt', 'version', 'environment', 'viewport') as $plain) {
@@ -539,9 +539,9 @@ function ap_note_from_request($source, array $config, $store, $id, $mode)
         return $note;
     }
 
-    $note['author'] = ap_field($source, 'author', $config['max_author_length'],
+    $note['author'] = ap_field($source, 'author', AP_LEN_AUTHOR,
                                true, 'author');
-    $note['text']   = ap_field($source, 'text', $config['max_text_length'],
+    $note['text']   = ap_field($source, 'text', AP_LEN_TEXT,
                                true, 'text', true);
 
     // Note-taking context, set by the client and never typed by hand. It holds
@@ -549,11 +549,11 @@ function ap_note_from_request($source, array $config, $store, $id, $mode)
     // of the site, and that is exactly what one wants to be able to tell apart
     // when a remark seems to contradict another.
     $note['version']     = ap_field($source, 'version',
-                                    $config['max_version_length'], false, 'version');
+                                    AP_LEN_VERSION, false, 'version');
     $note['environment'] = ap_field($source, 'environment',
-                                    $config['max_environment_length'], false, 'environment');
+                                    AP_LEN_ENVIRONMENT, false, 'environment');
     $note['viewport']    = ap_field($source, 'viewport',
-                                    $config['max_viewport_length'], false, 'viewport');
+                                    AP_LEN_VIEWPORT, false, 'viewport');
 
     if ($parent !== null) {
         $note['page']        = $parent['page'];
@@ -561,13 +561,13 @@ function ap_note_from_request($source, array $config, $store, $id, $mode)
         $note['fingerprint'] = $parent['fingerprint'];
         $note['excerpt']     = $parent['excerpt'];
     } else {
-        $note['page']        = ap_field_page($source, 'page', $config['max_page_length']);
+        $note['page']        = ap_field_page($source, 'page', AP_LEN_PAGE);
         $note['selector']    = ap_field($source, 'selector',
-                                        $config['max_selector_length'], false, 'selector');
+                                        AP_LEN_SELECTOR, false, 'selector');
         $note['fingerprint'] = ap_field($source, 'fingerprint',
-                                        $config['max_fingerprint_length'], false, 'fingerprint');
+                                        AP_LEN_FINGERPRINT, false, 'fingerprint');
         $note['excerpt']     = ap_field($source, 'excerpt',
-                                        $config['max_excerpt_length'], false, 'excerpt');
+                                        AP_LEN_EXCERPT, false, 'excerpt');
     }
 
     return $note;

@@ -500,6 +500,15 @@ is **the length of the envelope: 24000 characters** for `payload`, 2000 for
 `resolution_payload`, 1000 for `title_payload`. Going over returns 400 naming the limit, never a silent
 truncation.
 
+**These thirteen numbers are not configuration.** They were keys of the
+server's configuration file until 2.14, and nine of them are the width of a
+MySQL column the day the table is created: raising one afterwards changed what
+the server accepted and not what it could store, so a remark passed every check
+and died at the insert — a 500, and the text lost. They are constants in the
+code now, and a configuration file that still sets one is logged and ignored.
+What an operator meters is volume — how many notes, how many requests, how big
+a request may be — and that is still theirs.
+
 A consequence to write down, because it is unpleasant: **in encrypted mode,
 the per-field limits become a client-side convention.** A modified client can
 put 3000 characters in the `author` field, and the server will accept it: it

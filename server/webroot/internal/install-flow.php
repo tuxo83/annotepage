@@ -1069,22 +1069,29 @@ function ap_i_questions()
  * same place. A setting added here appears in all three without anybody
  * remembering to.
  *
- * NOTHING IS LEFT OUT OF IT. The thirteen length bounds were, for a while,
- * with a reason: they size columns at CREATE, ten of them apply in plain mode
- * only and three are fixed by FORMAT.md. But a person looking for a field had
- * no way to tell whether it existed and they had missed it, or did not exist
- * at all -- so they are here, marked `group => 'bounds'`, which puts them
- * behind a fold of their own on the form and under their own heading in
- * --help. Every key of internal/config.php an operator may set is in this
- * table; what is not settable here is not settable at install time at all,
- * and --help says which four those are and why.
+ * EVERY KEY OF internal/config.php AN OPERATOR MAY SET IS IN THIS TABLE, and
+ * a check refuses one that is not. What is not settable here is not settable
+ * at install time at all, and --help says which two those are and why.
+ *
+ * THE THIRTEEN FIELD LENGTHS ARE NOT KEYS ANY MORE, so they are not here
+ * either. They spent one release in this table, behind a fold, on the
+ * principle that every setting must be visible -- and being visible is what
+ * showed they were never settings: nine of them are written into the MySQL
+ * table as VARCHAR(n) at CREATE, so raising one afterwards changes what the
+ * server accepts and not what the column holds, and a plain-mode remark then
+ * dies at the insert with a 500 and the reviewer's text gone. They are
+ * constants at the bottom of internal/config.php now, with the measurement.
+ * What is metered here is VOLUME -- how many notes, how many requests, how
+ * big a request -- which is the operator's subject; the length of one field
+ * is the format's.
  *
  * `kind` is what the value IS, so that each face can render and check it:
  * 'int', 'bool', 'text', 'choice'. `unit` is what the number counts, for the
- * sentence. `group` folds a setting one level further down. No entry carries
- * a default -- ap_i_setting_default() reads the live one out of config.php,
- * so the number shown beside a field cannot drift from the number in force,
- * and an empty field still means "leave it deciding".
+ * sentence. `decided` is what THIS INSTALLATION writes when the field is left
+ * empty, per audience, where that differs from config.php's default. No entry
+ * carries a default -- ap_i_setting_default() reads the live one out of
+ * config.php, so the number shown beside a field cannot drift from the number
+ * in force, and an empty field still means "leave it deciding".
  */
 function ap_i_settings()
 {
@@ -1183,70 +1190,6 @@ function ap_i_settings()
             'say'   => 'The release channel. `next` instead of `main` in that address '
                        . 'runs the candidate; a fork or a mirror inside a closed network '
                        . 'goes here too. HTTPS only, and no flag relaxes that.'),
-        /* THE THIRTEEN BOUNDS, IN THEIR OWN GROUP AND NOT LEFT OUT. They were
-           kept out of this table at first, with a defensible reason -- they
-           size columns at CREATE, ten of them apply in plain mode only, and
-           three are fixed by the format. But leaving them out meant the file
-           an operator reads does not show every field there is, and somebody
-           looking for one had no way to know whether it existed at all. They
-           are here, behind their own fold, with what each one bounds. */
-        array('key' => 'max_text_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'A remark',
-            'say'   => 'Plain mode only: in encrypted mode this server sees an envelope '
-                       . 'and does not know where the text ends. It also sizes the column '
-                       . 'when the table is CREATED, so raising it later does not widen a '
-                       . 'column that already exists.'),
-        array('key' => 'max_author_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'A name',
-            'say'   => 'Plain mode only. The name a reviewer types once and that appears '
-                       . 'beside their remarks.'),
-        array('key' => 'max_page_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'A page path',
-            'say'   => 'Plain mode only. In encrypted mode the path never reaches this '
-                       . 'server at all -- only its blind index does.'),
-        array('key' => 'max_selector_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'The selector of an element',
-            'say'   => 'Plain mode only. A CSS path down to the annotated element; deep '
-                       . 'markup makes long ones.'),
-        array('key' => 'max_fingerprint_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'The fingerprint of an element',
-            'say'   => 'Plain mode only. What lets a remark find its element again after '
-                       . 'the page has changed.'),
-        array('key' => 'max_excerpt_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'The excerpt of an element',
-            'say'   => 'Plain mode only. The few words of the page shown beside the '
-                       . 'remark, so a reader knows what it is about.'),
-        array('key' => 'max_title_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'The title of a remark',
-            'say'   => 'Plain mode only. Written by an assistant in the same call as its '
-                       . 'reply, and meant to be very short.'),
-        array('key' => 'max_version_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'A version string',
-            'say'   => 'Plain mode only. What the tag announces as the version really '
-                       . 'served, and what a fix is stamped with.'),
-        array('key' => 'max_environment_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'An environment name',
-            'say'   => 'Plain mode only. `staging`, `production` -- whatever the tag '
-                       . 'carries.'),
-        array('key' => 'max_viewport_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'A viewport',
-            'say'   => 'Plain mode only. The size of the window the remark was written '
-                       . 'in, as `1408x900`.'),
-        array('key' => 'max_payload_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'A sealed envelope',
-            'say'   => 'THIS ONE IS THE FORMAT\'S, not yours: FORMAT.md fixes it, and '
-                       . 'lowering it means a remark written elsewhere is refused here '
-                       . 'while its author is told nothing useful. It is also what sizes '
-                       . 'max_body_bytes above.'),
-        array('key' => 'max_resolution_payload_length', 'kind' => 'int',
-            'unit' => 'characters', 'group' => 'bounds',
-            'label' => 'A sealed resolution',
-            'say'   => 'The format\'s too. What an assistant writes when it says what it '
-                       . 'measured and closes a remark.'),
-        array('key' => 'max_title_payload_length', 'kind' => 'int', 'unit' => 'characters',
-            'group' => 'bounds', 'label' => 'A sealed title',
-            'say'   => 'The format\'s too.'),
-
         array('key' => 'allow_plain_http', 'kind' => 'bool', 'unit' => '',
             'label' => 'Answer over plain http',
             'say'   => 'A way out, not a preference: without https there is no WebCrypto, '
@@ -1996,21 +1939,7 @@ function ap_i_render_help($selfName)
             . 'type here is what you would have edited there. Leave one out and the '
             . 'default stays in force -- and a later version may raise it for you, '
             . 'which a value written into your file would prevent.') . "\n";
-    $heading = false;
     foreach (ap_i_settings() as $setting) {
-        /* The bounds under their own heading, the way the form puts them
-           behind their own fold: they are all here, and a reader can see at a
-           glance that the thirteen of them are one subject and not thirteen. */
-        if (isset($setting['group']) && !$heading) {
-            $heading = true;
-            $out .= "\nTHE LENGTH OF EACH FIELD\n" . str_repeat('=', 24) . "\n\n"
-                . ap_i_wrap('These size the columns when the tables are CREATED: raising '
-                    . 'one afterwards does not widen a column that already exists. Ten '
-                    . 'of them apply in plain mode only -- in encrypted mode this server '
-                    . 'sees an envelope and does not know where any field ends -- and '
-                    . 'the last three belong to FORMAT.md rather than to you: lowering '
-                    . 'one means a remark written elsewhere is refused here.') . "\n";
-        }
         $shape = $setting['kind'] === 'choice'
             ? implode('|', $setting['values'])
             : ($setting['kind'] === 'bool' ? 'true|false'
@@ -2060,7 +1989,14 @@ function ap_i_render_help($selfName)
             . 'and internal/config-local.example.php sits beside it with every key '
             . 'there is. Everything else this server reads is either answered by the '
             . 'three questions above or offered as an option above -- there is no key '
-            . 'left that this command cannot set.') . "\n";
+            . 'left that this command cannot set.') . "\n\n"
+        . ap_i_wrap('The length of each field is not a key at all: a remark, a name, a '
+            . 'selector, an envelope, and the ten others are constants at the bottom '
+            . 'of internal/config.php. Nine of them are the width of a MySQL column '
+            . 'the day the table is created, so a number changed afterwards would '
+            . 'make this server accept a remark its own table cannot hold -- '
+            . 'measured, in strict mode: a 500, and the text lost. What is metered '
+            . 'here is volume; the shape of one note is FORMAT.md\'s.') . "\n";
 
     $out .= "\nEXIT CODES\n==========\n\n"
         . "  0   Installed -- or already configured, and nothing was done.\n"
@@ -3326,24 +3262,8 @@ function ap_i_run(array $options)
     echo '<p>Leave a field empty and the default stays in force, which also means a '
         . 'later version may raise it for you. Fill one in and it is written into your '
         . "configuration, with the sentence that explains it.</p>\n";
-    $ouvertBornes = false;
     foreach (ap_i_settings() as $setting) {
         $key = $setting['key'];
-        /* THE BOUNDS GET A FOLD OF THEIR OWN, INSIDE THIS ONE. They are here
-           because every field there is has to be here -- somebody looking for
-           one must be able to see whether it exists -- and they are one level
-           further down because ten of them apply in plain mode only and three
-           belong to the format rather than to the operator. */
-        if (isset($setting['group']) && !$ouvertBornes) {
-            $ouvertBornes = true;
-            echo "<details>\n";
-            echo "<summary>The length of each field &mdash; ten of them apply in "
-                . "plain mode only, three belong to the format</summary>\n";
-            echo '<p>These size the columns when the tables are CREATED: raising one '
-                . 'afterwards does not widen a column that already exists. In encrypted '
-                . 'mode this server sees an envelope and does not know where any field '
-                . "ends, so ten of them never apply at all.</p>\n";
-        }
         echo '<p><label>' . ap_i_h($setting['label']);
         if ($setting['kind'] === 'choice') {
             echo '<br><select name="' . $key . '">' . "\n";
@@ -3394,9 +3314,6 @@ function ap_i_run(array $options)
                 . '<span class="if-anyone">Left empty, this install writes '
                 . ap_i_h($setting['decided']['anyone']) . ".</span></p>\n";
         }
-    }
-    if ($ouvertBornes) {
-        echo "</details>\n";
     }
     echo "</details>\n";
 

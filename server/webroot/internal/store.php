@@ -587,15 +587,15 @@ class ApStore
             // (FORMAT.md section 2.1). Do not tighten it back.
             'mode'       => "VARCHAR(16) NOT NULL DEFAULT ''",
             // Plain payload: filled in plain mode, empty in encrypted mode.
-            'page'        => 'VARCHAR(' . (int) $c['max_page_length'] . ") NOT NULL DEFAULT ''",
-            'selector'    => 'VARCHAR(' . (int) $c['max_selector_length'] . ") NOT NULL DEFAULT ''",
-            'fingerprint' => 'VARCHAR(' . (int) $c['max_fingerprint_length'] . ") NOT NULL DEFAULT ''",
-            'excerpt'     => 'VARCHAR(' . (int) $c['max_excerpt_length'] . ") NOT NULL DEFAULT ''",
-            'author'      => 'VARCHAR(' . (int) $c['max_author_length'] . ") NOT NULL DEFAULT ''",
+            'page'        => 'VARCHAR(' . AP_LEN_PAGE . ") NOT NULL DEFAULT ''",
+            'selector'    => 'VARCHAR(' . AP_LEN_SELECTOR . ") NOT NULL DEFAULT ''",
+            'fingerprint' => 'VARCHAR(' . AP_LEN_FINGERPRINT . ") NOT NULL DEFAULT ''",
+            'excerpt'     => 'VARCHAR(' . AP_LEN_EXCERPT . ") NOT NULL DEFAULT ''",
+            'author'      => 'VARCHAR(' . AP_LEN_AUTHOR . ") NOT NULL DEFAULT ''",
             'text'        => 'TEXT NOT NULL',
-            'version'     => 'VARCHAR(' . (int) $c['max_version_length'] . ") NOT NULL DEFAULT ''",
-            'environment' => 'VARCHAR(' . (int) $c['max_environment_length'] . ") NOT NULL DEFAULT ''",
-            'viewport'    => 'VARCHAR(' . (int) $c['max_viewport_length'] . ") NOT NULL DEFAULT ''",
+            'version'     => 'VARCHAR(' . AP_LEN_VERSION . ") NOT NULL DEFAULT ''",
+            'environment' => 'VARCHAR(' . AP_LEN_ENVIRONMENT . ") NOT NULL DEFAULT ''",
+            'viewport'    => 'VARCHAR(' . AP_LEN_VIEWPORT . ") NOT NULL DEFAULT ''",
             // Encrypted payload: the other way round. Declared NULL with a NULL
             // default rather than `NOT NULL`: a TEXT cannot carry a default
             // value before MySQL 8.0.13, and a NOT NULL column with no default
@@ -611,12 +611,12 @@ class ApStore
             // exactly like the resolution and for the same reason: it is
             // written LATER, by somebody else, and folding it in would
             // mean re-encrypting a remark nobody is allowed to rewrite.
-            'title'         => 'VARCHAR(' . (int) $c['max_title_length'] . ") NOT NULL DEFAULT ''",
+            'title'         => 'VARCHAR(' . AP_LEN_TITLE . ") NOT NULL DEFAULT ''",
             'title_payload' => 'TEXT NULL DEFAULT NULL',
             // Resolution, plain part.
             'resolved_at'      => 'DATETIME NULL DEFAULT NULL',
-            'resolved_by'      => 'VARCHAR(' . (int) $c['max_author_length'] . ") NOT NULL DEFAULT ''",
-            'resolved_version' => 'VARCHAR(' . (int) $c['max_version_length'] . ") NOT NULL DEFAULT ''",
+            'resolved_by'      => 'VARCHAR(' . AP_LEN_AUTHOR . ") NOT NULL DEFAULT ''",
+            'resolved_version' => 'VARCHAR(' . AP_LEN_VERSION . ") NOT NULL DEFAULT ''",
             'created_at'       => "DATETIME NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT 'UTC, written by PHP'",
             'reply_to'         => 'INT UNSIGNED NULL DEFAULT NULL',
         );

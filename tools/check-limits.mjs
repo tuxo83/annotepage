@@ -244,6 +244,92 @@ if (tooMany) {
         'Retry-After: ' + tooMany.retry);
 }
 
+/* -- THE LENGTH OF A FIELD IS THE CODE'S, AND NO FILE CHANGES IT ----------
+   Nine of these lengths are the width of a MySQL column the day the table is
+   created. While they were configuration, raising one afterwards changed what
+   the server ACCEPTED and not what the column could HOLD: measured on MySQL 8
+   in strict mode, a plain-mode remark with a 500-character excerpt passed
+   every check and died at the insert -- HTTP 500, "your notes may not have
+   been saved", the text gone, the reason in the PHP log only. They are
+   constants now. This proves the two halves of that: the bound still refuses,
+   and a file that still sets the old key changes nothing. */
+{
+    const port2 = await freePort();
+    const dir2 = mkdtempSync(join(tmpdir(), 'annotepage-lengths-'));
+    const root2 = join(dir2, 'web');
+    cpSync(webroot, root2, { recursive: true });
+    const server2 = spawn('php', ['-S', '127.0.0.1:' + port2], {
+        cwd: root2, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: 'ignore',
+    });
+    for (let i = 0; i < 40; i += 1) {
+        await sleep(150);
+        try { await fetch('http://127.0.0.1:' + port2 + '/install.php', { redirect: 'manual' }); break; }
+        catch (e) { /* not listening yet */ }
+    }
+    /* One site's own server: plain mode is allowed there, and plain mode is
+       the only mode in which the server sees a field at all. */
+    const put = spawnSync('php', [join(root2, 'install.php'),
+        '--api-address=http://127.0.0.1:' + port2 + '/api.php',
+        '--answers-for=one-site', '--storage=sqlite', '--updated-by=cron',
+    ], { encoding: 'utf8', cwd: root2 });
+    const path2 = join(root2, 'internal', 'config-local.php');
+    check('the plain-mode fixture did not install', put.status === 0,
+        (put.stderr || put.stdout || '').slice(0, 300));
+
+    /* A declared project, and the retired key set to something wider than the
+       column -- which is exactly what an operator would have done while it was
+       a field on the install form. */
+    spawnSync('php', ['-r',
+        '$p = ' + JSON.stringify(path2) + '; $t = file_get_contents($p);'
+        + ' $t = str_replace("return array(", "return array(\n'
+        + '    \'max_excerpt_length\' => 900,", $t);'
+        + ' $t = str_replace("    \'projects\' => array(),",'
+        + ' "    \'projects\' => array(\'AAAAAAAAAAAAAAAAAAAAAA\' => array('
+        + '\'origins\' => array(\'https://example.com\'), \'mode\' => \'plain\')),", $t);'
+        + ' file_put_contents($p, $t);'], { encoding: 'utf8' });
+    await sleep(2500);   // opcache revalidates on a clock, not on the write
+
+    const plain = async (excerptLength) => {
+        const body = new URLSearchParams({
+            project: 'AAAAAAAAAAAAAAAAAAAAAA', index: 'BBBBBBBBBBBBBBBBBBBBBB',
+            mode: 'plain', page: '/x.html', selector: 'main > p',
+            excerpt: 'e'.repeat(excerptLength), author: 'somebody',
+            text: 'the remark itself',
+        });
+        const r = await fetch('http://127.0.0.1:' + port2 + '/api.php?action=add', {
+            method: 'POST', headers: head, body: body.toString(), redirect: 'manual',
+        });
+        return { status: r.status, text: await r.text() };
+    };
+
+    const atBound = await plain(300);
+    check('an excerpt of exactly 300 characters was refused', atBound.status === 200,
+        atBound.status + ' ' + atBound.text.slice(0, 200));
+
+    const over = await plain(500);
+    check('an excerpt of 500 characters was not refused with a 400 -- a 500 here is '
+        + 'the column refusing what the check had accepted, which is the whole bug',
+        over.status === 400, over.status + ' ' + over.text.slice(0, 200));
+    check('the refusal does not name the limit it applied',
+        over.text.includes('the limit is 300'), over.text.slice(0, 200));
+
+    /* And the file that sets the retired key is not merely overruled: the key
+       is dropped, so it cannot turn up in a diagnostic beside numbers that do
+       decide something. */
+    const seen = spawnSync('php', ['-r',
+        'define("AP_INTERNAL", 1); require "internal/errors.php";'
+        + ' require "internal/config.php"; $c = ap_config();'
+        + ' echo isset($c["max_excerpt_length"]) ? "still there" : "dropped";'],
+        { encoding: 'utf8', cwd: root2 });
+    check('a retired length key survives into the configuration',
+        (seen.stdout || '').trim() === 'dropped', seen.stdout + seen.stderr);
+    check('nothing was logged about the retired key',
+        /ignored/.test(seen.stderr || ''), (seen.stderr || '').slice(0, 200));
+
+    try { server2.kill('SIGKILL'); } catch (e) { /* gone */ }
+    rmSync(dir2, { recursive: true, force: true });
+}
+
 /* -- AND THE ONE REQUEST THIS SERVER MAKES OF SOMEBODY ELSE ---------------
    ?action=diagnostic has no authentication, and in `full` it asks the release
    host for the published version. Unbounded, that is a 200-byte request from
@@ -286,4 +372,5 @@ if (failures.length) {
 console.log('limits: writes, exports, page loads, body size and the note cap each set '
     + 'from the command line, crossed, and refused with the number they name; '
     + "the read counter off writes no row; the diagnostic's outbound probe is "
-    + 'remembered, expires, and distrusts a clock from the future');
+    + 'remembered, expires, and distrusts a clock from the future; a field length '
+    + 'is the code\'s, and a file that still sets one changes nothing');

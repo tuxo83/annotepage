@@ -267,45 +267,11 @@ function ap_config_defaults()
         // knows where this value ends up.
         'table_prefix' => 'notes_',
 
-        // Input bounds, applied on the server side (the client can lie). They
-        // also size the columns of the table: changing them on an existing
-        // database does not widen the existing columns.
-        //
-        // THEY APPLY IN PLAIN MODE ONLY. In encrypted mode the server sees
-        // only an envelope: it does not know where the author ends and the
-        // text begins. See FORMAT.md section 3.6 -- that is the price of
-        // end-to-end encryption, and it is written down rather than hidden.
-        'max_text_length'        => 4000,
-        'max_author_length'      => 80,
-        'max_page_length'        => 300,
-        'max_selector_length'    => 500,
-        'max_fingerprint_length' => 255,
-        'max_excerpt_length'     => 300,
-        // THE TITLE, AND THE NUMBER IS THE POINT. A remark's title is written
-        // by whoever answers it, to say in one glance WHAT THE REMARK IS
-        // ABOUT -- which the excerpt cannot, because the excerpt is the text of
-        // the element and says where it is, not what is wrong with it. Seventy
-        // characters is a title; past that it is a summary, and a summary in a
-        // list column is a paragraph nobody reads. The limit refuses rather
-        // than truncates: a title cut mid-word is worse than a missing one.
-        'max_title_length'       => 70,
-        // Note-taking context: site version, environment, window size.
-        // Deliberately short -- these are labels, not content, and a long field
-        // invites writing something else in it.
-        'max_version_length'     => 60,
-        'max_environment_length' => 20,
-        'max_viewport_length'    => 20,
-
-        // Bounds of the encrypted envelopes, in CHARACTERS. They are the only
-        // ones the server can apply in encrypted mode. Values fixed by
-        // FORMAT.md section 3.6: changing them without changing the format
-        // means accepting that a note written here be refused elsewhere.
-        'max_payload_length'            => 24000,
-        'max_resolution_payload_length' => 2000,
-        // Seventy characters, encrypted, base64url, with a nonce and a tag:
-        // about 220. A thousand leaves room for a longer alphabet without
-        // leaving room for something that is not a title.
-        'max_title_payload_length'      => 1000,
+        // THE LENGTH OF EACH FIELD IS NOT HERE. It is thirteen constants at the
+        // bottom of this file, and the reason is at the bottom of this file
+        // too: they are the shape of the format, they size columns at CREATE,
+        // and a number an operator could change after the table exists is a
+        // number that makes the server refuse a write it has already accepted.
 
         // BODY CAP, in bytes, checked on Content-Length BEFORE any read. A
         // 24000-character envelope plus the other fields fits with room to
@@ -555,6 +521,34 @@ function ap_config()
             unset($given['database']);
         }
         $config = array_merge($config, $given);
+
+        /* A KEY THAT NO LONGER DECIDES ANYTHING SAYS SO, ONCE. The thirteen
+           field lengths were configuration until 2.14 and are constants now,
+           so a file that still carries one is not wrong -- it is out of date,
+           and array_merge would have carried it into $config where nothing
+           reads it. It is logged and dropped: left in place it would show up
+           in a diagnostic beside numbers that DO decide something, which is
+           how somebody spends an afternoon changing a value that has no
+           effect. Their old values are the values in force, so nothing to
+           migrate and nothing to warn a visitor about. */
+        $retired = array('max_text_length', 'max_author_length', 'max_page_length',
+            'max_selector_length', 'max_fingerprint_length', 'max_excerpt_length',
+            'max_title_length', 'max_version_length', 'max_environment_length',
+            'max_viewport_length', 'max_payload_length',
+            'max_resolution_payload_length', 'max_title_payload_length');
+        $stale = array();
+        foreach ($retired as $key) {
+            if (array_key_exists($key, $given)) {
+                $stale[] = $key;
+                unset($config[$key]);
+            }
+        }
+        if ($stale) {
+            ap_log('config-local.php sets ' . implode(', ', $stale) . ' : ignored. '
+                . 'The length of each field is fixed by the code since 2.14 -- see the '
+                . 'constants at the bottom of internal/config.php. The values in force '
+                . 'are the ones that were the defaults, so nothing changed.');
+        }
     }
 
     $config['active'] = !empty($config['active']);
@@ -1045,3 +1039,71 @@ function ap_describe_configured_value($value, $label, $secret = true)
         ? 'value written in the configuration (not shown)'
         : (string) $value;
 }
+
+/* -- THE LENGTH OF EACH FIELD -----------------------------------------------
+ *
+ * CONSTANTS, AND NOT CONFIGURATION. They were thirteen keys of the array
+ * above for as long as this file existed, and putting them in front of an
+ * operator -- which the installer finally did, with a field each -- is what
+ * showed they never belonged there.
+ *
+ * WHAT MADE IT WRONG, MEASURED. Nine of them are written into the MySQL table
+ * as VARCHAR(n) when it is CREATED, once. Raising one afterwards changes what
+ * the server ACCEPTS and not what the column can HOLD: a plain-mode remark
+ * with a 500-character excerpt then passes every check and dies at the
+ * insert. Reproduced on MySQL 8 in strict mode, which is the default: HTTP
+ * 500, "your notes may not have been saved", the reviewer's text gone, and
+ * the only explanation in the PHP error log. A setting whose middle values
+ * lose somebody's work is not a setting.
+ *
+ * They are also not the operator's subject. What an operator meters is
+ * VOLUME -- how many notes, how many requests, how big a request may be --
+ * and every one of those is still in the array above. These are the shape of
+ * one note, which is FORMAT.md's business: change one and a remark written
+ * here is refused by the next server, which is the definition of a format,
+ * not of a preference.
+ *
+ * The values are exactly what config.php shipped as defaults, so no table
+ * changes and no server behaves differently for having been updated. What
+ * changes is that nobody can now set the pair to disagree.
+ *
+ * TEN OF THEM APPLY IN PLAIN MODE ONLY. In encrypted mode the server sees an
+ * envelope and cannot know where the author ends and the text begins -- see
+ * FORMAT.md section 3.6. That is the price of end-to-end encryption, written
+ * down rather than hidden. The last three bound the envelopes themselves, and
+ * are the only ones that apply to an encrypted note.
+ */
+
+/* The remark itself. NOT a column width: `text` is a TEXT column, which holds
+   65535 bytes whatever this says. It is a bound on what a browser may send in
+   plain mode, and 4000 characters is a long remark. */
+define('AP_LEN_TEXT', 4000);
+/* The name a reviewer types once, and the one an assistant signs with. */
+define('AP_LEN_AUTHOR', 80);
+/* The path of the annotated page, its element, and the few words shown beside
+   the remark so a reader knows what it is about. */
+define('AP_LEN_PAGE', 300);
+define('AP_LEN_SELECTOR', 500);
+define('AP_LEN_FINGERPRINT', 255);
+define('AP_LEN_EXCERPT', 300);
+/* THE TITLE, AND THE NUMBER IS THE POINT. A remark's title is written by
+   whoever answers it, to say in one glance WHAT THE REMARK IS ABOUT -- which
+   the excerpt cannot, because the excerpt is the text of the element and says
+   where it is, not what is wrong with it. Seventy characters is a title; past
+   that it is a summary, and a summary in a list column is a paragraph nobody
+   reads. The limit refuses rather than truncates: a title cut mid-word is
+   worse than a missing one. */
+define('AP_LEN_TITLE', 70);
+/* Note-taking context: site version, environment, window size. Deliberately
+   short -- these are labels, not content, and a long field invites writing
+   something else in it. */
+define('AP_LEN_VERSION', 60);
+define('AP_LEN_ENVIRONMENT', 20);
+define('AP_LEN_VIEWPORT', 20);
+/* The envelopes, in CHARACTERS, fixed by FORMAT.md section 3.6. A title of
+   seventy characters, encrypted, base64url, with a nonce and a tag, is about
+   220 -- a thousand leaves room for a longer alphabet without leaving room
+   for something that is not a title. */
+define('AP_LEN_PAYLOAD', 24000);
+define('AP_LEN_RESOLUTION_PAYLOAD', 2000);
+define('AP_LEN_TITLE_PAYLOAD', 1000);
