@@ -1042,6 +1042,19 @@ function ap_i_render_html(array $screen)
                 }
                 echo "</table>\n";
                 break;
+            /* The environment table is the other one: four columns rather than
+               three, and the measured value carries a class when the answer is
+               not the one wanted. */
+            case 'table-env':
+                echo "<table>\n";
+                foreach ($block[1] as $line) {
+                    echo '<tr><td class="k">' . ap_i_h($line[0]) . '</td>'
+                        . '<td class="v' . ($line[2] ? '' : ' bad') . '">'
+                        . ap_i_h($line[1]) . '</td>'
+                        . '<td class="m">' . ap_i_h($line[3]) . "</td></tr>\n";
+                }
+                echo "</table>\n";
+                break;
             case 'button':
                 echo '<form method="post"><button type="submit" name="' . $block[1]
                     . '" value="1">' . $block[2] . "</button></form>\n";
@@ -1861,15 +1874,46 @@ function ap_i_run(array $options)
         echo "</table>\n";
     }
 
-    echo '<h2>What this server offers</h2>' . "\n";
+    /* WHAT THIS HOST OFFERS, FOLDED AWAY UNLESS SOMETHING IS WRONG.
+       Eight rows of measurements, each with a paragraph explaining why it is
+       measured, opened this page -- and the reader had to read a diagnostic
+       before reaching the first question. On a phone the button sat four
+       screens down, under a page whose own first line says "press the button".
+       Nobody presses a button they cannot see.
+       So: when everything this needs is here, the fold stays shut and says so
+       in one line. When something is missing, THAT row is shown outside the
+       fold, and the fold opens by itself -- the answer arrives before the
+       evidence, which is the order somebody wants it in. */
     list($environment, $outbound) = ap_i_environment($here, $outboundUrl);
-    echo "<table>\n";
+    $missing = array();
     foreach ($environment as $line) {
-        echo '<tr><td class="k">' . ap_i_h($line[0]) . '</td>'
-            . '<td class="v' . ($line[2] ? '' : ' bad') . '">' . ap_i_h($line[1]) . '</td>'
-            . '<td class="m">' . ap_i_h($line[3]) . "</td></tr>\n";
+        if (!$line[2]) { $missing[] = $line; }
     }
-    echo "</table>\n";
+
+    echo '<h2>What this server offers</h2>' . "\n";
+    if ($missing) {
+        echo '<p class="note bad">' . (count($missing) === 1
+                ? 'One thing this needs is not here.'
+                : ap_i_h((string) count($missing)) . ' things this needs are not here.')
+            . " Until they are, installing gets you a server that answers wrongly "
+            . "rather than one that does not answer.</p>\n";
+        ap_i_render_html(array(array('table-env', $missing)));
+    } else {
+        echo '<p>Everything it needs is here: PHP ' . ap_i_h(PHP_VERSION)
+            . ', the extensions, and a directory it can write to.'
+            . ($outbound ? '' : ' It cannot reach the outside over HTTPS, which stops'
+                . ' nothing here except automatic updates.')
+            . "</p>\n";
+    }
+    /* AND IT STAYS SHUT EVEN THEN. Opening it printed the failing rows twice,
+       once above and once inside, which is the noise this fold exists to
+       remove. The row that failed carries its own explanation; the rest is
+       for whoever wants it. */
+    echo "<details>\n";
+    echo '<summary>' . ($missing ? 'Everything that was measured' : 'What was measured')
+        . ", one line each</summary>\n";
+    ap_i_render_html(array(array('table-env', $environment)));
+    echo "</details>\n";
 
     $postedMysql = ($method === 'POST' && isset($_POST['storage']) && $_POST['storage'] === 'mysql');
     $field = function ($name, $fallback = '') {
