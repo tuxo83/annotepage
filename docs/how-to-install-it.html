@@ -1611,6 +1611,13 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         sweep still happens on writes, now and then: enough on a
                         busy site, never on a quiet one.
                     </p>
+                    <p class="say">
+                        It also brings the storage in line with the code when an
+                        update changes what a column should be &mdash; on a
+                        table small enough to rebuild without being asked. Above
+                        that it does nothing and prints the SQL, so the moment
+                        stays yours.
+                    </p>
                 </div>
                 <div>
                     <div class="snip">

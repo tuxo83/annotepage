@@ -462,6 +462,39 @@ class ApStore
      * not per table, so two installations sharing one file with different
      * `table_prefix` values would collide on a bare `idx_page`.
      */
+    /**
+     * Nothing to widen: SQLite has never had a column width.
+     *
+     * It answers all the same, and says so, because maintenance.php asks the
+     * store rather than asking which store it is -- and because "nothing to
+     * do" printed once a night is how somebody learns that this half of the
+     * question does not exist here.
+     */
+    public function widenColumns($maxBytes = 268435456)
+    {
+        return array('bounded' => array(), 'done' => true, 'sql' => '', 'bytes' => 0,
+                     'reason' => 'SQLite stores text of any length: there is no width '
+                                 . 'to widen, and there never was');
+    }
+
+    /** Same answer, same reason. */
+    public function boundedColumns()
+    {
+        return array();
+    }
+
+    /**
+     * Nothing can be too narrow here either, and it ANSWERS rather than being
+     * absent: without this method the diagnostic simply skipped the line, so
+     * an operator comparing a SQLite server with a MySQL one found a report
+     * with one line fewer and no way to tell whether that meant "fine" or
+     * "this version cannot look".
+     */
+    public function narrowColumns()
+    {
+        return array();
+    }
+
     private function expectedIndexes()
     {
         return array(

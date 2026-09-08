@@ -2,6 +2,12 @@
 /**
  * maintenance.php -- THE HOUSEKEEPING THIS SERVER CANNOT DO ON ITS OWN.
  *
+ * TWO THINGS, both of which need a moment when nobody is waiting: it brings
+ * the STORAGE in line with the code -- a table written by an older version
+ * bounds its columns, and widening one rebuilds it -- and then it applies
+ * RETENTION. The first is done once and never again; the second is the reason
+ * this file was written, and what the rest of this header is about.
+ *
  * WHY IT EXISTS, AND IT IS A PROMISE THAT WAS NOT BEING KEPT. A server with
  * `max_note_age_days` set tells everybody so: the client says it in the panel
  * on every annotated page, the installer says it on its last screen, and every
@@ -51,14 +57,44 @@ if (empty($config['active'])) {
     exit(1);
 }
 
+ap_require_store($config);
+$store = new ApStore($config);
+
+/* -- THE STORAGE FIRST, AND BEFORE THE RETENTION QUESTION ------------------
+   A table written before 2.15 bounds its columns with a VARCHAR width, where
+   this version writes TEXT. It works: those widths are the numbers the code
+   still refuses past. But a width in a column is a second opinion on a limit,
+   and the database settles a disagreement badly -- an error that loses the
+   text in strict mode, a silent truncation on a permissive sql_mode.
+
+   THIS IS WHERE IT GETS FIXED, and not on a request: the change rebuilds the
+   table. Measured on MariaDB 10.11 -- 2.4 s for 50,000 rows, and a failure
+   ("the table is full", rolled back, table untouched) on 211 MB with 580 MB
+   free. So it is a cron line's job, it stops at a size, it stops when the disk
+   cannot take a copy, and whatever it decides it prints the SQL.
+
+   ABOVE the retention check on purpose: a server that keeps everything for
+   ever has no sweep to run and is exactly as entitled to a storage that
+   matches its code. That check used to exit(0) two lines from here. */
+if (method_exists($store, 'widenColumns')) {
+    $widen = $store->widenColumns();
+    if ($widen['bounded'] && $widen['done']) {
+        echo 'Storage: ' . $widen['reason'] . " -- " . implode(', ', $widen['bounded'])
+            . ".\n";
+    } elseif ($widen['bounded']) {
+        echo 'Storage: ' . count($widen['bounded']) . ' column'
+            . (count($widen['bounded']) === 1 ? '' : 's') . " still carry a width "
+            . "from an older version, and this run did NOT change them.\n";
+        echo 'Why: ' . $widen['reason'] . ".\n";
+        echo "The exact SQL, to run when it suits you:\n\n    " . $widen['sql'] . "\n\n";
+    }
+}
+
 $days = isset($config['max_note_age_days']) ? (int) $config['max_note_age_days'] : 0;
 if ($days <= 0) {
     echo "Retention is off (max_note_age_days = 0). Nothing expires, nothing to sweep.\n";
     exit(0);
 }
-
-ap_require_store($config);
-$store = new ApStore($config);
 
 $gone = $store->expireOlderThan($days);
 

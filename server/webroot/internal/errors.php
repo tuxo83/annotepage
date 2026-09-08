@@ -92,6 +92,28 @@ function ap_truncate($message)
 }
 
 /** Logs through PHP's own mechanism, already configured by the host. */
+/**
+ * A number of bytes, as a human reads one.
+ *
+ * Rounded to the megabyte, "0 MB, over the 0 MB" is what a small table looked
+ * like in a sentence written to help somebody decide. Kept here rather than in
+ * the store because a size is not the storage's idea.
+ */
+function ap_readable_size($bytes)
+{
+    $bytes = (float) $bytes;
+    if ($bytes >= 1073741824) {
+        return round($bytes / 1073741824, 1) . ' GB';
+    }
+    if ($bytes >= 1048576) {
+        return round($bytes / 1048576) . ' MB';
+    }
+    if ($bytes >= 1024) {
+        return round($bytes / 1024) . ' KB';
+    }
+    return round($bytes) . ($bytes == 1 ? ' byte' : ' bytes');
+}
+
 function ap_log($message)
 {
     error_log('[annotepage] ' . ap_truncate($message));

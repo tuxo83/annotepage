@@ -578,7 +578,7 @@ class ApStore
         );
         try {
             $req = $this->pdo()->prepare(
-                'SELECT column_name, character_maximum_length '
+                'SELECT column_name, data_type, character_maximum_length '
                 . 'FROM information_schema.columns '
                 . 'WHERE table_schema = DATABASE() AND table_name = ?');
             $req->execute(array($this->table));
@@ -591,16 +591,197 @@ class ApStore
         $narrow = array();
         foreach ($rows as $row) {
             $name = strtolower((string) $row[0]);
-            if (!isset($bounds[$name]) || $row[1] === null) {
+            if (!isset($bounds[$name]) || $row[2] === null) {
                 continue;
             }
-            $width = (int) $row[1];
-            if ($width > 0 && $width < $bounds[$name]) {
-                $narrow[] = $name . ' holds ' . $width . ' characters and this server '
-                    . 'accepts ' . $bounds[$name];
+            /* CHARACTERS ON ONE SIDE, BYTES ON THE OTHER, and the comparison has
+               to know which. information_schema gives a VARCHAR its length in
+               CHARACTERS -- 300 means 300 -- and a TEXT its length in BYTES:
+               65535, which in utf8mb4 is 16383 characters in the worst case,
+               four bytes each. Comparing 65535 against a bound in characters
+               would call a TEXT roomy right up to the point where an emoji
+               remark stops fitting. Both sides are brought to characters, at
+               the worst case, which is the only side an error can come from. */
+            $type = strtolower((string) $row[1]);
+            $holds = (int) $row[2];
+            if ($type !== 'varchar' && $type !== 'char') {
+                $holds = (int) floor($holds / 4);
+            }
+            if ($holds > 0 && $holds < $bounds[$name]) {
+                $narrow[] = $name . ' holds ' . $holds . ' characters at worst and this '
+                    . 'server accepts ' . $bounds[$name];
             }
         }
         return $narrow;
+    }
+
+    /**
+     * Brings the columns of a table written by an older version up to TEXT.
+     *
+     * WHY IT IS NOT DONE ON A REQUEST, AND NOT DONE BLINDLY. A VARCHAR to TEXT
+     * change rebuilds the whole table -- InnoDB copies it -- and the cost is
+     * real: measured here on MariaDB 10.11, 2.4 s for 50,000 rows (69 MB), and
+     * on 160,000 rows (211 MB) with 580 MB free on the disk it FAILED with
+     * "the table is full" after seven seconds. The table came back untouched,
+     * which is InnoDB doing its job: an ALTER either finishes or rolls back.
+     * But a nightly job that spends minutes rebuilding somebody's table and
+     * fails is worse than the VARCHARs it was fixing.
+     *
+     * So: called from internal/maintenance.php, which is a cron line and not a
+     * visitor; skipped above a size, skipped when the disk visibly cannot take
+     * a copy, and in both cases it hands back the exact SQL for a human to run
+     * at an hour they chose. Nothing here is urgent -- a table that keeps its
+     * widths goes on working, because those widths are the numbers the code
+     * still refuses past.
+     *
+     * @param int $maxBytes ceiling on data+index; 0 means never automatically
+     * @return array report: what it found, what it did, and the SQL either way
+     */
+    public function widenColumns($maxBytes = 268435456)
+    {
+        $report = array('bounded' => array(), 'done' => false, 'sql' => '',
+                        'bytes' => 0, 'reason' => '');
+        $this->ensureSchema();
+
+        $bounded = $this->boundedColumns();
+        if (!$bounded) {
+            $report['reason'] = 'every column already holds text of any length';
+            $report['done'] = true;
+            return $report;
+        }
+        $report['bounded'] = $bounded;
+
+        /* The index on `page` goes first or the MODIFY is refused: MySQL will
+           not index a TEXT without a prefix length. It serves nothing -- no
+           query of this file filters on `page` -- which is why it is dropped
+           rather than rebuilt as a prefix. */
+        $clauses = array();
+        $indexes = $this->presentIndexes();
+        if (is_array($indexes) && isset($indexes['idx_page'])) {
+            $clauses[] = 'DROP INDEX `idx_page`';
+        }
+        foreach ($bounded as $column) {
+            $clauses[] = 'MODIFY `' . $column . '` TEXT NULL DEFAULT NULL';
+        }
+        $sql = 'ALTER TABLE `' . $this->table . '` ' . implode(', ', $clauses) . ';';
+        $report['sql'] = $sql;
+
+        $report['bytes'] = $this->tableBytes();
+        if ($maxBytes <= 0) {
+            /* The doc says 0 means never automatically, so 0 has to mean that
+               here: written as `$maxBytes > 0 && over` it meant the opposite --
+               no ceiling at all -- which is the one value somebody passes when
+               they want nothing rebuilt behind their back. */
+            $report['reason'] = 'this server does not rebuild its table by itself '
+                . '(the ceiling is set to 0). Run the SQL below when it suits you';
+            return $report;
+        }
+        if ($report['bytes'] > $maxBytes) {
+            $report['reason'] = 'the table is ' . ap_readable_size($report['bytes'])
+                . ', over the ' . ap_readable_size($maxBytes) . ' this job will '
+                . 'rebuild without being asked. Run the SQL below when it suits you';
+            return $report;
+        }
+        $free = $this->freeSpaceForRebuild();
+        if ($free !== null && $report['bytes'] > 0 && $free < $report['bytes'] * 3) {
+            $report['reason'] = 'the rebuild needs room for a copy of the table and '
+                . 'its logs -- about ' . ap_readable_size($report['bytes'] * 3) . ' -- '
+                . 'and the disk holding the database has ' . ap_readable_size($free)
+                . ' free. Measured: an ALTER that runs out answers "the table is '
+                . 'full" and rolls back, which costs the time and changes nothing';
+            return $report;
+        }
+
+        try {
+            $this->pdo()->exec($sql);
+        } catch (PDOException $e) {
+            $report['reason'] = 'the database refused it: ' . $e->getMessage()
+                . '. Nothing changed -- an ALTER either finishes or rolls back';
+            ap_log('widening refused : ' . $e->getMessage());
+            return $report;
+        }
+        $report['done'] = true;
+        $report['reason'] = count($bounded) . ' column'
+            . (count($bounded) === 1 ? '' : 's') . ' widened to TEXT';
+        return $report;
+    }
+
+    /**
+     * Columns this version writes as TEXT that the live table still bounds.
+     *
+     * Not a fault: those widths are the numbers the code refuses past, so a
+     * table that has them works exactly as one that does not. It is what the
+     * widening looks for, and what the diagnostic reports so that nobody finds
+     * out from a rebuild happening under them.
+     */
+    public function boundedColumns()
+    {
+        $wanted = array('page', 'selector', 'fingerprint', 'excerpt', 'author', 'text',
+                        'version', 'environment', 'viewport', 'title', 'resolved_by',
+                        'resolved_version');
+        /* THE TYPE, NOT THE LENGTH. This asked for a length that was not null,
+           which reads as "has a width" and is wrong: information_schema gives
+           a TEXT a character_maximum_length too -- 65535 -- so every column
+           came back bounded, the diagnostic announced twelve of them on a
+           table that had just been widened, and the maintenance job would have
+           rebuilt the same table every night for ever. Found by running it
+           twice. */
+        try {
+            $req = $this->pdo()->prepare(
+                'SELECT column_name FROM information_schema.columns '
+                . 'WHERE table_schema = DATABASE() AND table_name = ? '
+                . "AND data_type IN ('varchar', 'char')");
+            $req->execute(array($this->table));
+            $rows = $req->fetchAll(PDO::FETCH_NUM);
+        } catch (PDOException $e) {
+            ap_log('cannot read the column types : ' . $e->getMessage());
+            return array();
+        }
+        $out = array();
+        foreach ($rows as $row) {
+            $name = strtolower((string) $row[0]);
+            if (in_array($name, $wanted, true)) {
+                $out[] = $name;
+            }
+        }
+        return $out;
+    }
+
+    /** Data plus indexes, in bytes, or 0 when the engine will not say. */
+    private function tableBytes()
+    {
+        try {
+            $req = $this->pdo()->prepare(
+                'SELECT data_length + index_length FROM information_schema.tables '
+                . 'WHERE table_schema = DATABASE() AND table_name = ?');
+            $req->execute(array($this->table));
+            return (int) $req->fetchColumn();
+        } catch (PDOException $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Free bytes where the database keeps its files, or null if we cannot see.
+     *
+     * ONLY WHEN THE DATABASE IS ON THIS MACHINE. `datadir` is a path on the
+     * database server, which may be somewhere else entirely -- and asking PHP
+     * about a path that belongs to another host would answer confidently about
+     * the wrong disk. Unreadable means null, and null means the size ceiling
+     * above is the only guard, which it is designed to be.
+     */
+    private function freeSpaceForRebuild()
+    {
+        try {
+            $dir = (string) $this->pdo()->query("SELECT @@datadir")->fetchColumn();
+        } catch (PDOException $e) {
+            return null;
+        }
+        if ($dir === '' || !is_dir($dir)) {
+            return null;
+        }
+        $free = @disk_free_space($dir);
+        return $free === false ? null : (float) $free;
     }
 
     /** Indexes REALLY present, lowercased, or null. No effect. */

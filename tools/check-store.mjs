@@ -147,6 +147,28 @@ if (noise !== '') {
         + noise.replace(/\n/g, '\n  '));
 }
 
+/* -- WHAT THE WIDENING JOB DOES WHERE THERE IS NOTHING TO WIDEN -----------
+   internal/maintenance.php asks the store to bring its columns up to TEXT
+   before it sweeps. SQLite has never had a column width, so the answer here
+   must be "nothing to do" -- and it must be an ANSWER: a store that has no
+   such method at all makes the diagnostic drop a line, and a missing line
+   reads as "fine" when it means "this version cannot look". */
+const widen = spawnSync('php', ['-r',
+    'define("AP_INTERNAL", 1); require ' + JSON.stringify(join(internal, 'errors.php')) + ';'
+    + ' require ' + JSON.stringify(join(internal, 'config.php')) + ';'
+    + ' require ' + JSON.stringify(join(internal, 'store-sqlite.php')) + ';'
+    + ' $s = new ApStore(array("storage" => "sqlite", "table_prefix" => "notes_",'
+    + ' "database" => array("file" => ' + JSON.stringify(join(dir, 'notes.sqlite')) + ')));'
+    + ' $r = $s->widenColumns();'
+    + ' echo ($r["done"] ? "done" : "not-done"), "|", count($r["bounded"]), "|",'
+    + ' count($s->narrowColumns()), "|", count($s->boundedColumns());'],
+    { encoding: 'utf8' });
+if ((widen.stdout || '').trim() !== 'done|0|0|0') {
+    failures.push('the SQLite store answers the widening job with '
+        + JSON.stringify((widen.stdout || '') + (widen.stderr || ''))
+        + ' instead of "done|0|0|0" -- nothing to widen, nothing too narrow');
+}
+
 rmSync(dir, { recursive: true, force: true });
 
 if (failures.length) {

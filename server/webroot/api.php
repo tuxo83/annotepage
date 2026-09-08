@@ -694,12 +694,21 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
        in the PHP log. */
     if (method_exists('ApStore', 'narrowColumns')) {
         $narrow = $store->narrowColumns();
+        $bounded = method_exists('ApStore', 'boundedColumns')
+            ? $store->boundedColumns() : array();
         ap_diag_line('storage.widths', $narrow
             ? 'TOO NARROW FOR THIS VERSION -- ' . implode(' ; ', $narrow)
               . '. A write of that length would be refused by the database after '
               . 'this server accepted it. Widen those columns to TEXT, or ask '
               . 'whoever raised the limit for the migration.'
-            : 'every column can hold what this server accepts');
+            : ($bounded
+                ? count($bounded) . ' column' . (count($bounded) === 1 ? '' : 's')
+                  . ' still carry a width from a version before 2.15 ('
+                  . implode(', ', $bounded) . '). Nothing is wrong: those widths are '
+                  . 'the numbers this server refuses past. The maintenance cron line '
+                  . 'widens them to TEXT when it next runs, or prints the SQL if the '
+                  . 'table is too large to rebuild unasked.'
+                : 'every column can hold what this server accepts'));
     }
 }
 

@@ -1430,7 +1430,10 @@ function ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
         . " &gt;/dev/null");
     $screen[] = array('p', 'Drawn for you, like the update line further down, so that a hundred '
         . 'installations do not rewrite their databases at the same second. It '
-        . 'prints what it swept and exits 0 when there was nothing to do. It is '
+        . 'also brings the storage in line with the code after an update that '
+        . 'changes what a column should be, on a table small enough to rebuild '
+        . 'unasked -- above that it prints the SQL and leaves the moment to you. '
+        . 'It prints what it swept and exits 0 when there was nothing to do. It is '
         . 'not reachable over the web, and there is no address for it: the only '
         . 'thing that could buy anybody is making somebody else\'s deletions '
         . "happen sooner.");
