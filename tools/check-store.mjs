@@ -23,7 +23,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -167,6 +167,39 @@ if ((widen.stdout || '').trim() !== 'done|0|0|0') {
     failures.push('the SQLite store answers the widening job with '
         + JSON.stringify((widen.stdout || '') + (widen.stderr || ''))
         + ' instead of "done|0|0|0" -- nothing to widen, nothing too narrow');
+}
+
+/* -- AND THE UPDATE PATH ASKS THE SAME QUESTION --------------------------
+   The objective in one sentence: a server with automatic updates on must get
+   its storage brought along with its code, because that is exactly the host
+   with no shell and no cron -- "the nightly job will do it" is an answer that
+   never arrives there. So ap_update_run() calls into the store after a
+   successful swap, and this proves the call is reachable and silent when
+   there is nothing to do. It must never throw: a storage step that could undo
+   a successful code update would be a worse bargain than the widths it
+   fixes. */
+/* A COPY OF internal/ WITH A CONFIGURATION BESIDE IT, because config.php reads
+   config-local.php from its OWN directory: pointing the real one at a
+   throwaway database is not something a check gets to do. */
+const copy = join(dir, 'internal');
+cpSync(internal, copy, { recursive: true });
+writeFileSync(join(copy, 'config-local.php'),
+    '<?php\nif (!defined("AP_INTERNAL")) { http_response_code(404); exit; }\n'
+    + 'return array("active" => true, "storage" => "sqlite", "table_prefix" => "notes_",\n'
+    + '  "database" => array("file" => ' + JSON.stringify(join(dir, 'notes.sqlite')) + '),\n'
+    + '  "projects" => array(), "auto_update" => true);\n');
+const brought = spawnSync('php', ['-r',
+    'define("AP_INTERNAL", 1); require ' + JSON.stringify(join(copy, 'errors.php')) + ';'
+    + ' require ' + JSON.stringify(join(copy, 'config.php')) + ';'
+    + ' require ' + JSON.stringify(join(copy, 'update.php')) + ';'
+    + ' $said = array(); $say = function ($l) use (&$said) { $said[] = $l; };'
+    + ' ap_update_bring_storage_along(ap_config(), $say);'
+    + ' echo count($said), "|", implode(" ", $said);'],
+    { encoding: 'utf8' });
+if (!/^0\|/.test((brought.stdout || '').trim())) {
+    failures.push('the update path had something to say about a storage with nothing '
+        + 'to widen, or could not be called at all: '
+        + JSON.stringify((brought.stdout || '') + (brought.stderr || '')));
 }
 
 rmSync(dir, { recursive: true, force: true });

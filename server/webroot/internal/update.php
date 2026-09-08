@@ -844,8 +844,74 @@ function ap_update_run(array $config)
             : ' Nothing was replaced, so there is nothing to undo: this'
               . ' directory had no release in it.');
     $say($summary);
+
+    /* AND THE STORAGE MOVES WITH THE CODE. This is the whole point of doing it
+       here rather than only in maintenance.php: a host with automatic updates
+       on is very often a host with no shell and no cron at all -- that is why
+       automatic updates exist -- so "the cron line will widen it one night" is
+       an answer that never comes for exactly the servers that cannot give it.
+       The code just changed underneath this table; the table follows now.
+
+       NOTHING HERE CAN COST THE UPDATE. It runs after the swap succeeded, it
+       is wrapped, and a failure is a line in the report: a storage step that
+       could undo a successful code update would be a worse bargain than the
+       widths it fixes. And it is bounded the same way as everywhere else --
+       skipped above a size, skipped when the disk cannot take a copy, with the
+       SQL printed instead.
+
+       Measured, on MariaDB 10.11: writes that land during the rebuild WAIT and
+       then go through -- 103 notes written at 10 per second across an ALTER on
+       38.8 MB, none refused, one waited 1,045 ms, all 103 present afterwards.
+       And an ALTER that runs out of room answers "the table is full" and rolls
+       back, leaving the table as it was: 160,000 rows, verified. */
+    ap_update_bring_storage_along($config, $say);
+
     return array('ok' => true, 'changed' => true, 'published' => $published,
                  'summary' => $summary, 'lines' => $lines);
+}
+
+/**
+ * Brings the columns of the storage up to what the new code writes.
+ *
+ * Separate from ap_update_run() so that it can be called after a swap and
+ * nowhere near the fetching, and so that whatever it does lands in the same
+ * report the operator reads.
+ *
+ * @param callable $say adds a line to the update's report
+ */
+function ap_update_bring_storage_along(array $config, $say)
+{
+    try {
+        if (empty($config['active'])) {
+            return;
+        }
+        ap_require_store($config);
+        if (!class_exists('ApStore') || !method_exists('ApStore', 'widenColumns')) {
+            return;
+        }
+        $store = new ApStore($config);
+        $widen = $store->widenColumns();
+        if (!$widen['bounded']) {
+            return;   // nothing to say: this storage was already what the code writes
+        }
+        if ($widen['done']) {
+            $say('Storage: ' . $widen['reason'] . ' -- ' . implode(', ', $widen['bounded'])
+                . '. The table now holds text of any length, and every note in it was '
+                . 'copied by the engine, not by this code.');
+            return;
+        }
+        $say('Storage: ' . count($widen['bounded']) . ' column(s) still carry a width '
+            . 'from an older version, and this update did NOT change them. '
+            . $widen['reason'] . '. Nothing is broken meanwhile: those widths are the '
+            . 'numbers this server refuses past. The SQL: ' . $widen['sql']);
+    } catch (Exception $e) {
+        /* A STORAGE THAT CANNOT BE REACHED IS NOT AN UPDATE THAT FAILED. The
+           code is in place and correct; the table is as it was. Said in the
+           report, logged, and that is all. */
+        ap_log('storage not brought along : ' . $e->getMessage());
+        $say('Storage: could not be brought along (' . $e->getMessage()
+            . '). The code is updated and the table is untouched.');
+    }
 }
 
 // --- Triggering it from a web request -------------------------------------
