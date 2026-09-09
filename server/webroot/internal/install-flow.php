@@ -1245,6 +1245,34 @@ function ap_i_settings()
     );
 }
 
+/**
+ * What a field left empty is worth, in words, for the fifteen of them.
+ *
+ * A SETTING WHOSE VALUE YOU CANNOT SEE IS A SETTING YOU CANNOT DECIDE. Four of
+ * them said it -- the ones this installation writes itself -- and the other
+ * eleven left it to a grey placeholder, or to `(leave it as it is)` in a
+ * select, which names the gesture and not the state. Somebody looking at
+ * `Answer over plain http` with an untouched select beside it had no way to
+ * know whether that was on.
+ *
+ * `decided` first, because for those four what config.php says is NOT what
+ * gets written; then the live default, read out of config.php rather than
+ * copied beside it.
+ */
+function ap_i_effective_value(array $setting, $audience = null)
+{
+    if (isset($setting['decided'])) {
+        $said = $audience === 'anyone'
+            ? $setting['decided']['anyone'] : $setting['decided']['one-site'];
+        return ap_i_plain($said);
+    }
+    $value = ap_i_setting_default($setting['key']);
+    if ($value === '') {
+        return 'not set';
+    }
+    return trim($value . ' ' . $setting['unit']);
+}
+
 /** Characters, not bytes: an address can carry any of them. */
 function ap_i_length($text)
 {
@@ -1327,8 +1355,14 @@ function ap_i_setting_sections()
     return array(
         'keep' => array(
             'title' => 'What this server keeps, and for how long',
+            /* NOT BEHIND THE SWITCH. These two decide whether a remark is
+               still there next month, and they are the only settings on this
+               page whose wrong value costs somebody their remarks instead of a
+               refusal they can act on. Among thirteen others they read as two
+               more knobs. */
+            'upfront' => true,
             'open'  => true,
-            'hint'  => '',
+            'hint'  => 'Both are written into your configuration by this installation.',
             'say'   => 'The two numbers that decide whether a remark is still there '
                        . 'next month. Both are written into your configuration by this '
                        . 'installation, so they are here rather than in a fold.',
@@ -4274,8 +4308,13 @@ function ap_i_run(array $options)
 
     /* The switch comes back open when the person had it open: a rejected POST
        that carried a setting must not hide the value it is showing. */
-    $openMore = false;
+    /* What the switch actually hides, which is no longer all fifteen. */
+    $behind = array();
     foreach ($settings as $setting) {
+        if (empty($sections[$setting['group']]['upfront'])) { $behind[] = $setting; }
+    }
+    $openMore = false;
+    foreach ($behind as $setting) {
         if ($field($setting['key']) !== '') { $openMore = true; }
     }
 
@@ -4288,8 +4327,15 @@ function ap_i_run(array $options)
         if ($setting['kind'] === 'choice' || $setting['kind'] === 'bool') {
             $values = $setting['kind'] === 'choice'
                 ? $setting['values'] : array('true', 'false');
+            /* THE UNTOUCHED OPTION SAYS WHAT UNTOUCHED MEANS. It read
+               "(leave it as it is)", which names the gesture and not the
+               state: a reader looking at three of these in a column could not
+               tell what was on and what was off without opening config.php.
+               It carries the value now, and so does the sentence under the
+               field. */
             $out = '<select name="' . $key . '"' . $id . ">\n"
-                 . '<option value="">(leave it as it is)</option>' . "\n";
+                 . '<option value="">Leave it: '
+                 . ap_i_h(ap_i_effective_value($setting)) . '</option>' . "\n";
             foreach ($values as $value) {
                 $out .= '<option value="' . ap_i_h($value) . '"'
                      . ($field($key) === $value ? ' selected' : '') . '>'
@@ -4328,12 +4374,18 @@ function ap_i_run(array $options)
     $said = function (array $setting) {
         $short = $setting['hint'];
         $long  = $setting['say'];
-        $decided = '';
+        /* WHAT AN EMPTY FIELD IS WORTH, UNDER ALL FIFTEEN AND NOT UNDER FOUR.
+           The four this installation decides say it per audience, since the
+           answer above changes the number; the other eleven say the default
+           that stays in force. Either way the reader can see the value without
+           opening a file. */
         if (isset($setting['decided'])) {
             $decided = '<span class="if-one">Empty: '
-                . ap_i_h($setting['decided']['one-site']) . '.</span>'
+                . ap_i_h(ap_i_effective_value($setting, 'one-site')) . '.</span>'
                 . '<span class="if-anyone">Empty: '
-                . ap_i_h($setting['decided']['anyone']) . '.</span>';
+                . ap_i_h(ap_i_effective_value($setting, 'anyone')) . '.</span>';
+        } else {
+            $decided = 'Empty: ' . ap_i_h(ap_i_effective_value($setting)) . '.';
         }
         if ($short === '' && $long === '' && $decided === '') { return ''; }
         $out = '';
@@ -4357,20 +4409,46 @@ function ap_i_run(array $options)
         if ($note !== '') { echo '<p class="note">' . $note . "</p>\n"; }
     };
 
+    /* THE TWO THAT DECIDE WHETHER A REMARK IS STILL THERE NEXT MONTH ARE NOT
+       ADVANCED. Behind the switch with the other thirteen, they read as two
+       more knobs in a heap of knobs -- and they are the only two on this page
+       whose wrong value costs somebody their remarks rather than a refusal
+       they can act on. On the page itself, under the three questions. */
+    foreach ($sections as $group => $shape) {
+        if (empty($shape['upfront'])) { continue; }
+        $fields = array();
+        foreach ($settings as $setting) {
+            if ($setting['group'] === $group) { $fields[] = $setting; }
+        }
+        if (!$fields) { continue; }
+        echo "<div class=\"part upfront\">\n";
+        echo '<p class="part-title">' . ap_i_h($shape['title']) . "</p>\n";
+        $intro = '';
+        if ($shape['hint'] !== '') {
+            $intro .= '<span class="l-short">' . $shape['hint'] . '</span>';
+        }
+        if ($shape['say'] !== '') {
+            $intro .= '<span class="l-long">' . $shape['say'] . '</span>';
+        }
+        if ($intro !== '') { echo '<p class="note">' . $intro . "</p>\n"; }
+        foreach ($fields as $setting) { $paragraph($setting); }
+        echo "</div>\n";
+    }
+
     // --- The switch, and what is decided if it is never opened. --------------
 
     echo '<div class="more-switch">' . "\n";
     echo '<p class="switch-line"><label><input type="checkbox" id="ap-more"'
         . ($openMore ? ' checked' : '')
-        . '><span><span class="when-shut">Set the other ' . count($settings)
+        . '><span><span class="when-shut">Set the other ' . count($behind)
         . ' settings myself</span><span class="when-open">Hide the other '
-        . count($settings) . ' settings</span></span></label></p>' . "\n";
+        . count($behind) . ' settings</span></span></label></p>' . "\n";
     echo '<div class="shut-only">' . "\n";
-    echo '<p class="note">Retention, the limits, and what this server says about '
-        . "itself. Left alone, this installation writes:</p>\n";
+    echo '<p class="note">The limits, and what this server says about itself. Left '
+        . "alone, this installation writes:</p>\n";
     echo "<table>\n";
     $others = 0;
-    foreach ($settings as $setting) {
+    foreach ($behind as $setting) {
         if (!isset($setting['decided'])) { $others++; continue; }
         echo '<tr><td class="k">' . ap_i_h($setting['label']) . '</td><td class="m">'
             . '<span class="if-one">' . ap_i_h($setting['decided']['one-site'])
@@ -4398,6 +4476,7 @@ function ap_i_run(array $options)
     echo '<p class="note">All optional. Empty means the value in grey.</p>' . "\n";
 
     foreach ($sections as $group => $shape) {
+        if (!empty($shape['upfront'])) { continue; }   // drawn above, on the page itself
         $fields = array();
         foreach ($settings as $setting) {
             if ($setting['group'] === $group) { $fields[] = $setting; }

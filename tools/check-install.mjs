@@ -477,6 +477,36 @@ check('a malformed address was not refused with the shape it wants',
    refuses is the page losing either of them, or the control that swaps them. */
 check('the page carries no control for the long sentences',
     malformed.form.includes('id="ap-explain"'));
+
+/* EVERY FIELD SAYS WHAT AN EMPTY FIELD IS WORTH. Four of them did -- the ones
+   this installation decides itself -- and the other eleven left it to a grey
+   placeholder, or, in a select, to `(leave it as it is)`, which names the
+   gesture and not the state: a reader looking at `Answer over plain http` with
+   an untouched select beside it had no way to know whether that was on. */
+const settingKeys = askPhp('foreach (ap_i_settings() as $s) { echo $s["key"], "\n"; }')
+    .split('\n').filter(Boolean);
+const emptySays = (malformed.form.match(/Empty: /g) || []).length
+    + (malformed.form.match(/>Leave it: /g) || []).length;
+check(`${emptySays} fields say what an empty field is worth, and there are`
+    + ` ${settingKeys.length + 4} sentences to write (four of them say it twice,`
+    + ' once per audience)', emptySays >= settingKeys.length);
+check('a select still names the gesture instead of the state',
+    !malformed.form.includes('(leave it as it is)'));
+
+/* AND THE TWO THAT DECIDE WHETHER A REMARK SURVIVES ARE NOT BEHIND THE SWITCH.
+   Among thirteen others they read as two more knobs, and they are the only
+   settings here whose wrong value costs somebody their remarks rather than a
+   refusal they can act on. */
+const upfront = askPhp('foreach (ap_i_setting_sections() as $k => $s) {'
+    + ' if (!empty($s["upfront"])) { echo $k, "\n"; } }').split('\n').filter(Boolean);
+check('no section is shown on the page itself, outside the advanced switch',
+    upfront.length >= 1, upfront.join(' '));
+for (const key of ['max_note_age_days', 'max_notes_per_project']) {
+    const group = askPhp('foreach (ap_i_settings() as $s) { if ($s["key"] === "'
+        + key + '") { echo $s["group"]; } }');
+    check(`"${key}" is behind the advanced switch, and it decides whether a remark`
+        + ' is still there next month', upfront.includes(group), group);
+}
 /* AND THE PAGE SAYS WHAT IT IS AT A GLANCE. It was headed `annotepage`, which
    names the tool and not what this screen is for -- and titled
    `annotepage -- install`, which is the same thing with punctuation. */
