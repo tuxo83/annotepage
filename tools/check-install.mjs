@@ -198,6 +198,28 @@ for (const key of everyKey.filter(Boolean)) {
         + ' every key there is', example.includes("'" + key + "'"));
 }
 
+/* AND EVERY SETTING IS UNDER A NAMED SECTION, not in one fold called "change
+   anything else" -- which says a list exists without saying what is in it, so
+   whoever came to set a retention has to open it and read fifteen fields to
+   find one. The sections are data, like the settings themselves; this refuses
+   a setting that belongs to none of them, which is what a new key added
+   without a thought would be. */
+const sections = askPhp('echo implode(" ", array_keys(ap_i_setting_sections()));')
+    .split(/\s+/).filter(Boolean);
+check('the installer declares no sections at all', sections.length >= 3, sections.join(' '));
+const grouped = askPhp('foreach (ap_i_settings() as $s) { echo $s["key"], "=",'
+    + ' isset($s["group"]) ? $s["group"] : "(none)", "\n"; }')
+    .split('\n').filter(Boolean).map((l) => l.split('='));
+for (const [key, group] of grouped) {
+    check(`the setting "${key}" is in no section, so the form would drop it`,
+        sections.includes(group), group);
+}
+for (const title of askPhp('foreach (ap_i_setting_sections() as $s) { echo $s["title"], "\n"; }')
+        .split('\n').filter(Boolean)) {
+    check(`the form does not carry the section "${title}"`,
+        own.form.includes(title.replace(/&/g, '&amp;')), title);
+}
+
 check('no configuration was written', own.config !== null, own.done.slice(0, 400));
 if (own.config) {
     const parses = spawnSync('php', ['-l', own.configPath], { encoding: 'utf8' });

@@ -1103,7 +1103,7 @@ function ap_i_questions()
 function ap_i_settings()
 {
     return array(
-        array('key' => 'max_notes_per_project', 'kind' => 'int', 'unit' => 'notes',
+        array('key' => 'max_notes_per_project', 'group' => 'keep', 'kind' => 'int', 'unit' => 'notes',
             'label' => 'Notes one project may hold',
             'decided' => array('one-site' => 'no limit', 'anyone' => '6000 rows, about '
                                                          . '2000 remarks'),
@@ -1115,29 +1115,29 @@ function ap_i_settings()
                        . 'notes wants. A relay needs one: it stores for strangers. '
                        . 'Measured: six reviewers over three months write about 3600 '
                        . 'rows, and a relay is capped at 6000 unless you say otherwise.'),
-        array('key' => 'max_note_age_days', 'kind' => 'int', 'unit' => 'days',
+        array('key' => 'max_note_age_days', 'group' => 'keep', 'kind' => 'int', 'unit' => 'days',
             'label' => 'How long a thread is kept',
             'decided' => array('one-site' => '90 days', 'anyone' => '90 days'),
             'say'   => 'Counted from its LAST message, so a live discussion is never '
                        . 'cut short, and the whole thread goes at once. 0 keeps '
                        . 'everything for ever, which is what config.php decides for a '
                        . 'server this file never installed.'),
-        array('key' => 'rate_window_seconds', 'kind' => 'int', 'unit' => 'seconds',
+        array('key' => 'rate_window_seconds', 'group' => 'rate', 'kind' => 'int', 'unit' => 'seconds',
             'label' => 'The window the limits below are counted in',
             'say'   => 'Fixed, not sliding: hitting a limit early in a window costs the '
                        . 'rest of it. A long window makes a refusal last longer.'),
-        array('key' => 'rate_writes_per_ip', 'kind' => 'int', 'unit' => 'writes',
+        array('key' => 'rate_writes_per_ip', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
             'label' => 'Writes per address, per window',
             'say'   => 'Everybody behind one office address counts as one machine, on '
                        . 'all of their projects together.'),
-        array('key' => 'rate_writes_per_project', 'kind' => 'int', 'unit' => 'writes',
+        array('key' => 'rate_writes_per_project', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
             'label' => 'Writes per project, per window',
             'decided' => array('one-site' => '0, which is off -- everybody who can '
                                              . 'write here is already behind your door',
                                'anyone'   => '300'),
             'say'   => 'All of that project\'s writers together. It is the anti-abuse '
                        . 'ceiling, not the working budget.'),
-        array('key' => 'rate_exports_per_ip', 'kind' => 'int', 'unit' => 'exports',
+        array('key' => 'rate_exports_per_ip', 'group' => 'rate', 'kind' => 'int', 'unit' => 'exports',
             'label' => 'Exports per address, per window',
             'decided' => array('one-site' => '0, which is off -- the only reader of an '
                                              . 'export here is your own assistant',
@@ -1146,7 +1146,7 @@ function ap_i_settings()
                        . 'reply, resolve -- costs about three per remark, so 90 per '
                        . 'window is thirty remarks. Measured: at 20 an assistant met '
                        . 'the refusal in the middle of its seventh remark, on day one.'),
-        array('key' => 'rate_reads_per_ip', 'kind' => 'int', 'unit' => 'page loads',
+        array('key' => 'rate_reads_per_ip', 'group' => 'rate', 'kind' => 'int', 'unit' => 'page loads',
             'label' => 'Page loads per address, per window',
             'say'   => 'OFF, and 0 means the counter is never touched: a page load then '
                        . 'costs no database write, which is why it is the default. It is '
@@ -1156,30 +1156,30 @@ function ap_i_settings()
                        . 'wants it. Set it far above a person: one page load is one call, '
                        . 'so 600 in five minutes is two a second and no reviewer will '
                        . 'ever meet it.'),
-        array('key' => 'max_body_bytes', 'kind' => 'int', 'unit' => 'bytes',
+        array('key' => 'max_body_bytes', 'group' => 'rate', 'kind' => 'int', 'unit' => 'bytes',
             'label' => 'Largest request body',
             'say'   => 'Read before anything is parsed; over it, a 413. Sized by the '
                        . 'envelope bounds of the format, not by what people write: the '
                        . 'longest remark measured on a real project used 5% of it.'),
-        array('key' => 'client_ip_header', 'kind' => 'text', 'unit' => '',
+        array('key' => 'client_ip_header', 'group' => 'server', 'kind' => 'text', 'unit' => '',
             'label' => 'Header carrying the real address, behind a proxy',
             'say'   => 'Empty unless a TRUSTED proxy rewrites it on every request: a '
                        . 'header the client can set itself makes every limit above '
                        . 'bypassable in one line. Without it, everyone behind that proxy '
                        . 'counts as one machine.'),
-        array('key' => 'publish_server_totals', 'kind' => 'bool', 'unit' => '',
+        array('key' => 'publish_server_totals', 'group' => 'server', 'kind' => 'bool', 'unit' => '',
             'label' => 'Publish what the whole server holds',
             'say'   => 'Three integers -- projects, notes, pages -- answered to anybody '
                        . 'who can open one annotated page. Counted on every page load: '
                        . 'measured at 5.7 ms without it and 41.8 ms with it on 60,000 '
                        . 'notes.'),
-        array('key' => 'forward_root_to', 'kind' => 'text', 'unit' => '',
+        array('key' => 'forward_root_to', 'group' => 'server', 'kind' => 'text', 'unit' => '',
             'label' => 'Where a bare visit to this directory goes',
             'say'   => 'Empty gives a 404. An absolute http(s) URL sends it there with a '
                        . '302 -- what a public relay wants, so that somebody landing on '
                        . 'the bare host reaches a page explaining what this is. It never '
                        . 'applies to api.php.'),
-        array('key' => 'diagnostic', 'kind' => 'choice', 'unit' => '',
+        array('key' => 'diagnostic', 'group' => 'server', 'kind' => 'choice', 'unit' => '',
             'values' => array('minimal', 'full', 'off'),
             'label' => 'How much ?action=diagnostic tells',
             'say'   => 'That page has no authentication, so what it publishes it '
@@ -1187,17 +1187,17 @@ function ap_i_settings()
                        . 'even when the configuration cannot be read, which is when it '
                        . 'is needed; `full` is the whole report, for the length of a '
                        . 'diagnosis; `off` makes the action not exist.'),
-        array('key' => 'table_prefix', 'kind' => 'text', 'unit' => '',
+        array('key' => 'table_prefix', 'group' => 'server', 'kind' => 'text', 'unit' => '',
             'label' => 'Prefix of the table names',
             'say'   => 'The tables are <prefix>notes, <prefix>rate and <prefix>tally. '
                        . 'Only worth changing on a database shared with something else '
                        . 'that already owns those names.'),
-        array('key' => 'update_source', 'kind' => 'text', 'unit' => '',
+        array('key' => 'update_source', 'group' => 'risky', 'kind' => 'text', 'unit' => '',
             'label' => 'Where updates are fetched from',
             'say'   => 'The release channel. `next` instead of `main` in that address '
                        . 'runs the candidate; a fork or a mirror inside a closed network '
                        . 'goes here too. HTTPS only, and no flag relaxes that.'),
-        array('key' => 'allow_plain_http', 'kind' => 'bool', 'unit' => '',
+        array('key' => 'allow_plain_http', 'group' => 'risky', 'kind' => 'bool', 'unit' => '',
             'label' => 'Answer over plain http',
             'say'   => 'A way out, not a preference: without https there is no WebCrypto, '
                        . 'so nothing can be encrypted in a browser. Turn it on only for a '
@@ -1230,6 +1230,63 @@ function ap_i_setting_default($key)
         return '';
     }
     return (string) $value;
+}
+
+/**
+ * The sections the settings are shown in, in order, on both faces.
+ *
+ * ONE PAGE, READ TOP TO BOTTOM, AND NOTHING HIDDEN THAT IS NOT NAMED. The
+ * fifteen settings were behind a single fold called "change anything else",
+ * which is honest and useless: it says a list exists without saying what is in
+ * it, so the person who came to set a retention or a rate limit has to open it
+ * and read fifteen fields to find two. Grouped, the fold's own title answers
+ * "is what I came for in here?" before it is opened.
+ *
+ * `open` is what a section shows without being asked, and only the first is:
+ * how long notes are kept is a promise this server makes on every annotated
+ * page, and it was written as 90 days at the bottom of a fold nobody opened.
+ * The others are shut, so the page is still the length it was.
+ *
+ * `warn` marks the section whose settings can undo what the tool is for. It is
+ * not hidden -- hiding it is what makes somebody find it in a forum post
+ * instead -- it is named, and it says what each one costs.
+ */
+function ap_i_setting_sections()
+{
+    return array(
+        'keep' => array(
+            'title' => 'What this server keeps, and for how long',
+            'open'  => true,
+            'say'   => 'The two numbers that decide whether a remark is still there '
+                       . 'next month. Both are written into your configuration by this '
+                       . 'installation, so they are here rather than in a fold.',
+        ),
+        'rate' => array(
+            'title' => 'How fast anybody may write, read or export',
+            'open'  => false,
+            'say'   => 'Counted per address and per project, in a fixed window. Past a '
+                       . 'limit the answer is a 429 saying when to come back, and '
+                       . 'nothing is lost. 0 switches a counter off entirely -- and off '
+                       . 'means the counter is never touched, not touched and ignored.',
+        ),
+        'server' => array(
+            'title' => 'What this server says about itself, and where it sits',
+            'open'  => false,
+            'say'   => 'None of these changes what is stored. They decide what a '
+                       . 'stranger can read from the outside, what this server believes '
+                       . 'about the address a request came from, and which tables it '
+                       . 'writes into.',
+        ),
+        'risky' => array(
+            'title' => 'Two that can undo what this tool is for',
+            'open'  => false,
+            'warn'  => true,
+            'say'   => 'Both have a legitimate use and both are the wrong answer nine '
+                       . 'times out of ten. They are named rather than hidden: a '
+                       . 'setting somebody finds in a forum post is a setting they use '
+                       . 'without the sentence that goes with it.',
+        ),
+    );
 }
 
 /** One setting by key, or null. */
@@ -1954,8 +2011,19 @@ function ap_i_render_help($selfName)
             . 'Each one is a key of internal/config.php under its own name, so what you '
             . 'type here is what you would have edited there. Leave one out and the '
             . 'default stays in force -- and a later version may raise it for you, '
-            . 'which a value written into your file would prevent.') . "\n";
+            . 'which a value written into your file would prevent.') . "\n\n"
+        . ap_i_wrap('They come in the same four sections as the form, in the same '
+            . 'order, for the same reason: a flat list of fifteen says a list exists '
+            . 'without saying what is in it.') . "\n";
+    $section = null;
+    $sections = ap_i_setting_sections();
     foreach (ap_i_settings() as $setting) {
+        if ($setting['group'] !== $section) {
+            $section = $setting['group'];
+            $title = strtoupper($sections[$section]['title']);
+            $out .= "\n" . $title . "\n" . str_repeat('-', strlen($title)) . "\n\n"
+                . ap_i_wrap(ap_i_plain($sections[$section]['say'])) . "\n";
+        }
         $shape = $setting['kind'] === 'choice'
             ? implode('|', $setting['values'])
             : ($setting['kind'] === 'bool' ? 'true|false'
@@ -3376,14 +3444,31 @@ function ap_i_run(array $options)
        it arrives. It is 6000 rows now, and it is a field like the others.
        Shut by default, so the screen is the length it was. Same table as the
        command line reads, so neither face can offer what the other cannot. */
-    echo "<details>\n";
-    echo "<summary>Change anything else &mdash; every other setting, with its "
-        . "default</summary>\n";
-    echo '<p>Leave a field empty and the default stays in force, which also means a '
-        . 'later version may raise it for you. Fill one in and it is written into your '
-        . "configuration, with the sentence that explains it.</p>\n";
+    echo '<p class="note">Everything below is optional, and nothing below is a '
+        . 'mystery: each field says what happens if you leave it empty &mdash; in grey '
+        . 'inside the box, or in the sentence under it where this installation writes '
+        . 'a different number depending on your first answer. Fill one in and it '
+        . "becomes a line in your configuration, with its explanation beside it.</p>\n";
+
+    $section = null;
+    $sections = ap_i_setting_sections();
     foreach (ap_i_settings() as $setting) {
         $key = $setting['key'];
+        /* A SECTION OPENS WHEN ITS FIRST SETTING ARRIVES, and closes when the
+           next one belongs elsewhere. The table's order IS the page's order,
+           so there is one list to keep straight rather than a list and a
+           layout that can disagree about what exists. */
+        if ($setting['group'] !== $section) {
+            if ($section !== null) {
+                echo "</details>\n";
+            }
+            $section = $setting['group'];
+            $shape = $sections[$section];
+            echo '<details' . (!empty($shape['open']) ? ' open' : '') . ">\n";
+            echo '<summary>' . ap_i_h($shape['title']) . "</summary>\n";
+            echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
+                . $shape['say'] . "</p>\n";
+        }
         echo '<p><label>' . ap_i_h($setting['label']);
         if ($setting['kind'] === 'choice') {
             echo '<br><select name="' . $key . '">' . "\n";
@@ -3435,7 +3520,9 @@ function ap_i_run(array $options)
                 . ap_i_h($setting['decided']['anyone']) . ".</span></p>\n";
         }
     }
-    echo "</details>\n";
+    if ($section !== null) {
+        echo "</details>\n";
+    }
 
     echo '<button type="submit">Install</button>' . "\n";
     echo "</form>\n";
