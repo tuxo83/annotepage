@@ -891,8 +891,22 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
                 foreach ($urls as $probe) {
                     $answer = ap_i_fetch($probe['url'], 6);
                     $safe = ap_i_answer_is_safe($answer, $probe['exact']);
-                    $first = preg_replace('/[^\x20-\x7E]/', '.',
-                        substr($answer['body'], 0, 60));
+                    /* WHAT CAME BACK, IN WORDS RATHER THAN IN HALF A TAG. Sixty
+                       bytes of a 404 page ends mid-attribute -- `<!doctype
+                       html><html><head><title>404 Not Found</title><styl` --
+                       and a dangling quote after it reads as a bug in this
+                       report rather than as evidence about the web server. The
+                       markup is stripped, the whitespace collapsed, and what
+                       is left is the sentence the server actually said. */
+                    /* strip_tags() removes the TAGS and keeps what is between
+                       them, so a 404 page's stylesheet came through as prose:
+                       "404 Not Found body { backgroun...". The two elements
+                       whose content is not text go first. */
+                    $first = preg_replace('#<(style|script)\b[^>]*>.*?</\1>#is', ' ',
+                        substr($answer['body'], 0, 2000));
+                    $first = ap_i_plain($first);
+                    $first = preg_replace('/[^\x20-\x7E]/', '.', $first);
+                    $first = ap_i_shorten_middle(trim($first), 60);
                     $report[] = array('Data file over HTTP',
                         ($answer['status'] === null ? 'no answer' : $answer['status'])
                         . ($safe ? ' -- refused' : ' -- REACHABLE'),
@@ -901,7 +915,9 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
                             ? ' (this URL maps to it)'
                             : ' (the address a crawler would try; it maps to nothing here)')
                         . ($answer['body'] !== ''
-                            ? '. First bytes: "' . $first . '"'
+                            ? ($first !== ''
+                                ? '. It answered: ' . $first
+                                : '. It answered with markup and no words.')
                             : '. Empty body.')
                         . ($answer['error'] !== null ? ' (' . $answer['error'] . ')' : ''));
                     if (!$safe) {
@@ -1068,8 +1084,10 @@ function ap_i_questions()
                                  . 'screen gives you that line with the real path in it.'),
                 array('value' => 'url', 'id' => 'u-url', 'class' => 'if-url',
                       'label' => 'An address to call',
-                      'say'   => 'For a scheduler that can only fetch a URL. The address '
-                                 . 'is shown once, on the next screen.'),
+                      /* The sentence about the address being shown once lives in
+                         the note under this card, two lines below. Said in
+                         both, it was the same sentence twice on one screen. */
+                      'say'   => 'For a scheduler that can only fetch a URL.'),
                 array('value' => 'self', 'id' => 'u-self', 'class' => 'if-self',
                       'label' => 'It updates itself',
                       'say'   => 'Last resort. It costs a permission that outlives the '
@@ -1226,6 +1244,38 @@ function ap_i_settings()
     );
 }
 
+/** Characters, not bytes: an address can carry any of them. */
+function ap_i_length($text)
+{
+    return function_exists('mb_strlen')
+        ? mb_strlen((string) $text, 'UTF-8') : strlen((string) $text);
+}
+
+/**
+ * A long value cut in the MIDDLE, where a URL says least.
+ *
+ * Cut at the end -- which is what a text field does on its own -- an address
+ * loses the part that identifies it and keeps the part every address shares:
+ * `update_source` showed 559px of placeholder in a 327px box and stopped at
+ * `https://raw.githubusercontent.com/tuxo83/an`.
+ */
+function ap_i_shorten_middle($text, $room)
+{
+    $text = (string) $text;
+    if (ap_i_length($text) <= $room || $room < 8) {
+        return $text;
+    }
+    $head = (int) ceil(($room - 1) / 2);
+    $tail = $room - 1 - $head;
+    $cut = function ($s, $n, $fromEnd = false) {
+        if (function_exists('mb_substr')) {
+            return $fromEnd ? mb_substr($s, -$n, null, 'UTF-8') : mb_substr($s, 0, $n, 'UTF-8');
+        }
+        return $fromEnd ? substr($s, -$n) : substr($s, 0, $n);
+    };
+    return $cut($text, $head) . "\xE2\x80\xA6" . $cut($text, $tail, true);
+}
+
 /**
  * The default really in force for a setting, as text, for showing beside its
  * field.
@@ -1355,14 +1405,19 @@ function ap_i_credential_fields()
  * One question, drawn. The form is the only caller today; the command line
  * renders the same model as text.
  */
-function ap_i_render_dial(array $question, $chosen)
+function ap_i_render_dial(array $question, $chosen, array $impossible = array())
 {
     echo '<fieldset class="dial"><legend>' . $question['legend'] . '</legend>' . "\n";
     echo '<div class="seg">' . "\n";
     foreach ($question['answers'] as $answer) {
+        /* AN ANSWER THIS HOST CANNOT GIVE IS DISABLED, not merely contradicted
+           by a sentence further down. A disabled radio is not submitted, which
+           is right: it was never a choice here. */
+        $off = in_array($answer['value'], $impossible, true);
         echo '<label><input type="radio" name="' . $question['key']
             . '" value="' . $answer['value'] . '" id="' . $answer['id'] . '"'
             . ($chosen === $answer['value'] ? ' checked' : '')
+            . ($off ? ' disabled' : '')
             . '><span>' . $answer['label'] . "</span></label>\n";
     }
     echo "</div>\n";
@@ -3241,13 +3296,18 @@ h2 + h3 { margin-top: 0; }
    different boxes here (a .dials in one grey, an .if-mysql-box in another, a
    fieldset in a third radius), which reads as three kinds of thing when they
    are one: a group of questions. */
+/* ONE HORIZONTAL PADDING FOR EVERY CARD, and it is the reason this page felt
+   crooked: four cards wore three paddings and a fifth box nested inside one of
+   them wore a fourth, so a column of text had SIX left edges -- measured at
+   1280: 288, 289, 306.6, 308.2, 311.4, 328.4. The site's own drawing of this
+   screen has one. */
 .dials, .if-mysql-box {
     margin: 0 0 1.4rem; padding: 1.1rem 1.2rem;
     border: 1px solid var(--line-soft); border-radius: var(--radius);
     background: var(--bg-soft);
 }
 .dial-title { margin: 0 0 1.1rem; font-size: 1rem; font-weight: 650; color: var(--text); }
-.if-mysql-box .dial-title { margin-bottom: .2rem; }
+
 .dial-row {
     display: grid; gap: 1.4rem 2.4rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3258,7 +3318,11 @@ h2 + h3 { margin-top: 0; }
     padding: 0; font-size: .78rem; font-weight: 650;
     letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
 }
-.dial-say { margin: .55rem 0 0; font-size: .85rem; color: var(--dim); max-width: 26em; }
+/* 26em IS THE WIDTH OF A DIAL IN A ROW OF TWO, and the updates dial is not in
+   one: its sentence wrapped at 345px inside a 663px card and left a third of
+   the card grey. The cap belongs to the two that share a row. */
+.dial-say { margin: .55rem 0 0; font-size: .85rem; color: var(--dim); }
+.dial-row .dial-say { max-width: 26em; }
 
 
 /* -- the chips ----------------------------------------------------------- */
@@ -3280,6 +3344,12 @@ h2 + h3 { margin-top: 0; }
 .seg input:checked + span {
     background: var(--accent); color: var(--on-accent); border-color: var(--accent);
 }
+/* AND THE ONE THIS HOST CANNOT GIVE LOOKS LIKE IT. Drawn like the two that
+   work, it offered a choice the page refused a hundred pixels lower. */
+.seg input:disabled + span {
+    border-style: dashed; opacity: .55; cursor: not-allowed;
+}
+.seg label:has(input:disabled) { cursor: not-allowed; }
 .seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .seg span { transition: none; } }
 
@@ -3292,7 +3362,10 @@ h2 + h3 { margin-top: 0; }
    The weight does the work instead, and the ink is --text: it names the thing
    being typed, and it is not an aside. */
 label { display: block; font-weight: 600; font-size: .95rem; }
-input, select { font: inherit; font-weight: 400; }
+/* 38.4px against 40.7px, same border, same padding: a select computes its
+   height from its own line box. Going down a column of twelve inputs and three
+   selects, the boxes bobbed. */
+input, select { font: inherit; font-weight: 400; line-height: 1.6; }
 
 /* 8px AND NOT 999px, AND THE SITE DRAWS BOTH. A pill is what the site puts
    round a single field standing alone -- the domain at the top of the install
@@ -3300,7 +3373,15 @@ input, select { font: inherit; font-weight: 400; }
    fields, and eleven pills stacked read as eleven search boxes. The rounded
    rectangle is questions.html's `.faq-find`, which is the drawing for a field
    inside a form, and it is this one. */
+/* THE SAME HEIGHT, DECLARED, because a select computes its own from its line
+   box and lands 2.3px short of an input with the same border and the same
+   padding -- and in a column of twelve inputs and three selects the boxes bob.
+   2.55rem AND NOT 2.4: rem is the ROOT's 16px, not the body's 17, so the first
+   number I wrote came out as exactly the 38.4px it was supposed to replace --
+   measured, and it is the kind of thing that looks like the rule not applying
+   at all. */
 input[type=text], input[type=password], input[type=number], select {
+    min-height: 2.55rem;
     margin-top: .35rem;
     width: 22rem; max-width: 100%;
     padding: .45rem .7rem;
@@ -3309,7 +3390,13 @@ input[type=text], input[type=password], input[type=number], select {
     border: 1px solid var(--control-line); border-radius: 8px;
 }
 select { width: auto; max-width: 100%; }
+/* A NUMBER GETS A BOX THE SIZE OF A NUMBER. `Port` had 352px for `3306`. */
+input[type=number] { width: 8rem; }
 input::placeholder { color: var(--dim); opacity: 1; }
+/* THE FIELD THAT HAS TO CHANGE IS MARKED. It sat seven hundred pixels below
+   the red block that refused it, with the same grey border as the fourteen
+   fields that were fine. */
+input.bad-field { border-color: var(--bad); border-width: 2px; }
 input:focus-visible, select:focus-visible {
     outline: 2px solid var(--accent); outline-offset: 2px;
     border-color: var(--accent); border-radius: 8px;
@@ -3335,10 +3422,12 @@ button {
 button:hover { box-shadow: none; }
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
-/* THE PRESS IS NOT PART OF THE LAST FOLD. It lands directly under the final
-   `Two that can undo what this tool is for` chip, and at .4rem it read as
-   that fold's second control rather than as the end of the form. */
-details + button { margin-top: 1.8rem; }
+/* THE PRESS IS NOT PART OF WHAT PRECEDES IT. This was written as
+   `details + button`, and the button's previous sibling has never been a
+   `<details>` -- it is the card of settings, or the box that offers them. The
+   rule never fired once: measured, 6.4px of air under a card, where every
+   other block on this page gets 30.4. */
+.more + button, .more-switch + button { margin-top: 1.9rem; }
 
 
 /* -- what is said under a field ------------------------------------------ */
@@ -3349,7 +3438,10 @@ details + button { margin-top: 1.8rem; }
    of these sentences a line of wrapping. They sit on the page's edge now, in
    --dim, which is what a second-order sentence is set in everywhere else on
    this site. */
-.note { margin: .4rem 0 1.35rem; font-size: .9rem; color: var(--dim); }
+/* CLOSER TO WHAT IT EXPLAINS THAN TO WHAT FOLLOWS. Equidistant -- 22.4px up,
+   21.6px down -- a sentence about the card above it looked like the caption of
+   the field below. */
+.note { margin: .35rem 0 1.5rem; font-size: .9rem; color: var(--dim); }
 /* THE RHYTHM OF ONE FIELD, and it is one gesture and not three. A label, the
    box under it and the line that says what an empty box gets you were spaced
    by the paragraph margin the browser gives any <p> -- the same distance
@@ -3447,6 +3539,10 @@ pre {
     font-family: var(--mono); font-size: .86rem; line-height: 1.6;
     white-space: pre-wrap; overflow-wrap: anywhere;
 }
+/* IT DOES NOT BREAK IN THE MIDDLE. Wrapped, an inline `code` gets two client
+   rects and each draws its own border and background: `cli-server` came out as
+   two half-pills on two lines at 390, which reads as a rendering fault. */
+code { white-space: nowrap; }
 code {
     font-family: var(--mono); font-size: .87em;
     background: var(--bg-code); border: 1px solid var(--line-soft);
@@ -3466,13 +3562,16 @@ pre code { background: none; border: 0; padding: 0; font-size: inherit; }
 table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: .9rem 0 0; }
 td { padding: .55rem .6rem .55rem 0; vertical-align: top; border-bottom: 1px solid var(--line-soft); font-size: .95rem; }
 tr:last-child td { border-bottom: 0; }
+/* THE COLUMN HOLDING AN ADDRESS IS THE WIDE ONE. At 30% a path broke mid-token
+   -- `http://…/now` then `here/api.php`, the word cut in half -- while the
+   prose beside it had 98.6px more than it needed. */
 td.k { font-weight: 600; width: 26%; overflow-wrap: anywhere; }
-td.v { width: 30%; font-family: var(--mono); font-size: .82rem;
+td.v { width: 40%; font-family: var(--mono); font-size: .82rem;
        font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 /* The third column is the machine explaining itself, which is the definition
    of a second-order sentence -- so it is --dim, and it is --dim rather than
    the .75 opacity it was, for the reason given above the note. */
-td.m { color: var(--dim); font-size: .85rem; overflow-wrap: anywhere; }
+td.m { width: 34%; color: var(--dim); font-size: .85rem; overflow-wrap: anywhere; }
 
 
 /* -- what each dial takes away ------------------------------------------- */
@@ -3508,7 +3607,7 @@ table.what td { border-bottom: 0; padding-bottom: .2rem; }
    is what hides them -- the same direction as the MySQL box, for the same
    reason. */
 .more-switch {
-    margin: 1.9rem 0 0; padding: .9rem 1.1rem;
+    margin: 1.9rem 0 0; padding: 1.1rem 1.2rem;
     border: 1px solid var(--line-soft); border-radius: var(--radius);
     background: var(--bg-soft);
 }
@@ -3517,10 +3616,26 @@ table.what td { border-bottom: 0; padding-bottom: .2rem; }
     display: flex; align-items: center; gap: .6rem;
     cursor: pointer; font-weight: 650; font-size: 1rem;
 }
+/* THE ONE CONTROL THIS SHEET DID NOT DRAW. `accent-color` paints the checked
+   state and leaves the empty one to the browser: in dark that is a solid grey
+   block with no hairline, sitting beside chips that all carry one, and it
+   reads as filled in or disabled. Drawn here, with the chip's own border and
+   ground, and a tick made of two borders -- no glyph, so no font can fail to
+   have it. */
 .switch-line input {
     flex: none; width: 1.15rem; height: 1.15rem; margin: 0;
-    accent-color: var(--accent);
+    appearance: none; -webkit-appearance: none;
+    border: 1px solid var(--control-line); border-radius: 4px;
+    background: var(--bg); cursor: pointer; position: relative;
 }
+.switch-line input:checked { background: var(--accent); border-color: var(--accent); }
+.switch-line input:checked::after {
+    content: ""; position: absolute; left: 32%; top: 12%;
+    width: .28rem; height: .55rem;
+    border: solid var(--on-accent); border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+.switch-line input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .more-switch .note { margin: .5rem 0 0; }
 .more-switch table { margin: .55rem 0 0; font-size: .92rem; }
 .more-switch td.k { width: 38%; }
@@ -3536,7 +3651,7 @@ form:has(#ap-more:not(:checked)) .more { display: none; }
    ground, its own air. What is inside it is the part somebody chose to open,
    and it can be seen to end. */
 .more {
-    margin: 1.3rem 0 0; padding: 1.3rem 1.4rem;
+    margin: 1.3rem 0 0; padding: 1.1rem 1.2rem;
     border: 1px solid var(--line-soft); border-radius: var(--radius);
     background: var(--bg-soft);
 }
@@ -3555,29 +3670,28 @@ form:has(#ap-more:not(:checked)) .more { display: none; }
    four per-window numbers land in one column, where the eye compares them.
    The body cap is not per window, so it sits under a rule of its own rather
    than pretending to be a fifth counter. */
+/* NOT A BOX INSIDE A BOX. Its own padding was the sixth left edge on the
+   page; a rule above and below says "these belong together" without moving
+   anything sideways. */
 .limits {
-    margin: .8rem 0 0; padding: .9rem 1rem;
-    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    margin: 1rem 0 0; padding: 1rem 0 0;
+    border-top: 1px solid var(--line-soft);
 }
 .limits > p { margin: 0; }
-.limits-window {
-    display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem;
-}
 .limits-window label { font-weight: 650; }
-.limits-window input { width: 8rem; }
+.limits-window input, .counters input, .limits-body input { width: 8rem; }
 .limits .note { margin: .3rem 0 0; }
 table.counters { margin: .9rem 0 0; }
 .counters td { padding: .5rem .5rem .5rem 0; border-bottom: 1px solid var(--line-soft); }
 .counters tr:last-child td { border-bottom: 0; }
 td.c-what { width: 40%; font-weight: 600; }
 td.c-set { width: 8.5rem; }
-.counters input { width: 100%; }
+
 td.c-why { color: var(--dim); font-size: .9rem; padding-left: .9rem; }
 .limits-body {
     margin: .9rem 0 0; padding-top: .8rem; border-top: 1px solid var(--line-soft);
 }
 .limits-body label { font-weight: 650; }
-.limits-body input { width: 10rem; }
 
 
 /* -- and all of that on a phone ------------------------------------------ */
@@ -3648,8 +3762,12 @@ label + input, label + select { display: block; }
    writes. Open, that table is gone and what is left is one line -- and a grey
    box round one line, above the settings it just revealed, reads as a section
    of its own that contains nothing. */
+/* OPEN, IT STOPS BEING A BOX -- BUT NOT BY LOSING ITS PADDING. Setting
+   `padding: 0` moved the line you had just clicked 17.6px to the left under
+   your own cursor, and left the checkbox above the card 22.4px out of line
+   with the one inside it. The ink goes, the geometry stays. */
 form:has(#ap-more:checked) .more-switch {
-    padding: 0; border-color: transparent; background: none;
+    padding-top: 0; padding-bottom: 0; border-color: transparent; background: none;
 }
 
 CSS;
@@ -3833,6 +3951,10 @@ function ap_i_run(array $options)
     // ---------------------------------------------------------------------------
 
     $errors = array();
+    /* Values a refusal hands over to be compared, kept apart from the sentences
+       that explain it -- see where they are filled in. */
+    $facts = array();
+    $badAddress = false;
     $installed = false;
     // Carried out of the POST branch because the last screen tells the operator
     // what is still theirs to do, and on a relay that is nothing.
@@ -3864,13 +3986,19 @@ function ap_i_run(array $options)
                 $askedTo = null;
                 $leads = ap_i_address_leads_here($here, $why, $askedTo);
                 if ($leads !== true) {
+                    /* THE SENTENCE IS THE ALARM; THE TWO VALUES ARE EVIDENCE.
+                       All four were bold red, so the two paths -- which are
+                       there to be compared character by character -- were set
+                       in the same shout as the reason, and in the sans face
+                       where every other value on this page is mono. */
                     $errors[] = 'That address does not lead to this directory, so '
                         . 'nothing was installed. ' . $why;
-                    $errors[] = 'Asked for: ' . $askedTo;
-                    $errors[] = 'Written in: ' . $here;
+                    $facts[] = array('Asked for', $askedTo);
+                    $facts[] = array('Written in', $here);
                     $errors[] = 'Give the address this directory really answers at. '
                         . 'Without it, the check that proves your notes cannot be '
                         . "downloaded would be about somebody else's directory.";
+                    $badAddress = true;
                 }
             }
         }
@@ -3927,6 +4055,14 @@ function ap_i_run(array $options)
         echo '<h2>Nothing was installed</h2>' . "\n";
         foreach ($errors as $line) {
             echo '<p class="bad">' . ap_i_h($line) . "</p>\n";
+        }
+        if ($facts) {
+            echo "<table class=\"what\">\n";
+            foreach ($facts as $fact) {
+                echo '<tr><td class="k">' . ap_i_h($fact[0]) . '</td><td class="v">'
+                    . ap_i_h($fact[1]) . "</td></tr>\n";
+            }
+            echo "</table>\n";
         }
     }
 
@@ -4033,7 +4169,8 @@ function ap_i_run(array $options)
        asked for there -- because a typed address is a typed address whichever
        face typed it. */
     echo '<p><label>The address these pages will point at<br>'
-        . '<input type="text" name="api_address" value="'
+        . '<input type="text"' . ($badAddress ? ' class="bad-field"' : '')
+        . ' name="api_address" value="'
         . ap_i_h(ap_i_base_url() . 'api.php') . '"></label></p>' . "\n";
     echo '<p class="note">Read off the request that opened this page. Correct it if '
         . 'your visitors reach the site under another name &mdash; a proxy, a CDN, a '
@@ -4079,7 +4216,18 @@ function ap_i_run(array $options)
 
     echo '<div class="dials">' . "\n";
     echo '<p class="dial-title">How this server gets its updates.</p>' . "\n";
-    ap_i_render_dial(ap_i_question('updates'), $wants);
+    /* THE ANSWER THIS HOST CANNOT GIVE IS DRAWN AS UNAVAILABLE, and the line
+       saying why is INSIDE the card. It was a chip identical to the two that
+       work, with the red sentence 138 pixels below it and a grey paragraph in
+       between -- so the page offered a choice, refused it somewhere else, and
+       left the reader to connect the two. */
+    ap_i_render_dial(ap_i_question('updates'), $wants, $canDefer ? array() : array('self'));
+    if (!$canDefer) {
+        echo '<p class="note bad">&ldquo;It updates itself&rdquo; needs a PHP interface '
+            . 'that can answer a visitor and go on working; this one (<code>'
+            . ap_i_h(PHP_SAPI) . '</code>) cannot, so a visitor would wait on a fetch '
+            . "to GitHub. The address is chosen for you instead.</p>\n";
+    }
     echo "</div>\n";
 
     /* THE COST OF THE THIRD ANSWER, AND ONLY WHERE IT APPLIES. It is the one
@@ -4092,11 +4240,6 @@ function ap_i_run(array $options)
     echo '<p class="note if-url">The address is shown once, on the next screen. At most '
         . "one real check a day, however often it is called.</p>\n";
 
-    if (!$canDefer) {
-        echo '<p class="note bad">&ldquo;It updates itself&rdquo; cannot work on this '
-            . 'host (<code>' . ap_i_h(PHP_SAPI) . '</code> cannot answer a visitor and '
-            . "go on working). The address is chosen for you instead.</p>\n";
-    }
     if (!$outbound) {
         echo '<p class="note bad">This server has no way out to HTTPS, so nothing here '
             . "can fetch anything until that is fixed.</p>\n";
@@ -4154,6 +4297,10 @@ function ap_i_run(array $options)
         $hint = isset($setting['decided'])
             ? $setting['unit']
             : trim(ap_i_setting_default($key) . ' ' . $setting['unit']);
+        /* A PLACEHOLDER TOO LONG FOR ITS BOX IS A DEFAULT NOBODY CAN READ --
+           see ap_i_shorten_middle(), and the whole value is in the sentence
+           under the field, where there is room for it. */
+        $hint = ap_i_shorten_middle($hint, 34);
         return '<input type="' . ($setting['kind'] === 'int' ? 'number' : 'text')
             . '" name="' . $key . '"' . $id . ' value="' . ap_i_h($field($key)) . '"'
             . ($hint !== '' ? ' placeholder="' . ap_i_h($hint) . '"' : '') . ">\n";
