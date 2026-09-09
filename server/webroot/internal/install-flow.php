@@ -1103,7 +1103,7 @@ function ap_i_questions()
 function ap_i_settings()
 {
     return array(
-        array('key' => 'max_notes_per_project', 'group' => 'keep', 'kind' => 'int', 'unit' => 'notes',
+        array('key' => 'max_notes_per_project', 'hint' => 'Rows, replies included. 0 is no limit.', 'group' => 'keep', 'kind' => 'int', 'unit' => 'notes',
             'label' => 'Notes one project may hold',
             'decided' => array('one-site' => 'no limit', 'anyone' => '6000 rows, about '
                                                          . '2000 remarks'),
@@ -1115,29 +1115,29 @@ function ap_i_settings()
                        . 'notes wants. A relay needs one: it stores for strangers. '
                        . 'Measured: six reviewers over three months write about 3600 '
                        . 'rows, and a relay is capped at 6000 unless you say otherwise.'),
-        array('key' => 'max_note_age_days', 'group' => 'keep', 'kind' => 'int', 'unit' => 'days',
+        array('key' => 'max_note_age_days', 'hint' => 'From a thread&rsquo;s last message. 0 keeps everything.', 'group' => 'keep', 'kind' => 'int', 'unit' => 'days',
             'label' => 'How long a thread is kept',
             'decided' => array('one-site' => '90 days', 'anyone' => '90 days'),
             'say'   => 'Counted from its LAST message, so a live discussion is never '
                        . 'cut short, and the whole thread goes at once. 0 keeps '
                        . 'everything for ever, which is what config.php decides for a '
                        . 'server this file never installed.'),
-        array('key' => 'rate_window_seconds', 'group' => 'rate', 'kind' => 'int', 'unit' => 'seconds',
+        array('key' => 'rate_window_seconds', 'hint' => 'Fixed, not sliding.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'seconds',
             'label' => 'The window the limits below are counted in',
             'say'   => 'Fixed, not sliding: hitting a limit early in a window costs the '
                        . 'rest of it. A long window makes a refusal last longer.'),
-        array('key' => 'rate_writes_per_ip', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
+        array('key' => 'rate_writes_per_ip', 'hint' => '', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
             'label' => 'Writes per address, per window',
             'say'   => 'Everybody behind one office address counts as one machine, on '
                        . 'all of their projects together.'),
-        array('key' => 'rate_writes_per_project', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
+        array('key' => 'rate_writes_per_project', 'hint' => 'All of its writers together.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
             'label' => 'Writes per project, per window',
             'decided' => array('one-site' => '0, which is off -- everybody who can '
                                              . 'write here is already behind your door',
                                'anyone'   => '300'),
             'say'   => 'All of that project\'s writers together. It is the anti-abuse '
                        . 'ceiling, not the working budget.'),
-        array('key' => 'rate_exports_per_ip', 'group' => 'rate', 'kind' => 'int', 'unit' => 'exports',
+        array('key' => 'rate_exports_per_ip', 'hint' => 'An assistant spends about three per remark.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'exports',
             'label' => 'Exports per address, per window',
             'decided' => array('one-site' => '0, which is off -- the only reader of an '
                                              . 'export here is your own assistant',
@@ -1146,7 +1146,7 @@ function ap_i_settings()
                        . 'reply, resolve -- costs about three per remark, so 90 per '
                        . 'window is thirty remarks. Measured: at 20 an assistant met '
                        . 'the refusal in the middle of its seventh remark, on day one.'),
-        array('key' => 'rate_reads_per_ip', 'group' => 'rate', 'kind' => 'int', 'unit' => 'page loads',
+        array('key' => 'rate_reads_per_ip', 'hint' => '0 costs nothing: the counter is never touched.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'page loads',
             'label' => 'Page loads per address, per window',
             'say'   => 'OFF, and 0 means the counter is never touched: a page load then '
                        . 'costs no database write, which is why it is the default. It is '
@@ -1156,30 +1156,30 @@ function ap_i_settings()
                        . 'wants it. Set it far above a person: one page load is one call, '
                        . 'so 600 in five minutes is two a second and no reviewer will '
                        . 'ever meet it.'),
-        array('key' => 'max_body_bytes', 'group' => 'rate', 'kind' => 'int', 'unit' => 'bytes',
+        array('key' => 'max_body_bytes', 'hint' => '', 'group' => 'rate', 'kind' => 'int', 'unit' => 'bytes',
             'label' => 'Largest request body',
             'say'   => 'Read before anything is parsed; over it, a 413. Sized by the '
                        . 'envelope bounds of the format, not by what people write: the '
                        . 'longest remark measured on a real project used 5% of it.'),
-        array('key' => 'client_ip_header', 'group' => 'server', 'kind' => 'text', 'unit' => '',
+        array('key' => 'client_ip_header', 'hint' => 'Only behind a proxy you trust: a client can write it itself.', 'group' => 'server', 'kind' => 'text', 'unit' => '',
             'label' => 'Header carrying the real address, behind a proxy',
             'say'   => 'Empty unless a TRUSTED proxy rewrites it on every request: a '
                        . 'header the client can set itself makes every limit above '
                        . 'bypassable in one line. Without it, everyone behind that proxy '
                        . 'counts as one machine.'),
-        array('key' => 'publish_server_totals', 'group' => 'server', 'kind' => 'bool', 'unit' => '',
+        array('key' => 'publish_server_totals', 'hint' => 'Three figures, to anybody who opens an annotated page.', 'group' => 'server', 'kind' => 'bool', 'unit' => '',
             'label' => 'Publish what the whole server holds',
             'say'   => 'Three integers -- projects, notes, pages -- answered to anybody '
                        . 'who can open one annotated page. Counted on every page load: '
                        . 'measured at 5.7 ms without it and 41.8 ms with it on 60,000 '
                        . 'notes.'),
-        array('key' => 'forward_root_to', 'group' => 'server', 'kind' => 'text', 'unit' => '',
+        array('key' => 'forward_root_to', 'hint' => 'The directory only, never api.php.', 'group' => 'server', 'kind' => 'text', 'unit' => '',
             'label' => 'Where a bare visit to this directory goes',
             'say'   => 'Empty gives a 404. An absolute http(s) URL sends it there with a '
                        . '302 -- what a public relay wants, so that somebody landing on '
                        . 'the bare host reaches a page explaining what this is. It never '
                        . 'applies to api.php.'),
-        array('key' => 'diagnostic', 'group' => 'server', 'kind' => 'choice', 'unit' => '',
+        array('key' => 'diagnostic', 'hint' => '<code>full</code> publishes the whole report to whoever asks.', 'group' => 'server', 'kind' => 'choice', 'unit' => '',
             'values' => array('minimal', 'full', 'off'),
             'label' => 'How much ?action=diagnostic tells',
             'say'   => 'That page has no authentication, so what it publishes it '
@@ -1187,17 +1187,17 @@ function ap_i_settings()
                        . 'even when the configuration cannot be read, which is when it '
                        . 'is needed; `full` is the whole report, for the length of a '
                        . 'diagnosis; `off` makes the action not exist.'),
-        array('key' => 'table_prefix', 'group' => 'server', 'kind' => 'text', 'unit' => '',
+        array('key' => 'table_prefix', 'hint' => 'Only on a database shared with something else.', 'group' => 'server', 'kind' => 'text', 'unit' => '',
             'label' => 'Prefix of the table names',
             'say'   => 'The tables are <prefix>notes, <prefix>rate and <prefix>tally. '
                        . 'Only worth changing on a database shared with something else '
                        . 'that already owns those names.'),
-        array('key' => 'update_source', 'group' => 'risky', 'kind' => 'text', 'unit' => '',
+        array('key' => 'update_source', 'hint' => 'Where this server fetches its own code.', 'group' => 'risky', 'kind' => 'text', 'unit' => '',
             'label' => 'Where updates are fetched from',
             'say'   => 'The release channel. `next` instead of `main` in that address '
                        . 'runs the candidate; a fork or a mirror inside a closed network '
                        . 'goes here too. HTTPS only, and no flag relaxes that.'),
-        array('key' => 'allow_plain_http', 'group' => 'risky', 'kind' => 'bool', 'unit' => '',
+        array('key' => 'allow_plain_http', 'hint' => 'Without https a browser cannot encrypt anything.', 'group' => 'risky', 'kind' => 'bool', 'unit' => '',
             'label' => 'Answer over plain http',
             'say'   => 'A way out, not a preference: without https there is no WebCrypto, '
                        . 'so nothing can be encrypted in a browser. Turn it on only for a '
@@ -1257,6 +1257,7 @@ function ap_i_setting_sections()
         'keep' => array(
             'title' => 'What this server keeps, and for how long',
             'open'  => true,
+            'hint'  => '',
             'say'   => 'The two numbers that decide whether a remark is still there '
                        . 'next month. Both are written into your configuration by this '
                        . 'installation, so they are here rather than in a fold.',
@@ -1264,6 +1265,8 @@ function ap_i_setting_sections()
         'rate' => array(
             'title' => 'How fast anybody may write, read or export',
             'open'  => false,
+            'hint'  => 'Per address and per project, in a fixed window. Over the limit '
+                       . 'is a 429 saying when to come back; 0 switches one off.',
             'say'   => 'Counted per address and per project, in a fixed window. Past a '
                        . 'limit the answer is a 429 saying when to come back, and '
                        . 'nothing is lost. 0 switches a counter off entirely -- and off '
@@ -1272,6 +1275,7 @@ function ap_i_setting_sections()
         'server' => array(
             'title' => 'What this server says about itself, and where it sits',
             'open'  => false,
+            'hint'  => 'None of these changes what is stored.',
             'say'   => 'None of these changes what is stored. They decide what a '
                        . 'stranger can read from the outside, what this server believes '
                        . 'about the address a request came from, and which tables it '
@@ -1281,6 +1285,8 @@ function ap_i_setting_sections()
             'title' => 'Two that can undo what this tool is for',
             'open'  => false,
             'warn'  => true,
+            'hint'  => 'Both have a use, and both are the wrong answer nine times out '
+                       . 'of ten.',
             'say'   => 'Both have a legitimate use and both are the wrong answer nine '
                        . 'times out of ten. They are named rather than hidden: a '
                        . 'setting somebody finds in a forum post is a setting they use '
@@ -3350,11 +3356,9 @@ function ap_i_run(array $options)
        probe is a refusal to install rather than a warning. Both were a
        paragraph under a radio, where they were read once and then scrolled
        past twice. */
-    echo '<p class="note">A relay keeps what it cannot read: the notes are '
-        . 'encrypted with a key this server never receives, so they cannot be '
-        . 'moderated either. With SQLite, the file is placed where the web server '
-        . 'does not serve it and its own URL is then requested to confirm it comes '
-        . "back refused &mdash; if it does not, nothing is installed.</p>\n";
+    echo '<p class="note">A relay keeps what it cannot read, so it cannot moderate '
+        . 'it either. With SQLite the installer requests the data file&rsquo;s own URL '
+        . "and installs nothing unless it comes back refused.</p>\n";
 
     /* THE ADDRESS, SHOWN AND EDITABLE, AND IT WAS NEITHER. Opened in a browser
        this installer reads the address off the request that reached it, which
@@ -3371,13 +3375,10 @@ function ap_i_run(array $options)
     echo '<p><label>The address these pages will point at<br>'
         . '<input type="text" name="api_address" value="'
         . ap_i_h(ap_i_base_url() . 'api.php') . '"></label></p>' . "\n";
-    echo '<p class="note">Read off the request that opened this page, which is right '
-        . 'unless something between your browser and this server changes the name '
-        . '&mdash; a proxy, a CDN, or a temporary address used before the real domain '
-        . 'points here. It is what goes into <code>data-server</code> on your pages, so '
-        . 'it has to be the address the site will really answer at. Change it and this '
-        . 'installer writes a file here and asks for it there before doing anything '
-        . "else: an address that does not lead to this directory installs nothing.</p>\n";
+    echo '<p class="note">Read off the request that opened this page. Correct it if '
+        . 'your visitors reach the site under another name &mdash; a proxy, a CDN, a '
+        . 'temporary address. It is checked before anything is '
+        . "installed.</p>\n";
 
     echo "<details" . ($postedMysql ? ' open' : '') . ">\n";
     echo "<summary>MySQL connection details</summary>\n";
@@ -3409,27 +3410,20 @@ function ap_i_run(array $options)
     ap_i_render_dial(ap_i_question('updates'), $wants);
     echo "</div>\n";
 
-    /* THE COST OF THE THIRD ANSWER, IN FULL, AND ONLY WHERE IT APPLIES. It is
-       the one thing on this page somebody can regret, and a sentence inside a
-       dial is not the size of it. */
-    echo '<p class="note if-self">Its cost: the code directory must be writable by the '
-        . 'user PHP runs as, and from that moment any bug anywhere on this account that '
-        . 'can write a file &mdash; in this code, in a neighbouring application, in a '
-        . 'plugin nobody remembers installing &mdash; stops being a defacement and '
-        . 'becomes permanent code execution. Setting the key back to false does not '
-        . "undo it: the permission stays until somebody takes it away.</p>\n";
-    echo '<p class="note if-url">A secret is written into the configuration and the '
-        . 'address is shown once, on the next screen and nowhere else. Whoever calls it '
-        . 'waits while the update runs &mdash; allowed there and nowhere else, because '
-        . 'they came for it and no reader of a page is kept waiting. At most one real '
-        . "check a day, however often it is called.</p>\n";
+    /* THE COST OF THE THIRD ANSWER, AND ONLY WHERE IT APPLIES. It is the one
+       thing on this page somebody can regret, so it is said -- in two lines,
+       not in the paragraph it used to be. --help has the paragraph. */
+    echo '<p class="note if-self bad">Its cost: the code directory must be writable by '
+        . 'PHP, and any file-writing bug on this account then becomes permanent code '
+        . "execution. Setting the key back to false does not take the permission "
+        . "away.</p>\n";
+    echo '<p class="note if-url">The address is shown once, on the next screen. At most '
+        . "one real check a day, however often it is called.</p>\n";
 
     if (!$canDefer) {
         echo '<p class="note bad">&ldquo;It updates itself&rdquo; cannot work on this '
-            . 'host: this PHP interface (<code>' . ap_i_h(PHP_SAPI) . '</code>) cannot '
-            . 'hand the response to the visitor before doing more work, and a visitor '
-            . 'must never wait on a fetch to GitHub, so the key would be read and '
-            . "declined on every write. The address is chosen for you instead.</p>\n";
+            . 'host (<code>' . ap_i_h(PHP_SAPI) . '</code> cannot answer a visitor and '
+            . "go on working). The address is chosen for you instead.</p>\n";
     }
     if (!$outbound) {
         echo '<p class="note bad">This server has no way out to HTTPS, so nothing here '
@@ -3444,11 +3438,8 @@ function ap_i_run(array $options)
        it arrives. It is 6000 rows now, and it is a field like the others.
        Shut by default, so the screen is the length it was. Same table as the
        command line reads, so neither face can offer what the other cannot. */
-    echo '<p class="note">Everything below is optional, and nothing below is a '
-        . 'mystery: each field says what happens if you leave it empty &mdash; in grey '
-        . 'inside the box, or in the sentence under it where this installation writes '
-        . 'a different number depending on your first answer. Fill one in and it '
-        . "becomes a line in your configuration, with its explanation beside it.</p>\n";
+    echo '<p class="note">All optional. Empty means the value in grey; '
+        . "<code>--help</code> explains each one at length.</p>\n";
 
     $section = null;
     $sections = ap_i_setting_sections();
@@ -3466,8 +3457,10 @@ function ap_i_run(array $options)
             $shape = $sections[$section];
             echo '<details' . (!empty($shape['open']) ? ' open' : '') . ">\n";
             echo '<summary>' . ap_i_h($shape['title']) . "</summary>\n";
-            echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
-                . $shape['say'] . "</p>\n";
+            if ($shape['hint'] !== '') {
+                echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
+                    . $shape['hint'] . "</p>\n";
+            }
         }
         echo '<p><label>' . ap_i_h($setting['label']);
         if ($setting['kind'] === 'choice') {
@@ -3512,12 +3505,27 @@ function ap_i_run(array $options)
                 . ">\n";
         }
         echo "</label></p>\n";
-        echo '<p class="note">' . $setting['say'] . "</p>\n";
-        if (isset($setting['decided'])) {
-            echo '<p class="note"><span class="if-one">Left empty, this install '
-                . 'writes ' . ap_i_h($setting['decided']['one-site']) . '.</span>'
-                . '<span class="if-anyone">Left empty, this install writes '
-                . ap_i_h($setting['decided']['anyone']) . ".</span></p>\n";
+        /* THE SHORT SENTENCE HERE, THE LONG ONE IN --help, AND IT IS NOT THE
+           SAME READER. This screen printed `say` -- the full paragraph, for
+           every setting -- and measured 1756 words, more than the entire
+           install page of the website. Opening a fold looked like opening a
+           book, so it stopped being read at all. What a form owes is the
+           thing the label cannot say; a field whose name is enough gets
+           nothing, and eight of them do. Whoever wants the paragraph types
+           --help, where a paragraph is what they came for. */
+        /* ONE LINE UNDER A FIELD, not two. The hint and "what an empty field
+           gets you" were two paragraphs, which on four settings made a
+           two-line stack under a one-line box. */
+        if ($setting['hint'] !== '' || isset($setting['decided'])) {
+            echo '<p class="note">' . $setting['hint'];
+            if (isset($setting['decided'])) {
+                echo ($setting['hint'] !== '' ? ' ' : '')
+                    . '<span class="if-one">Empty: '
+                    . ap_i_h($setting['decided']['one-site']) . '.</span>'
+                    . '<span class="if-anyone">Empty: '
+                    . ap_i_h($setting['decided']['anyone']) . '.</span>';
+            }
+            echo "</p>\n";
         }
     }
     if ($section !== null) {

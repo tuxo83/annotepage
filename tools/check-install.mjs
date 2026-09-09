@@ -220,6 +220,30 @@ for (const title of askPhp('foreach (ap_i_setting_sections() as $s) { echo $s["t
         own.form.includes(title.replace(/&/g, '&amp;')), title);
 }
 
+/* AND IT STAYS A FORM, NOT A BOOK. Every setting used to print the whole
+   paragraph that --help prints, and the screen measured 1756 words -- more
+   than the entire install page of the website. A fold that opens onto a book
+   is a fold nobody reads, so the settings that matter get skipped along with
+   the rest. The form prints the short line; --help prints the paragraph.
+   Two rules, because prose comes back one sentence at a time: a ceiling on
+   the whole screen, and a ceiling on any one line under a field. */
+const words = (html) => {
+    const text = html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/g, ' ')
+        .replace(/<[^>]+>/g, ' ');
+    return (text.match(/[A-Za-z'\u2019-]+/g) || []).length;
+};
+const onScreen = words(own.form);
+check(`the install screen is ${onScreen} words, over the 1000 it is allowed`
+    + ' -- it printed 1756 once, and a fold that opens onto a book is not read',
+    onScreen <= 1000);
+
+for (const line of askPhp('foreach (ap_i_settings() as $s) { echo $s["key"], "=",'
+        + ' $s["hint"], "\n"; }').split('\n').filter(Boolean)) {
+    const [key, hint] = [line.slice(0, line.indexOf('=')), line.slice(line.indexOf('=') + 1)];
+    check(`the line under "${key}" is ${hint.length} characters, over the 140 a form`
+        + ' owes: what does not fit belongs in --help', hint.length <= 140, hint);
+}
+
 check('no configuration was written', own.config !== null, own.done.slice(0, 400));
 if (own.config) {
     const parses = spawnSync('php', ['-l', own.configPath], { encoding: 'utf8' });
