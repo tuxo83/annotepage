@@ -42,6 +42,22 @@ attached, which is the part worth keeping.
   not cover text on anybody's site.
 - **Plugins beyond WordPress.** WordPress ships. The others wait for somebody
   asking.
+- **The installer in another language, French first.** The annotation layer is
+  already translatable — every text is a label, English is the fallback, a
+  partial translation is usable, and a complete French set of 150 labels ships
+  in the package. The installer is not: it is English on both faces, and there
+  is no way to ask it for anything else. Half the work is done without having
+  been done for this: 79 of its texts are already DATA rather than prose in
+  code — the label, the short line and the paragraph of each setting, the three
+  questions and their answers, the sections, the MySQL fields — so translating
+  those is a mapping and not a rewrite, and the same file would serve the form
+  and `--help`. The other half is the prose of the screens themselves, about a
+  hundred sentences that live in the code where they are printed. What it needs
+  before it can start: where the choice comes from (`--lang=fr` on one face,
+  `?lang=fr` on the other, and nothing guessed from a browser header, which
+  would give somebody a language their colleague cannot read over their
+  shoulder), and the same fallback rule as the client — a missing string is the
+  English one, never an empty screen.
 
 ## Ruled out, with the reason
 
