@@ -477,6 +477,15 @@ check('a malformed address was not refused with the shape it wants',
    refuses is the page losing either of them, or the control that swaps them. */
 check('the page carries no control for the long sentences',
     malformed.form.includes('id="ap-explain"'));
+/* AND THE PAGE SAYS WHAT IT IS AT A GLANCE. It was headed `annotepage`, which
+   names the tool and not what this screen is for -- and titled
+   `annotepage -- install`, which is the same thing with punctuation. */
+check('the page does not name the act and the tool in its heading',
+    /<h1>Install annotepage<\/h1>/.test(malformed.form),
+    (malformed.form.match(/<h1>[^<]*<\/h1>/) || ['(none)'])[0]);
+check('the browser tab does not say what this page is',
+    /<title>Install annotepage<\/title>/.test(malformed.form),
+    (malformed.form.match(/<title>[^<]*<\/title>/) || ['(none)'])[0]);
 const shortSpans = (malformed.form.match(/<span class="l-short">/g) || []).length;
 const longSpans = (malformed.form.match(/<span class="l-long">/g) || []).length;
 check(`the page carries ${shortSpans} short sentences and ${longSpans} long ones,`

@@ -3098,7 +3098,15 @@ function ap_i_config_text(array $values)
 
 // --- 5. The page shell -----------------------------------------------------
 
-function ap_i_head($title)
+/**
+ * @param string      $title what the browser tab says
+ * @param string|null $head  what the page says at the top; the tool's name and
+ *                           the act, so that somebody who lands here knows in
+ *                           one glance what this is -- it used to say
+ *                           `annotepage` alone, which names the tool and not
+ *                           what the screen is for.
+ */
+function ap_i_head($title, $head = null)
 {
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-store');
@@ -3770,7 +3778,7 @@ form:has(#ap-more:checked) .more {
 
 CSS;
     echo "\n</style>\n";
-    echo '<h1>annotepage</h1>' . "\n";
+    echo '<h1>' . ap_i_h($head === null ? 'annotepage' : $head) . "</h1>\n";
 }
 
 function ap_i_foot()
@@ -3839,8 +3847,7 @@ function ap_i_run(array $options)
     // looks at carries the whole story and not the half of it this file saw.
     $report = isset($options['report']) ? $options['report'] : array();
     $lede = isset($options['lede']) ? $options['lede']
-        : 'Upload the directory, open this page, press the button. '
-          . 'Three questions, and all three have a default that works.';
+        : 'Three questions, and all three have a default that works.';
 
     // The METHOD is an argument and not a reading of the environment: the caller
     // may have consumed a POST of its own -- the bootstrap's "fetch the release"
@@ -3857,7 +3864,7 @@ function ap_i_run(array $options)
     // installation is over.
     if ($method === 'POST' && isset($_POST['delete_self'])) {
         list($deleted, $message) = ap_i_delete_self($self);
-        ap_i_head('annotepage -- installer');
+        ap_i_head('annotepage installer', 'The annotepage installer');
         echo '<p class="lede">' . ($deleted ? 'Done.' : 'Not done.') . "</p>\n";
         echo '<p' . ($deleted ? '' : ' class="bad"') . '>' . ap_i_h($message) . "</p>\n";
         echo '<p>The server itself is unaffected either way: '
@@ -3876,7 +3883,7 @@ function ap_i_run(array $options)
         $mine = parse_url(ap_i_base_url(), PHP_URL_HOST);
         if ($sent === null || strcasecmp((string) $sent, (string) $mine) !== 0) {
             http_response_code(403);
-            ap_i_head('annotepage -- installer');
+            ap_i_head('annotepage installer', 'The annotepage installer');
             echo '<p class="bad">This form was submitted from another site, so nothing '
                 . 'was done. Open ' . ap_i_h($selfName) . ' directly and submit it from '
                 . 'there.</p>' . "\n";
@@ -3913,7 +3920,7 @@ function ap_i_run(array $options)
             }
         }
 
-        ap_i_head('annotepage -- already installed');
+        ap_i_head('annotepage already installed', 'annotepage is already installed');
         echo '<p class="lede">This server is already configured. The installer does '
             . 'nothing here.</p>' . "\n";
         echo '<p><code>internal/config-local.php</code> exists, and it holds this '
@@ -4017,7 +4024,8 @@ function ap_i_run(array $options)
 
     // --- The page. -----------------------------------------------------------
 
-    ap_i_head($installed ? 'annotepage -- installed' : 'annotepage -- install');
+    ap_i_head($installed ? 'annotepage installed' : 'Install annotepage',
+              $installed ? 'annotepage installed' : 'Install annotepage');
 
     if ($installed) {
         $screen = ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
@@ -4036,18 +4044,15 @@ function ap_i_run(array $options)
        you about the host before it has told you what it is here to do. Two
        facts, both measured rather than assumed: the file this press writes,
        and the address these pages will call. */
-    /* WHAT PRESSING IT DOES, ALL OF IT. This said "writes one file", which is
-       true of the file it writes and reads as though that were the whole act
-       -- the reader who has just uploaded a directory wonders what installed
-       the rest. The four things it does, in the order it does them, and the
-       fifth it offers afterwards. */
-    echo '<p class="says">This sets up the server the notes live on &mdash; its code is '
-        . 'already here, in this directory. Pressing <b>Install</b> creates the storage '
-        . 'the notes go into (a file, or the tables in the database you name), proves '
-        . 'that storage cannot be downloaded from the web, writes <code>internal/'
-        . 'config-local.php</code>, and then gives you the tag to paste into your pages '
-        . 'and offers to delete itself. Nothing else on this host is touched, and '
-        . "nothing at all is written until you press it.</p>\n";
+    /* WHAT PRESSING IT DOES, IN ONE SENTENCE. It said "writes one file", which
+       is true of the file and reads as the whole act; then it said all four
+       things and ran to eighty-three words, which is a paragraph at the top of
+       a page whose whole point is that it is short. Four verbs, one line, and
+       the detail is in the screens that follow -- each one arrives when it is
+       the thing you are doing. */
+    echo '<p class="says">It creates the storage, checks the web cannot reach it, writes '
+        . '<code>internal/config-local.php</code>, then hands you the tag for your pages '
+        . "and offers to delete itself. Nothing is written until you press.</p>\n";
     echo "<table class=\"what\">\n";
     echo '<tr><td class="k">This directory</td><td class="v">' . ap_i_h($here)
         . '</td><td class="m">the file is written here, and the notes go here or into '
@@ -4158,9 +4163,8 @@ function ap_i_run(array $options)
        probe is a refusal to install rather than a warning. Both were a
        paragraph under a radio, where they were read once and then scrolled
        past twice. */
-    echo '<p class="note">A relay keeps what it cannot read, so it cannot moderate '
-        . 'it either. With SQLite the installer requests the data file&rsquo;s own URL '
-        . "and installs nothing unless it comes back refused.</p>\n";
+    echo '<p class="note">A relay keeps what it cannot read, so it cannot moderate it '
+        . "either.</p>\n";
 
     /* THE ADDRESS, SHOWN AND EDITABLE, AND IT WAS NEITHER. Opened in a browser
        this installer reads the address off the request that reached it, which
@@ -4179,9 +4183,8 @@ function ap_i_run(array $options)
         . ' name="api_address" value="'
         . ap_i_h(ap_i_base_url() . 'api.php') . '"></label></p>' . "\n";
     echo '<p class="note">Read off the request that opened this page. Correct it if '
-        . 'your visitors reach the site under another name &mdash; a proxy, a CDN, a '
-        . 'temporary address. It is checked before anything is '
-        . "installed.</p>\n";
+        . 'your visitors reach the site under another name; it is checked before '
+        . "anything is installed.</p>\n";
 
     /* THE MySQL BOX APPEARS BECAUSE MySQL WAS CHOSEN, and disappears with
        SQLite. It was a fold that had to be opened by hand: choosing MySQL
@@ -4230,12 +4233,9 @@ function ap_i_run(array $options)
        scheduler and would otherwise never update at all. */
     if (!$canDefer) {
         echo '<p class="note if-self">On this host (<code>' . ap_i_h(PHP_SAPI)
-            . '</code>) the wait falls on whoever loads the page it happens on: this '
-            . 'interface cannot answer a visitor and go on working. Measured against '
-            . 'the real release: <b>0.3 s</b> for the daily check, <b>2.3 s</b> for an '
-            . 'update that replaces nine files &mdash; a few times that on a slow host. '
-            . 'At most once a day, and a run that goes past 15 seconds changes '
-            . "nothing and tries again tomorrow.</p>\n";
+            . '</code>) a visitor waits for it: measured, <b>0.3 s</b> for the daily '
+            . 'check and <b>2.3 s</b> for a real update, at most once a day. Past 15 '
+            . "seconds it changes nothing and retries tomorrow.</p>\n";
     }
     echo "</div>\n";
 
@@ -4243,9 +4243,8 @@ function ap_i_run(array $options)
        thing on this page somebody can regret, so it is said -- in two lines,
        not in the paragraph it used to be. --help has the paragraph. */
     echo '<p class="note if-self bad">Its cost: the code directory must be writable by '
-        . 'PHP, and any file-writing bug on this account then becomes permanent code '
-        . "execution. Setting the key back to false does not take the permission "
-        . "away.</p>\n";
+        . 'PHP, so any file-writing bug on this account becomes permanent code '
+        . "execution. Undoing the setting does not take the permission back.</p>\n";
     echo '<p class="note if-url">The address is shown once, on the next screen. At most '
         . "one real check a day, however often it is called.</p>\n";
 
@@ -4367,9 +4366,8 @@ function ap_i_run(array $options)
         . ' settings myself</span><span class="when-open">Hide the other '
         . count($settings) . ' settings</span></span></label></p>' . "\n";
     echo '<div class="shut-only">' . "\n";
-    echo '<p class="note">How long notes are kept, how fast anybody may write, what '
-        . 'this server says about itself, and two that can undo what this tool is '
-        . "for. Left alone, this installation writes:</p>\n";
+    echo '<p class="note">Retention, the limits, and what this server says about '
+        . "itself. Left alone, this installation writes:</p>\n";
     echo "<table>\n";
     $others = 0;
     foreach ($settings as $setting) {
