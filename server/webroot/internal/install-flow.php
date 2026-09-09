@@ -1473,6 +1473,79 @@ function ap_i_question($key)
  * this file's own header says the day it was two copies of one page is the day
  * one of them started being wrong.
  */
+
+/* -- THE TWO MARKS, AND THE RAIL --------------------------------------------
+   Written once and used on both screens, which is the same argument
+   ap_i_screen_installed() is built on: a thing drawn twice is a thing that
+   will disagree with itself. The glyphs are the site's own -- the tick is the
+   copy button's on how-to-install-it.html, the folder is base.css's .sc-ic --
+   so this repository still owes nobody a notice. */
+
+function ap_i_mark($ok)
+{
+    if ($ok) {
+        return '<span class="verdict-mark" aria-hidden="true">'
+             . '<svg class="i-ok" viewBox="0 0 20 20" focusable="false">'
+             . '<path d="M4 10.6l4 4 8-9"/></svg></span>';
+    }
+    return '<span class="verdict-mark" aria-hidden="true">'
+         . '<svg viewBox="0 0 20 20" focusable="false">'
+         . '<path d="M6.2 6.2l7.6 7.6"/><path d="M13.8 6.2l-7.6 7.6"/></svg></span>';
+}
+
+function ap_i_tick()
+{
+    return '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">'
+         . '<path d="M4 10.6l4 4 8-9"/></svg>';
+}
+
+/**
+ * THE THREE STEPS. $at is which one you are on -- 1 on the form, 3 on the
+ * screen that follows it -- and $blocked marks the first one when this host
+ * cannot run what the form would install.
+ *
+ * A LIST, BECAUSE IT IS ONE: three items in an order, and the order is the
+ * whole message. `aria-current="step"` is what says which, in the one word
+ * the specification has for it; the ink and the fill say it to everybody
+ * else.
+ */
+function ap_i_rail($at, $blocked = false, $lastHref = null)
+{
+    $steps = array('Answer', 'It installs', 'Delete the installer');
+    $out = '<ol class="rail" aria-label="Where you are">' . "\n";
+    for ($i = 1; $i <= 3; $i++) {
+        if ($i > 1) {
+            $out .= '<li class="rail-link" aria-hidden="true">'
+                  . '<span class="rail-dot"></span></li>' . "\n";
+        }
+        $done = ($i < $at);
+        $now  = ($i === $at);
+        $class = 'rail-step'
+               . ($done ? ' is-done' : '')
+               . ($now && $blocked ? ' is-blocked' : '');
+        $label = ap_i_h($steps[$i - 1]);
+        if ($now && $lastHref !== null) {
+            $label = '<a href="' . ap_i_h($lastHref) . '">' . $label . '</a>';
+        }
+        $out .= '<li class="' . $class . '"' . ($now ? ' aria-current="step"' : '') . '>'
+              . '<span class="rail-n" aria-hidden="true">'
+              . ($done ? ap_i_tick() : $i) . '</span>'
+              . ($done ? '<span class="rail-hid">Done: </span>' : '')
+              . '<span class="rail-t">' . $label . '</span></li>' . "\n";
+    }
+    return $out . '</ol>' . "\n";
+}
+
+/** WHERE EVERYTHING GOES. The folder is base.css's own .sc-ic path. */
+function ap_i_here_line($here)
+{
+    return '<p class="here">'
+         . '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">'
+         . '<path d="M2.6 15.4V4.6h4.6l1.7 2h8.5v8.8a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1z"/>'
+         . '</svg><b>' . ap_i_h($here) . '</b>'
+         . '<span class="here-say">everything goes here</span></p>' . "\n";
+}
+
 function ap_i_render_html(array $screen)
 {
     foreach ($screen as $block) {
@@ -1740,7 +1813,7 @@ function ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
             . "read, and only after the reader already has their answer.");
     }
 
-    $screen[] = array('h2', 'Now delete this file');
+    $screen[] = array('h2', '<span id="delete"></span>Now delete this file');
     $screen[] = array('p', 'It has done its job. It refuses to act while the configuration exists, '
         . 'but an installer that stays reachable and writable on a live server is a '
         . 'liability all the same.');
@@ -3205,6 +3278,17 @@ function ap_i_head($title, $head = null)
        bare :root like everything else, instead of a rule and an override
        stranded at the top of the file. */
     --bad:       #b00020;
+    /* THE GROUND UNDER THE TWO MARKS ADDED BELOW. --ok and --ok-soft are
+       base.css's, value for value, like every other colour on this page:
+       "something that succeeded, and stays quiet" is a token the site already
+       owns and this page had been drawing success in plain body text.
+       --bad-soft is this page's own, for the same reason --bad is -- no page
+       of the site says a thing is impossible, so no page of it has a ground
+       for that sentence. Measured on the rendered pixels: --ok on --ok-soft
+       5.81:1 light and 8.21:1 dark, --bad on --bad-soft 6.43:1 and 7.85:1. */
+    --ok:        #0a6b3d;
+    --ok-soft:   #e6f4ea;
+    --bad-soft:  #fdecef;
     --shadow:    0 1px 2px rgba(16, 18, 24, .06), 0 8px 28px rgba(16, 18, 24, .07);
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
             "DejaVu Sans Mono", monospace;
@@ -3229,6 +3313,9 @@ function ap_i_head($title, $head = null)
         --accent:    #8ab4ff;
         --on-accent: #0f1115;
         --bad:       #ff8f8f;
+        --ok:        #5fd39a;
+        --ok-soft:   #17291f;
+        --bad-soft:  #2a1519;
         --shadow:    0 1px 2px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .45);
     }
 }
@@ -3804,6 +3891,361 @@ form:has(#ap-more:checked) .more {
     border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0;
 }
 
+/* == A THING THAT PASSED, AND THE THREE STEPS ==============================
+   Everything below this line is the proposal. Nothing above it was touched
+   except the two tokens added to :root and to the dark block.
+   ========================================================================= */
+
+
+/* -- the verdict: one mark, and the fold under it -------------------------
+
+   WHAT THE SITE DRAWS WHEN SOMETHING SUCCEEDED, and it draws it in exactly
+   one place: .nt-stamp in base.css, --ok on --ok-soft, described there as
+   "something that succeeded, and stays quiet". What the site draws for a
+   numbered thing on a diagram is .lp-num -- a circle, place-items:center, one
+   glyph inside it. This is those two shapes at once, and the glyph is the
+   tick the copy buttons on how-to-install-it.html already draw
+   (`M4 10.6l4 4 8-9`, viewBox 0 0 20 20). Nothing here is a new drawing.
+
+   IT IS ONE ROW, NOT A HEADING OVER A PARAGRAPH OVER A CHIP. When everything
+   passes this is not a section of the page: it is one line of reassurance,
+   and it had four lines of furniture round it. */
+.verdict {
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    align-items: start; gap: .7rem;
+    margin: 0 0 1.9rem;
+}
+.verdict-mark {
+    display: grid; place-items: center;
+    width: 1.7rem; height: 1.7rem;
+    border-radius: 999px;
+    background: var(--ok-soft); color: var(--ok);
+    /* IT ARRIVES THE WAY THE LANDING PAGE'S STEPS ARRIVE -- index.html's
+       `step-in`, its numbers unchanged: 6px of travel, .45s, ease-out, and
+       `backwards` so that the keyframe's opacity:0 belongs to the animation
+       and not to the element. That is what makes the reduced-motion rule at
+       the foot of this sheet correct rather than destructive: with
+       `animation: none` the mark is simply THERE, drawn, at rest. */
+    animation: ap-mark-in .45s ease-out backwards;
+}
+.verdict-mark svg {
+    width: 1.05rem; height: 1.05rem;
+    fill: none; stroke: currentColor; stroke-width: 2.2;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+/* THE TICK DRAWS ITSELF, ONCE. 18 is the path's own length: 5.66 + 12.04,
+   computed from the two segments of `M4 10.6l4 4 8-9` and rounded up. It is
+   written here rather than asked for at runtime because this page has no
+   script and will not get one, and because the path is four numbers long and
+   lives in this same file -- if it moves, this moves with it.
+   AT REST THE DASH IS FULLY DRAWN. Only the keyframe hides it, so no motion
+   means a finished tick and never an empty circle. */
+.verdict-mark .i-ok {
+    stroke-dasharray: 18; stroke-dashoffset: 0;
+    animation: ap-tick-draw .5s .12s ease-out backwards;
+}
+@keyframes ap-mark-in  { from { opacity: 0; transform: translateY(6px); } }
+@keyframes ap-tick-draw { from { stroke-dashoffset: 18; } }
+
+.verdict-say { margin: 0; }
+
+/* THE FOLD UNDER A GOOD VERDICT IS NOT A CONTROL WORTH FINDING. Every other
+   <summary> on this page is the site's chip -- --control-line hairline,
+   --bg-soft, 999px -- because every other one opens something somebody came
+   for. Nobody came for this one: it is eight rows of measurement under a line
+   that has just said they passed, and drawn as a chip it was the most
+   emphatic object in the section. It keeps the caret, which is the only part
+   of a chip that says what the control does. */
+.verdict details { margin-top: .25rem; }
+.verdict summary {
+    padding: 0; border: 0; background: none;
+    font-size: .85rem; font-weight: 400; color: var(--dim);
+}
+.verdict summary:hover { color: var(--accent); text-decoration: underline; }
+.verdict details[open] > summary { margin-bottom: .2rem; }
+
+/* -- AND THE SAME MARK WHEN IT IS NOT GOOD -------------------------------
+
+   THE SAME SHAPE IN THE OTHER INK, which is the whole point: somebody who has
+   installed this once has seen the green circle, and the red one is the same
+   object saying the opposite. A different drawing would have to be read.
+
+   IT IS NOT HIDDEN AND IT IS NOT SMALL, and neither of those is done with
+   motion. The site has no drawing that flashes to get attention, and a page
+   that blinks at a person who cannot install anything is nagging them. What
+   makes this unmissable is mass and place: it is a panel the width of the
+   column, it carries the failing rows themselves rather than a pointer to
+   them, and it sits above the form rather than beside it.
+
+   THE COLOUR IS ON THE LEADING EDGE, which is base.css's own way of saying a
+   card is in a state (.nt.nt-wait, a 2px border-left). 3px here: that rule is
+   on a 200px card in a figure, this is the reading column. */
+.verdict.is-bad {
+    padding: 1rem 1.2rem;
+    background: var(--bg-soft);
+    border-radius: var(--radius);
+    border-inline-start: 3px solid var(--bad);
+    margin-bottom: 1.4rem;
+}
+.verdict.is-bad .verdict-mark { background: var(--bad-soft); color: var(--bad); }
+/* AND THE CROSS DOES NOT DRAW ITSELF. The tick is a small pleasure at the end
+   of a measurement that went well; the same flourish on bad news is the page
+   admiring itself. The circle still rises with everything else, because that
+   is the page arriving, not the failure performing. */
+.verdict.is-bad table { margin-top: .7rem; }
+.verdict.is-bad td { border-bottom-color: var(--line-soft); }
+/* THE PANEL IS NARROWER THAN THE COLUMN THE PERCENTAGES WERE MEASURED AT --
+   a mark, a gap and 1.2rem of padding narrower -- and a fixed layout hands
+   that loss to whichever column the percentages say. `MISSING` is nine
+   characters and had 40% of it; the sentence that says what the row means had
+   34% and was wrapping to five lines. */
+.verdict.is-bad td.k { width: 24%; }
+.verdict.is-bad td.v { width: 18%; }
+.verdict.is-bad td.m { width: 58%; }
+
+
+/* == THE THREE STEPS, AND WHICH ONE YOU ARE ON ============================
+
+   THE PAGE NEVER SAID IT WAS THREE. It said it in a sentence -- "It creates
+   the storage, checks the web cannot reach it, writes config-local.php, then
+   hands you the tag for your pages and offers to delete itself" -- which is
+   one clause per step, in a paragraph, at the top of a page whose whole
+   argument is that it is short. A reader cannot see from that sentence where
+   they are, and there was nothing else on either screen that said so: the
+   delete button, which is the third step and the one irreversible act here,
+   sits 3 400px down the screen that follows this one.
+
+   IT IS THE DIAGRAM ON how-to-install-it.html, STRAIGHTENED. That figure is
+   four boxes, a numbered circle on each, arrows between them, and one ring
+   marking the box the note has reached. Three of those four pieces are CSS
+   and travel here unchanged -- the circle, the arrow, and the rule that dims
+   everything except the one being pointed at. The fourth does not, and the
+   note on .rail-dot says exactly what was left behind and why. */
+.rail {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: .5rem .55rem;
+    margin: 0 0 .55rem; padding: 0; list-style: none;
+}
+.rail-step {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .95rem; font-weight: 600; color: var(--dim);
+    /* THE LANDING PAGE'S OWN CADENCE, delays included: .10s, .26s, .42s,
+       160ms apart. Written there as "one after another, once, on arrival --
+       enough to read as a sequence, too small to be a movement", which is the
+       sentence this rail exists to say. */
+    animation: ap-mark-in .45s ease-out backwards;
+}
+.rail > li:nth-child(1) { animation-delay: .10s; }
+.rail > li:nth-child(3) { animation-delay: .26s; }
+.rail > li:nth-child(5) { animation-delay: .42s; }
+/* THE CIRCLE IS .lp-num, IN THE SIZES THIS PAGE SETS THINGS IN. Same shape,
+   same mono digit, same weight; what differs is that a step not yet reached
+   is an OUTLINE and not a fill -- the site's figure dims a receding chip to
+   --line because it is drawn on --bg-soft inside a picture, and this rail is
+   on the page's own ground where a --line disc reads as a smudge. The
+   hairline is --control-line, the only one this page draws round anything a
+   person can look at and act on. */
+.rail-n {
+    flex: none;
+    display: grid; place-items: center;
+    width: 1.55rem; height: 1.55rem;
+    border-radius: 999px;
+    background: var(--bg); color: var(--dim);
+    border: 1px solid var(--control-line);
+    font: 650 .78rem/1 var(--mono);
+}
+/* WHERE YOU ARE. Filled --accent under --on-accent, which is the pair this
+   site uses wherever a thing is the chosen one -- the checked chip, the
+   selected row of the file manager, the numbered chip on the diagram. */
+.rail-step[aria-current] { color: var(--text); }
+.rail-step[aria-current] .rail-n {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+}
+/* WHAT IS BEHIND YOU CARRIES THE SAME TICK AS A MEASUREMENT THAT PASSED, in
+   the same ink on the same ground. One glyph, one meaning, twice on a page. */
+.rail-step.is-done .rail-n {
+    background: var(--ok-soft); color: var(--ok); border-color: var(--ok-soft);
+}
+.rail-step.is-done .rail-n svg {
+    width: .95rem; height: .95rem;
+    fill: none; stroke: currentColor; stroke-width: 2.4;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+/* AND WHAT IS BLOCKED. The failure reaches the page's own furniture, at the
+   top, before the reader has scrolled anywhere. */
+.rail-step.is-blocked .rail-n {
+    background: var(--bad-soft); color: var(--bad); border-color: var(--bad-soft);
+}
+/* WHAT A SCREEN READER GETS AND NOBODY ELSE DOES. The circle is aria-hidden
+   -- it is a digit or a tick, and the label beside it already says the step --
+   so without this a reader hears three steps with no sign that two of them are
+   behind them. `aria-current="step"` says which one is now; this says which
+   ones are over. It is not on the page and does not count against a word
+   budget that is about what people read. */
+.rail-hid {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.rail-step a { color: inherit; text-decoration: none; }
+.rail-step a:hover { text-decoration: underline; }
+
+/* THE ARROW BETWEEN TWO STEPS. A line and a head, which is what the four
+   arrows of the diagram are; the head is the two-border triangle this page
+   already draws on `summary::after`, so it is not a glyph and not a file. */
+.rail-link {
+    position: relative; flex: 1 1 1.4rem;
+    min-width: 1.4rem; max-width: 2.6rem;
+    height: 1px; background: var(--line-soft);
+}
+.rail-link::after {
+    content: ""; position: absolute; right: -1px; top: 50%;
+    width: 0; height: 0; margin-top: -.28rem;
+    border: .28rem solid transparent; border-left-color: var(--line-soft);
+}
+
+/* -- THE DOT, WITHOUT THE SCRIPT THAT MEASURES IT ------------------------
+
+   how-to-install-it.html moves its dot with `translateX(var(--lp-run))` and
+   sets --lp-run from the arrow's measured width, on load and on every resize,
+   because those arrows are clamp()-sized SVGs whose length no stylesheet
+   knows. There is no script here and there will not be one.
+
+   SO THE WRAPPER TRAVELS, NOT THE DOT. The wrapper is the connector --
+   `inset: 0` -- and a percentage translate resolves against the element's own
+   border box, so `translateX(100%)` is exactly one connector at every width,
+   with nothing measured and nothing to recompute. The dot rides on it.
+
+   AND IT RUNS ONCE. Over there the dot goes round for ever, because what it
+   says is "this is a cycle and it comes back", and an observer pauses it when
+   the figure leaves the screen so that nothing turns behind the reader's
+   back. Neither of those applies here: three steps are not a cycle, and this
+   rail is at the top of a page a reader scrolls away from within seconds --
+   an infinite loop up there would be exactly the thing that observer exists
+   to prevent, and the observer is a script. Once, on arrival, after the three
+   have landed: the dot says the direction and stops. */
+.rail-dot {
+    position: absolute; inset: 0;
+    opacity: 0;
+    animation: ap-rail-go .45s ease-in-out;
+}
+.rail > li:nth-child(2) .rail-dot { animation-delay: .58s; }
+.rail > li:nth-child(4) .rail-dot { animation-delay: .98s; }
+.rail-dot::before {
+    content: ""; position: absolute; left: -3px; top: 50%;
+    width: 6px; height: 6px; margin-top: -3px;
+    border-radius: 999px; background: var(--dim);
+}
+/* The site's own shape for this: fade in over the first slice, out over the
+   last, so that a dot never appears or vanishes on the spot. */
+@keyframes ap-rail-go {
+    0%   { transform: translateX(0);    opacity: 0; }
+    14%  { opacity: 1; }
+    86%  { opacity: 1; }
+    100% { transform: translateX(100%); opacity: 0; }
+}
+
+.rail-say { margin: 0 0 .5rem; font-size: .9rem; color: var(--dim); }
+
+/* -- WHERE EVERYTHING GOES ------------------------------------------------
+
+   IT WAS THE MIDDLE CELL OF A THREE-COLUMN TABLE, at 40% of the column, with
+   sixteen words of explanation beside it -- and it is the one fact on this
+   screen a person checks against what they typed into their FTP client. It is
+   a line of its own now, in the mono this page already sets a path in, with
+   the folder base.css draws in its file-manager figure (`.sc-ic`, the same
+   path, the same 1.6 stroke). */
+/* INLINE FLOW, AND THAT IS THE WHOLE OF IT. Written as a flex row it came
+   apart at 390: flex-wrap breaks a line on an item's size BEFORE anything is
+   allowed to shrink, so a path longer than the phone always takes a line of
+   its own and the folder naming it is left alone on the line above --
+   measured, four lines for one fact. Inline, the folder is a character of the
+   first line and the path wraps where paths wrap. */
+.here {
+    margin: 0 0 1.9rem;
+    font-family: var(--mono); font-size: .84rem; line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+.here svg {
+    width: 1rem; height: 1rem; vertical-align: -.16em; margin-right: .45rem;
+    color: var(--dim);
+    fill: none; stroke: currentColor; stroke-width: 1.6;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.here b { font-weight: 600; }
+/* IT DOES NOT BREAK, and it is three words: a path that has just wrapped over
+   two lines followed by a note broken over two more is four lines of one
+   sentence. */
+.here-say {
+    font-family: var(--sans); font-size: .85rem; color: var(--dim);
+    margin-left: .6rem; white-space: nowrap;
+}
+
+/* NARROW: THE THREE STEPS BECOME THREE ROWS. Wrapped, a flex row puts one
+   step and half an arrow on the first line and the rest underneath, which
+   reads as a rail that broke rather than as a list. Stacked, the arrow is a
+   short vertical stub in the circle's own column -- the same answer the
+   diagram gives at its own narrow width, where the square becomes a column
+   and the arrows become one glyph each. */
+@media (max-width: 30rem) {
+    .rail { display: grid; grid-template-columns: 1fr; gap: 0; }
+    .rail-link {
+        justify-self: start; margin-left: .77rem;
+        width: 1px; height: .9rem; max-width: none; min-width: 0; flex: none;
+    }
+    .rail-link::after {
+        right: auto; left: 50%; top: auto; bottom: -1px;
+        margin: 0 0 0 -.28rem;
+        border-left-color: transparent; border-top-color: var(--line-soft);
+    }
+    .rail-step { padding: .18rem 0; }
+    /* Down instead of along, and it is the same wrapper travelling. */
+    @keyframes ap-rail-go {
+        0%   { transform: translateY(0);    opacity: 0; }
+        14%  { opacity: 1; }
+        86%  { opacity: 1; }
+        100% { transform: translateY(100%); opacity: 0; }
+    }
+}
+
+/* -- AND THE MEASURED ROWS ON A PHONE -----------------------------------
+
+   THE PAGE ALREADY DOES THIS AND THIS TABLE WAS NOT ON THE LIST. `table.what`
+   and the counters become a stack of label / value / meaning below 34rem, for
+   the reason written up there -- "a path in a 26% column at 390px breaks every
+   four characters". The environment rows were never in that rule and were
+   never in a panel either, so nobody had measured them: at 390 inside this
+   card `pdo_sqlite` came out as `pdo_sql` / `ite` and `MISSING` as `MISSI` /
+   `NG`. Same treatment, same breakpoint, same drawing of a stacked row. */
+@media (max-width: 34rem) {
+    .verdict table, .verdict tbody, .verdict tr, .verdict td {
+        display: block; width: auto;
+    }
+    .verdict tr {
+        border-bottom: 1px solid var(--line-soft);
+        margin-bottom: .55rem; padding-bottom: .45rem;
+    }
+    .verdict tr:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+    .verdict td, .verdict.is-bad td { border-bottom: 0; padding: .1rem 0; width: auto; }
+    .verdict td.k, .verdict.is-bad td.k {
+        width: auto; font-size: .78rem;
+        text-transform: uppercase; letter-spacing: .02em; color: var(--dim);
+    }
+    .verdict td.v, .verdict.is-bad td.v { width: auto; font-size: .88rem; }
+    .verdict td.m, .verdict.is-bad td.m { width: auto; }
+    /* The panel keeps its rule and loses the padding a phone cannot spare. */
+    .verdict.is-bad { padding: .85rem .9rem; }
+}
+
+
+/* THE ONE RULE THIS PAGE OWED THE SITE AND DID NOT HAVE. Every page of
+   annotepage.com ends its sheet with this; the installer had it on three
+   individual transitions and on nothing else, so the animations added above
+   would have run for a reader who had asked for none. It is the site's own
+   line, copied. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
 CSS;
     echo "\n</style>\n";
     echo '<h1>' . ap_i_h($head === null ? 'annotepage' : $head) . "</h1>\n";
@@ -4056,8 +4498,21 @@ function ap_i_run(array $options)
               $installed ? 'annotepage installed' : 'Install annotepage');
 
     if ($installed) {
+        /* THE SAME RAIL, ONE STEP ON. Two of the three are behind you and
+           carry the tick; the third is the delete button, which on this screen
+           is 3 400px down -- so the label is the link to it, and the one
+           irreversible act on this page is in view from the first line. */
         $screen = ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
                                         $report, $autoUpdate, $outboundUrl, $updateToken);
+        /* THE LEDE FIRST, THEN THE RAIL, WHICH IS THE ORDER THE OTHER SCREEN
+           PUTS THEM IN. The screen is built as a list of blocks and its first
+           one is the lede; taking it off the front and drawing it here is the
+           whole of the change, and the rest of the list is untouched. */
+        if ($screen && $screen[0][0] === 'lede') {
+            ap_i_render_html(array(array_shift($screen)));
+        }
+        echo ap_i_rail(3, false, '#delete');
+        echo ap_i_here_line($here);
         ap_i_render_html($screen);
         ap_i_foot();
         exit;
@@ -4097,17 +4552,25 @@ function ap_i_run(array $options)
        a page whose whole point is that it is short. Four verbs, one line, and
        the detail is in the screens that follow -- each one arrives when it is
        the thing you are doing. */
-    echo '<p class="says">It creates the storage, checks the web cannot reach it, writes '
-        . '<code>internal/config-local.php</code>, then hands you the tag for your pages '
-        . "and offers to delete itself. Nothing is written until you press.</p>\n";
-    echo "<table class=\"what\">\n";
-    echo '<tr><td class="k">This directory</td><td class="v">' . ap_i_h($here)
-        . '</td><td class="m">the file is written here, and the notes go here or into '
-        . "the database you name</td></tr>\n";
-    echo '<tr><td class="k">This address</td><td class="v">' . ap_i_h($serverUrl)
-        . '</td><td class="m">what the tag on your own pages will call; correct it '
-        . "below if it is wrong</td></tr>\n";
-    echo "</table>\n";
+    /* THE THREE STEPS, AND THE FOLDER THEY HAPPEN IN -- see ap_i_rail() and
+       the sheet. What they replace is the paragraph that used to be here (one
+       clause per step, thirty-three words, no way to see where you are) and
+       the two-row table under it. The address row of that table is gone from
+       here and not lost: it is a field of the form below, with its own label
+       and its own sentence, which is where somebody who wants to change it was
+       always going to find it. Saying it twice was the fold's own mistake in
+       another form.
+       $blocked is decided below and needed here, so the measurement moved up
+       the function; nothing else about it changed. */
+    list($environment, $outbound) = ap_i_environment($here, $outboundUrl);
+    $missing = array();
+    foreach ($environment as $line) {
+        if (!$line[2]) { $missing[] = $line; }
+    }
+
+    echo ap_i_rail(1, (bool) $missing);
+    echo '<p class="rail-say">Nothing is written until you press.</p>' . "\n";
+    echo ap_i_here_line($here);
 
     if ($errors) {
         echo '<h2>Nothing was installed</h2>' . "\n";
@@ -4144,36 +4607,52 @@ function ap_i_run(array $options)
        in one line. When something is missing, THAT row is shown outside the
        fold, and the fold opens by itself -- the answer arrives before the
        evidence, which is the order somebody wants it in. */
-    list($environment, $outbound) = ap_i_environment($here, $outboundUrl);
-    $missing = array();
-    foreach ($environment as $line) {
-        if (!$line[2]) { $missing[] = $line; }
-    }
+    /* WHAT THIS SERVER OFFERS, AND WHETHER IT IS A SECTION AT ALL.
 
-    echo '<h2>What this server offers</h2>' . "\n";
+       WHEN EVERYTHING PASSES IT IS NOT ONE. It is one line of reassurance, and
+       it had a heading, a rule, a sentence and a chip round it -- four pieces
+       of furniture for a fact nobody is going to read twice. So the good state
+       loses the heading and becomes one row: the mark, the sentence, and the
+       fold under it at the size of a note. The fold stays, because the
+       measurements are somebody's evidence when a host is odd; it stops being
+       drawn as something worth pressing, because almost nobody will.
+
+       WHEN SOMETHING FAILS IT IS A SECTION, and it keeps the heading, the rule
+       and the whole width of the column -- plus the failing rows themselves,
+       inside the panel, rather than a sentence pointing at a fold. The rail at
+       the top of the page has already said it: step one is red up there.
+
+       THE FOLD STILL PRINTS EVERYTHING, INCLUDING WHAT FAILED. That was true
+       before and the reason has not changed: the row that failed carries its
+       own explanation above, and the rest is for whoever wants it. */
     if ($missing) {
-        echo '<p class="note bad">' . (count($missing) === 1
-                ? 'One thing this needs is not here.'
-                : ap_i_h((string) count($missing)) . ' things this needs are not here.')
-            . " Until they are, installing gets you a server that answers wrongly "
-            . "rather than one that does not answer.</p>\n";
+        echo '<h2>What this server offers</h2>' . "\n";
+        echo '<div class="verdict is-bad">' . "\n";
+        echo ap_i_mark(false) . "\n";
+        echo '<div class="verdict-body">' . "\n";
+        echo '<p class="verdict-say"><b class="bad">' . ap_i_h((string) count($missing))
+            . ' of ' . ap_i_h((string) count($environment))
+            . ' did not pass.</b> Installed now, this server answers wrongly rather '
+            . "than not at all.</p>\n";
         ap_i_render_html(array(array('table-env', $missing)));
+        echo "</div>\n</div>\n";
+        echo "<details>\n<summary>Everything that was measured</summary>\n";
+        ap_i_render_html(array(array('table-env', $environment)));
+        echo "</details>\n";
     } else {
-        echo '<p>Everything it needs is here: PHP ' . ap_i_h(PHP_VERSION)
-            . ', the extensions, and a directory it can write to.'
-            . ($outbound ? '' : ' It cannot reach the outside over HTTPS, which stops'
-                . ' nothing here except automatic updates.')
+        echo '<div class="verdict">' . "\n";
+        echo ap_i_mark(true) . "\n";
+        echo '<div class="verdict-body">' . "\n";
+        echo '<p class="verdict-say">PHP ' . ap_i_h(PHP_VERSION) . ', the extensions, a '
+            . 'directory it can write to.'
+            . ($outbound ? '' : ' No way out over HTTPS, which stops only automatic '
+                . 'updates.')
             . "</p>\n";
+        echo "<details>\n<summary>All " . ap_i_h((string) count($environment))
+            . " measurements</summary>\n";
+        ap_i_render_html(array(array('table-env', $environment)));
+        echo "</details>\n</div>\n</div>\n";
     }
-    /* AND IT STAYS SHUT EVEN THEN. Opening it printed the failing rows twice,
-       once above and once inside, which is the noise this fold exists to
-       remove. The row that failed carries its own explanation; the rest is
-       for whoever wants it. */
-    echo "<details>\n";
-    echo '<summary>' . ($missing ? 'Everything that was measured' : 'What was measured')
-        . ", one line each</summary>\n";
-    ap_i_render_html(array(array('table-env', $environment)));
-    echo "</details>\n";
 
     $postedMysql = ($method === 'POST' && isset($_POST['storage']) && $_POST['storage'] === 'mysql');
     $field = function ($name, $fallback = '') {
