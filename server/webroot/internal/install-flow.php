@@ -3590,6 +3590,52 @@ td.c-why { color: var(--dim); font-size: .9rem; padding-left: .9rem; }
     .counters input { max-width: 12rem; }
 }
 
+
+/* -- the two readings of the page ---------------------------------------- */
+
+/* THE SAME CHIP AS EVERY OTHER CONTROL, and the one that is on is filled --
+   because that is what a chosen chip looks like six inches further down this
+   page. Two links and not a checkbox: no JavaScript here, and the server
+   renders the other reading. */
+.views {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+    margin: 0 0 2.2rem;
+}
+a.chip {
+    display: inline-block; padding: .28rem .75rem;
+    border: 1px solid var(--control-line); border-radius: 999px;
+    background: var(--bg); color: var(--dim);
+    font-size: .84rem; font-weight: 600; text-decoration: none;
+}
+a.chip:hover { border-color: var(--accent); color: var(--accent); }
+a.chip.on {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+}
+a.chip.on:hover { color: var(--on-accent); }
+.views-say { flex: 1 1 20rem; font-size: .85rem; color: var(--dim); }
+
+/* A LABEL AND ITS BOX ARE ONE THING. The markup separates them with a <br>,
+   which at this type size is a whole empty line between a question and the
+   place its answer goes -- and eleven of those read as a column of stray
+   boxes with captions floating over them. The break is dropped and the field
+   becomes a block, which is the same layout with the empty line taken out.
+   BOTH SHAPES, because the file writes both: `<label>text<br><input></label>`
+   where the label wraps the field, and `<label for=…>text</label><br><input>`
+   where it points at it. Matching only the first is how this rule was written
+   the first time, and it changed nothing on eleven of the fifteen fields. */
+label > br, label + br { display: none; }
+label > input, label > select,
+label + input, label + select { display: block; }
+
+/* AND ONCE THE FIFTEEN ARE OPEN, THE SWITCH IS NOT A PANEL ANY MORE. Shut, it
+   is a box: it holds the offer and the table of what an untouched install
+   writes. Open, that table is gone and what is left is one line -- and a grey
+   box round one line, above the settings it just revealed, reads as a section
+   of its own that contains nothing. */
+form:has(#ap-more:checked) .more-switch {
+    padding: 0; border-color: transparent; background: none;
+}
+
 CSS;
     echo "\n</style>\n";
     echo '<h1>annotepage</h1>' . "\n";
@@ -3841,7 +3887,36 @@ function ap_i_run(array $options)
 
     // --- The form, and the report above it.
 
+    /* ?long=1 IS A READING, NOT A SETTING. It changes which of the two
+       sentences each field carries and nothing else -- the form still posts to
+       the bare address, so submitting from the long page installs exactly what
+       submitting from the short one installs.
+
+       READ HERE AND NOT WHERE IT IS FIRST USED: the chips that switch between
+       the two readings are printed at the top of the page, and this used to be
+       assigned three hundred lines below them -- so the page reached with
+       ?long=1 drew "Short" as the chosen one while showing the paragraphs. The
+       second time in this file that a variable was read above its assignment,
+       and isset() never says a word about it. */
+    $long = isset($_GET['long']) && $_GET['long'] !== '' && $_GET['long'] !== '0';
     echo '<p class="lede">' . ap_i_h($lede) . "</p>\n";
+
+    /* THE TWO READINGS OF THIS PAGE, OFFERED AT THE TOP AND NOT BURIED. It sat
+       inside the settings, where somebody reaches it after deciding they are
+       not going to read anything -- and it is not a setting: it changes every
+       sentence on the screen. A chip, drawn like every other control here,
+       under the sentence that says what the page is.
+       A link and not a checkbox because there is no JavaScript on this page:
+       it comes back with the paragraphs `--help --verbose` prints, from the
+       same table. */
+    echo '<p class="views">'
+        . ($long
+            ? '<a class="chip on" href="' . ap_i_h($selfName) . '?long=1">Explained</a>'
+              . '<a class="chip" href="' . ap_i_h($selfName) . '">Short</a>'
+            : '<a class="chip" href="' . ap_i_h($selfName) . '?long=1">Explained</a>'
+              . '<a class="chip on" href="' . ap_i_h($selfName) . '">Short</a>')
+        . '<span class="views-say">Every field says what it does, in a line or in '
+        . "a paragraph &mdash; the same sentences as <code>--help</code>.</span></p>\n";
 
     /* WHAT IS BEING DONE, AND WHAT IT IS BEING DONE TO -- above everything,
        because a page whose first heading is "What this server offers" has told
@@ -3927,11 +4002,6 @@ function ap_i_run(array $options)
     $postedRelay = ($method === 'POST' && isset($_POST['audience'])
         && $_POST['audience'] === 'anyone');
 
-    /* ?long=1 IS A READING, NOT A SETTING. It changes which of the two
-       sentences each field carries and nothing else -- the form still posts to
-       the bare address, so submitting from the long page installs exactly what
-       submitting from the short one installs. */
-    $long = isset($_GET['long']) && $_GET['long'] !== '' && $_GET['long'] !== '0';
 
     echo '<h2>Install</h2>' . "\n";
     echo '<form method="post" action="' . ap_i_h($selfName) . '">' . "\n";
@@ -4155,14 +4225,7 @@ function ap_i_run(array $options)
     // --- Everything the switch reveals. --------------------------------------
 
     echo '<div class="more">' . "\n";
-    /* THE SAME TWO REGISTERS AS THE SHELL. A link and not a checkbox because
-       there is no JavaScript here and never will be: the page comes back with
-       the paragraphs `--help --verbose` prints, from the same table. */
-    echo '<p class="note">All optional. Empty means the value in grey. '
-        . ($long
-            ? '<a href="' . ap_i_h($selfName) . '">Short version</a>'
-            : '<a href="' . ap_i_h($selfName) . '?long=1">Why each of these?</a>')
-        . " &mdash; the same sentences as <code>--help</code>.</p>\n";
+    echo '<p class="note">All optional. Empty means the value in grey.</p>' . "\n";
 
     foreach ($sections as $group => $shape) {
         $fields = array();

@@ -451,8 +451,21 @@ const longForm = malformed.up
     ? await (await fetch('http://127.0.0.1:' + malformed.port + '/install.php?long=1',
                          { redirect: 'manual' })).text()
     : '';
-check('the short form does not offer the long one', malformed.form.includes('?long=1'));
-check('the long form does not offer the way back', longForm.includes('Short version'));
+/* THE TWO READINGS, OFFERED AS A PAIR OF CHIPS AT THE TOP OF THE PAGE -- and
+   the one you are reading is the filled one. It was a link buried inside the
+   settings, which is where somebody arrives after deciding not to read
+   anything, and it is not a setting: it changes every sentence on the screen.
+   What this refuses is a page that offers only one of the two. */
+check('the short form does not offer the explained one', malformed.form.includes('?long=1'));
+check('the short form does not mark itself as the one being read',
+    /<a class="chip on" href="[^"]*">Short<\/a>/.test(malformed.form),
+    (malformed.form.match(/<a class="chip[^>]*>[^<]*<\/a>/g) || []).join(' '));
+check('the explained form does not offer the way back',
+    /<a class="chip" href="[^"?]*">Short<\/a>/.test(longForm),
+    (longForm.match(/<a class="chip[^>]*>[^<]*<\/a>/g) || []).join(' '));
+check('the explained form does not mark itself as the one being read',
+    /<a class="chip on" href="[^"]*\?long=1">Explained<\/a>/.test(longForm),
+    (longForm.match(/<a class="chip[^>]*>[^<]*<\/a>/g) || []).join(' '));
 check('the long form says no more than the short one',
     words(longForm) > words(malformed.form) + 300,
     words(malformed.form) + ' words short, ' + words(longForm) + ' long');
