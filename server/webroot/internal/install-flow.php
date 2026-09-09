@@ -3529,7 +3529,23 @@ form:has(#ap-more:checked) .when-shut,
 form:has(#ap-more:checked) .shut-only { display: none; }
 form:has(#ap-more:checked) .when-open { display: inline; }
 form:has(#ap-more:not(:checked)) .more { display: none; }
-.more { margin: 1.3rem 0 0; }
+/* WHAT OPENS IS A PLACE, NOT MORE PAGE. Revealed inline, the fifteen settings
+   ran on from the questions above them with nothing to say where the one
+   ended and the other began -- so the page read as though it had asked
+   twenty questions after promising three. A card: its own edge, its own
+   ground, its own air. What is inside it is the part somebody chose to open,
+   and it can be seen to end. */
+.more {
+    margin: 1.3rem 0 0; padding: 1.3rem 1.4rem;
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    background: var(--bg-soft);
+}
+/* The first section inside the card has the card's own edge above it. */
+.more > .part:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
+/* A box inside the card stands on the page's own ground, or two greys sit on
+   each other and neither reads as a boundary. */
+.more .limits, .more input, .more select { background: var(--bg); }
+@media (max-width: 34rem) { .more { padding: 1rem .9rem; } }
 
 
 /* -- the counters and their window --------------------------------------- */
@@ -3607,10 +3623,12 @@ form:has(#ap-explain:not(:checked)) .l-long { display: none; }
 form:has(#ap-explain:checked) .l-short { display: none; }
 .l-long { display: inline; }
 /* The switch itself, at the head of the settings it acts on. Lighter than the
-   one that revealed them: that one is a decision, this one is a reading. */
-.switch-line.explain { margin: 0 0 .2rem; }
+   one that revealed them -- that one is a decision, this one is a reading --
+   but the BOX IS THE SAME SIZE and the gap is the same, so the two lines start
+   on the same pixel. Made smaller, it read as a stray indent under the line
+   above it. */
+.switch-line.explain { margin: 0 0 1.1rem; }
 .switch-line.explain label { font-weight: 400; font-size: .92rem; color: var(--dim); }
-.switch-line.explain input { width: 1rem; height: 1rem; }
 
 /* A LABEL AND ITS BOX ARE ONE THING. The markup separates them with a <br>,
    which at this type size is a whole empty line between a question and the
