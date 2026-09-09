@@ -389,6 +389,42 @@ const malformed = await rehearse(await freePort(),
 check('a malformed address installed something', malformed.config === null);
 check('a malformed address was not refused with the shape it wants',
     malformed.done.includes('full URL beginning with http'), malformed.done.slice(0, 300));
+/* THE SAME TWO REGISTERS ON BOTH FACES, FROM THE SAME TABLE. Short is the
+   default everywhere: the form shows `hint`, --help shows `hint`. The long
+   sentence is one link or one flag away: ?long=1 here, --help --verbose there.
+   What this refuses is the state the tool was in twice -- one face carrying a
+   paragraph the other cannot show, or a short line that exists nowhere else. */
+const longForm = malformed.up
+    ? await (await fetch('http://127.0.0.1:' + malformed.port + '/install.php?long=1',
+                         { redirect: 'manual' })).text()
+    : '';
+check('the short form does not offer the long one', malformed.form.includes('?long=1'));
+check('the long form does not offer the way back', longForm.includes('Short version'));
+check('the long form says no more than the short one',
+    words(longForm) > words(malformed.form) + 300,
+    words(malformed.form) + ' words short, ' + words(longForm) + ' long');
+
+const short = spawnSync('php', [join(webroot, 'install.php'), '--help'],
+    { encoding: 'utf8' }).stdout || '';
+const verbose = spawnSync('php', [join(webroot, 'install.php'), '--help', '--verbose'],
+    { encoding: 'utf8' }).stdout || '';
+check('--help is not the short list any more',
+    words(short) < 900, words(short) + ' words');
+check('--help --verbose says no more than --help',
+    words(verbose) > words(short) + 800,
+    words(short) + ' words short, ' + words(verbose) + ' verbose');
+check('--help does not point at --verbose', short.includes('--help --verbose'));
+/* An option that is ignored installs the default and reads as a success --
+   the rule this installer applies to every other option applies to this one. */
+const alone = spawnSync('php', [join(webroot, 'install.php'), '--verbose'],
+    { encoding: 'utf8' });
+check('--verbose alone was accepted rather than refused', alone.status === 2,
+    'exit ' + alone.status);
+/* Entities belong to the form. A hint written with an apostrophe reached the
+   terminal as `&rsquo;` on the day this was added. */
+check('the shell help still carries HTML entities', !/&[a-z]+;/.test(short + verbose),
+    ((short + verbose).match(/&[a-z]+;/g) || []).slice(0, 3).join(' '));
+
 stop(malformed);
 
 /* -- A RUN THAT FAILS LEAVES NOTHING BEHIND -----------------------------

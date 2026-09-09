@@ -1733,6 +1733,8 @@ function ap_i_cli_options()
     $options['delete-installer'] = array('kind' => 'flag', 'field' => null,
         'label' => 'Delete this file once the configuration is written');
     $options['help'] = array('kind' => 'flag', 'field' => null, 'label' => 'This text');
+    $options['verbose'] = array('kind' => 'flag', 'field' => null,
+        'label' => 'With --help: the reasoning behind every option, not just the list');
     $options['version'] = array('kind' => 'flag', 'field' => null,
         'label' => 'The version of this file, and nothing else');
 
@@ -1837,9 +1839,15 @@ function ap_i_plain($text, $keepLines = false)
        runs". The one placeholder somebody has to replace was the thing that
        disappeared. */
     $text = strip_tags((string) $text);
+    /* THE CURLY ONES TOO. `&rsquo;` reached a terminal as five literal
+       characters the day a hint used an apostrophe -- the list was written
+       when nothing but `&mdash;` was in play, and a list of entities is a list
+       that falls behind the text it serves. */
     $text = str_replace(
-        array('&mdash;', '&nbsp;', '&amp;', '&quot;', '&#039;', '&lt;', '&gt;'),
-        array('--', ' ', '&', '"', "'", '<', '>'), $text);
+        array('&mdash;', '&ndash;', '&nbsp;', '&amp;', '&quot;', '&#039;', '&apos;',
+              '&lsquo;', '&rsquo;', '&ldquo;', '&rdquo;', '&hellip;', '&lt;', '&gt;'),
+        array('--', '-', ' ', '&', '"', "'", "'",
+              "'", "'", '"', '"', '...', '<', '>'), $text);
     /* A `pre` block is the only place where a line break MEANS something: it
        separates the command you run by hand from the crontab line. Collapsing
        whitespace there glued the two into one line nobody could use. */
@@ -1934,25 +1942,71 @@ function ap_i_render_text(array $screen)
  * Exhaustive by construction: an answer added to a question appears here
  * without anybody remembering to write it down.
  */
-function ap_i_render_help($selfName)
+function ap_i_render_help($selfName, $long = false)
 {
-    $out = "annotepage -- install the notes server, from a shell.\n\n"
-        . ap_i_wrap('It does what the browser installer does, in the same order: it '
-            . 'creates the storage, requests that storage\'s own URL over HTTP and '
-            . 'refuses to finish unless the web server refuses it, then writes '
-            . 'internal/config-local.php and prints what it wrote and where.') . "\n\n"
-        . ap_i_wrap('It asks nothing. There is no prompt: typing the command is the '
-            . 'consent. An option it does not know stops it, because an option that '
-            . 'was ignored would install the default and read as a success. It never '
-            . 'writes over an existing internal/config-local.php, and no option makes '
-            . 'it.') . "\n\n"
-        . "  php " . $selfName . " --api-address=https://example.com/notes/api.php \\\n"
+    /* SHORT BY DEFAULT, AND THE SAME TEXTS EITHER WAY. This printed 288 lines
+       and 2079 words for a list of 29 options, which is the same mistake the
+       form had made: a paragraph per setting, so the list stops being a list.
+       Both faces now carry BOTH registers of the same table -- the short line
+       for somebody scanning, the paragraph for somebody deciding -- and each
+       face lets you ask for the other: --verbose here, ?long=1 on the form.
+       Nothing is written in two places: `hint` and `say` are two fields of one
+       setting, and this function chooses between them. */
+    $line = function ($setting) {
+        /* What the label cannot say, plus what leaving it out gets you. The
+           form prints exactly the same two things, in the same order. */
+        $bits = array();
+        if ($setting['hint'] !== '') {
+            $bits[] = ap_i_plain($setting['hint']);
+        }
+        if (isset($setting['decided'])) {
+            $one = ap_i_plain($setting['decided']['one-site']);
+            $any = ap_i_plain($setting['decided']['anyone']);
+            $bits[] = $one === $any
+                ? 'Left out: ' . $one . '.'
+                : 'Left out: ' . $one . ' (one-site), ' . $any . ' (anyone).';
+        } else {
+            $default = ap_i_setting_default($setting['key']);
+            $bits[] = $default !== ''
+                ? 'Default: ' . $default
+                    . ($setting['unit'] !== '' ? ' ' . $setting['unit'] : '') . '.'
+                : 'Unset unless you set it.';
+        }
+        return implode(' ', $bits);
+    };
+
+    $out = "annotepage -- install the notes server, from a shell.\n\n";
+    if ($long) {
+        $out .= ap_i_wrap('It does what the browser installer does, in the same order: '
+                . 'it creates the storage, requests that storage\'s own URL over HTTP '
+                . 'and refuses to finish unless the web server refuses it, then writes '
+                . 'internal/config-local.php and prints what it wrote and where.') . "\n\n"
+            . ap_i_wrap('It asks nothing. There is no prompt: typing the command is the '
+                . 'consent. An option it does not know stops it, because an option that '
+                . 'was ignored would install the default and read as a success. It never '
+                . 'writes over an existing internal/config-local.php, and no option '
+                . 'makes it.') . "\n\n";
+    } else {
+        $out .= ap_i_wrap('It asks nothing, it never writes over an existing '
+            . 'internal/config-local.php, and an option it does not know stops it.')
+            . "\n\n";
+    }
+    $out .= "  php " . $selfName . " --api-address=https://example.com/notes/api.php \\\n"
         . "      --answers-for=one-site --storage=sqlite\n";
+    if (!$long) {
+        $out .= "\n" . ap_i_wrap('Short list. `--help --verbose` says why each one is '
+            . 'there and what it costs -- the same sentences the install page shows '
+            . 'behind its own "explain" link.') . "\n";
+    }
 
     $out .= "\nTHE ADDRESS, WHICH IS THE ONE THING A SHELL CANNOT KNOW\n"
         . str_repeat('=', 54) . "\n\n"
-        . "  --api-address=<url>\n"
-        . ap_i_wrap('REQUIRED. The address api.php will answer at once this is '
+        . "  --api-address=<url>\n";
+    $out .= !$long
+        ? ap_i_wrap('REQUIRED. What the tag on your pages carries as data-server. '
+            . 'Proven before anything is installed: a file is written here and asked '
+            . 'for there.', '      ') . "\n\n"
+        : ap_i_wrap('REQUIRED. The address api.php will answer at once this is '
             . 'installed -- what the tag on your pages carries as data-server. Opened '
             . 'in a browser this installer FILLS IT IN from the request that reached '
             . 'it and shows it in a field, so it can be corrected where the name PHP '
@@ -1965,8 +2019,8 @@ function ap_i_render_help($selfName)
             . 'the line you paste into the tag. Typed rather than read off a request -- '
             . 'on either face -- it is proven before anything else happens: a file with '
             . 'a random name is written here and asked for there, and an address that '
-            . 'answers something else installs nothing.', '      ') . "\n\n"
-        . "  --dir=<path>\n"
+            . 'answers something else installs nothing.', '      ') . "\n\n";
+    $out .= "  --dir=<path>\n"
         . ap_i_wrap('The directory to install into. Default: the directory this file '
             . 'sits in, which is where a browser would have installed it.', '      ')
         . "\n";
@@ -1980,12 +2034,14 @@ function ap_i_render_help($selfName)
             . str_repeat('=', strlen($question['legend'])) . "\n";
         foreach ($question['answers'] as $answer) {
             $out .= "\n  --" . $name . '=' . $answer['value']
-                . '   ' . ap_i_plain($answer['label']) . "\n"
-                . ap_i_wrap($answer['say'], '      ') . "\n";
+                . '   ' . ap_i_plain($answer['label']) . "\n";
+            if ($long) {
+                $out .= ap_i_wrap($answer['say'], '      ') . "\n";
+            }
         }
     }
 
-    $out .= "\n" . ap_i_wrap('There is no --updated-by=self, and the browser form offers '
+    $out .= !$long ? "\n" : "\n" . ap_i_wrap('There is no --updated-by=self, and the browser form offers '
         . 'one. It is the answer for a host with neither a shell nor a scheduler, '
         . 'which is not the host you are typing on -- and it cannot be checked from '
         . 'here: whether this server may hand the response to a visitor and keep '
@@ -1996,39 +2052,52 @@ function ap_i_render_help($selfName)
         . 'read what it costs beside the key.') . "\n";
 
     $out .= "\nWHERE THE MySQL SERVER IS\n" . str_repeat('=', 24) . "\n\n"
-        . ap_i_wrap('Required with --storage=mysql, except the host and the port. The '
-            . 'installer connects and creates the tables before it writes anything: a '
-            . 'configuration naming a database nobody can reach is a file that fails '
-            . 'later, on somebody else\'s screen.') . "\n\n";
+        . ($long
+            ? ap_i_wrap('Required with --storage=mysql, except the host and the port. '
+                . 'The installer connects and creates the tables before it writes '
+                . 'anything: a configuration naming a database nobody can reach is a '
+                . 'file that fails later, on somebody else\'s screen.') . "\n\n"
+            : ap_i_wrap('Required with --storage=mysql, except the host and the port.')
+              . "\n\n");
     foreach (ap_i_credential_fields() as $box) {
         $out .= '  --mysql-' . $box['name']
             . ($box['default'] ? '   default ' . $box['default'] : '') . "\n";
     }
     $out .= "\n  --mysql-password-file=<path>\n"
-        . ap_i_wrap('Read the password out of this file, once, now. A password on a '
-            . 'command line is visible in `ps` to every other account on the machine '
-            . 'and stays in your shell history; this is the way that is not. What is '
-            . 'written into the configuration is the value itself, exactly as the '
-            . 'browser form writes it.', '      ') . "\n";
+        . ($long
+            ? ap_i_wrap('Read the password out of this file, once, now. A password on a '
+                . 'command line is visible in `ps` to every other account on the machine '
+                . 'and stays in your shell history; this is the way that is not. What is '
+                . 'written into the configuration is the value itself, exactly as the '
+                . 'browser form writes it.', '      ') . "\n"
+            : ap_i_wrap('Read the password out of this file rather than off a command '
+                . 'line, where `ps` shows it.', '      ') . "\n");
 
     $out .= "\nEVERYTHING ELSE, AND IT IS ALL SETTABLE HERE\n"
         . str_repeat('=', 44) . "\n\n"
-        . ap_i_wrap('Three questions are what you must answer; these are what you may. '
-            . 'Each one is a key of internal/config.php under its own name, so what you '
-            . 'type here is what you would have edited there. Leave one out and the '
-            . 'default stays in force -- and a later version may raise it for you, '
-            . 'which a value written into your file would prevent.') . "\n\n"
-        . ap_i_wrap('They come in the same four sections as the form, in the same '
-            . 'order, for the same reason: a flat list of fifteen says a list exists '
-            . 'without saying what is in it.') . "\n";
+        . ($long
+            ? ap_i_wrap('Three questions are what you must answer; these are what you '
+                . 'may. Each one is a key of internal/config.php under its own name, so '
+                . 'what you type here is what you would have edited there. Leave one out '
+                . 'and the default stays in force -- and a later version may raise it '
+                . 'for you, which a value written into your file would prevent.') . "\n\n"
+              . ap_i_wrap('They come in the same four sections as the form, in the same '
+                . 'order, for the same reason: a flat list of fifteen says a list exists '
+                . 'without saying what is in it.') . "\n"
+            : ap_i_wrap('Each one is a key of internal/config.php under its own name. '
+                . 'Left out, the default stays in force.') . "\n");
     $section = null;
     $sections = ap_i_setting_sections();
     foreach (ap_i_settings() as $setting) {
         if ($setting['group'] !== $section) {
             $section = $setting['group'];
             $title = strtoupper($sections[$section]['title']);
-            $out .= "\n" . $title . "\n" . str_repeat('-', strlen($title)) . "\n\n"
-                . ap_i_wrap(ap_i_plain($sections[$section]['say'])) . "\n";
+            $out .= "\n" . $title . "\n" . str_repeat('-', strlen($title)) . "\n";
+            $intro = ap_i_plain($long ? $sections[$section]['say']
+                                      : $sections[$section]['hint']);
+            if ($intro !== '') {
+                $out .= "\n" . ap_i_wrap($intro) . "\n";
+            }
         }
         $shape = $setting['kind'] === 'choice'
             ? implode('|', $setting['values'])
@@ -2037,6 +2106,14 @@ function ap_i_render_help($selfName)
         /* The default beside the option, read live out of config.php. Without
            it the only way to learn what a limit is today is to read the source
            -- and knowing the number is most of deciding whether to change it. */
+        if (!$long) {
+            $out .= "\n  --" . str_replace('_', '-', $setting['key']) . '=' . $shape . "\n";
+            $short = $line($setting);
+            if ($short !== '') {
+                $out .= ap_i_wrap($short, '      ') . "\n";
+            }
+            continue;
+        }
         $default = ap_i_setting_default($setting['key']);
         if (isset($setting['decided'])) {
             /* Four of them this command decides from --answers-for, and saying
@@ -2065,13 +2142,23 @@ function ap_i_render_help($selfName)
 
     $out .= "\nAFTERWARDS\n==========\n\n"
         . "  --delete-installer\n"
-        . ap_i_wrap('Delete this file once the configuration is written, the way the '
-            . 'browser installer\'s last screen offers to. Off by default: from a shell '
-            . 'the file is one `rm` away and its path is printed.', '      ') . "\n\n"
-        . "  --help, --version\n";
+        . ($long
+            ? ap_i_wrap('Delete this file once the configuration is written, the way '
+                . 'the browser installer\'s last screen offers to. Off by default: from '
+                . 'a shell the file is one `rm` away and its path is printed.', '      ')
+              . "\n\n"
+            : ap_i_wrap('Delete this file once the configuration is written. Off by '
+                . 'default.', '      ') . "\n\n")
+        . "  --help, --help --verbose, --version\n";
 
     $out .= "\nWHAT IT DOES NOT SET\n====================\n\n"
-        . ap_i_wrap('Two things, and they are the same thing: your project and the '
+        . (!$long
+            ? ap_i_wrap('Your project and the origins it answers to: they descend from '
+                . 'a key your browser generates and this server never receives, so the '
+                . 'install page hands you the block to paste into '
+                . 'internal/config-local.php. And the length of each field, which is a '
+                . 'constant rather than a key.') . "\n"
+            : ap_i_wrap('Two things, and they are the same thing: your project and the '
             . 'origins it answers to. A project descends from a key YOUR BROWSER '
             . 'generates and this server never receives, so no shell can declare one '
             . 'here -- the install page hands you the block to paste into '
@@ -2086,7 +2173,7 @@ function ap_i_render_help($selfName)
             . 'the day the table is created, so a number changed afterwards would '
             . 'make this server accept a remark its own table cannot hold -- '
             . 'measured, in strict mode: a 500, and the text lost. What is metered '
-            . 'here is volume; the shape of one note is FORMAT.md\'s.') . "\n";
+            . 'here is volume; the shape of one note is FORMAT.md\'s.') . "\n");
 
     $out .= "\nEXIT CODES\n==========\n\n"
         . "  0   Installed -- or already configured, and nothing was done.\n"
@@ -2188,10 +2275,21 @@ function ap_i_cli(array $options)
            that watches stderr saw a silent success that had installed
            nothing. */
         if (isset($given['help'])) {
-            echo ap_i_render_help($selfName);
+            echo ap_i_render_help($selfName, isset($given['verbose']));
             exit(0);
         }
+        /* The SHORT one on a bare command: what somebody who forgot the
+           arguments needs is the list, and 288 lines scrolled it off their
+           terminal. */
         fwrite(STDERR, ap_i_render_help($selfName));
+        exit(2);
+    }
+    /* AND --verbose ALONE IS NOT AN INSTALLATION FLAG. It says nothing about
+       what to install, so accepting it silently would be the "an option that
+       was ignored" this file refuses everywhere else. */
+    if (isset($given['verbose'])) {
+        fwrite(STDERR, "--verbose only means something with --help.\nNothing was "
+            . "touched.\n");
         exit(2);
     }
     if (isset($given['version'])) {
@@ -3330,6 +3428,12 @@ function ap_i_run(array $options)
     $postedRelay = ($method === 'POST' && isset($_POST['audience'])
         && $_POST['audience'] === 'anyone');
 
+    /* ?long=1 IS A READING, NOT A SETTING. It changes which of the two
+       sentences each field carries and nothing else -- the form still posts to
+       the bare address, so submitting from the long page installs exactly what
+       submitting from the short one installs. */
+    $long = isset($_GET['long']) && $_GET['long'] !== '' && $_GET['long'] !== '0';
+
     echo '<h2>Install</h2>' . "\n";
     echo '<form method="post" action="' . ap_i_h($selfName) . '">' . "\n";
 
@@ -3438,8 +3542,18 @@ function ap_i_run(array $options)
        it arrives. It is 6000 rows now, and it is a field like the others.
        Shut by default, so the screen is the length it was. Same table as the
        command line reads, so neither face can offer what the other cannot. */
-    echo '<p class="note">All optional. Empty means the value in grey; '
-        . "<code>--help</code> explains each one at length.</p>\n";
+    /* THE SAME TWO REGISTERS AS THE SHELL, AND THE SAME WAY OF ASKING. A form
+       that only ever shows the short line leaves its reader with nowhere to go
+       but the source; a form that shows the long one is the book this screen
+       stopped being. So: a link, and the page comes back with the paragraphs
+       -- the same ones `--help --verbose` prints, from the same table. It is a
+       link and not a checkbox because there is no JavaScript here and never
+       will be. */
+    echo '<p class="note">All optional. Empty means the value in grey. '
+        . ($long
+            ? '<a href="' . ap_i_h($selfName) . '">Short version</a>'
+            : '<a href="' . ap_i_h($selfName) . '?long=1">Why each of these?</a>')
+        . " &mdash; the same sentences as <code>--help</code>.</p>\n";
 
     $section = null;
     $sections = ap_i_setting_sections();
@@ -3457,9 +3571,10 @@ function ap_i_run(array $options)
             $shape = $sections[$section];
             echo '<details' . (!empty($shape['open']) ? ' open' : '') . ">\n";
             echo '<summary>' . ap_i_h($shape['title']) . "</summary>\n";
-            if ($shape['hint'] !== '') {
+            $intro = $long ? $shape['say'] : $shape['hint'];
+            if ($intro !== '') {
                 echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
-                    . $shape['hint'] . "</p>\n";
+                    . $intro . "</p>\n";
             }
         }
         echo '<p><label>' . ap_i_h($setting['label']);
@@ -3516,10 +3631,11 @@ function ap_i_run(array $options)
         /* ONE LINE UNDER A FIELD, not two. The hint and "what an empty field
            gets you" were two paragraphs, which on four settings made a
            two-line stack under a one-line box. */
-        if ($setting['hint'] !== '' || isset($setting['decided'])) {
-            echo '<p class="note">' . $setting['hint'];
+        $said = $long ? $setting['say'] : $setting['hint'];
+        if ($said !== '' || isset($setting['decided'])) {
+            echo '<p class="note">' . $said;
             if (isset($setting['decided'])) {
-                echo ($setting['hint'] !== '' ? ' ' : '')
+                echo ($said !== '' ? ' ' : '')
                     . '<span class="if-one">Empty: '
                     . ap_i_h($setting['decided']['one-site']) . '.</span>'
                     . '<span class="if-anyone">Empty: '
