@@ -3591,28 +3591,26 @@ td.c-why { color: var(--dim); font-size: .9rem; padding-left: .9rem; }
 }
 
 
-/* -- the two readings of the page ---------------------------------------- */
+/* -- the two readings of a sentence -------------------------------------- */
 
-/* THE SAME CHIP AS EVERY OTHER CONTROL, and the one that is on is filled --
-   because that is what a chosen chip looks like six inches further down this
-   page. Two links and not a checkbox: no JavaScript here, and the server
-   renders the other reading. */
-.views {
-    display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
-    margin: 0 0 2.2rem;
-}
-a.chip {
-    display: inline-block; padding: .28rem .75rem;
-    border: 1px solid var(--control-line); border-radius: 999px;
-    background: var(--bg); color: var(--dim);
-    font-size: .84rem; font-weight: 600; text-decoration: none;
-}
-a.chip:hover { border-color: var(--accent); color: var(--accent); }
-a.chip.on {
-    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
-}
-a.chip.on:hover { color: var(--on-accent); }
-.views-say { flex: 1 1 20rem; font-size: .85rem; color: var(--dim); }
+/* BOTH ARE IN THE PAGE AND ONE IS SHOWN. This was a reload with ?long=1: two
+   variants of one address, and a reader who switched lost their typed values,
+   their scroll and their place -- and the file could not be looked at on its
+   own, which is what a page saved to disk has to be.
+
+   THE LONG ONE IS HIDDEN BY A RULE, NOT SHOWN BY ONE. Same direction as every
+   other :has() on this page: a browser that cannot read the selector shows
+   BOTH sentences -- verbose, complete, never a field with nothing under it --
+   where the reverse would leave the explanations unreachable on the browser
+   least able to do without them. */
+form:has(#ap-explain:not(:checked)) .l-long { display: none; }
+form:has(#ap-explain:checked) .l-short { display: none; }
+.l-long { display: inline; }
+/* The switch itself, at the head of the settings it acts on. Lighter than the
+   one that revealed them: that one is a decision, this one is a reading. */
+.switch-line.explain { margin: 0 0 .2rem; }
+.switch-line.explain label { font-weight: 400; font-size: .92rem; color: var(--dim); }
+.switch-line.explain input { width: 1rem; height: 1rem; }
 
 /* A LABEL AND ITS BOX ARE ONE THING. The markup separates them with a <br>,
    which at this type size is a whole empty line between a question and the
@@ -3887,36 +3885,7 @@ function ap_i_run(array $options)
 
     // --- The form, and the report above it.
 
-    /* ?long=1 IS A READING, NOT A SETTING. It changes which of the two
-       sentences each field carries and nothing else -- the form still posts to
-       the bare address, so submitting from the long page installs exactly what
-       submitting from the short one installs.
-
-       READ HERE AND NOT WHERE IT IS FIRST USED: the chips that switch between
-       the two readings are printed at the top of the page, and this used to be
-       assigned three hundred lines below them -- so the page reached with
-       ?long=1 drew "Short" as the chosen one while showing the paragraphs. The
-       second time in this file that a variable was read above its assignment,
-       and isset() never says a word about it. */
-    $long = isset($_GET['long']) && $_GET['long'] !== '' && $_GET['long'] !== '0';
     echo '<p class="lede">' . ap_i_h($lede) . "</p>\n";
-
-    /* THE TWO READINGS OF THIS PAGE, OFFERED AT THE TOP AND NOT BURIED. It sat
-       inside the settings, where somebody reaches it after deciding they are
-       not going to read anything -- and it is not a setting: it changes every
-       sentence on the screen. A chip, drawn like every other control here,
-       under the sentence that says what the page is.
-       A link and not a checkbox because there is no JavaScript on this page:
-       it comes back with the paragraphs `--help --verbose` prints, from the
-       same table. */
-    echo '<p class="views">'
-        . ($long
-            ? '<a class="chip on" href="' . ap_i_h($selfName) . '?long=1">Explained</a>'
-              . '<a class="chip" href="' . ap_i_h($selfName) . '">Short</a>'
-            : '<a class="chip" href="' . ap_i_h($selfName) . '?long=1">Explained</a>'
-              . '<a class="chip on" href="' . ap_i_h($selfName) . '">Short</a>')
-        . '<span class="views-say">Every field says what it does, in a line or in '
-        . "a paragraph &mdash; the same sentences as <code>--help</code>.</span></p>\n";
 
     /* WHAT IS BEING DONE, AND WHAT IT IS BEING DONE TO -- above everything,
        because a page whose first heading is "What this server offers" has told
@@ -4172,19 +4141,39 @@ function ap_i_run(array $options)
             . ($hint !== '' ? ' placeholder="' . ap_i_h($hint) . '"' : '') . ">\n";
     };
 
-    /* The sentence under a field: the short line here, the paragraph under
-       ?long=1, and what an empty field becomes on each answer. */
-    $said = function (array $setting) use ($long) {
-        $text = $long ? $setting['say'] : $setting['hint'];
-        if ($text === '' && !isset($setting['decided'])) { return ''; }
+    /* BOTH SENTENCES, IN THE PAGE, AND THE CSS SHOWS ONE. The long one used to
+       arrive by reloading with ?long=1, which made the page a pair of variants
+       of one address -- the reader loses their typed values, their scroll and
+       their place, and the file cannot be looked at on its own. Both are here
+       now: the short line, the paragraph, and one checkbox that swaps them.
+
+       NO SCRIPT FOR IT EITHER. This is the same `:has()` the dials and the
+       advanced switch already use; nothing on this page has ever needed
+       JavaScript and this did not change that. What an unsupported browser
+       gets is BOTH sentences at once -- verbose, complete, and never a field
+       with nothing under it. */
+    $said = function (array $setting) {
+        $short = $setting['hint'];
+        $long  = $setting['say'];
+        $decided = '';
         if (isset($setting['decided'])) {
-            $text .= ($text !== '' ? ' ' : '')
-                . '<span class="if-one">Empty: '
+            $decided = '<span class="if-one">Empty: '
                 . ap_i_h($setting['decided']['one-site']) . '.</span>'
                 . '<span class="if-anyone">Empty: '
                 . ap_i_h($setting['decided']['anyone']) . '.</span>';
         }
-        return $text;
+        if ($short === '' && $long === '' && $decided === '') { return ''; }
+        $out = '';
+        if ($short !== '') {
+            $out .= '<span class="l-short">' . $short . '</span>';
+        }
+        if ($long !== '') {
+            $out .= '<span class="l-long">' . $long . '</span>';
+        }
+        if ($decided !== '') {
+            $out .= ($out !== '' ? ' ' : '') . $decided;
+        }
+        return $out;
     };
 
     $paragraph = function (array $setting) use ($control, $said) {
@@ -4225,6 +4214,15 @@ function ap_i_run(array $options)
     // --- Everything the switch reveals. --------------------------------------
 
     echo '<div class="more">' . "\n";
+    /* THE SECOND SWITCH, AT THE HEAD OF WHAT IT ACTS ON, AND IT CHANGES NO
+       VALUE. The first says which settings are on the screen; this one says
+       how much each of them explains itself. It carries no `name`, like the
+       other, so neither is posted -- and it is here rather than beside the
+       first because "explain these" means nothing while there is nothing to
+       explain. */
+    echo '<p class="switch-line explain"><label><input type="checkbox" id="ap-explain">'
+        . '<span>Explain each one at length &mdash; the same sentences as '
+        . "<code>--help --verbose</code></span></label></p>\n";
     echo '<p class="note">All optional. Empty means the value in grey.</p>' . "\n";
 
     foreach ($sections as $group => $shape) {
@@ -4239,7 +4237,13 @@ function ap_i_run(array $options)
            control opens the part; inside it, a section is a heading. */
         echo "<div class=\"part\">\n";
         echo '<p class="part-title">' . ap_i_h($shape['title']) . "</p>\n";
-        $intro = $long ? $shape['say'] : $shape['hint'];
+        $intro = '';
+        if ($shape['hint'] !== '') {
+            $intro .= '<span class="l-short">' . $shape['hint'] . '</span>';
+        }
+        if ($shape['say'] !== '') {
+            $intro .= '<span class="l-long">' . $shape['say'] . '</span>';
+        }
         if ($intro !== '') {
             echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
                 . $intro . "</p>\n";

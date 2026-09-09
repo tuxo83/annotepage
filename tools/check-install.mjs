@@ -280,12 +280,19 @@ const words = (html) => {
    notes. So the prose under the fields has its own ceiling, close to what it
    costs today, and the document keeps a looser one that still catches the
    day somebody prints `say` again. */
-const noteWords = [...own.form.matchAll(/<p class="note[^"]*">([\s\S]*?)<\/p>/g)]
+/* MEASURED ON WHAT IS SHOWN, NOT ON WHAT IS SENT. The page carries both
+   registers of every sentence since the reader stopped having to reload for
+   the long one; counting the markup would count a paragraph nobody is looking
+   at and read as a page twice as wordy as it is. The long spans come out
+   first -- and the check above refuses a page that has lost them, so this
+   cannot become a way of hiding prose from the count. */
+const shown = own.form.replace(/<span class="l-long">[\s\S]*?<\/span>/g, '');
+const noteWords = [...shown.matchAll(/<p class="note[^"]*">([\s\S]*?)<\/p>/g)]
     .reduce((n, m) => n + words(m[1]), 0);
 check(`the sentences under the fields are ${noteWords} words, over the 450 they`
     + ' are allowed -- that is where the 1214 were when this screen was a book',
     noteWords <= 450);
-const onScreen = words(own.form);
+const onScreen = words(shown);
 check(`the install screen is ${onScreen} words, over the 1200 it is allowed`
     + ' -- it printed 1756 once, and a screen that opens onto a book is not read',
     onScreen <= 1200);
@@ -442,33 +449,30 @@ const malformed = await rehearse(await freePort(),
 check('a malformed address installed something', malformed.config === null);
 check('a malformed address was not refused with the shape it wants',
     malformed.done.includes('full URL beginning with http'), malformed.done.slice(0, 300));
-/* THE SAME TWO REGISTERS ON BOTH FACES, FROM THE SAME TABLE. Short is the
-   default everywhere: the form shows `hint`, --help shows `hint`. The long
-   sentence is one link or one flag away: ?long=1 here, --help --verbose there.
-   What this refuses is the state the tool was in twice -- one face carrying a
-   paragraph the other cannot show, or a short line that exists nowhere else. */
-const longForm = malformed.up
-    ? await (await fetch('http://127.0.0.1:' + malformed.port + '/install.php?long=1',
-                         { redirect: 'manual' })).text()
-    : '';
-/* THE TWO READINGS, OFFERED AS A PAIR OF CHIPS AT THE TOP OF THE PAGE -- and
-   the one you are reading is the filled one. It was a link buried inside the
-   settings, which is where somebody arrives after deciding not to read
-   anything, and it is not a setting: it changes every sentence on the screen.
-   What this refuses is a page that offers only one of the two. */
-check('the short form does not offer the explained one', malformed.form.includes('?long=1'));
-check('the short form does not mark itself as the one being read',
-    /<a class="chip on" href="[^"]*">Short<\/a>/.test(malformed.form),
-    (malformed.form.match(/<a class="chip[^>]*>[^<]*<\/a>/g) || []).join(' '));
-check('the explained form does not offer the way back',
-    /<a class="chip" href="[^"?]*">Short<\/a>/.test(longForm),
-    (longForm.match(/<a class="chip[^>]*>[^<]*<\/a>/g) || []).join(' '));
-check('the explained form does not mark itself as the one being read',
-    /<a class="chip on" href="[^"]*\?long=1">Explained<\/a>/.test(longForm),
-    (longForm.match(/<a class="chip[^>]*>[^<]*<\/a>/g) || []).join(' '));
-check('the long form says no more than the short one',
-    words(longForm) > words(malformed.form) + 300,
-    words(malformed.form) + ' words short, ' + words(longForm) + ' long');
+/* THE SAME TWO REGISTERS ON BOTH FACES, FROM THE SAME TABLE. Short is what
+   each shows first; the long sentence is a checkbox away here and a flag away
+   there. What this refuses is the state the tool was in twice -- one face
+   carrying a paragraph the other cannot show, or a short line that exists
+   nowhere else. */
+/* THE TWO READINGS ARE BOTH IN THE PAGE, AND A CHECKBOX SHOWS ONE. It used to
+   be ?long=1: two variants of one address, so switching reloaded and cost the
+   reader their typed values, their scroll and their place -- and the file
+   could not be looked at on its own, which is what a page saved to disk has to
+   be. Both sentences are in the markup now and the CSS picks. What this
+   refuses is the page losing either of them, or the control that swaps them. */
+check('the page carries no control for the long sentences',
+    malformed.form.includes('id="ap-explain"'));
+const shortSpans = (malformed.form.match(/<span class="l-short">/g) || []).length;
+const longSpans = (malformed.form.match(/<span class="l-long">/g) || []).length;
+check(`the page carries ${shortSpans} short sentences and ${longSpans} long ones,`
+    + ' and it needs both of each', shortSpans >= 8 && longSpans >= 12);
+check('a long sentence is missing from the page, so the switch would show nothing',
+    malformed.form.includes('is how an assistant READS'));
+/* And it is the RULE that hides the long one, not the rule that shows it: a
+   browser without :has() must end up with both sentences, never with none. */
+check('the long sentences are shown by a rule rather than hidden by one',
+    malformed.form.includes('form:has(#ap-explain:not(:checked)) .l-long { display: none; }'),
+    (malformed.form.match(/[^\n]*l-long[^\n]*display[^\n]*/g) || ['(no rule)']).join(' | '));
 
 const short = spawnSync('php', [join(webroot, 'install.php'), '--help'],
     { encoding: 'utf8' }).stdout || '';
