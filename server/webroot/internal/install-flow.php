@@ -3750,12 +3750,22 @@ label + input, label + select { display: block; }
    writes. Open, that table is gone and what is left is one line -- and a grey
    box round one line, above the settings it just revealed, reads as a section
    of its own that contains nothing. */
-/* OPEN, IT STOPS BEING A BOX -- BUT NOT BY LOSING ITS PADDING. Setting
-   `padding: 0` moved the line you had just clicked 17.6px to the left under
-   your own cursor, and left the checkbox above the card 22.4px out of line
-   with the one inside it. The ink goes, the geometry stays. */
+/* OPEN, THE SWITCH IS THE LID OF WHAT IT OPENED. It used to lose its ink
+   entirely, so the card appeared below a line of text with nothing joining
+   them -- the panel looked like it belonged to whatever came next rather than
+   to the checkbox that had just produced it. Joined: the switch keeps its
+   ground and its edge, loses the edge it shares with the card, and the two
+   corners between them go square. One shape, with the control at the top of
+   it.
+   The padding STAYS, whatever else changes: taking it away moved the line you
+   had just clicked 17.6px left under your own cursor. */
 form:has(#ap-more:checked) .more-switch {
-    padding-top: 0; padding-bottom: 0; border-color: transparent; background: none;
+    margin-bottom: 0;
+    border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+}
+form:has(#ap-more:checked) .more {
+    margin-top: 0;
+    border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0;
 }
 
 CSS;
@@ -4026,10 +4036,18 @@ function ap_i_run(array $options)
        you about the host before it has told you what it is here to do. Two
        facts, both measured rather than assumed: the file this press writes,
        and the address these pages will call. */
-    echo '<p class="says">This installs the server the notes live on. Pressing '
-        . '<b>Install</b> writes one file &mdash; <code>internal/config-local.php</code> '
-        . '&mdash; and creates the storage the notes go in. Nothing else on this host is '
-        . "touched, and nothing is written until you press it.</p>\n";
+    /* WHAT PRESSING IT DOES, ALL OF IT. This said "writes one file", which is
+       true of the file it writes and reads as though that were the whole act
+       -- the reader who has just uploaded a directory wonders what installed
+       the rest. The four things it does, in the order it does them, and the
+       fifth it offers afterwards. */
+    echo '<p class="says">This sets up the server the notes live on &mdash; its code is '
+        . 'already here, in this directory. Pressing <b>Install</b> creates the storage '
+        . 'the notes go into (a file, or the tables in the database you name), proves '
+        . 'that storage cannot be downloaded from the web, writes <code>internal/'
+        . 'config-local.php</code>, and then gives you the tag to paste into your pages '
+        . 'and offers to delete itself. Nothing else on this host is touched, and '
+        . "nothing at all is written until you press it.</p>\n";
     echo "<table class=\"what\">\n";
     echo '<tr><td class="k">This directory</td><td class="v">' . ap_i_h($here)
         . '</td><td class="m">the file is written here, and the notes go here or into '
