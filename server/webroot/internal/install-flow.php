@@ -1012,8 +1012,15 @@ function ap_i_questions()
                                  . 'can write here.'),
                 array('value' => 'anyone', 'id' => 'a-anyone', 'class' => 'if-anyone',
                       'label' => 'Anyone',
+                      /* THE NUMBER IS THE ONE THIS INSTALLATION WRITES, and it
+                         has to be re-read every time that number moves. It said
+                         500 for two releases after the cap became 2000 and then
+                         6000 -- a screen promising a limit the file it writes
+                         does not carry. Found by looking at the screen, which
+                         is the only way this kind of drift is ever found. */
                       'say'   => 'A relay: projects nobody declared may write, bounded '
-                                 . 'at 500 notes each and 90 days.'),
+                                 . 'at 6000 rows each -- about 2000 remarks -- and 90 '
+                                 . 'days.'),
             ),
         ),
         array(
@@ -3254,9 +3261,9 @@ function ap_i_run(array $options)
     /* AND EVERYTHING ELSE, FOLDED. The three questions stay the front door --
        a fourth dial would be a fourth question, and the page that draws this
        screen promises three. But asking three is not the same as deciding the
-       other fourteen behind somebody's back, and it did decide one: a relay
-       was given a cap of 500 notes without a word, and that cap makes a
-       project MUTE when it arrives.
+       rest behind somebody's back, and it did decide one: a relay was given a
+       cap of 500 notes without a word, and that cap makes a project MUTE when
+       it arrives. It is 6000 rows now, and it is a field like the others.
        Shut by default, so the screen is the length it was. Same table as the
        command line reads, so neither face can offer what the other cannot. */
     echo "<details>\n";

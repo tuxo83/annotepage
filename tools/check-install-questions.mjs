@@ -59,6 +59,34 @@ const legends = questions.map((q) => q.legend);
 const answers = questions.flatMap((q) => q.answers.map((a) => a.label));
 
 const failures = [];
+
+/* THE NUMBER IN A QUESTION IS A PROMISE ABOUT THE FILE THAT WILL BE WRITTEN.
+   The relay answer said "bounded at 500 notes each" for two releases after the
+   cap became 2000 and then 6000: the screen promised a limit the configuration
+   it writes does not carry, and nothing here noticed -- this check compared
+   legends and labels, which had not moved. So the sentence is now read against
+   the setting it describes. Found by looking at the screen, which is the only
+   way that kind of drift is ever found; this is what makes looking unnecessary
+   next time. */
+const settings = spawnSync('php', ['-r',
+    'define("AP_INTERNAL", 1); require ' + JSON.stringify(flowPath) + ';'
+    + ' foreach (ap_i_settings() as $s) { if (isset($s["decided"])) {'
+    + ' echo $s["key"], "=", $s["decided"]["anyone"], "\n"; } }'],
+    { encoding: 'utf8' });
+const decided = new Map((settings.stdout || '').trim().split('\n').filter(Boolean)
+    .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
+const relayCap = (decided.get('max_notes_per_project') || '').match(/\d+/);
+const relaySay = (questions.find((q) => q.key === 'audience') || { answers: [] })
+    .answers.filter((a) => a.value === 'anyone').map((a) => a.say).join(' ');
+if (!relayCap) {
+    failures.push('no cap could be read from what the installer writes for a relay, so'
+        + ' the sentence on the screen cannot be checked against it');
+} else if (relaySay.indexOf(relayCap[0]) === -1) {
+    failures.push('the relay answer on the screen says "' + relaySay.replace(/<[^>]+>/g, '')
+        + '" while this installation writes ' + relayCap[0] + ' notes into the'
+        + ' configuration.\n    A screen that names a limit must name the one that will'
+        + ' be written.');
+}
 if (legends.length !== 3) {
     failures.push(`the installer no longer asks three questions: it asks ${legends.length}.\n`
         + '    The page says "Three questions" in prose and draws three. Both have to move.');
