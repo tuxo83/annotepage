@@ -1284,7 +1284,7 @@ function ap_i_setting_sections()
         ),
         'rate' => array(
             'title' => 'How fast anybody may write, read or export',
-            'open'  => false,
+            'open'  => true,
             'hint'  => 'Per address and per project, in a fixed window. Over the limit '
                        . 'is a 429 saying when to come back; 0 switches one off.',
             'say'   => 'Counted per address and per project, in a fixed window. Past a '
@@ -1293,7 +1293,8 @@ function ap_i_setting_sections()
                        . 'means the counter is never touched, not touched and ignored.',
         ),
         'server' => array(
-            'title' => 'What this server says about itself, and where it sits',
+            'title' => 'Rarely needed: what this server says about itself, and where '
+                       . 'it sits',
             'open'  => false,
             'hint'  => 'None of these changes what is stored.',
             'say'   => 'None of these changes what is stored. They decide what a '
@@ -3155,6 +3156,12 @@ function ap_i_head($title)
         . "  form:has(#s-sqlite:checked) .if-mysql-box { display: none; }\n"
         . "  .if-mysql-box { border: 1px solid rgba(128,128,128,.4); border-radius: 8px;\n"
         . "                  padding: .9rem 1rem .2rem; margin: 1rem 0; }\n"
+        /* A section that is not folded still has to look like a section: the
+           fields under it belong to its title and to nothing else. */
+        . "  .part { margin: 1.5rem 0 0; }\n"
+        . "  .part-title { font-weight: 700; margin: 0 0 .2rem;\n"
+        . "                border-bottom: 1px solid rgba(128,128,128,.3);\n"
+        . "                padding-bottom: .3rem; }\n"
         /* The third dial's own sentences, and the two paragraphs UNDER the box
            that belong to two of its answers -- so this rule hangs off the form
            rather than off the box. */
@@ -3652,12 +3659,20 @@ function ap_i_run(array $options)
            layout that can disagree about what exists. */
         if ($setting['group'] !== $section) {
             if ($section !== null) {
-                echo "</details>\n";
+                echo empty($sections[$section]['open']) ? "</details>\n" : "</div>\n";
             }
             $section = $setting['group'];
             $shape = $sections[$section];
-            echo '<details' . (!empty($shape['open']) ? ' open' : '') . ">\n";
-            echo '<summary>' . ap_i_h($shape['title']) . "</summary>\n";
+            /* AN OPEN SECTION IS A HEADING, NOT A FOLD LEFT OPEN. `<details
+               open>` still draws the triangle, still invites a click, and
+               still says "this is the part you may ignore" about the numbers
+               an operator came to set. What is folded here is what is
+               genuinely extra, and its title says so. */
+            $open = !empty($shape['open']);
+            echo $open ? "<div class=\"part\">\n" : "<details>\n";
+            echo $open
+                ? '<p class="part-title">' . ap_i_h($shape['title']) . "</p>\n"
+                : '<summary>' . ap_i_h($shape['title']) . "</summary>\n";
             $intro = $long ? $shape['say'] : $shape['hint'];
             if ($intro !== '') {
                 echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
@@ -3732,7 +3747,7 @@ function ap_i_run(array $options)
         }
     }
     if ($section !== null) {
-        echo "</details>\n";
+        echo empty($sections[$section]['open']) ? "</details>\n" : "</div>\n";
     }
 
     echo '<button type="submit">Install</button>' . "\n";

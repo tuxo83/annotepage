@@ -87,6 +87,8 @@ const install = spawnSync('php', [join(root, 'install.php'),
     '--rate-writes-per-project=1000',
     '--rate-exports-per-ip=2',
     '--rate-reads-per-ip=0',
+    /* So that the wait below can be a question rather than a guess. */
+    '--diagnostic=full',
     '--max-notes-per-project=4',
     '--max-body-bytes=2048',
 ], { encoding: 'utf8', cwd: root });
@@ -226,10 +228,26 @@ check('the read limit could not be turned on by editing the configuration',
 
 /* OPCACHE REVALIDATES ON A CLOCK, not on the write. Its default
    revalidate_freq is two seconds, and the first run of this check spent an
-   evening looking like a limit that does not work: the file said 2, the
-   server was still answering out of the copy it had compiled a moment
-   earlier. Whoever edits a configuration by hand meets the same two seconds. */
-await sleep(2500);
+   evening looking like a limit that does not work: the file said 2, the server
+   was still answering out of the copy it had compiled a moment earlier.
+   Whoever edits a configuration by hand meets the same two seconds.
+
+   ASKED, NOT WAITED OUT. `await sleep(2500)` was enough on an idle machine and
+   not on a busy one -- the suite failed on a push, having passed a minute
+   earlier, which is the worst kind of check: one that reports the weather. The
+   server is asked what it now believes, until it says 2. */
+const believes = async (line, wanted) => {
+    for (let i = 0; i < 60; i += 1) {
+        const text = await (await fetch('http://127.0.0.1:' + port + '/api.php?action=diagnostic',
+            { headers: head })).text();
+        const said = (text.match(new RegExp('^' + line + ' (.*)$', 'm')) || [])[1];
+        if (said !== undefined && said.trim() === wanted) { return true; }
+        await sleep(250);
+    }
+    return false;
+};
+check('the server never took the edited configuration, after fifteen seconds',
+    await believes('rate\\.reads_per_ip', '2'));
 sqlite("DELETE FROM notes_rate");
 const loads = [];
 for (let i = 0; i < 4; i += 1) loads.push(await call('action=list&project=' + project + '&index=' + index));

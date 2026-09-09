@@ -237,6 +237,28 @@ for (const title of askPhp('foreach (ap_i_setting_sections() as $s) { echo $s["t
         own.form.includes(title.replace(/&/g, '&amp;')), title);
 }
 
+/* AND WHAT IS FOLDED STAYS THE EXCEPTION. A fold says "you may ignore this",
+   which is false of the numbers an operator came to set: retention, the caps,
+   the counters. Those are headings now, always on screen. What is left behind
+   a summary is what is genuinely extra -- and its title has to say so, so that
+   nobody has to open it to find out whether it matters.
+   Three folds: the environment report, the rarely-needed settings, and the two
+   that can undo the tool. A fourth means somebody folded something that should
+   be read. */
+const folds = [...own.form.matchAll(/<summary>([\s\S]*?)<\/summary>/g)]
+    .map((m) => m[1].replace(/<[^>]+>/g, '').replace(/&mdash;/g, '--').trim());
+check(`the form has ${folds.length} folds, more than the three that earn one`,
+    folds.length <= 3, folds.join(' | '));
+const openSections = askPhp('foreach (ap_i_setting_sections() as $s) {'
+    + ' if (!empty($s["open"])) { echo $s["title"], "\n"; } }')
+    .split('\n').filter(Boolean);
+check('no section of settings is shown without being opened first',
+    openSections.length >= 2, openSections.join(' | '));
+for (const title of openSections) {
+    check(`the section "${title}" is behind a fold, and it holds numbers somebody`
+        + ' came to set', !folds.some((f) => f.includes(title)));
+}
+
 /* AND IT STAYS A FORM, NOT A BOOK. Every setting used to print the whole
    paragraph that --help prints, and the screen measured 1756 words -- more
    than the entire install page of the website. A fold that opens onto a book
