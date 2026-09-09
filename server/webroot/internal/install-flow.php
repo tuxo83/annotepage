@@ -1142,7 +1142,7 @@ function ap_i_questions()
 function ap_i_settings()
 {
     return array(
-        array('key' => 'max_notes_per_project', 'hint' => 'Rows, replies included. 0 is no limit.', 'group' => 'keep', 'kind' => 'int', 'unit' => 'notes',
+        array('key' => 'max_notes_per_project', 'hint' => 'Rows, replies included. 0 is no limit.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'notes',
             'label' => 'Notes one project may hold',
             'decided' => array('one-site' => 'no limit', 'anyone' => '6000 rows, about '
                                                          . '2000 remarks'),
@@ -1154,29 +1154,29 @@ function ap_i_settings()
                        . 'notes wants. A relay needs one: it stores for strangers. '
                        . 'Measured: six reviewers over three months write about 3600 '
                        . 'rows, and a relay is capped at 6000 unless you say otherwise.'),
-        array('key' => 'max_note_age_days', 'hint' => 'From a thread&rsquo;s last message. 0 keeps everything.', 'group' => 'keep', 'kind' => 'int', 'unit' => 'days',
+        array('key' => 'max_note_age_days', 'hint' => 'From a thread&rsquo;s last message. 0 keeps everything.', 'group' => 'advanced', 'kind' => 'int', 'unit' => 'days',
             'label' => 'How long a thread is kept',
             'decided' => array('one-site' => '90 days', 'anyone' => '90 days'),
             'say'   => 'Counted from its LAST message, so a live discussion is never '
                        . 'cut short, and the whole thread goes at once. 0 keeps '
                        . 'everything for ever, which is what config.php decides for a '
                        . 'server this file never installed.'),
-        array('key' => 'rate_window_seconds', 'hint' => 'Fixed, not sliding.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'seconds',
+        array('key' => 'rate_window_seconds', 'hint' => 'Fixed, not sliding.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'seconds',
             'label' => 'The window the limits below are counted in',
             'say'   => 'Fixed, not sliding: hitting a limit early in a window costs the '
                        . 'rest of it. A long window makes a refusal last longer.'),
-        array('key' => 'rate_writes_per_ip', 'hint' => '', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
+        array('key' => 'rate_writes_per_ip', 'hint' => '', 'group' => 'fine', 'kind' => 'int', 'unit' => 'writes',
             'label' => 'Writes per address, per window',
             'say'   => 'Everybody behind one office address counts as one machine, on '
                        . 'all of their projects together.'),
-        array('key' => 'rate_writes_per_project', 'hint' => 'All of its writers together.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
+        array('key' => 'rate_writes_per_project', 'hint' => 'All of its writers together.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'writes',
             'label' => 'Writes per project, per window',
             'decided' => array('one-site' => '0, which is off -- everybody who can '
                                              . 'write here is already behind your door',
                                'anyone'   => '300'),
             'say'   => 'All of that project\'s writers together. It is the anti-abuse '
                        . 'ceiling, not the working budget.'),
-        array('key' => 'rate_exports_per_ip', 'hint' => 'An assistant spends about three per remark.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'exports',
+        array('key' => 'rate_exports_per_ip', 'hint' => 'An assistant spends about three per remark.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'exports',
             'label' => 'Exports per address, per window',
             'decided' => array('one-site' => '0, which is off -- the only reader of an '
                                              . 'export here is your own assistant',
@@ -1185,7 +1185,7 @@ function ap_i_settings()
                        . 'reply, resolve -- costs about three per remark, so 90 per '
                        . 'window is thirty remarks. Measured: at 20 an assistant met '
                        . 'the refusal in the middle of its seventh remark, on day one.'),
-        array('key' => 'rate_reads_per_ip', 'hint' => '0 costs nothing: the counter is never touched.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'page loads',
+        array('key' => 'rate_reads_per_ip', 'hint' => '0 costs nothing: the counter is never touched.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'page loads',
             'label' => 'Page loads per address, per window',
             'say'   => 'OFF, and 0 means the counter is never touched: a page load then '
                        . 'costs no database write, which is why it is the default. It is '
@@ -1195,30 +1195,30 @@ function ap_i_settings()
                        . 'wants it. Set it far above a person: one page load is one call, '
                        . 'so 600 in five minutes is two a second and no reviewer will '
                        . 'ever meet it.'),
-        array('key' => 'max_body_bytes', 'hint' => '', 'group' => 'rate', 'kind' => 'int', 'unit' => 'bytes',
+        array('key' => 'max_body_bytes', 'hint' => '', 'group' => 'fine', 'kind' => 'int', 'unit' => 'bytes',
             'label' => 'Largest request body',
             'say'   => 'Read before anything is parsed; over it, a 413. Sized by the '
                        . 'envelope bounds of the format, not by what people write: the '
                        . 'longest remark measured on a real project used 5% of it.'),
-        array('key' => 'client_ip_header', 'hint' => 'Only behind a proxy you trust: a client can write it itself.', 'group' => 'server', 'kind' => 'text', 'unit' => '',
+        array('key' => 'client_ip_header', 'hint' => 'Only behind a proxy you trust: a client can write it itself.', 'group' => 'fine', 'kind' => 'text', 'unit' => '',
             'label' => 'Header carrying the real address, behind a proxy',
             'say'   => 'Empty unless a TRUSTED proxy rewrites it on every request: a '
                        . 'header the client can set itself makes every limit above '
                        . 'bypassable in one line. Without it, everyone behind that proxy '
                        . 'counts as one machine.'),
-        array('key' => 'publish_server_totals', 'hint' => 'Three figures, to anybody who opens an annotated page.', 'group' => 'server', 'kind' => 'bool', 'unit' => '',
+        array('key' => 'publish_server_totals', 'hint' => 'Three figures, to anybody who opens an annotated page.', 'group' => 'advanced', 'kind' => 'bool', 'unit' => '',
             'label' => 'Publish what the whole server holds',
             'say'   => 'Three integers -- projects, notes, pages -- answered to anybody '
                        . 'who can open one annotated page. Counted on every page load: '
                        . 'measured at 5.7 ms without it and 41.8 ms with it on 60,000 '
                        . 'notes.'),
-        array('key' => 'forward_root_to', 'hint' => 'The directory only, never api.php.', 'group' => 'server', 'kind' => 'text', 'unit' => '',
+        array('key' => 'forward_root_to', 'hint' => 'The directory only, never api.php.', 'group' => 'advanced', 'kind' => 'text', 'unit' => '',
             'label' => 'Where a bare visit to this directory goes',
             'say'   => 'Empty gives a 404. An absolute http(s) URL sends it there with a '
                        . '302 -- what a public relay wants, so that somebody landing on '
                        . 'the bare host reaches a page explaining what this is. It never '
                        . 'applies to api.php.'),
-        array('key' => 'diagnostic', 'hint' => '<code>full</code> publishes the whole report to whoever asks.', 'group' => 'server', 'kind' => 'choice', 'unit' => '',
+        array('key' => 'diagnostic', 'hint' => '<code>full</code> publishes the whole report to whoever asks.', 'group' => 'advanced', 'kind' => 'choice', 'unit' => '',
             'values' => array('minimal', 'full', 'off'),
             'label' => 'How much ?action=diagnostic tells',
             'say'   => 'That page has no authentication, so what it publishes it '
@@ -1226,7 +1226,7 @@ function ap_i_settings()
                        . 'even when the configuration cannot be read, which is when it '
                        . 'is needed; `full` is the whole report, for the length of a '
                        . 'diagnosis; `off` makes the action not exist.'),
-        array('key' => 'table_prefix', 'hint' => 'Only on a database shared with something else.', 'group' => 'server', 'kind' => 'text', 'unit' => '',
+        array('key' => 'table_prefix', 'hint' => 'Only on a database shared with something else.', 'group' => 'fine', 'kind' => 'text', 'unit' => '',
             'label' => 'Prefix of the table names',
             'say'   => 'The tables are <prefix>notes, <prefix>rate and <prefix>tally. '
                        . 'Only worth changing on a database shared with something else '
@@ -1353,43 +1353,33 @@ function ap_i_setting_default($key)
 function ap_i_setting_sections()
 {
     return array(
-        'keep' => array(
-            'title' => 'What this server keeps, and for how long',
-            /* NOT BEHIND THE SWITCH. These two decide whether a remark is
-               still there next month, and they are the only settings on this
-               page whose wrong value costs somebody their remarks instead of a
-               refusal they can act on. Among thirteen others they read as two
-               more knobs. */
-            'upfront' => true,
-            'open'  => true,
-            'hint'  => 'Both are written into your configuration by this installation.',
-            'say'   => 'The two numbers that decide whether a remark is still there '
-                       . 'next month. Both are written into your configuration by this '
-                       . 'installation, so they are here rather than in a fold.',
+        /* WHAT THIS SERVER DOES AND SAYS -- the settings somebody opens the
+           panel to change. Ordered before the numbers, because a person who
+           wants to keep notes for a year and a person who wants to publish the
+           totals both come here, and neither of them came to set a counter. */
+        'advanced' => array(
+            'title' => 'What this server does, and what it tells the world',
+            'hint'  => '',
+            'say'   => 'None of these changes what is stored. They decide how long a '
+                       . 'remark is kept, what a stranger can read from the outside, '
+                       . 'and where a bare visit to this directory goes.',
         ),
-        'rate' => array(
-            'title' => 'How fast anybody may write, read or export',
-            'open'  => true,
-            'hint'  => 'Per address and per project, in a fixed window. Over the limit '
-                       . 'is a 429 saying when to come back; 0 switches one off.',
+        /* AND THE NUMBERS, WHICH ALMOST NOBODY TOUCHES. The row cap belongs
+           here and not up front: it is a ceiling nobody meets on a server
+           carrying one team's notes, where it is off, and a relay's own is
+           written for them. Same for the counters and the table prefix. */
+        'fine' => array(
+            'title' => 'Fine tuning: the limits, and where the tables live',
+            'hint'  => 'Counted per address and per project, in a fixed window. Past a '
+                       . 'limit the answer is a 429 saying when to come back; 0 switches '
+                       . 'one off.',
             'say'   => 'Counted per address and per project, in a fixed window. Past a '
-                       . 'limit the answer is a 429 saying when to come back, and '
-                       . 'nothing is lost. 0 switches a counter off entirely -- and off '
-                       . 'means the counter is never touched, not touched and ignored.',
-        ),
-        'server' => array(
-            'title' => 'Rarely needed: what this server says about itself, and where '
-                       . 'it sits',
-            'open'  => false,
-            'hint'  => 'None of these changes what is stored.',
-            'say'   => 'None of these changes what is stored. They decide what a '
-                       . 'stranger can read from the outside, what this server believes '
-                       . 'about the address a request came from, and which tables it '
-                       . 'writes into.',
+                       . 'limit the answer is a 429 saying when to come back, and nothing '
+                       . 'is lost. 0 switches a counter off entirely -- and off means the '
+                       . 'counter is never touched, not touched and ignored.',
         ),
         'risky' => array(
             'title' => 'Two that can undo what this tool is for',
-            'open'  => false,
             'warn'  => true,
             'hint'  => 'Both have a use, and both are the wrong answer nine times out '
                        . 'of ten.',
@@ -3763,16 +3753,20 @@ td.c-why { color: var(--dim); font-size: .9rem; padding-left: .9rem; }
    BOTH sentences -- verbose, complete, never a field with nothing under it --
    where the reverse would leave the explanations unreachable on the browser
    least able to do without them. */
-form:has(#ap-explain:not(:checked)) .l-long { display: none; }
-form:has(#ap-explain:checked) .l-short { display: none; }
+/* `body:has()` AND NOT `form:has()`: the pair of chips that chooses the
+   reading sits above the form, with the title, because it is not something the
+   form asks -- and a rule hung off the form matched nothing at all, so the
+   page showed both sentences under every field and the chips did nothing.
+   Caught by counting what was visible, not by reading the selector. */
+body:has(#ap-explain:not(:checked)) .l-long { display: none; }
+body:has(#ap-explain:checked) .l-short { display: none; }
 .l-long { display: inline; }
-/* The switch itself, at the head of the settings it acts on. Lighter than the
-   one that revealed them -- that one is a decision, this one is a reading --
-   but the BOX IS THE SAME SIZE and the gap is the same, so the two lines start
-   on the same pixel. Made smaller, it read as a stray indent under the line
-   above it. */
-.switch-line.explain { margin: 0 0 1.1rem; }
-.switch-line.explain label { font-weight: 400; font-size: .92rem; color: var(--dim); }
+/* The page's own control, under the title: two chips and a line saying what
+   they do. Not a setting -- nothing here is written or posted -- so it is
+   above everything the form asks. */
+.views { margin: 0 0 2.2rem; }
+.views .seg { margin: 0; }
+.views-say { margin: .5rem 0 0; font-size: .85rem; color: var(--dim); }
 
 /* A LABEL AND ITS BOX ARE ONE THING. The markup separates them with a <br>,
    which at this type size is a whole empty line between a question and the
@@ -4073,6 +4067,25 @@ function ap_i_run(array $options)
 
     echo '<p class="lede">' . ap_i_h($lede) . "</p>\n";
 
+    /* HOW THIS PAGE READS, ABOVE ANYTHING IT INSTALLS. It is not a setting of
+       the server -- nothing of it is written, nothing of it is posted -- so it
+       sits at the top with the title, where an installer puts the choice
+       between a short walk and an explained one.
+       TWO RADIOS AND NOT A CHECKBOX: one control that toggles cannot say which
+       of two states you are in until you read its label backwards. Two chips,
+       drawn like every other choice on this page, and the one in force is
+       filled. No script: the sentences are all in the page and a `:has()` rule
+       picks. */
+    echo '<div class="views"><div class="seg">' . "\n";
+    echo '<label><input type="radio" name="ap-view" id="ap-simple" checked>'
+        . "<span>Simple</span></label>\n";
+    echo '<label><input type="radio" name="ap-view" id="ap-explain">'
+        . "<span>Explained</span></label>\n";
+    echo "</div>\n";
+    echo '<p class="views-say">Explained puts a paragraph under every field &mdash; the '
+        . "same sentences as <code>--help --verbose</code>.</p>\n";
+    echo "</div>\n";
+
     /* WHAT IS BEING DONE, AND WHAT IT IS BEING DONE TO -- above everything,
        because a page whose first heading is "What this server offers" has told
        you about the host before it has told you what it is here to do. Two
@@ -4311,7 +4324,7 @@ function ap_i_run(array $options)
     /* What the switch actually hides, which is no longer all fifteen. */
     $behind = array();
     foreach ($settings as $setting) {
-        if (empty($sections[$setting['group']]['upfront'])) { $behind[] = $setting; }
+        $behind[] = $setting;
     }
     $openMore = false;
     foreach ($behind as $setting) {
@@ -4409,32 +4422,6 @@ function ap_i_run(array $options)
         if ($note !== '') { echo '<p class="note">' . $note . "</p>\n"; }
     };
 
-    /* THE TWO THAT DECIDE WHETHER A REMARK IS STILL THERE NEXT MONTH ARE NOT
-       ADVANCED. Behind the switch with the other thirteen, they read as two
-       more knobs in a heap of knobs -- and they are the only two on this page
-       whose wrong value costs somebody their remarks rather than a refusal
-       they can act on. On the page itself, under the three questions. */
-    foreach ($sections as $group => $shape) {
-        if (empty($shape['upfront'])) { continue; }
-        $fields = array();
-        foreach ($settings as $setting) {
-            if ($setting['group'] === $group) { $fields[] = $setting; }
-        }
-        if (!$fields) { continue; }
-        echo "<div class=\"part upfront\">\n";
-        echo '<p class="part-title">' . ap_i_h($shape['title']) . "</p>\n";
-        $intro = '';
-        if ($shape['hint'] !== '') {
-            $intro .= '<span class="l-short">' . $shape['hint'] . '</span>';
-        }
-        if ($shape['say'] !== '') {
-            $intro .= '<span class="l-long">' . $shape['say'] . '</span>';
-        }
-        if ($intro !== '') { echo '<p class="note">' . $intro . "</p>\n"; }
-        foreach ($fields as $setting) { $paragraph($setting); }
-        echo "</div>\n";
-    }
-
     // --- The switch, and what is decided if it is never opened. --------------
 
     echo '<div class="more-switch">' . "\n";
@@ -4464,19 +4451,10 @@ function ap_i_run(array $options)
     // --- Everything the switch reveals. --------------------------------------
 
     echo '<div class="more">' . "\n";
-    /* THE SECOND SWITCH, AT THE HEAD OF WHAT IT ACTS ON, AND IT CHANGES NO
-       VALUE. The first says which settings are on the screen; this one says
-       how much each of them explains itself. It carries no `name`, like the
-       other, so neither is posted -- and it is here rather than beside the
-       first because "explain these" means nothing while there is nothing to
-       explain. */
-    echo '<p class="switch-line explain"><label><input type="checkbox" id="ap-explain">'
-        . '<span>Explain each one at length &mdash; the same sentences as '
-        . "<code>--help --verbose</code></span></label></p>\n";
-    echo '<p class="note">All optional. Empty means the value in grey.</p>' . "\n";
+    echo '<p class="note">All optional. Each field says what it is worth left '
+        . "empty.</p>\n";
 
     foreach ($sections as $group => $shape) {
-        if (!empty($shape['upfront'])) { continue; }   // drawn above, on the page itself
         $fields = array();
         foreach ($settings as $setting) {
             if ($setting['group'] === $group) { $fields[] = $setting; }

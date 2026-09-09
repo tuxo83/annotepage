@@ -249,15 +249,22 @@ const folds = [...own.form.matchAll(/<summary>([\s\S]*?)<\/summary>/g)]
     .map((m) => m[1].replace(/<[^>]+>/g, '').replace(/&mdash;/g, '--').trim());
 check(`the form has ${folds.length} folds, more than the three that earn one`,
     folds.length <= 3, folds.join(' | '));
-const openSections = askPhp('foreach (ap_i_setting_sections() as $s) {'
-    + ' if (!empty($s["open"])) { echo $s["title"], "\n"; } }')
-    .split('\n').filter(Boolean);
-check('no section of settings is shown without being opened first',
-    openSections.length >= 2, openSections.join(' | '));
-for (const title of openSections) {
-    check(`the section "${title}" is behind a fold, and it holds numbers somebody`
-        + ' came to set', !folds.some((f) => f.includes(title)));
+/* AND NO SECTION OF SETTINGS IS A FOLD OF ITS OWN. One control opens the
+   panel; inside it the sections are headings, drawn in the order the table
+   declares them. A section behind a second summary puts a setting two clicks
+   away and makes the list of titles unreadable. */
+const sectionTitles = askPhp('foreach (ap_i_setting_sections() as $s) {'
+    + ' echo $s["title"], "\n"; }').split('\n').filter(Boolean);
+for (const title of sectionTitles) {
+    check(`the section "${title}" is behind a fold of its own`,
+        !folds.some((f) => f.includes(title)));
 }
+const drawn = [...own.form.matchAll(/<p class="part-title">([^<]*)<\/p>/g)]
+    .map((m) => m[1].replace(/&mdash;/g, '--').trim());
+const declared = sectionTitles.map((t) => t.replace(/&mdash;/g, '--').trim());
+check('the sections are not drawn in the order the table declares them',
+    drawn.join('|') === declared.join('|'),
+    drawn.join(' | ') + '   against   ' + declared.join(' | '));
 
 /* AND IT STAYS A FORM, NOT A BOOK. Every setting used to print the whole
    paragraph that --help prints, and the screen measured 1756 words -- more
@@ -477,6 +484,12 @@ check('a malformed address was not refused with the shape it wants',
    refuses is the page losing either of them, or the control that swaps them. */
 check('the page carries no control for the long sentences',
     malformed.form.includes('id="ap-explain"'));
+/* AND IT IS AT THE TOP, WITH THE TITLE, AS A PAIR OF CHIPS. It is not a
+   setting -- nothing of it is posted or written -- so it belongs above
+   everything the form asks, and two chips say which reading you are in where a
+   checkbox left that to be inferred from its own label. */
+check('the reading is chosen by something other than a pair of chips',
+    /id="ap-simple"/.test(malformed.form) && /name="ap-view"/.test(malformed.form));
 
 /* EVERY FIELD SAYS WHAT AN EMPTY FIELD IS WORTH. Four of them did -- the ones
    this installation decides itself -- and the other eleven left it to a grey
@@ -492,21 +505,13 @@ check(`${emptySays} fields say what an empty field is worth, and there are`
     + ' once per audience)', emptySays >= settingKeys.length);
 check('a select still names the gesture instead of the state',
     !malformed.form.includes('(leave it as it is)'));
+/* AND THE SWITCH SAYS HOW MANY IT HIDES: it said fifteen while hiding thirteen
+   for one release, because two sections had been lifted out of it and the
+   count still came from the whole table. */
+const hidden = (malformed.form.match(/Set the other (\d+) settings myself/) || [])[1];
+check(`the switch offers ${hidden} settings and the table has ${settingKeys.length}`,
+    Number(hidden) === settingKeys.length);
 
-/* AND THE TWO THAT DECIDE WHETHER A REMARK SURVIVES ARE NOT BEHIND THE SWITCH.
-   Among thirteen others they read as two more knobs, and they are the only
-   settings here whose wrong value costs somebody their remarks rather than a
-   refusal they can act on. */
-const upfront = askPhp('foreach (ap_i_setting_sections() as $k => $s) {'
-    + ' if (!empty($s["upfront"])) { echo $k, "\n"; } }').split('\n').filter(Boolean);
-check('no section is shown on the page itself, outside the advanced switch',
-    upfront.length >= 1, upfront.join(' '));
-for (const key of ['max_note_age_days', 'max_notes_per_project']) {
-    const group = askPhp('foreach (ap_i_settings() as $s) { if ($s["key"] === "'
-        + key + '") { echo $s["group"]; } }');
-    check(`"${key}" is behind the advanced switch, and it decides whether a remark`
-        + ' is still there next month', upfront.includes(group), group);
-}
 /* AND THE PAGE SAYS WHAT IT IS AT A GLANCE. It was headed `annotepage`, which
    names the tool and not what this screen is for -- and titled
    `annotepage -- install`, which is the same thing with punctuation. */
@@ -525,7 +530,7 @@ check('a long sentence is missing from the page, so the switch would show nothin
 /* And it is the RULE that hides the long one, not the rule that shows it: a
    browser without :has() must end up with both sentences, never with none. */
 check('the long sentences are shown by a rule rather than hidden by one',
-    malformed.form.includes('form:has(#ap-explain:not(:checked)) .l-long { display: none; }'),
+    malformed.form.includes('body:has(#ap-explain:not(:checked)) .l-long { display: none; }'),
     (malformed.form.match(/[^\n]*l-long[^\n]*display[^\n]*/g) || ['(no rule)']).join(' | '));
 
 const short = spawnSync('php', [join(webroot, 'install.php'), '--help'],
