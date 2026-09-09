@@ -198,6 +198,23 @@ for (const key of everyKey.filter(Boolean)) {
         + ' every key there is', example.includes("'" + key + "'"));
 }
 
+/* THE MySQL FIELDS FOLLOW THE ANSWER, WITH NO JAVASCRIPT. Choosing MySQL used
+   to change nothing on the screen: the five fields the installation cannot do
+   without sat behind a fold somebody had to think to open. They are a box now,
+   hidden by the OTHER answer -- `form:has(#s-sqlite:checked) .if-mysql-box`.
+   That order matters and is what this checks: a browser too old for `:has()`
+   ignores the rule and shows the fields, which is what everybody had before.
+   Never the reverse, which would hide them from the browser that cannot know
+   they should come back. */
+check('the MySQL fields are not in a box of their own', own.form.includes('if-mysql-box'));
+check('the box is hidden by anything other than the SQLite answer being checked',
+    own.form.includes('form:has(#s-sqlite:checked) .if-mysql-box { display: none; }'),
+    (own.form.match(/[^\n]*if-mysql-box[^\n]*display[^\n]*/) || ['(no rule)'])[0]);
+for (const field of ['host', 'port', 'name', 'user', 'password']) {
+    check(`the form no longer asks for the MySQL ${field}`,
+        own.form.includes(`name="${field}"`));
+}
+
 /* AND EVERY SETTING IS UNDER A NAMED SECTION, not in one fold called "change
    anything else" -- which says a list exists without saying what is in it, so
    whoever came to set a retention has to open it and read fifteen fields to

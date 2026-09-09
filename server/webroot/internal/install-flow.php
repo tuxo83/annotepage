@@ -3149,6 +3149,12 @@ function ap_i_head($title)
         . "  form:has(#a-one:checked) .if-anyone,\n"
         . "  .dials:has(#s-mysql:checked) .if-sqlite,\n"
         . "  .dials:has(#s-sqlite:checked) .if-mysql { display: none; }\n"
+        /* The box of MySQL fields, hidden by the OTHER answer -- see where it
+           is written. Shown when the rule cannot be understood, never hidden
+           by accident. */
+        . "  form:has(#s-sqlite:checked) .if-mysql-box { display: none; }\n"
+        . "  .if-mysql-box { border: 1px solid rgba(128,128,128,.4); border-radius: 8px;\n"
+        . "                  padding: .9rem 1rem .2rem; margin: 1rem 0; }\n"
         /* The third dial's own sentences, and the two paragraphs UNDER the box
            that belong to two of its answers -- so this rule hangs off the form
            rather than off the box. */
@@ -3553,10 +3559,22 @@ function ap_i_run(array $options)
         . 'temporary address. It is checked before anything is '
         . "installed.</p>\n";
 
-    echo "<details" . ($postedMysql ? ' open' : '') . ">\n";
-    echo "<summary>MySQL connection details</summary>\n";
-    echo '<p>Only if you chose MySQL above. The installer connects and creates the tables '
-        . 'before writing anything.</p>' . "\n";
+    /* THE MySQL BOX APPEARS BECAUSE MySQL WAS CHOSEN, and disappears with
+       SQLite. It was a fold that had to be opened by hand: choosing MySQL
+       changed nothing on the screen, so the five fields the installation
+       cannot do without sat behind a summary somebody had to think to click.
+       That is the one dynamic thing this page wanted, and it wanted no
+       JavaScript for it -- the same `:has()` that already swaps the sentences
+       under the dials does it.
+       SHOWN BY DEFAULT, HIDDEN BY SQLITE, and that order is the whole
+       robustness of it: a browser too old for `:has()` ignores the rule and
+       shows the fields, which is what this page did yesterday for everybody.
+       Hidden fields are still posted, empty, and the server reads them only
+       when storage is mysql. */
+    echo '<div class="if-mysql-box">' . "\n";
+    echo '<p class="dial-title">Where the MySQL server is.</p>' . "\n";
+    echo '<p class="note">The installer connects and creates the tables before writing '
+        . "anything.</p>\n";
     foreach (ap_i_credential_fields() as $box) {
         echo '<p><label>' . $box['label'] . '<br><input type="' . $box['type']
             . '" name="' . $box['name'] . '"';
@@ -3565,7 +3583,7 @@ function ap_i_run(array $options)
         }
         echo "></label></p>\n";
     }
-    echo "</details>\n";
+    echo "</div>\n";
 
     /* THREE WAYS, AND THEY ARE NOT EQUAL -- SO IT IS ONE CHOICE, IN ORDER.
        Two checkboxes said "tick what you like" over a paragraph explaining
