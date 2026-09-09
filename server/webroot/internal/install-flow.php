@@ -663,9 +663,29 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
        deciding it, which is what an operator who did not touch it wants. */
     $settings = array();
     foreach (ap_i_settings() as $setting) {
-        if (isset($answers[$setting['key']]) && $answers[$setting['key']] !== '') {
-            $settings[$setting['key']] = (string) $answers[$setting['key']];
+        if (!isset($answers[$setting['key']]) || $answers[$setting['key']] === '') {
+            continue;
         }
+        $given = trim((string) $answers[$setting['key']]);
+        if ($given === '') {
+            continue;
+        }
+        /* CHECKED HERE TOO, BY THE SAME RULE THE SHELL USES. Everything below
+           this point writes the value into a file; a form is a place where
+           `abc` gets typed into a box expecting a number, and `abc` cast to
+           an integer is 0, which for four of these settings is the value that
+           TURNS THE CONTROL OFF. Nothing is installed when one is wrong --
+           the same answer as the shell's exit 2, said on a page. */
+        $why = null;
+        if (!ap_i_setting_accepts($setting, $given, $why)) {
+            $errors[] = ap_i_plain($setting['label']) . ' ' . $why;
+            continue;
+        }
+        $settings[$setting['key']] = $given;
+    }
+    if ($errors) {
+        return array('installed' => false, 'relay' => false, 'token' => '',
+                     'auto' => false, 'wants' => $wants);
     }
 
     $values = array(
@@ -1742,6 +1762,60 @@ function ap_i_cli_options()
 }
 
 /**
+ * Does this setting accept that value? The ONE rule, called by both faces.
+ *
+ * IT WAS THE COMMAND LINE'S ALONE, AND THE FORM HAD NONE. Measured, by posting
+ * the form with four values a shell would have refused:
+ *
+ *   rate_writes_per_ip=abc     written as 0 -- and 0 is the value that
+ *                              SWITCHES THE COUNTER OFF. A typo disabled a
+ *                              rate limit, silently, on the face most people
+ *                              use;
+ *   max_body_bytes=-9          written as -9, which ap_check_body_size() reads
+ *                              as "no cap" for the same reason;
+ *   diagnostic=ful             written as `ful`, which the server logs and
+ *                              treats as `minimal` -- the shell refuses that
+ *                              exact value with exit 2;
+ *   publish_server_totals=x    quietly false.
+ *
+ * Two of those loosen a control by typing into a text box. So the rule lives
+ * here, once, and the two faces differ only in how they say no.
+ *
+ * @param array       $setting one entry of ap_i_settings()
+ * @param string      $value   what arrived, as text
+ * @param string|null $why     filled in with what it should have been
+ */
+function ap_i_setting_accepts(array $setting, $value, &$why = null)
+{
+    $value = (string) $value;
+    if ($setting['kind'] === 'int') {
+        if (!preg_match('/^\d+$/', $value)) {
+            $why = 'takes a whole number of '
+                . ($setting['unit'] !== '' ? $setting['unit'] : 'units')
+                . ', and 0 where that means no limit. Given: ' . $value;
+            return false;
+        }
+        return true;
+    }
+    if ($setting['kind'] === 'bool') {
+        if (!in_array($value, array('true', 'false'), true)) {
+            $why = 'takes true or false. Given: ' . $value;
+            return false;
+        }
+        return true;
+    }
+    if ($setting['kind'] === 'choice') {
+        if (!in_array($value, $setting['values'], true)) {
+            $why = 'is not one of: ' . implode(', ', $setting['values'])
+                . '. Given: ' . $value;
+            return false;
+        }
+        return true;
+    }
+    return true;
+}
+
+/**
  * Reads the command line. Refuses everything it does not recognise.
  *
  * A value that was ignored would install the default and read as a success --
@@ -1791,26 +1865,13 @@ function ap_i_parse_options(array $argv)
                 . implode(', ', $shape['values']) . '.';
             continue;
         }
-        /* A SETTING IS CHECKED AGAINST WHAT IT IS. A ceiling that arrived as
-           `2 000` or `deux mille` and was read as 2 would be a limit nobody
-           asked for, reached in an afternoon. */
+        /* A SETTING IS CHECKED AGAINST WHAT IT IS, by the rule BOTH faces call.
+           A ceiling that arrived as `2 000` or `deux mille` and was read as 2
+           would be a limit nobody asked for, reached in an afternoon. */
         if (isset($shape['setting'])) {
-            $setting = ap_i_setting($shape['setting']);
-            if ($setting['kind'] === 'int' && !preg_match('/^\d+$/', (string) $value)) {
-                $errors[] = '--' . $name . ' takes a whole number of '
-                    . ($setting['unit'] !== '' ? $setting['unit'] : 'units')
-                    . ', and 0 where that means no limit. Given: ' . $value;
-                continue;
-            }
-            if ($setting['kind'] === 'bool'
-                && !in_array($value, array('true', 'false'), true)) {
-                $errors[] = '--' . $name . ' takes true or false. Given: ' . $value;
-                continue;
-            }
-            if ($setting['kind'] === 'choice'
-                && !in_array($value, $setting['values'], true)) {
-                $errors[] = '--' . $name . ' is not one of: '
-                    . implode(', ', $setting['values']) . '. Given: ' . $value;
+            $why = null;
+            if (!ap_i_setting_accepts(ap_i_setting($shape['setting']), $value, $why)) {
+                $errors[] = '--' . $name . ' ' . $why;
                 continue;
             }
         }
@@ -2548,6 +2609,15 @@ function ap_i_cli(array $options)
  */
 function ap_i_config_text(array $values)
 {
+    /* READ BY EVERY BLOCK BELOW, SO IT IS DEFINED BEFORE THE FIRST ONE. It was
+       assigned twenty-seven lines after the retention block that consults it,
+       and isset() on an undefined variable is false without a warning: the
+       guard never fired, so `--max-note-age-days=77` produced a file carrying
+       BOTH `=> 90` and `=> 77`, in that order. PHP keeps the last, so the
+       operator's number was in force -- and a human reading their own
+       configuration found ninety at the top and believed it. */
+    $chosen = isset($values['settings']) ? $values['settings'] : array();
+
     $q = function ($s) {
         return "'" . str_replace(array('\\', "'"), array('\\\\', "\\'"), (string) $s) . "'";
     };
@@ -2730,7 +2800,6 @@ function ap_i_config_text(array $values)
        open this file reads a choice rather than a number. What was not given
        is not written at all -- config.php goes on deciding it, and a later
        version may raise it. */
-    $chosen = isset($values['settings']) ? $values['settings'] : array();
     if ($chosen) {
         $text .= "    // WHAT YOU SET WHILE INSTALLING. Everything else keeps the default\n";
         $text .= "    // from internal/config.php, which is listed below in comments.\n";

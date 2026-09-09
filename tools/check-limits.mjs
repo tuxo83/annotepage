@@ -368,6 +368,120 @@ if (tooMany) {
     }
 }
 
+/* -- EVERY SETTING, THROUGH BOTH FACES, INTO THE FILE ---------------------
+   One table describes the settings; two faces read it; one file records the
+   answers. What was never checked is the last arrow: that a value GIVEN comes
+   back OUT of the generated configuration, once, as itself. It did not, for
+   one of them -- `--max-note-age-days=77` produced a file carrying both
+   `=> 90` and `=> 77`, because the guard that suppresses the default read a
+   variable assigned twenty-seven lines further down, and isset() on an
+   undefined variable is false without a warning. PHP keeps the last, so the
+   number in force was right and the file said two things.
+
+   So: every setting is given a value of its own, through the shell and
+   through the form, and each must appear exactly once, as what was asked. */
+{
+    const port3 = await freePort();
+    const dir3 = mkdtempSync(join(tmpdir(), 'annotepage-roundtrip-'));
+    const root3 = join(dir3, 'web');
+    cpSync(webroot, root3, { recursive: true });
+    const server3 = spawn('php', ['-S', '127.0.0.1:' + port3], {
+        cwd: root3, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: 'ignore',
+    });
+    for (let i = 0; i < 40; i += 1) {
+        await sleep(150);
+        try { await fetch('http://127.0.0.1:' + port3 + '/install.php', { redirect: 'manual' }); break; }
+        catch (e) { /* not listening yet */ }
+    }
+
+    /* A value per setting, chosen from its own kind, and none of them equal to
+       what the installer would have written on its own -- a check that passes
+       because the answer happens to be the default is not a check. */
+    const table = spawnSync('php', ['-r',
+        'define("AP_INTERNAL", 1); require "internal/install-flow.php";'
+        + ' foreach (ap_i_settings() as $s) { echo $s["key"], "|", $s["kind"], "|",'
+        + ' isset($s["values"]) ? implode(",", $s["values"]) : "", "\n"; }'],
+        { encoding: 'utf8', cwd: root3 }).stdout || '';
+    const wanted = new Map();
+    let n = 101;
+    for (const row of table.trim().split('\n').filter(Boolean)) {
+        const [key, kind, values] = row.split('|');
+        if (kind === 'int') { wanted.set(key, String(n += 7)); }
+        else if (kind === 'bool') { wanted.set(key, 'true'); }
+        else if (kind === 'choice') { wanted.set(key, values.split(',').pop()); }
+        else { wanted.set(key, 'x-' + key.replace(/_/g, '-')); }
+    }
+    check('the settings table could not be read', wanted.size >= 10, table.slice(0, 200));
+
+    const args = [...wanted].map(([k, v]) => '--' + k.replace(/_/g, '-') + '=' + v);
+    const run = spawnSync('php', [join(root3, 'install.php'),
+        '--api-address=http://127.0.0.1:' + port3 + '/api.php',
+        '--answers-for=one-site', '--storage=sqlite', '--updated-by=cron', ...args],
+        { encoding: 'utf8', cwd: root3 });
+    check('the shell refused a command line made of one value per setting',
+        run.status === 0, (run.stderr || run.stdout || '').slice(0, 300));
+
+    const written = existsSync(join(root3, 'internal', 'config-local.php'))
+        ? readFileSync(join(root3, 'internal', 'config-local.php'), 'utf8') : '';
+    for (const [key, value] of wanted) {
+        const lines = written.split('\n')
+            .filter((l) => new RegExp("^\\s*'" + key + "'\\s*=>").test(l));
+        check(`"${key}" appears ${lines.length} times as a live line in the`
+            + ' configuration, not once -- a file that answers a question twice is a'
+            + ' file whose reader believes the first answer', lines.length === 1,
+            lines.join(' | '));
+        if (lines.length === 1) {
+            check(`"${key}" was given ${value} and the file says ${lines[0].trim()}`,
+                lines[0].includes(value));
+        }
+    }
+
+    try { server3.kill('SIGKILL'); } catch (e) { /* gone */ }
+    rmSync(dir3, { recursive: true, force: true });
+}
+
+/* -- AND A VALUE THE SHELL REFUSES IS REFUSED ON THE FORM TOO -------------
+   Measured before this existed, by posting the form: `rate_writes_per_ip=abc`
+   was written as 0, and 0 is the value that switches that counter OFF.
+   `max_body_bytes=-9` the same. A control loosened by a typo, on the face
+   most people use, while the shell refused both with exit 2. */
+{
+    const port4 = await freePort();
+    const dir4 = mkdtempSync(join(tmpdir(), 'annotepage-typo-'));
+    const root4 = join(dir4, 'web');
+    cpSync(webroot, root4, { recursive: true });
+    const server4 = spawn('php', ['-S', '127.0.0.1:' + port4], {
+        cwd: root4, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: 'ignore',
+    });
+    for (let i = 0; i < 40; i += 1) {
+        await sleep(150);
+        try { await fetch('http://127.0.0.1:' + port4 + '/install.php', { redirect: 'manual' }); break; }
+        catch (e) { /* not listening yet */ }
+    }
+    const post = async (body) => (await (await fetch(
+        'http://127.0.0.1:' + port4 + '/install.php',
+        { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body, redirect: 'manual' })).text());
+
+    const answer = await post('audience=mine&storage=sqlite&updates=cron'
+        + '&rate_writes_per_ip=abc&max_body_bytes=-9&diagnostic=ful'
+        + '&publish_server_totals=peutetre');
+    check('the form installed something despite four values the shell refuses',
+        !existsSync(join(root4, 'internal', 'config-local.php')));
+    for (const [what, said] of [
+        ['a number that is not one', 'takes a whole number of writes'],
+        ['a negative number', 'Given: -9'],
+        ['a word where true or false was expected', 'takes true or false'],
+        ['a choice outside the list', 'is not one of: minimal, full, off'],
+    ]) {
+        check(`the form does not say what is wrong with ${what}`, answer.includes(said),
+            said);
+    }
+
+    try { server4.kill('SIGKILL'); } catch (e) { /* gone */ }
+    rmSync(dir4, { recursive: true, force: true });
+}
+
 /* -- AND THE ONE REQUEST THIS SERVER MAKES OF SOMEBODY ELSE ---------------
    ?action=diagnostic has no authentication, and in `full` it asks the release
    host for the published version. Unbounded, that is a 200-byte request from
@@ -412,4 +526,6 @@ console.log('limits: writes, exports, page loads, body size and the note cap eac
     + "the read counter off writes no row; the diagnostic's outbound probe is "
     + 'remembered, expires, and distrusts a clock from the future; a field length '
     + 'is the code\'s, a file that still sets one changes nothing, and no column '
-    + 'a human writes into carries a width');
+    + 'a human writes into carries a width; every setting given on either face comes '
+    + 'back out of the configuration once, as itself, and a value the shell refuses '
+    + 'the form refuses too');
