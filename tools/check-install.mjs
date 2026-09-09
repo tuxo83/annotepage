@@ -271,10 +271,24 @@ const words = (html) => {
         .replace(/<[^>]+>/g, ' ');
     return (text.match(/[A-Za-z'\u2019-]+/g) || []).length;
 };
+/* TWO CEILINGS, AND THE TIGHT ONE IS ON THE THING THE RULE WAS WRITTEN FOR.
+   It was one number over the whole document, which measured the wrong thing
+   the moment the page gained a heading that says what is about to be written
+   and a table of what an untouched install will write -- 89 and 107 words of
+   fact that nobody should cut. The defect was never "words on the page", it
+   was a PARAGRAPH UNDER EVERY FIELD: 1756 words of which 1214 sat in those
+   notes. So the prose under the fields has its own ceiling, close to what it
+   costs today, and the document keeps a looser one that still catches the
+   day somebody prints `say` again. */
+const noteWords = [...own.form.matchAll(/<p class="note[^"]*">([\s\S]*?)<\/p>/g)]
+    .reduce((n, m) => n + words(m[1]), 0);
+check(`the sentences under the fields are ${noteWords} words, over the 450 they`
+    + ' are allowed -- that is where the 1214 were when this screen was a book',
+    noteWords <= 450);
 const onScreen = words(own.form);
-check(`the install screen is ${onScreen} words, over the 1000 it is allowed`
-    + ' -- it printed 1756 once, and a fold that opens onto a book is not read',
-    onScreen <= 1000);
+check(`the install screen is ${onScreen} words, over the 1200 it is allowed`
+    + ' -- it printed 1756 once, and a screen that opens onto a book is not read',
+    onScreen <= 1200);
 
 for (const line of askPhp('foreach (ap_i_settings() as $s) { echo $s["key"], "=",'
         + ' $s["hint"], "\n"; }').split('\n').filter(Boolean)) {

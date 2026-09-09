@@ -3065,134 +3065,533 @@ function ap_i_head($title)
     echo "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
     echo "<meta name=\"robots\" content=\"noindex, nofollow\">\n";
     echo '<title>' . ap_i_h($title) . "</title>\n";
-    echo "<style>\n"
-        . "  :root { color-scheme: light dark; }\n"
-        . "  body { margin: 0 auto; padding: 2rem 1.25rem 6rem; max-width: 46rem;\n"
-        . "         font: 16px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }\n"
-        . "  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }\n"
-        . "  h2 { font-size: 1.05rem; margin: 2.25rem 0 .5rem; }\n"
-        . "  h3 { font-size: .95rem; margin: 1.75rem 0 .4rem; }\n"
-        . "  p.lede { margin: 0 0 2rem; opacity: .8; }\n"
-        . "  table { border-collapse: collapse; width: 100%; }\n"
-        . "  td { padding: .45rem .5rem .45rem 0; vertical-align: top;\n"
-        . "       border-bottom: 1px solid rgba(128,128,128,.25); }\n"
-        /* NO `nowrap` ON A CELL THAT HOLDS A PATH. It held one of 54 characters,
-           which made a 9rem column 597px wide, pushed the third column off the
-           page, and rendered the meaning -- the column carrying the whole
-           reasoning -- as a two-word ribbon cut off at the edge. At 390 the
-           document itself became 1027px wide and the entire page scrolled
-           sideways. `table-layout: fixed` makes the widths declared here the
-           widths used, whatever lands in them. */
-        . "  table { table-layout: fixed; }\n"
-        /* PROPORTIONS, NOT rem. Fixed layout obeys the widths declared here,
-           so 10rem + 12rem left the third column 16px on a 390px screen and it
-           overflowed anyway -- the page came out 493px wide and scrolled
-           sideways whole. Percentages cannot ask for more than there is. */
-        . "  td.k { font-weight: 600; width: 26%; overflow-wrap: anywhere; }\n"
-        . "  td.v { width: 30%; font-variant-numeric: tabular-nums;\n"
-        . "         overflow-wrap: anywhere; }\n"
-        . "  td.m { opacity: .75; font-size: .9rem; overflow-wrap: anywhere; }\n"
-        /* AND IT HAS A DARK ONE. #b00020 measures 7.33:1 on white and 2.56:1 on
-           the dark canvas -- 1.87:1 once `.note` drops it to .75 opacity --
-           which made the only red sentence on the screen the hardest thing to
-           read on it, and it is the sentence that says why an option is
-           impossible. The light value is unchanged. */
-        . "  .bad { color: #b00020; font-weight: 700; }\n"
-        . "  @media (prefers-color-scheme: dark) { .bad { color: #ff8f8f; } }\n"
-        /* THE SETTINGS BOX, AND IT IS THE SITE'S. how-to-install-it.html opens
-           on a small bordered box of "dials" -- an uppercase label, a row of
-           pills, one short sentence that follows the choice -- and the reader
-           who arrives here has just used it. Meeting two different ways of
-           asking the same two questions, ten minutes apart, is the tool
-           looking like two tools.
+    /* THE SHEET, IN A NOWDOC, AND THE QUOTING IS THE REASON. It was a column
+       of `. "  …\\n"` concatenations: 71 lines of CSS carrying a backslash-n
+       and a pair of quotes each, where a comment explaining a measured
+       contrast ratio had to be re-escaped to be written at all. A nowdoc is
+       the same bytes out with none of that -- and no interpolation, so a
+       `$` in a selector is a `$`. */
+    echo "<style>\n";
+    echo <<<'CSS'
+/* ===========================================================================
+   THE INSTALLER'S OWN SHEET, AND IT IS THE SITE'S.
 
-           SAME SHAPE, SAME RULE FOR WHAT GOES IN IT. On that page a dial is a
-           choice that changes what the rest of the page SAYS; everything else
-           sits lower. The same line is drawn here: the audience and the
-           storage change what is installed, so they are dials; the update
-           options change nothing about the install and stay a section below.
+   WHY IT IS COPIED AND NOT LINKED. This page runs on a stranger's server
+   before anything is configured, under
+   `default-src 'none'; style-src 'unsafe-inline'`. It cannot fetch
+   annotepage.com/base.css, cannot fetch a font, cannot fetch an image, and
+   must not need a script. So the tokens are copied out of base.css, VALUE FOR
+   VALUE, and nothing else is: the drawings that sheet carries -- frames,
+   pills, replays -- belong to pages that draw pictures, and this page draws a
+   form.
 
-           NO SCRIPT, and that is not a preference: this page ships a
-           `default-src 'none'` policy, so the pills are real radios with their
-           label replaced, and the sentence that follows the choice is a
-           `:has()` rule. A browser without `:has()` shows every sentence at
-           once -- which is exactly what this page did before, so the fallback
-           is the old behaviour rather than a broken one. */
-        . "  .dials { margin: 0 0 1.6rem; padding: 1.1rem 1.2rem; border-radius: 10px;\n"
-        . "           border: 1px solid rgba(128,128,128,.3); background: rgba(128,128,128,.07); }\n"
-        . "  .dial-title { margin: 0 0 1.1rem; font-weight: 650; }\n"
-        . "  .dial-row { display: grid; gap: 1.4rem 2.4rem;\n"
-        . "              grid-template-columns: repeat(2, minmax(0, 1fr)); }\n"
-        . "  @media (max-width: 34rem) { .dial-row { grid-template-columns: minmax(0, 1fr); } }\n"
-        . "  .dial { border: 0; margin: 0; padding: 0; min-width: 0; }\n"
-        . "  .dial legend { padding: 0; font-size: .78rem; font-weight: 650;\n"
-        . "                 letter-spacing: .02em; text-transform: uppercase; opacity: .75; }\n"
-        . "  .seg { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }\n"
-        . "  .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }\n"
-        . "  .seg label { cursor: pointer; }\n"
-        . "  .seg span { display: inline-block; padding: .34rem .8rem; border-radius: 999px;\n"
-        . "              border: 1px solid rgba(128,128,128,.45); font-size: .86rem;\n"
-        . "              font-weight: 600; opacity: .8; }\n"
-        . "  .seg input:checked + span { border-color: #0b53c0; background: #0b53c0;\n"
-        . "              color: #fff; opacity: 1; }\n"
-        . "  .seg input:focus-visible + span { outline: 2px solid #0b53c0; outline-offset: 2px; }\n"
-        . "  @media (prefers-color-scheme: dark) {\n"
-        . "    .seg input:checked + span { border-color: #8ab4ff; background: #8ab4ff; color: #10151c; }\n"
-        . "    .seg input:focus-visible + span { outline-color: #8ab4ff; }\n"
-        . "  }\n"
-        . "  .dial-say { margin: .55rem 0 0; font-size: .85rem; opacity: .75; }\n"
-        /* THE AUDIENCE PAIR HANGS OFF THE FORM, not off the box of dials: the
-           settings further down carry the same two classes to say what an
-           empty field becomes, and a rule scoped to .dials left both halves
-           showing there -- which reads as the installer contradicting
-           itself. */
-        . "  form:has(#a-anyone:checked) .if-one,\n"
-        . "  form:has(#a-one:checked) .if-anyone,\n"
-        . "  .dials:has(#s-mysql:checked) .if-sqlite,\n"
-        . "  .dials:has(#s-sqlite:checked) .if-mysql { display: none; }\n"
-        /* The box of MySQL fields, hidden by the OTHER answer -- see where it
-           is written. Shown when the rule cannot be understood, never hidden
-           by accident. */
-        . "  form:has(#s-sqlite:checked) .if-mysql-box { display: none; }\n"
-        . "  .if-mysql-box { border: 1px solid rgba(128,128,128,.4); border-radius: 8px;\n"
-        . "                  padding: .9rem 1rem .2rem; margin: 1rem 0; }\n"
-        /* A section that is not folded still has to look like a section: the
-           fields under it belong to its title and to nothing else. */
-        . "  .part { margin: 1.5rem 0 0; }\n"
-        . "  .part-title { font-weight: 700; margin: 0 0 .2rem;\n"
-        . "                border-bottom: 1px solid rgba(128,128,128,.3);\n"
-        . "                padding-bottom: .3rem; }\n"
-        /* The third dial's own sentences, and the two paragraphs UNDER the box
-           that belong to two of its answers -- so this rule hangs off the form
-           rather than off the box. */
-        . "  form:has(#u-cron:checked) .if-url, form:has(#u-cron:checked) .if-self,\n"
-        . "  form:has(#u-url:checked) .if-cron, form:has(#u-url:checked) .if-self,\n"
-        . "  form:has(#u-self:checked) .if-cron, form:has(#u-self:checked) .if-url\n"
-        . "      { display: none; }\n"
-        . "  fieldset { border: 1px solid rgba(128,128,128,.4); border-radius: 6px;\n"
-        . "             margin: 0 0 1.25rem; padding: .9rem 1rem 1rem; }\n"
-        . "  legend { font-weight: 700; padding: 0 .35rem; }\n"
-        . "  label.choice { display: block; margin: .35rem 0; }\n"
-        . "  .note { opacity: .75; font-size: .9rem; margin: .35rem 0 0 1.6rem; }\n"
-        . "  details { margin: .75rem 0 0 1.6rem; }\n"
-        . "  details p { margin: .5rem 0; }\n"
-        . "  input[type=text], input[type=password], input[type=number] {\n"
-        . "      font: inherit; padding: .3rem .4rem; width: 22rem; max-width: 100%; }\n"
-        . "  button { font: inherit; font-weight: 700; padding: .6rem 1.4rem;\n"
-        . "           border-radius: 6px; cursor: pointer; }\n"
-        /* IT WRAPS, IT DOES NOT SCROLL. `overflow-x: auto` kept the text and
-           hid it: an overlay scrollbar shows nothing on a page nobody thinks
-           to drag sideways. Measured on the screen that says "this screen is
-           the only place it will ever appear" -- 58% of the update address
-           was invisible at 390px, and 36% of the curl line at 1400. A secret
-           shown once and cut in half is a secret lost. Long lines here are
-           paths, URLs and crontab lines: wrapping one is ugly, losing one is
-           not recoverable. */
-        . "  pre { background: rgba(128,128,128,.14); padding: .8rem; border-radius: 6px;\n"
-        . "        white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; }\n"
-        . "  code { background: rgba(128,128,128,.14); padding: .1rem .3rem;\n"
-        . "         border-radius: 3px; }\n"
-        . "</style>\n</head>\n<body>\n";
+   THE COPY IS THE ONE RISK AND IT IS NAMED HERE: if a colour moves in
+   base.css it has to move here too. It is worth it. The alternative was what
+   this file used to be -- rgba(128,128,128,.x) and `opacity` for every ink on
+   the page -- which is not a theme, it is the absence of one, and it is why
+   the installer looked like a different tool from the page that sent people
+   to it.
+
+   EVERY COLOUR IS DEFINED ON BARE :root AND THE DARK BLOCK ONLY REDEFINES,
+   which is base.css's own rule and the reason it holds: a colour that exists
+   in one scheme and not the other is a screen that renders in one of them.
+   =========================================================================== */
+
+:root {
+    color-scheme: light dark;
+
+    --bg:        #ffffff;
+    --bg-soft:   #f5f6f8;
+    --bg-code:   #f1f2f5;
+    --text:      #16181d;
+    --dim:       #52565f;
+    --line-soft: #e2e5ea;
+    /* THE BOUNDARY OF AN INTERACTIVE CONTROL. base.css keeps a --line for a
+       boundary meant to be SEEN and this one for a control, and it says why:
+       --line reaches 1.34:1 against the strip a control sits on, where WCAG
+       1.4.11 asks for 3. This page is nothing BUT controls -- every chip,
+       every field, every select, every fold -- so --line is not copied here
+       at all and this is the only hairline round a thing you can press.
+       Measured on the rendered pixels: 3.62:1 against a chip's own fill and
+       3.35:1 against the panel it sits on in light, 4.00:1 and 3.69:1 in
+       dark. The website's own dials still draw --line, and at 1.49:1 they are
+       the case this token exists for. */
+    --control-line: #7f8794;
+    --accent:    #0b53c0;
+    --on-accent: #ffffff;
+    /* THE ONE INK THE SITE DOES NOT OWN, because no page of it says a thing
+       is impossible. Both values are the ones this installer already carried
+       and already measured; what changed is that they are a token defined on
+       bare :root like everything else, instead of a rule and an override
+       stranded at the top of the file. */
+    --bad:       #b00020;
+    --shadow:    0 1px 2px rgba(16, 18, 24, .06), 0 8px 28px rgba(16, 18, 24, .07);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+            "DejaVu Sans Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+            Arial, "Noto Sans", sans-serif;
+    --radius: 10px;
+    /* THE READING MEASURE. base.css's number, and the body below is that plus
+       its own gutters -- so a sentence here is exactly as long as a sentence
+       on the page that sent this reader here. */
+    --measure: 44rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg:        #0f1115;
+        --bg-soft:   #171a20;
+        --bg-code:   #13161b;
+        --text:      #e6e8ec;
+        --dim:       #a3a9b4;
+        --line-soft: #262c35;
+        --control-line: #6a7484;
+        --accent:    #8ab4ff;
+        --on-accent: #0f1115;
+        --bad:       #ff8f8f;
+        --shadow:    0 1px 2px rgba(0, 0, 0, .5), 0 8px 28px rgba(0, 0, 0, .45);
+    }
+}
+
+
+/* -- the page ------------------------------------------------------------ */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+/* --measure PLUS ITS GUTTERS, and not --measure: with border-box the padding
+   is inside the max-width, so a bare `max-width: var(--measure)` would give a
+   column of 40rem and every sentence here would be four characters shorter
+   than the same sentence on the page that sent this reader here. The gutter
+   is the site's own clamp -- 1rem on a phone, 2rem from 32rem up -- and 4rem
+   is the pair of them at the width where the cap actually bites. */
+body {
+    margin: 0 auto;
+    padding: 2.5rem clamp(1rem, 4vw, 2rem) 6rem;
+    max-width: calc(var(--measure) + 4rem);
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.6 var(--sans);
+    overflow-wrap: break-word;
+}
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+p { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
+
+/* -- the wordmark -------------------------------------------------------- */
+
+/* THE ONE PIECE OF THE SITE'S HEADER THAT CAN TRAVEL. The bar at the top of
+   every page of annotepage.com is a wordmark, a small accent square before it
+   and four links; the links have nowhere to go from a server that is not
+   installed yet, and a bar with nothing in it is furniture. What is left is
+   the square, and it costs no request: it is a ::before with a background. */
+h1 {
+    margin: 0 0 .3rem;
+    font-size: clamp(1.7rem, 5vw, 2.2rem);
+    font-weight: 700; line-height: 1.2; letter-spacing: -.02em;
+}
+h1::before {
+    content: ""; display: inline-block; vertical-align: .06em;
+    width: .5em; height: .5em; margin-right: .42em;
+    border-radius: 3px; background: var(--accent);
+}
+p.lede {
+    margin: 0 0 2.4rem;
+    font-size: clamp(1.02rem, 2.6vw, 1.15rem);
+    color: var(--dim);
+}
+
+
+/* -- the two heading levels ---------------------------------------------- */
+
+/* A CHAPTER STARTS WITH A RULE, AND THE RULE IS ABOVE IT. Every page of the
+   site separates its chapters with one hairline in --line-soft and a lot of
+   air; the screenshot of this installer on how-to-install-it.html draws the
+   same hairline over the word `Install`. Before, an h2 was one bold line at
+   1.05rem in the middle of the prose, so `Install` -- the question the whole
+   page exists to ask -- weighed the same as the sentence above it. */
+h2 {
+    margin: 2.4rem 0 1rem;
+    padding-top: 1.9rem;
+    border-top: 1px solid var(--line-soft);
+    font-size: 1.4rem; font-weight: 650;
+    line-height: 1.25; letter-spacing: -.02em;
+}
+/* The first one has the lede over it, which is a separation already. */
+p.lede + h2 { margin-top: 0; padding-top: 0; border-top: 0; }
+h3 {
+    margin: 2rem 0 .6rem;
+    font-size: 1.08rem; font-weight: 650;
+    line-height: 1.3; letter-spacing: -.01em;
+}
+h2 + h3 { margin-top: 0; }
+
+
+/* -- the panel: dials, the MySQL box, an open fold ------------------------ */
+
+/* ONE PANEL, DRAWN ONCE, WORN BY THREE THINGS. how-to-install-it.html opens
+   on this exact box -- --bg-soft, a --line-soft hairline, --radius -- and the
+   reader who reaches this page has just used it. It used to be three
+   different boxes here (a .dials in one grey, an .if-mysql-box in another, a
+   fieldset in a third radius), which reads as three kinds of thing when they
+   are one: a group of questions. */
+.dials, .if-mysql-box {
+    margin: 0 0 1.4rem; padding: 1.1rem 1.2rem;
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    background: var(--bg-soft);
+}
+.dial-title { margin: 0 0 1.1rem; font-size: 1rem; font-weight: 650; color: var(--text); }
+.if-mysql-box .dial-title { margin-bottom: .2rem; }
+.dial-row {
+    display: grid; gap: 1.4rem 2.4rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 34rem) { .dial-row { grid-template-columns: minmax(0, 1fr); } }
+.dial { border: 0; margin: 0; padding: 0; min-width: 0; }
+.dial legend {
+    padding: 0; font-size: .78rem; font-weight: 650;
+    letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
+}
+.dial-say { margin: .55rem 0 0; font-size: .85rem; color: var(--dim); max-width: 26em; }
+
+
+/* -- the chips ----------------------------------------------------------- */
+
+/* THE RADIO IS REAL AND ONLY ITS LABEL IS REPLACED: the group keeps its name,
+   its arrow keys and its announcement, and this page has no script to give it
+   any of them back. Same drawing as the site's dials, with one number
+   changed and the change is measured -- see --control-line. */
+.seg { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg label { cursor: pointer; }
+.seg span {
+    display: inline-block; padding: .34rem .8rem;
+    border: 1px solid var(--control-line); border-radius: 999px;
+    background: var(--bg); color: var(--dim);
+    font-size: .86rem; font-weight: 600;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.seg input:checked + span {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+}
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .seg span { transition: none; } }
+
+
+/* -- what the reader types ----------------------------------------------- */
+
+/* THE LABEL IS A SENTENCE, SO IT IS NOT SET IN CAPITALS. The site's field
+   legends are one or two words -- YOUR SITE -- and can be; `The window the
+   limits below are counted in` in capitals is a headline nobody asked for.
+   The weight does the work instead, and the ink is --text: it names the thing
+   being typed, and it is not an aside. */
+label { display: block; font-weight: 600; font-size: .95rem; }
+input, select { font: inherit; font-weight: 400; }
+
+/* 8px AND NOT 999px, AND THE SITE DRAWS BOTH. A pill is what the site puts
+   round a single field standing alone -- the domain at the top of the install
+   page, the search on the questions page. This form is a COLUMN of eleven
+   fields, and eleven pills stacked read as eleven search boxes. The rounded
+   rectangle is questions.html's `.faq-find`, which is the drawing for a field
+   inside a form, and it is this one. */
+input[type=text], input[type=password], input[type=number], select {
+    margin-top: .35rem;
+    width: 22rem; max-width: 100%;
+    padding: .45rem .7rem;
+    font-size: .95rem;
+    color: var(--text); background: var(--bg);
+    border: 1px solid var(--control-line); border-radius: 8px;
+}
+select { width: auto; max-width: 100%; }
+input::placeholder { color: var(--dim); opacity: 1; }
+input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+    border-color: var(--accent); border-radius: 8px;
+}
+
+
+/* -- the one button ------------------------------------------------------ */
+
+/* WHAT THE SITE ALREADY SAYS THIS BUTTON LOOKS LIKE. how-to-install-it.html
+   draws this screen, and it draws the button at the foot of it as a filled
+   --accent pill -- `.wiz-go span`, same padding, same radius. What was here
+   was the browser's own grey rectangle, which is the one control on the page
+   that had to be found and the only one drawn by nobody. */
+button {
+    margin-top: .4rem;
+    font: inherit; font-size: 1rem; font-weight: 650;
+    padding: .6rem 1.5rem; border-radius: 999px; cursor: pointer;
+    color: var(--on-accent); background: var(--accent);
+    border: 1px solid var(--accent);
+    box-shadow: var(--shadow);
+    transition: box-shadow .15s ease;
+}
+button:hover { box-shadow: none; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { button { transition: none; } }
+/* THE PRESS IS NOT PART OF THE LAST FOLD. It lands directly under the final
+   `Two that can undo what this tool is for` chip, and at .4rem it read as
+   that fold's second control rather than as the end of the form. */
+details + button { margin-top: 1.8rem; }
+
+
+/* -- what is said under a field ------------------------------------------ */
+
+/* TWO LEFT EDGES AND NOT THREE, which is how-to-install-it.html's own rule
+   and the reason it carries no callout box. Every `.note` here was indented
+   1.6rem -- an axis of its own, belonging to nothing, that at 390px cost each
+   of these sentences a line of wrapping. They sit on the page's edge now, in
+   --dim, which is what a second-order sentence is set in everywhere else on
+   this site. */
+.note { margin: .4rem 0 1.35rem; font-size: .9rem; color: var(--dim); }
+/* THE RHYTHM OF ONE FIELD, and it is one gesture and not three. A label, the
+   box under it and the line that says what an empty box gets you were spaced
+   by the paragraph margin the browser gives any <p> -- the same distance
+   inside a field as between two fields, so a column of eleven of them read as
+   thirty-three unrelated rows. `:has()` closes the group up and puts the air
+   between groups instead. */
+p:has(label) { margin-bottom: .35rem; }
+p:has(label) + p:has(label) { margin-top: 1.35rem; }
+/* AND IT IS A REAL COLOUR, NOT AN OPACITY. `opacity: .75` on the note was
+   also .75 on the red sentence inside it -- which is the sentence saying an
+   option is impossible, and it was the palest thing on the screen. Nothing
+   here fades anything any more. */
+.bad { color: var(--bad); font-weight: 700; }
+td.v.bad { font-weight: 700; }
+
+
+/* -- a fold -------------------------------------------------------------- */
+
+/* IT IS A CONTROL, SO IT IS DRAWN AS ONE. A bare <summary> is a triangle and
+   a line of body text, which on a page where nothing else is clickable reads
+   as a sentence with a bullet. This is the site's chip in another shape: the
+   same --control-line hairline, the same --bg-soft, the same radius, and it
+   hugs its own words rather than ruling a box across the column.
+
+   AND IT KEEPS A CARET, DRAWN AND NOT TYPED. Every other chip on this page is
+   a radio: an identical chip that opens a fold instead of choosing something
+   is the page teaching two gestures with one drawing. The caret says which
+   one this is, and it is two CSS borders -- no glyph, so no font can fail to
+   have it, and no request. */
+details { margin: 1.1rem 0 0; }
+summary {
+    display: inline-block; padding: .34rem .85rem;
+    border: 1px solid var(--control-line); border-radius: 999px;
+    background: var(--bg-soft); color: var(--dim);
+    font-size: .88rem; font-weight: 600; cursor: pointer;
+    list-style: none;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after {
+    content: ""; display: inline-block; margin-left: .55em;
+    width: 0; height: 0; vertical-align: .04em;
+    border: .3em solid transparent; border-left-color: currentColor;
+}
+details[open] > summary::after {
+    margin-left: .4em; vertical-align: .09em;
+    border-left-color: transparent; border-top-color: currentColor;
+}
+summary:hover { border-color: var(--accent); color: var(--accent); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+details[open] > summary { margin-bottom: .9rem; }
+
+/* A FOLDED SECTION OF THE FORM IS STILL A SECTION. The markup alternates
+   between `<div class="part">` and `<details>` for the same thing -- a group
+   of settings with a title -- depending only on whether it is worth opening
+   by default. Drawn differently they read as two kinds of thing, so they are
+   drawn the same: one hairline above, and a title that is either text or a
+   control. The fold outside the form is not one of these: it belongs to the
+   paragraph over it, which is why this is scoped. */
+form > details {
+    margin: 1.9rem 0 0; padding-top: 1.4rem;
+    border-top: 1px solid var(--line-soft);
+}
+
+
+/* -- a section that is not folded ---------------------------------------- */
+
+/* IT IS A SECTION, SO IT IS SEPARATED THE WAY SECTIONS ARE ON THIS SITE: a
+   hairline ABOVE the title. It used to be a hairline BELOW it, which is a
+   heading underlined -- and an underline groups a title with what is over it
+   rather than with the fields it owns. */
+.part { margin: 1.9rem 0 0; padding-top: 1.4rem; border-top: 1px solid var(--line-soft); }
+.part-title { margin: 0 0 .9rem; font-size: 1.08rem; font-weight: 650; letter-spacing: -.01em; }
+
+
+/* -- code ---------------------------------------------------------------- */
+
+/* IT WRAPS, IT DOES NOT SCROLL, and that is not a style decision -- it was
+   measured. `overflow-x: auto` kept the text and hid it: 58% of the update
+   address was invisible at 390px and 36% of the curl line at 1400, on the
+   screen that says "this is the only place it will ever appear". A secret
+   shown once and cut in half is a secret lost. Every rule below this comment
+   is new; that one is untouched.
+
+   --bg-code AND NOT THE DARK BLOCK THE INSTALL PAGE DRAWS. That page's code
+   ink lives in that page for the reason base.css states -- it is the one
+   chapter that holds code, and its blocks come with syntax colour and a copy
+   button. Reproducing the frame without either would be quoting half a
+   sentence. --bg-code is the token base.css hands to anything else holding
+   code, and this is anything else. */
+pre {
+    margin: .9rem 0;
+    padding: .8rem .9rem;
+    background: var(--bg-code);
+    border: 1px solid var(--line-soft); border-radius: 8px;
+    font-family: var(--mono); font-size: .86rem; line-height: 1.6;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+}
+code {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--bg-code); border: 1px solid var(--line-soft);
+    border-radius: 5px; padding: .08em .32em;
+}
+pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+
+
+/* -- the measured rows --------------------------------------------------- */
+
+/* `table-layout: fixed` AND PERCENTAGES, BOTH MEASURED AND BOTH KEPT. A path
+   of 54 characters made a 9rem column 597px wide, pushed the third column off
+   the screen and scrolled the whole document sideways at 390px; rem widths
+   under fixed layout did it again, leaving 16px for the column that carries
+   the reasoning. Percentages cannot ask for more than there is. Only the ink
+   and the hairline below are new. */
+table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: .9rem 0 0; }
+td { padding: .55rem .6rem .55rem 0; vertical-align: top; border-bottom: 1px solid var(--line-soft); font-size: .95rem; }
+tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 600; width: 26%; overflow-wrap: anywhere; }
+td.v { width: 30%; font-family: var(--mono); font-size: .82rem;
+       font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+/* The third column is the machine explaining itself, which is the definition
+   of a second-order sentence -- so it is --dim, and it is --dim rather than
+   the .75 opacity it was, for the reason given above the note. */
+td.m { color: var(--dim); font-size: .85rem; overflow-wrap: anywhere; }
+
+
+/* -- what each dial takes away ------------------------------------------- */
+
+/* NO SCRIPT, AND THAT IS NOT A PREFERENCE: this page ships `default-src
+   'none'`, so the sentence that follows a choice is a :has() rule. A browser
+   without :has() shows every sentence at once -- which is what this page did
+   before any of them existed, so the fallback is the old behaviour and not a
+   broken one. Every selector below is unchanged. */
+form:has(#a-anyone:checked) .if-one,
+form:has(#a-one:checked) .if-anyone,
+.dials:has(#s-mysql:checked) .if-sqlite,
+.dials:has(#s-sqlite:checked) .if-mysql { display: none; }
+form:has(#s-sqlite:checked) .if-mysql-box { display: none; }
+form:has(#u-cron:checked) .if-url, form:has(#u-cron:checked) .if-self,
+form:has(#u-url:checked) .if-cron, form:has(#u-url:checked) .if-self,
+form:has(#u-self:checked) .if-cron, form:has(#u-self:checked) .if-url { display: none; }
+
+/* -- the statement at the top -------------------------------------------- */
+
+/* WHAT IS ABOUT TO BE WRITTEN, AND WHERE. Two facts, both measured rather
+   than asserted, in the same three-column table the measurements use. */
+.says { margin: 0 0 .6rem; }
+table.what { margin: 0 0 .4rem; }
+table.what td { border-bottom: 0; padding-bottom: .2rem; }
+
+
+/* -- the one control that reveals the rest -------------------------------- */
+
+/* A REAL CHECKBOX WITH NO NAME, so nothing of it is posted, and a :has() rule
+   on the form. Shown when the rule cannot be understood, never hidden by
+   accident: the settings are visible in this sheet's own default and the rule
+   is what hides them -- the same direction as the MySQL box, for the same
+   reason. */
+.more-switch {
+    margin: 1.9rem 0 0; padding: .9rem 1.1rem;
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    background: var(--bg-soft);
+}
+.switch-line { margin: 0; }
+.switch-line label {
+    display: flex; align-items: center; gap: .6rem;
+    cursor: pointer; font-weight: 650; font-size: 1rem;
+}
+.switch-line input {
+    flex: none; width: 1.15rem; height: 1.15rem; margin: 0;
+    accent-color: var(--accent);
+}
+.more-switch .note { margin: .5rem 0 0; }
+.more-switch table { margin: .55rem 0 0; font-size: .92rem; }
+.more-switch td.k { width: 38%; }
+.when-open { display: none; }
+form:has(#ap-more:checked) .when-shut,
+form:has(#ap-more:checked) .shut-only { display: none; }
+form:has(#ap-more:checked) .when-open { display: inline; }
+form:has(#ap-more:not(:checked)) .more { display: none; }
+.more { margin: 1.3rem 0 0; }
+
+
+/* -- the counters and their window --------------------------------------- */
+
+/* SIX FIELDS STACKED READ AS SIX QUESTIONS. Boxed, with the window on top of
+   the table it applies to, they read as one setting with parts -- and the
+   four per-window numbers land in one column, where the eye compares them.
+   The body cap is not per window, so it sits under a rule of its own rather
+   than pretending to be a fifth counter. */
+.limits {
+    margin: .8rem 0 0; padding: .9rem 1rem;
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+}
+.limits > p { margin: 0; }
+.limits-window {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem;
+}
+.limits-window label { font-weight: 650; }
+.limits-window input { width: 8rem; }
+.limits .note { margin: .3rem 0 0; }
+table.counters { margin: .9rem 0 0; }
+.counters td { padding: .5rem .5rem .5rem 0; border-bottom: 1px solid var(--line-soft); }
+.counters tr:last-child td { border-bottom: 0; }
+td.c-what { width: 40%; font-weight: 600; }
+td.c-set { width: 8.5rem; }
+.counters input { width: 100%; }
+td.c-why { color: var(--dim); font-size: .9rem; padding-left: .9rem; }
+.limits-body {
+    margin: .9rem 0 0; padding-top: .8rem; border-top: 1px solid var(--line-soft);
+}
+.limits-body label { font-weight: 650; }
+.limits-body input { width: 10rem; }
+
+
+/* -- and all of that on a phone ------------------------------------------ */
+
+/* TWO NARROW COLUMNS AND A SENTENCE DO NOT FIT ON A PHONE: a path in a 26%
+   column at 390px breaks every four characters. Stacked, each row is a label,
+   a value and a line of meaning. */
+@media (max-width: 34rem) {
+    table.what, table.what tbody, table.what tr, table.what td,
+    .more-switch table, .more-switch tbody, .more-switch tr,
+    .more-switch td,
+    .counters, .counters tbody, .counters tr, .counters td {
+        display: block; width: auto;
+    }
+    table.what tr, .more-switch tr { padding: 0 0 .55rem; }
+    .more-switch tr, .counters tr {
+        border-bottom: 1px solid var(--line-soft); margin-bottom: .55rem;
+    }
+    .counters tr { padding: .55rem 0; }
+    .more-switch tr:last-child, .counters tr:last-child { border-bottom: 0; }
+    table.what td.k, .more-switch td.k {
+        width: auto; font-size: .78rem;
+        text-transform: uppercase; letter-spacing: .02em; color: var(--dim);
+    }
+    .more-switch td, table.what td, .counters td { border-bottom: 0; padding: .1rem 0; }
+    .counters input { max-width: 12rem; }
+}
+
+CSS;
+    echo "\n</style>\n";
     echo '<h1>annotepage</h1>' . "\n";
 }
 
@@ -3444,6 +3843,24 @@ function ap_i_run(array $options)
 
     echo '<p class="lede">' . ap_i_h($lede) . "</p>\n";
 
+    /* WHAT IS BEING DONE, AND WHAT IT IS BEING DONE TO -- above everything,
+       because a page whose first heading is "What this server offers" has told
+       you about the host before it has told you what it is here to do. Two
+       facts, both measured rather than assumed: the file this press writes,
+       and the address these pages will call. */
+    echo '<p class="says">This installs the server the notes live on. Pressing '
+        . '<b>Install</b> writes one file &mdash; <code>internal/config-local.php</code> '
+        . '&mdash; and creates the storage the notes go in. Nothing else on this host is '
+        . "touched, and nothing is written until you press it.</p>\n";
+    echo "<table class=\"what\">\n";
+    echo '<tr><td class="k">This directory</td><td class="v">' . ap_i_h($here)
+        . '</td><td class="m">the file is written here, and the notes go here or into '
+        . "the database you name</td></tr>\n";
+    echo '<tr><td class="k">This address</td><td class="v">' . ap_i_h($serverUrl)
+        . '</td><td class="m">what the tag on your own pages will call; correct it '
+        . "below if it is wrong</td></tr>\n";
+    echo "</table>\n";
+
     if ($errors) {
         echo '<h2>Nothing was installed</h2>' . "\n";
         foreach ($errors as $line) {
@@ -3628,127 +4045,180 @@ function ap_i_run(array $options)
             . "can fetch anything until that is fixed.</p>\n";
     }
 
-    /* AND EVERYTHING ELSE, FOLDED. The three questions stay the front door --
-       a fourth dial would be a fourth question, and the page that draws this
-       screen promises three. But asking three is not the same as deciding the
-       rest behind somebody's back, and it did decide one: a relay was given a
-       cap of 500 notes without a word, and that cap makes a project MUTE when
-       it arrives. It is 6000 rows now, and it is a field like the others.
-       Shut by default, so the screen is the length it was. Same table as the
-       command line reads, so neither face can offer what the other cannot. */
-    /* THE SAME TWO REGISTERS AS THE SHELL, AND THE SAME WAY OF ASKING. A form
-       that only ever shows the short line leaves its reader with nowhere to go
-       but the source; a form that shows the long one is the book this screen
-       stopped being. So: a link, and the page comes back with the paragraphs
-       -- the same ones `--help --verbose` prints, from the same table. It is a
-       link and not a checkbox because there is no JavaScript here and never
-       will be. */
+    /* AND EVERYTHING ELSE, BEHIND ONE CONTROL.
+       The three questions are the front door and stay it. What sat under them
+       was fifteen settings in four sections, two of them open -- eight number
+       boxes between the last question and the Install button, on a page whose
+       own first line promises three questions. It read as a form of twelve
+       questions with a default nobody could see.
+       So: ONE checkbox, named on the screen, and everything else behind it. It
+       carries no `name`, so nothing of it is posted; the rule that hides the
+       block is a `:has()` on the form, exactly like the MySQL box, and a
+       browser that cannot read the rule shows the settings -- never the
+       reverse.
+       AND WHAT IT DECIDES IF NOBODY OPENS IT IS PRINTED ON THE OUTSIDE. Four
+       of these are written according to the answers above; a fold that hides
+       them hides a decision. The table under the switch says what each answer
+       gets, in the same words the field itself would use, and it swaps with
+       the audience dial. */
+    $settings = ap_i_settings();
+    $sections = ap_i_setting_sections();
+
+    /* The switch comes back open when the person had it open: a rejected POST
+       that carried a setting must not hide the value it is showing. */
+    $openMore = false;
+    foreach ($settings as $setting) {
+        if ($field($setting['key']) !== '') { $openMore = true; }
+    }
+
+    /* One control, one field: shared by the paragraph form and the table of
+       counters, so that the two ways of drawing a setting cannot disagree
+       about what it accepts. */
+    $control = function (array $setting) use ($field) {
+        $key = $setting['key'];
+        $id  = ' id="set-' . $key . '"';
+        if ($setting['kind'] === 'choice' || $setting['kind'] === 'bool') {
+            $values = $setting['kind'] === 'choice'
+                ? $setting['values'] : array('true', 'false');
+            $out = '<select name="' . $key . '"' . $id . ">\n"
+                 . '<option value="">(leave it as it is)</option>' . "\n";
+            foreach ($values as $value) {
+                $out .= '<option value="' . ap_i_h($value) . '"'
+                     . ($field($key) === $value ? ' selected' : '') . '>'
+                     . ap_i_h($value) . "</option>\n";
+            }
+            return $out . "</select>\n";
+        }
+        /* THE DEFAULT IS THE PLACEHOLDER, not the value -- see the note this
+           replaced: written into the field it would be submitted, and every
+           default would freeze into the file as though somebody had chosen it.
+           Where this installation decides instead of config.php the
+           placeholder says nothing rather than something false. */
+        $hint = isset($setting['decided'])
+            ? $setting['unit']
+            : trim(ap_i_setting_default($key) . ' ' . $setting['unit']);
+        return '<input type="' . ($setting['kind'] === 'int' ? 'number' : 'text')
+            . '" name="' . $key . '"' . $id . ' value="' . ap_i_h($field($key)) . '"'
+            . ($hint !== '' ? ' placeholder="' . ap_i_h($hint) . '"' : '') . ">\n";
+    };
+
+    /* The sentence under a field: the short line here, the paragraph under
+       ?long=1, and what an empty field becomes on each answer. */
+    $said = function (array $setting) use ($long) {
+        $text = $long ? $setting['say'] : $setting['hint'];
+        if ($text === '' && !isset($setting['decided'])) { return ''; }
+        if (isset($setting['decided'])) {
+            $text .= ($text !== '' ? ' ' : '')
+                . '<span class="if-one">Empty: '
+                . ap_i_h($setting['decided']['one-site']) . '.</span>'
+                . '<span class="if-anyone">Empty: '
+                . ap_i_h($setting['decided']['anyone']) . '.</span>';
+        }
+        return $text;
+    };
+
+    $paragraph = function (array $setting) use ($control, $said) {
+        echo '<p><label for="set-' . $setting['key'] . '">'
+            . ap_i_h($setting['label']) . "</label><br>\n" . $control($setting)
+            . "</p>\n";
+        $note = $said($setting);
+        if ($note !== '') { echo '<p class="note">' . $note . "</p>\n"; }
+    };
+
+    // --- The switch, and what is decided if it is never opened. --------------
+
+    echo '<div class="more-switch">' . "\n";
+    echo '<p class="switch-line"><label><input type="checkbox" id="ap-more"'
+        . ($openMore ? ' checked' : '')
+        . '><span><span class="when-shut">Set the other ' . count($settings)
+        . ' settings myself</span><span class="when-open">Hide the other '
+        . count($settings) . ' settings</span></span></label></p>' . "\n";
+    echo '<div class="shut-only">' . "\n";
+    echo '<p class="note">How long notes are kept, how fast anybody may write, what '
+        . 'this server says about itself, and two that can undo what this tool is '
+        . "for. Left alone, this installation writes:</p>\n";
+    echo "<table>\n";
+    $others = 0;
+    foreach ($settings as $setting) {
+        if (!isset($setting['decided'])) { $others++; continue; }
+        echo '<tr><td class="k">' . ap_i_h($setting['label']) . '</td><td class="m">'
+            . '<span class="if-one">' . ap_i_h($setting['decided']['one-site'])
+            . '</span><span class="if-anyone">'
+            . ap_i_h($setting['decided']['anyone']) . "</span></td></tr>\n";
+    }
+    echo "</table>\n";
+    echo '<p class="note">The other ' . $others . ' keep the value written in '
+        . "<code>internal/config.php</code>.</p>\n";
+    echo "</div>\n";
+    echo "</div>\n";
+
+    // --- Everything the switch reveals. --------------------------------------
+
+    echo '<div class="more">' . "\n";
+    /* THE SAME TWO REGISTERS AS THE SHELL. A link and not a checkbox because
+       there is no JavaScript here and never will be: the page comes back with
+       the paragraphs `--help --verbose` prints, from the same table. */
     echo '<p class="note">All optional. Empty means the value in grey. '
         . ($long
             ? '<a href="' . ap_i_h($selfName) . '">Short version</a>'
             : '<a href="' . ap_i_h($selfName) . '?long=1">Why each of these?</a>')
         . " &mdash; the same sentences as <code>--help</code>.</p>\n";
 
-    $section = null;
-    $sections = ap_i_setting_sections();
-    foreach (ap_i_settings() as $setting) {
-        $key = $setting['key'];
-        /* A SECTION OPENS WHEN ITS FIRST SETTING ARRIVES, and closes when the
-           next one belongs elsewhere. The table's order IS the page's order,
-           so there is one list to keep straight rather than a list and a
-           layout that can disagree about what exists. */
-        if ($setting['group'] !== $section) {
-            if ($section !== null) {
-                echo empty($sections[$section]['open']) ? "</details>\n" : "</div>\n";
-            }
-            $section = $setting['group'];
-            $shape = $sections[$section];
-            /* AN OPEN SECTION IS A HEADING, NOT A FOLD LEFT OPEN. `<details
-               open>` still draws the triangle, still invites a click, and
-               still says "this is the part you may ignore" about the numbers
-               an operator came to set. What is folded here is what is
-               genuinely extra, and its title says so. */
-            $open = !empty($shape['open']);
-            echo $open ? "<div class=\"part\">\n" : "<details>\n";
-            echo $open
-                ? '<p class="part-title">' . ap_i_h($shape['title']) . "</p>\n"
-                : '<summary>' . ap_i_h($shape['title']) . "</summary>\n";
-            $intro = $long ? $shape['say'] : $shape['hint'];
-            if ($intro !== '') {
-                echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
-                    . $intro . "</p>\n";
-            }
+    foreach ($sections as $group => $shape) {
+        $fields = array();
+        foreach ($settings as $setting) {
+            if ($setting['group'] === $group) { $fields[] = $setting; }
         }
-        echo '<p><label>' . ap_i_h($setting['label']);
-        if ($setting['kind'] === 'choice') {
-            echo '<br><select name="' . $key . '">' . "\n";
-            echo '<option value="">(leave it as it is)</option>' . "\n";
-            foreach ($setting['values'] as $value) {
-                echo '<option value="' . ap_i_h($value) . '"'
-                    . ($field($key) === $value ? ' selected' : '') . '>'
-                    . ap_i_h($value) . "</option>\n";
-            }
-            echo "</select>\n";
-        } elseif ($setting['kind'] === 'bool') {
-            echo '<br><select name="' . $key . '">' . "\n";
-            echo '<option value="">(leave it as it is)</option>' . "\n";
-            foreach (array('true', 'false') as $value) {
-                echo '<option value="' . $value . '"'
-                    . ($field($key) === $value ? ' selected' : '') . '>'
-                    . $value . "</option>\n";
-            }
-            echo "</select>\n";
-        } else {
-            /* THE DEFAULT IS THE PLACEHOLDER, not the value. Written into the
-               field it would be submitted, and every default would freeze into
-               the file as though somebody had chosen it; greyed behind an empty
-               field it says what happens if nothing is typed, which is what the
-               person reading wants to know. */
-            $default = ap_i_setting_default($key);
-            /* AND WHERE THE INSTALLER DECIDES INSTEAD OF config.php, THE
-               PLACEHOLDER SAYS NOTHING RATHER THAN SOMETHING FALSE. Four of
-               these are written by this install according to the answers
-               above -- a relay is capped at 2000 notes, a server carrying its
-               own site has two counters turned off -- and showing config.php's
-               number in the field would promise the opposite of what is about
-               to be written. The sentence below says what each answer gets,
-               and the CSS shows the half that applies. */
-            $hint = isset($setting['decided'])
-                ? $setting['unit']
-                : trim($default . ' ' . $setting['unit']);
-            echo '<br><input type="' . ($setting['kind'] === 'int' ? 'number' : 'text')
-                . '" name="' . $key . '" value="' . ap_i_h($field($key)) . '"'
-                . ($hint !== '' ? ' placeholder="' . ap_i_h($hint) . '"' : '')
-                . ">\n";
+        if (!$fields) { continue; }
+        /* NO FOLD INSIDE A FOLD. Two of these were `<details>` of their own,
+           which put the two settings that can undo what the tool is for two
+           clicks away and made the section titles unreadable as a list. One
+           control opens the part; inside it, a section is a heading. */
+        echo "<div class=\"part\">\n";
+        echo '<p class="part-title">' . ap_i_h($shape['title']) . "</p>\n";
+        $intro = $long ? $shape['say'] : $shape['hint'];
+        if ($intro !== '') {
+            echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
+                . $intro . "</p>\n";
         }
-        echo "</label></p>\n";
-        /* THE SHORT SENTENCE HERE, THE LONG ONE IN --help, AND IT IS NOT THE
-           SAME READER. This screen printed `say` -- the full paragraph, for
-           every setting -- and measured 1756 words, more than the entire
-           install page of the website. Opening a fold looked like opening a
-           book, so it stopped being read at all. What a form owes is the
-           thing the label cannot say; a field whose name is enough gets
-           nothing, and eight of them do. Whoever wants the paragraph types
-           --help, where a paragraph is what they came for. */
-        /* ONE LINE UNDER A FIELD, not two. The hint and "what an empty field
-           gets you" were two paragraphs, which on four settings made a
-           two-line stack under a one-line box. */
-        $said = $long ? $setting['say'] : $setting['hint'];
-        if ($said !== '' || isset($setting['decided'])) {
-            echo '<p class="note">' . $said;
-            if (isset($setting['decided'])) {
-                echo ($said !== '' ? ' ' : '')
-                    . '<span class="if-one">Empty: '
-                    . ap_i_h($setting['decided']['one-site']) . '.</span>'
-                    . '<span class="if-anyone">Empty: '
-                    . ap_i_h($setting['decided']['anyone']) . '.</span>';
-            }
-            echo "</p>\n";
+        if ($group !== 'rate') {
+            foreach ($fields as $setting) { $paragraph($setting); }
+            echo "</div>\n";
+            continue;
         }
+        /* THE WINDOW ON TOP OF THE TABLE IT APPLIES TO. Five counters and a
+           window, stacked as six labelled boxes, are six questions; the window
+           says "the limits below" to a reader who has to scroll to find out
+           which ones. Boxed, with the four per-window counters as four rows of
+           one table under the window that counts them, they are one setting
+           with parts -- and the fifth, which is not counted in a window at
+           all, sits under a rule of its own rather than pretending to be. */
+        $window = ap_i_setting('rate_window_seconds');
+        $body   = ap_i_setting('max_body_bytes');
+        echo '<div class="limits">' . "\n";
+        echo '<p class="limits-window"><label for="set-' . $window['key'] . '">'
+            . ap_i_h($window['label']) . '</label>' . $control($window) . "</p>\n";
+        $note = $said($window);
+        if ($note !== '') { echo '<p class="note">' . $note . "</p>\n"; }
+        echo "<table class=\"counters\">\n";
+        foreach ($fields as $setting) {
+            if ($setting['key'] === $window['key'] || $setting['key'] === $body['key']) {
+                continue;
+            }
+            echo '<tr><td class="c-what"><label for="set-' . $setting['key'] . '">'
+                . ap_i_h($setting['label']) . '</label></td><td class="c-set">'
+                . $control($setting) . '</td><td class="c-why">' . $said($setting)
+                . "</td></tr>\n";
+        }
+        echo "</table>\n";
+        echo '<p class="limits-body"><label for="set-' . $body['key'] . '">'
+            . ap_i_h($body['label']) . "</label><br>\n" . $control($body) . "</p>\n";
+        $note = $said($body);
+        if ($note !== '') { echo '<p class="note">' . $note . "</p>\n"; }
+        echo "</div>\n";
+        echo "</div>\n";
     }
-    if ($section !== null) {
-        echo empty($sections[$section]['open']) ? "</details>\n" : "</div>\n";
-    }
+    echo "</div>\n";
 
     echo '<button type="submit">Install</button>' . "\n";
     echo "</form>\n";
