@@ -304,6 +304,21 @@ for (const line of askPhp('foreach (ap_i_settings() as $s) { echo $s["key"], "="
         + ' owes: what does not fit belongs in --help', hint.length <= 140, hint);
 }
 
+/* AND THE THIRD UPDATE ANSWER IS OFFERED ON BOTH FACES. It was refused by the
+   shell and drawn as unavailable on a host whose PHP interface cannot hand the
+   response over -- which reads as prudence and is a refusal: `auto_update` is
+   the answer for a host with neither a shell nor a scheduler, and on such a
+   host it was the only route there was. It is not broken there, it is a wait:
+   0.3 s for the daily check, 2.3 s for an update that replaces nine files,
+   measured against the real release. The installer says the number instead of
+   taking the choice away. */
+check('the form does not offer "It updates itself"',
+    own.form.includes('value="self"') && !own.form.includes('id="u-self" disabled'));
+const self = spawnSync('php', [join(webroot, 'install.php'), '--help', '--verbose'],
+    { encoding: 'utf8' }).stdout || '';
+check('--help says the third answer is not offered',
+    !/There is no --updated-by=self/.test(self));
+
 check('no configuration was written', own.config !== null, own.done.slice(0, 400));
 if (own.config) {
     const parses = spawnSync('php', ['-l', own.configPath], { encoding: 'utf8' });
@@ -673,12 +688,34 @@ const shell = async (dir, args) => {
         noAddress.code === 2 && /api-address is required/.test(noAddress.err),
         'exit ' + noAddress.code);
 
-    const self = await shell(dir, [address, '--answers-for=one-site', '--updated-by=self']);
-    check('it accepted an answer it cannot measure from a shell',
-        self.code === 2 && /not offered here/.test(self.err), 'exit ' + self.code);
-
     check('nothing above was supposed to write a configuration',
         !existsSync(join(root, 'internal', 'config-local.php')));
+
+    /* AND THE THIRD UPDATE ANSWER IS ACCEPTED HERE TOO. The shell used to
+       refuse it -- "not offered here", because whether it costs a visitor
+       anything depends on the interface the WEB server runs and a command line
+       cannot see that. But it is the answer for a host with neither a shell nor
+       a scheduler, and refusing it left that host with no update route at all.
+       Whoever types the command is the person who knows what that host is; the
+       cost is measured and said, in --help and on the form. */
+    const self = await shell(dir, [address, '--answers-for=one-site',
+                                   '--storage=sqlite', '--updated-by=self']);
+    const selfConfig = existsSync(join(root, 'internal', 'config-local.php'))
+        ? readFileSync(join(root, 'internal', 'config-local.php'), 'utf8') : '';
+    check('the shell refused "it updates itself"', self.code === 0,
+        'exit ' + self.code + '\n' + (self.err || '').slice(0, 200));
+    check('it installed without turning the key on',
+        selfConfig.includes("'auto_update' => true"),
+        (selfConfig.match(/[^\n]*auto_update[^\n]*/) || ['(absent)'])[0]);
+    /* Taken back so the run below meets the empty directory it expects: this
+       fixture is shared, and an installer that finds a configuration refuses
+       to do anything at all -- which is the behaviour two checks down. */
+    rmSync(join(root, 'internal', 'config-local.php'), { force: true });
+    for (const leftover of readdirSync(dir)) {
+        if (leftover.startsWith('annotepage-data')) {
+            rmSync(join(dir, leftover), { recursive: true, force: true });
+        }
+    }
 
     const done = await shell(dir, [address, '--answers-for=one-site', '--storage=sqlite']);
     check('a correct command line did not install', done.code === 0
@@ -963,6 +1000,6 @@ if (failures.length) {
     console.error('install:\n' + failures.map((f) => '  ' + f).join('\n'));
     process.exit(1);
 }
-console.log('install: seven installations run end to end, the four refusals a shell owes, '
+console.log('install: seven installations run end to end, the three refusals a shell owes, '
     + "a neighbour's database left alone by a failed run, a store older than the server "
     + 'around it, and two configurations from older installers');

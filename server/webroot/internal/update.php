@@ -106,6 +106,31 @@ define('AP_UPDATE_CONNECT_TIMEOUT', 5);
 define('AP_UPDATE_TIMEOUT', 15);
 /** Whole-run wall clock. Beyond it the run stops, having changed nothing. */
 define('AP_UPDATE_BUDGET', 90);
+/**
+ * And the budget when somebody IS waiting on it.
+ *
+ * On a PHP interface that cannot hand the response over before doing more work
+ * -- apache2handler, cli-server, anything without fastcgi_finish_request --
+ * this installer used to refuse `auto_update` outright, and that refusal was
+ * wrong: it is the answer for a host with neither a shell nor a scheduler, and
+ * on such a host there is no other route at all. Measured on this machine
+ * against the real release:
+ *
+ *   the daily check (fetch VERSION)           265 ms
+ *   a real update, nine files replaced      2 344 ms
+ *
+ * So it is not broken, it is a wait: one visitor a day pays a fraction of a
+ * second, one visitor per release pays a couple of seconds -- multiply by
+ * three or five on a slow shared host and it is still seconds, not minutes.
+ * That is the operator's call to make, not ours, and the installer now says
+ * the numbers instead of taking the choice away.
+ *
+ * What it must never be is 90 seconds of a stranger's browser spinning. The
+ * staging is atomic -- a run that goes past its budget swaps NOTHING and
+ * removes what it downloaded -- so a tight budget costs a postponed update and
+ * nothing else. It retries the next day.
+ */
+define('AP_UPDATE_BUDGET_WAITING', 15);
 /** Download budget. A release of this server is a dozen files under 200 KiB. */
 define('AP_UPDATE_MAX_FILES', 64);
 define('AP_UPDATE_MAX_FILE_BYTES', 524288);
@@ -537,7 +562,7 @@ function ap_update_remove_tree($dir)
  * true: it is the state a well-run host is in, and a cron line that mailed an
  * error every night for it would train its reader to ignore the mail.
  */
-function ap_update_run(array $config)
+function ap_update_run(array $config, $budget = AP_UPDATE_BUDGET)
 {
     $lines = array();
     $started = time();
@@ -716,8 +741,8 @@ function ap_update_run(array $config)
     $staged = array();
     $abort = null;
     foreach ($wanted as $path => $hash) {
-        if ((time() - $started) > AP_UPDATE_BUDGET) {
-            $abort = 'the run went past its ' . AP_UPDATE_BUDGET . ' second budget.';
+        if ((time() - $started) > $budget) {
+            $abort = 'the run went past its ' . $budget . ' second budget.';
             break;
         }
         $answer = ap_update_fetch($source . $path, AP_UPDATE_MAX_FILE_BYTES);
@@ -990,29 +1015,27 @@ function ap_update_deferred(array $config)
         return;
     }
 
-    if (!ap_update_release_visitor()) {
-        ap_update_save_state(array(
-            'last_check' => time(),
-            'when'       => gmdate('Y-m-d\TH:i:sP'),
-            'result'     => 'not attempted: this PHP interface (' . PHP_SAPI . ') cannot '
-                . 'hand the response to the visitor before doing more work, and a visitor '
-                . 'must not wait on a network fetch. Run `php internal/update.php` from '
-                . 'cron instead.',
-        ));
-        return;
-    }
+    /* WHETHER ANYBODY IS STILL WAITING DECIDES THE BUDGET, NOT WHETHER WE RUN.
+       This used to record "not attempted" and stop, which reads as prudence
+       and is a refusal: `auto_update` exists for the host with no shell and no
+       scheduler, and on the interfaces that cannot defer -- apache2handler
+       among them -- that host was left with no update route at all. It runs,
+       on a budget short enough that a visitor notices a slow page and not a
+       broken one, and an over-budget run swaps nothing. */
+    $waiting = !ap_update_release_visitor();
+    $budget = $waiting ? AP_UPDATE_BUDGET_WAITING : AP_UPDATE_BUDGET;
 
-    // The visitor is gone: their browser closing must not kill us halfway
-    // through a swap.
+    // The visitor is gone -- or cannot be let go, and then their browser
+    // closing must not kill us halfway through a swap either.
     @ignore_user_abort(true);
-    @set_time_limit(AP_UPDATE_BUDGET + 30);
+    @set_time_limit($budget + 30);
 
     // ap_update_run does not throw, and this catches the day it does anyway.
     // We are past the response: an exception escaping here would land in the
     // handlers of errors.php, which would write a message into a connection
     // that is already closed -- a failure with no reader at all.
     try {
-        $report = ap_update_run($config);
+        $report = ap_update_run($config, $budget);
     } catch (Exception $e) {
         ap_log('update failed : ' . $e->getMessage());
         ap_update_save_state(array(

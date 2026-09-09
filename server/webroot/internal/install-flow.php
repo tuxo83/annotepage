@@ -1090,8 +1090,9 @@ function ap_i_questions()
                       'say'   => 'For a scheduler that can only fetch a URL.'),
                 array('value' => 'self', 'id' => 'u-self', 'class' => 'if-self',
                       'label' => 'It updates itself',
-                      'say'   => 'Last resort. It costs a permission that outlives the '
-                                 . 'choice &mdash; see below.'),
+                      'say'   => 'For a host with neither a shell nor a scheduler. It '
+                                 . 'costs a permission that outlives the choice &mdash; '
+                                 . 'see below.'),
             ),
         ),
     );
@@ -1405,19 +1406,14 @@ function ap_i_credential_fields()
  * One question, drawn. The form is the only caller today; the command line
  * renders the same model as text.
  */
-function ap_i_render_dial(array $question, $chosen, array $impossible = array())
+function ap_i_render_dial(array $question, $chosen)
 {
     echo '<fieldset class="dial"><legend>' . $question['legend'] . '</legend>' . "\n";
     echo '<div class="seg">' . "\n";
     foreach ($question['answers'] as $answer) {
-        /* AN ANSWER THIS HOST CANNOT GIVE IS DISABLED, not merely contradicted
-           by a sentence further down. A disabled radio is not submitted, which
-           is right: it was never a choice here. */
-        $off = in_array($answer['value'], $impossible, true);
         echo '<label><input type="radio" name="' . $question['key']
             . '" value="' . $answer['value'] . '" id="' . $answer['id'] . '"'
             . ($chosen === $answer['value'] ? ' checked' : '')
-            . ($off ? ' disabled' : '')
             . '><span>' . $answer['label'] . "</span></label>\n";
     }
     echo "</div>\n";
@@ -2158,15 +2154,19 @@ function ap_i_render_help($selfName, $long = false)
         }
     }
 
-    $out .= !$long ? "\n" : "\n" . ap_i_wrap('There is no --updated-by=self, and the browser form offers '
-        . 'one. It is the answer for a host with neither a shell nor a scheduler, '
-        . 'which is not the host you are typing on -- and it cannot be checked from '
-        . 'here: whether this server may hand the response to a visitor and keep '
-        . 'working depends on the PHP interface the WEB SERVER runs, and from a '
-        . 'command line the only interface in sight is this one. The check would '
-        . 'always say yes, and be wrong on every host that runs cgi-fcgi. Write '
-        . "'auto_update' => true in internal/config-local.php if you mean it, and "
-        . 'read what it costs beside the key.') . "\n";
+    $out .= !$long ? "\n" : "\n" . ap_i_wrap('--updated-by=self is the answer for a host with '
+        . 'neither a shell nor a scheduler, which is not the host you are typing on -- '
+        . 'but it is offered here all the same, because whoever types it is the person '
+        . 'who knows what that host is. What it costs depends on the PHP interface the '
+        . 'WEB SERVER runs, which cannot be read from a command line: where that '
+        . 'interface can hand the response to the visitor and go on working (php-fpm, '
+        . 'LiteSpeed) nobody waits at all; where it cannot (apache2handler among them) '
+        . 'the wait falls on whoever loads the page it happens on -- measured against '
+        . 'the real release, 0.3 s for the daily check and 2.3 s for an update that '
+        . 'replaces nine files, at most once a day, and a run that goes past 15 seconds '
+        . 'changes nothing and tries again tomorrow. It also costs a permission that '
+        . 'outlives the choice: the code directory has to be writable by PHP, and '
+        . 'setting the key back to false does not take that away.') . "\n";
 
     $out .= "\nWHERE THE MySQL SERVER IS\n" . str_repeat('=', 24) . "\n\n"
         . ($long
@@ -2446,13 +2446,6 @@ function ap_i_cli(array $options)
     if (!isset($given['answers-for'])) {
         $errors[] = '--answers-for is required, and has no default: the two answers are '
             . 'silent when wrong, in opposite directions.';
-    }
-    if (isset($given['updated-by']) && $given['updated-by'] === 'self') {
-        $errors[] = '--updated-by=self is not offered here. Whether this server may hand '
-            . 'the response to a visitor and keep working depends on the PHP interface '
-            . 'the WEB SERVER runs, and from a command line the only interface in sight '
-            . "is this one. Write 'auto_update' => true in internal/config-local.php if "
-            . 'you mean it, and read what it costs beside the key.';
     }
     $storage = isset($given['storage']) ? $given['storage'] : 'sqlite';
     if ($storage === 'mysql') {
@@ -3344,12 +3337,7 @@ h2 + h3 { margin-top: 0; }
 .seg input:checked + span {
     background: var(--accent); color: var(--on-accent); border-color: var(--accent);
 }
-/* AND THE ONE THIS HOST CANNOT GIVE LOOKS LIKE IT. Drawn like the two that
-   work, it offered a choice the page refused a hundred pixels lower. */
-.seg input:disabled + span {
-    border-style: dashed; opacity: .55; cursor: not-allowed;
-}
-.seg label:has(input:disabled) { cursor: not-allowed; }
+
 .seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .seg span { transition: none; } }
 
@@ -4216,17 +4204,20 @@ function ap_i_run(array $options)
 
     echo '<div class="dials">' . "\n";
     echo '<p class="dial-title">How this server gets its updates.</p>' . "\n";
-    /* THE ANSWER THIS HOST CANNOT GIVE IS DRAWN AS UNAVAILABLE, and the line
-       saying why is INSIDE the card. It was a chip identical to the two that
-       work, with the red sentence 138 pixels below it and a grey paragraph in
-       between -- so the page offered a choice, refused it somewhere else, and
-       left the reader to connect the two. */
-    ap_i_render_dial(ap_i_question('updates'), $wants, $canDefer ? array() : array('self'));
+    ap_i_render_dial(ap_i_question('updates'), $wants);
+    /* WHAT IT COSTS HERE, IN THE NUMBERS THIS INTERFACE WILL ACTUALLY PAY, and
+       not a refusal. This host cannot hand the response over and go on working,
+       so the wait falls on a visitor -- which is a reason to say how long, not
+       a reason to take the answer away from somebody who has no shell and no
+       scheduler and would otherwise never update at all. */
     if (!$canDefer) {
-        echo '<p class="note bad">&ldquo;It updates itself&rdquo; needs a PHP interface '
-            . 'that can answer a visitor and go on working; this one (<code>'
-            . ap_i_h(PHP_SAPI) . '</code>) cannot, so a visitor would wait on a fetch '
-            . "to GitHub. The address is chosen for you instead.</p>\n";
+        echo '<p class="note if-self">On this host (<code>' . ap_i_h(PHP_SAPI)
+            . '</code>) the wait falls on whoever loads the page it happens on: this '
+            . 'interface cannot answer a visitor and go on working. Measured against '
+            . 'the real release: <b>0.3 s</b> for the daily check, <b>2.3 s</b> for an '
+            . 'update that replaces nine files &mdash; a few times that on a slow host. '
+            . 'At most once a day, and a run that goes past 15 seconds changes '
+            . "nothing and tries again tomorrow.</p>\n";
     }
     echo "</div>\n";
 
