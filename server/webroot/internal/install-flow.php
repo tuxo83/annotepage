@@ -1891,12 +1891,18 @@ function ap_i_render_help($selfName)
         . "  --api-address=<url>\n"
         . ap_i_wrap('REQUIRED. The address api.php will answer at once this is '
             . 'installed -- what the tag on your pages carries as data-server. Opened '
-            . 'in a browser this installer reads that address off the request that '
-            . 'reached it; from a shell there is no request, and nothing may guess it. '
-            . 'Four things rest on it: whether this server is reached over https, the '
-            . 'control request that establishes that this directory really is served '
-            . 'at that address, the request that proves the data file is not '
-            . 'downloadable, and the line you paste into the tag.', '      ') . "\n\n"
+            . 'in a browser this installer FILLS IT IN from the request that reached '
+            . 'it and shows it in a field, so it can be corrected where the name PHP '
+            . 'sees is not the name the site answers at: behind a proxy or a CDN, or '
+            . 'through a temporary address used before the real domain points here. '
+            . 'From a shell there is no request, and nothing may guess it. Four things '
+            . 'rest on it: whether this server is reached over https, the control '
+            . 'request that establishes that this directory really is served at that '
+            . 'address, the request that proves the data file is not downloadable, and '
+            . 'the line you paste into the tag. Typed rather than read off a request -- '
+            . 'on either face -- it is proven before anything else happens: a file with '
+            . 'a random name is written here and asked for there, and an address that '
+            . 'answers something else installs nothing.', '      ') . "\n\n"
         . "  --dir=<path>\n"
         . ap_i_wrap('The directory to install into. Default: the directory this file '
             . 'sits in, which is where a browser would have installed it.', '      ')
@@ -2024,6 +2030,58 @@ function ap_i_render_help($selfName)
  * Reached from ap_i_run() when PHP is running on a terminal, before anything
  * else happens. Everything it decides, it decides before touching the disk.
  */
+/**
+ * Does the address really lead to THIS directory?
+ *
+ * A file with a random name and a random token is written HERE and asked for
+ * THERE, then removed either way. If what comes back is not the token, the
+ * address serves somebody else's directory -- and every measurement that
+ * follows would be about theirs, including the one that proves the database
+ * cannot be downloaded.
+ *
+ * MEASURED, BEFORE THIS EXISTED: a release unpacked in /apps/notes/ and given
+ * the site root as its address installed with exit 0, wrote "placed one level
+ * above the document root, where no URL reaches it", and left the database
+ * answering 200 to a plain GET. The control request alone cannot catch that --
+ * install.php replies to ?probe= before requiring anything, so any copy at the
+ * site root validates any directory.
+ *
+ * SHARED BY BOTH FACES since the form learned to show the address. Opened in a
+ * browser the address is normally the request's own, and then the request IS
+ * the proof; this runs when somebody has typed a different one, which is the
+ * same situation as a command line and deserves the same refusal.
+ *
+ * @param string      $here    the directory this file sits in
+ * @param string|null $why     filled in with the reason, on either failure
+ * @param string|null $askedTo filled in with the URL that was requested
+ * @return bool|null true when it leads here, false when it does not, null when
+ *                   the check could not even be made
+ */
+function ap_i_address_leads_here($here, &$why = null, &$askedTo = null)
+{
+    $witness = 'ap-check-' . bin2hex(random_bytes(8)) . '.txt';
+    $token   = bin2hex(random_bytes(16));
+    $witnessPath = $here . '/' . $witness;
+    $askedTo = ap_i_base_url() . $witness;
+
+    if (@file_put_contents($witnessPath, $token) === false) {
+        $why = 'Cannot write into ' . $here . ', so this run cannot even check that '
+             . 'the address leads here. Grant write permission on that directory, '
+             . 'install, and take it away again.';
+        return null;
+    }
+    $answer = ap_i_fetch($askedTo, 8);
+    @unlink($witnessPath);
+    if ($answer['status'] === null || trim((string) $answer['body']) !== $token) {
+        $why = 'A file was written here and asked for there, and what came back was '
+             . ($answer['status'] === null
+                 ? 'nothing at all (' . (string) $answer['error'] . ')'
+                 : 'not it (HTTP ' . $answer['status'] . ')') . '.';
+        return false;
+    }
+    return true;
+}
+
 function ap_i_cli(array $options)
 {
     /* THE NETS, HERE AND NOT ON THE WEB PATH. Without them a defect in this
@@ -2206,26 +2264,17 @@ function ap_i_cli(array $options)
        for THERE, and removed either way. If the answer is not the token, the
        address does not lead to this directory -- and every measurement that
        follows would be about somebody else's. Nothing is touched. */
-    $witness = 'ap-check-' . bin2hex(random_bytes(8)) . '.txt';
-    $token   = bin2hex(random_bytes(16));
-    $witnessPath = $here . '/' . $witness;
-    if (@file_put_contents($witnessPath, $token) === false) {
-        fwrite(STDERR, ap_i_wrap('Cannot write into ' . $here . ', so this run cannot '
-            . 'even check that the address leads here. Grant write permission on that '
-            . 'directory, install, and take it away again.') . "\n");
+    $why = null;
+    $leads = ap_i_address_leads_here($here, $why, $failedTo);
+    if ($leads === null) {
+        fwrite(STDERR, ap_i_wrap($why) . "\n");
         exit(1);
     }
-    $answer = ap_i_fetch(ap_i_base_url() . $witness, 8);
-    @unlink($witnessPath);
-    if ($answer['status'] === null || trim((string) $answer['body']) !== $token) {
+    if ($leads === false) {
         fwrite(STDERR, "Nothing was touched.\n\n"
-            . ap_i_wrap('--api-address does not lead to this directory. A file was '
-                . 'written here and asked for there, and what came back was '
-                . ($answer['status'] === null
-                    ? 'nothing at all (' . (string) $answer['error'] . ')'
-                    : 'not it (HTTP ' . $answer['status'] . ')')
-                . '.', '  ') . "\n\n"
-            . ap_i_wrap('Asked for: ' . ap_i_base_url() . $witness, '  ') . "\n"
+            . ap_i_wrap('--api-address does not lead to this directory. ' . $why, '  ')
+            . "\n\n"
+            . ap_i_wrap('Asked for: ' . $failedTo, '  ') . "\n"
             . ap_i_wrap('Written in: ' . $here, '  ') . "\n\n"
             . ap_i_wrap('Give the address this directory really answers at, or point '
                 . '--dir at the directory that address serves. Without that, every '
@@ -3073,9 +3122,47 @@ function ap_i_run(array $options)
     // Carried out of the POST branch because the last screen tells the operator
     // what is still theirs to do, and on a relay that is nothing.
     $installedRelay = false;
+
+    /* AN ADDRESS THE OPERATOR TYPED IS TREATED LIKE ONE TYPED ON A COMMAND
+       LINE. Left as it came -- the request's own -- nothing happens here: the
+       request IS the proof that this directory answers at that address. Typed
+       differently, it is proven the same way the shell face proves it, and a
+       failure installs NOTHING rather than measuring somebody else's
+       directory. This runs before $serverUrl is read, because everything shown
+       and probed afterwards hangs off it. */
+    if ($method === 'POST' && isset($_POST['api_address'])) {
+        $wanted  = trim((string) $_POST['api_address']);
+        $current = ap_i_base_url() . 'api.php';
+        if ($wanted !== '' && $wanted !== $current) {
+            $parts = parse_url($wanted);
+            if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])
+                || ($parts['scheme'] !== 'http' && $parts['scheme'] !== 'https')) {
+                $errors[] = 'The address must be a full URL beginning with http:// or '
+                    . 'https:// and ending in api.php. Nothing was installed.';
+            } else {
+                $urlDir = isset($parts['path']) ? rtrim(dirname($parts['path']), '/') : '';
+                $host   = $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+                ap_i_base_url($parts['scheme'] . '://' . $host . $urlDir);
+                ap_i_script_name(($urlDir === '' ? '' : $urlDir) . '/' . $selfName);
+
+                $why = null;
+                $askedTo = null;
+                $leads = ap_i_address_leads_here($here, $why, $askedTo);
+                if ($leads !== true) {
+                    $errors[] = 'That address does not lead to this directory, so '
+                        . 'nothing was installed. ' . $why;
+                    $errors[] = 'Asked for: ' . $askedTo;
+                    $errors[] = 'Written in: ' . $here;
+                    $errors[] = 'Give the address this directory really answers at. '
+                        . 'Without it, the check that proves your notes cannot be '
+                        . "downloaded would be about somebody else's directory.";
+                }
+            }
+        }
+    }
     $serverUrl = ap_i_base_url() . 'api.php';
 
-    if ($method === 'POST') {
+    if ($method === 'POST' && !$errors) {
         /* The answers arrive from the form here, and from the command line in
            the other face. Everything past this line is the same code either
            way -- see ap_i_install(). */
@@ -3200,6 +3287,29 @@ function ap_i_run(array $options)
         . 'moderated either. With SQLite, the file is placed where the web server '
         . 'does not serve it and its own URL is then requested to confirm it comes '
         . "back refused &mdash; if it does not, nothing is installed.</p>\n";
+
+    /* THE ADDRESS, SHOWN AND EDITABLE, AND IT WAS NEITHER. Opened in a browser
+       this installer reads the address off the request that reached it, which
+       is right almost always and invisible always -- and the two cases where
+       it is wrong are ordinary: a site reached through a proxy or a CDN whose
+       public name is not the one PHP sees, and an installation done through a
+       temporary address before the real domain is pointed at it. The tag on
+       every page carries this value; getting it silently wrong means a tag
+       that loads nothing, on a screen that said everything went well.
+       Pre-filled, so the normal case is still a button press. Changed, it is
+       checked the way the command line checks it -- a file written here and
+       asked for there -- because a typed address is a typed address whichever
+       face typed it. */
+    echo '<p><label>The address these pages will point at<br>'
+        . '<input type="text" name="api_address" value="'
+        . ap_i_h(ap_i_base_url() . 'api.php') . '"></label></p>' . "\n";
+    echo '<p class="note">Read off the request that opened this page, which is right '
+        . 'unless something between your browser and this server changes the name '
+        . '&mdash; a proxy, a CDN, or a temporary address used before the real domain '
+        . 'points here. It is what goes into <code>data-server</code> on your pages, so '
+        . 'it has to be the address the site will really answer at. Change it and this '
+        . 'installer writes a file here and asks for it there before doing anything '
+        . "else: an address that does not lead to this directory installs nothing.</p>\n";
 
     echo "<details" . ($postedMysql ? ' open' : '') . ">\n";
     echo "<summary>MySQL connection details</summary>\n";

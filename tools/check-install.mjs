@@ -133,6 +133,20 @@ for (const field of ['audience', 'storage', 'updates']) {
     check(`the form does not ask "${field}"`, own.form.includes(`name="${field}"`));
 }
 
+/* AND THE ADDRESS, WHICH IS NOT A QUESTION BUT MUST BE VISIBLE. The browser
+   face reads it off the request that opened the page -- right almost always,
+   invisible always -- and the two cases where it is wrong are ordinary: a
+   proxy or CDN whose public name is not the one PHP sees, and an installation
+   done through a temporary address. It goes into `data-server` on every page,
+   so getting it silently wrong is a tag that loads nothing under a screen that
+   said everything went well. */
+check('the form does not show the address it will write into the tag',
+    own.form.includes('name="api_address"'));
+check('the address field is not pre-filled with the address this request arrived at',
+    own.form.includes('name="api_address" value="http://127.0.0.1:' + own.port
+        + '/api.php"'),
+    (own.form.match(/name="api_address" value="[^"]*"/) || ['(absent)'])[0]);
+
 /* EVERY KEY THERE IS, AND A FIELD FOR IT. The form asks three questions and
    folds the rest, which is a way of not frightening anybody -- but a person
    looking for one setting must be able to find out whether it exists at all,
@@ -299,6 +313,37 @@ if (typo.config) {
     check('the mistyped run wrote no configuration', false, typo.done.slice(0, 300));
 }
 stop(typo);
+
+/* -- AN ADDRESS THE OPERATOR TYPED IS PROVEN, NOT BELIEVED ---------------
+   The field is pre-filled and normally left alone -- the request that opened
+   the page IS the proof that this directory answers there. Typed differently,
+   it is proven the way the command line proves it: a file with a random name
+   written HERE and asked for THERE. What it stops is not a typo, it is a
+   measurement about somebody else's directory -- including the one that
+   claims the database cannot be downloaded. So a bad address must install
+   NOTHING, and say which address it asked for. */
+
+const elsewhere = await freePort();
+const wrong = await rehearse(elsewhere,
+    'storage=sqlite&audience=mine&updates=cron'
+    + '&api_address=' + encodeURIComponent('http://127.0.0.1:' + elsewhere + '/nowhere/api.php'));
+check('the run with a foreign address never came up', wrong.up);
+check('an address that does not lead to this directory installed something',
+    wrong.config === null, (wrong.config || '').slice(0, 200));
+check('it does not say that nothing was installed',
+    wrong.done.includes('does not lead to this directory'), wrong.done.slice(0, 400));
+check('it does not name the address it asked for',
+    wrong.done.includes('/nowhere/ap-check-'), wrong.done.slice(0, 400));
+stop(wrong);
+
+/* And an address that is not one at all is refused before anything is fetched:
+   there is nothing to probe, and "http://" is not a shape to guess at. */
+const malformed = await rehearse(await freePort(),
+    'storage=sqlite&audience=mine&updates=cron&api_address=' + encodeURIComponent('pas une url'));
+check('a malformed address installed something', malformed.config === null);
+check('a malformed address was not refused with the shape it wants',
+    malformed.done.includes('full URL beginning with http'), malformed.done.slice(0, 300));
+stop(malformed);
 
 /* -- A RUN THAT FAILS LEAVES NOTHING BEHIND -----------------------------
    The data file is created BEFORE the configuration is written, so every
