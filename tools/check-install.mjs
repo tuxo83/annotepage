@@ -499,12 +499,63 @@ check('the reading is chosen by something other than a pair of chips',
 const settingKeys = askPhp('foreach (ap_i_settings() as $s) { echo $s["key"], "\n"; }')
     .split('\n').filter(Boolean);
 const emptySays = (malformed.form.match(/Empty: /g) || []).length
-    + (malformed.form.match(/>Leave it: /g) || []).length;
+    + (malformed.form.match(/>Default: /g) || []).length;
 check(`${emptySays} fields say what an empty field is worth, and there are`
     + ` ${settingKeys.length + 4} sentences to write (four of them say it twice,`
     + ' once per audience)', emptySays >= settingKeys.length);
 check('a select still names the gesture instead of the state',
     !malformed.form.includes('(leave it as it is)'));
+/* AND IT CALLS IT WHAT EVERY OTHER FORM CALLS IT. `Leave it: false` names the
+   state, which was the fix for `(leave it as it is)`, and still asks the
+   reader to work out that leaving it is what happens by default. */
+check('the untouched option does not say `Default:`',
+    malformed.form.includes('>Default: ') && !malformed.form.includes('>Leave it: '));
+
+/* THE PARAGRAPH IS REACHABLE WITHOUT LEAVING THE SHORT READING. A reader
+   stopped on one box should not have to switch the whole page to verbose to
+   find out what that box does. The mark carries `--help --verbose`'s own
+   sentence in `title`, so there is one string and not a second copy. */
+const marks = (malformed.form.match(/class="q" title="/g) || []).length;
+const withSay = askPhp('$n = 0; foreach (ap_i_settings() as $s) {'
+    + ' if ($s["say"] !== "") { $n++; } } echo $n;');
+check(`${marks} settings offer their paragraph on hover, and ${withSay} have one`,
+    marks >= Number(withSay), String(marks));
+
+/* `thread` IS THIS CODEBASE'S WORD, NOT THE READER'S. store.php, FORMAT.md and
+   the export all say it; the client's own labels say note and reply, and so
+   does the site. It had reached the one screen written for somebody who has
+   read none of those. */
+check('the install screen calls a note a thread',
+    !/\bthreads?\b/i.test(shown.replace(/<[^>]+>/g, ' ')),
+    (shown.replace(/<[^>]+>/g, ' ').match(/[^.]*\bthreads?\b[^.]*/i) || [''])[0].trim());
+
+/* THE LIST OF SITES IS ASKED FOR, NOT DISCOVERED. The left-hand answer is
+   `the ones I list`, and for four releases there was nowhere to write the
+   list: it lived in a commented block at the bottom of the generated file,
+   which people found the day their first note was refused. */
+check('the form does not ask for the sites the notes will be written from',
+    malformed.form.includes('name="origins"'));
+check('--origins is not an option of the other face',
+    options.includes('origins'), options.join(' '));
+
+/* THE THREE STEPS SAY WHAT THEY COST. Three words in small type is a
+   breadcrumb: it gives the order and nothing about the size of any of it. */
+const railSays = (malformed.form.match(/class="rail-s"/g) || []).length;
+check(`the rail carries ${railSays} subtitles and there are three steps`,
+    railSays === 3);
+
+/* AND THE ONE PRESS IS THE END OF THE PAGE. It was a chip-sized control hard
+   left under the last card -- the only irreversible thing on the screen, drawn
+   smaller than the switch that reveals the settings. */
+check('the Install button is not in a band of its own',
+    /<div class="go">[\s\S]*?<button type="submit">Install<\/button>/.test(malformed.form));
+
+/* THE PAGE IS AS WIDE AS THE SITE AND THE SENTENCES ARE NOT. One cap for both
+   gave the box of dials 704px where how-to-install-it.html draws the same box
+   at 1344 -- measured at 1408 -- so the whole screen read as a narrow strip. */
+check('the sheet caps the page at the reading measure instead of the site width',
+    malformed.form.includes('max-width: calc(85rem + 4rem);')
+    && malformed.form.includes('body > *, form > * { max-width: var(--measure); }'));
 /* AND THE SWITCH SAYS HOW MANY IT HIDES: it said fifteen while hiding thirteen
    for one release, because two sections had been lifted out of it and the
    count still came from the whole table. */

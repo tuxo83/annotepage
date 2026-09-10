@@ -95,6 +95,12 @@ if (!defined('AP_INTERNAL')) {
 // have somewhere for a failure to go while it is still downloading.
 require_once __DIR__ . '/errors.php';
 require_once __DIR__ . '/config.php';
+/* FOR ONE FUNCTION, AND IT HAS TO BE THAT ONE. The installer asks for the
+   addresses the notes will be written from, and an address it accepts and
+   api.php later refuses is a project that answers nothing with no error
+   anybody can see. ap_normalise_origin() is what api.php compares an incoming
+   Origin against; nothing else in this file may decide what an origin is. */
+require_once __DIR__ . '/origins.php';
 
 /**
  * The protocol number. The installation never writes a note, but it opens a
@@ -155,6 +161,20 @@ function ap_i_script_name($force = null)
 // --- 1. Small helpers ------------------------------------------------------
 
 /** Everything that reaches the page goes through this. No exception. */
+/**
+ * A class attribute, or nothing at all.
+ *
+ * Every box on the form carries one only when a refusal named it, and
+ * `class=""` on fourteen fields is fourteen attributes saying nothing -- read
+ * once in the source of the page, and once more in the mockup of this screen
+ * that gets looked at.
+ */
+function ap_i_class($classes)
+{
+    $classes = trim((string) $classes);
+    return $classes === '' ? '' : ' class="' . $classes . '"';
+}
+
 function ap_i_h($text)
 {
     return htmlspecialchars((string) $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -617,8 +637,11 @@ function ap_i_site_root_url($here, $docRoot, $baseUrl)
  *               needs and cannot recompute
  */
 function ap_i_install(array $answers, $here, $configPath, $selfName,
-                      array &$report, array &$errors)
+                      array &$report, array &$errors, array &$badFields = null)
 {
+    /* By reference and optional: the command line has no boxes to mark and
+       passes nothing. Nothing below has to know which face it is talking to. */
+    if ($badFields === null) { $badFields = array(); }
     // Assigned only on success further down, and read at the end whatever
     // happens: two PHP warnings on every failed run, which worked only
     // because an undefined variable reads as false.
@@ -646,6 +669,35 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
     // in the other opens somebody's disk to strangers without them asking.
     $deployment = (isset($answers['audience']) && $answers['audience'] === 'anyone')
         ? 'relay' : 'self-hosted';
+
+    /* THE ADDRESSES THE NOTES WILL BE WRITTEN FROM. One per line from the
+       form, one per comma from the shell, and both end up in the same list --
+       checked by origins.php's own rule so that this file cannot accept a
+       shape api.php will refuse. They are not written into a live declaration:
+       there is no project yet, since the id descends from a key generated in a
+       browser nobody has opened. They go into the commented block that is
+       waiting for one, so the day the setup screen hands over an id the only
+       thing left to do is uncomment it. */
+    $origins = array();
+    $rawOrigins = isset($answers['origins']) ? (string) $answers['origins'] : '';
+    foreach (preg_split('/[\r\n,]+/', $rawOrigins) as $one) {
+        $one = trim($one);
+        if ($one === '') { continue; }
+        $normalised = ap_normalise_origin($one);
+        if ($normalised === null) {
+            $errors[] = 'The site address `' . ap_i_plain($one) . '` is not an origin. '
+                . 'An origin is scheme://host, with no path and no trailing slash: '
+                . 'https://www.example.com';
+            $badFields[] = 'origins';
+            continue;
+        }
+        $origins[$normalised] = true;
+    }
+    $origins = array_keys($origins);
+    if ($errors) {
+        return array('installed' => false, 'relay' => false, 'token' => '',
+                     'auto' => false, 'wants' => $wants);
+    }
 
     /* 32 bytes, base64url, from the same source as everything else that
        must not be guessable. Generated HERE and shown once: the installer
@@ -679,6 +731,7 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
         $why = null;
         if (!ap_i_setting_accepts($setting, $given, $why)) {
             $errors[] = ap_i_plain($setting['label']) . ' ' . $why;
+            $badFields[] = $setting['key'];
             continue;
         }
         $settings[$setting['key']] = $given;
@@ -690,6 +743,7 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
 
     $values = array(
         'settings'     => $settings,
+        'origins'      => $origins,
         'storage'      => $storage,
         'deployment'   => $deployment,
         'auto_update'  => $autoUpdate,
@@ -725,12 +779,19 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
 
         if ($values['host'] === '') { $values['host'] = '127.0.0.1'; }
         if ($values['port'] <= 0 || $values['port'] > 65535) { $values['port'] = 3306; }
-        if ($values['name'] === '') { $errors[] = 'The database name is empty.'; }
-        if ($values['user'] === '') { $errors[] = 'The database user is empty.'; }
+        if ($values['name'] === '') {
+            $errors[] = 'The database name is empty.';
+            $badFields[] = 'name';
+        }
+        if ($values['user'] === '') {
+            $errors[] = 'The database user is empty.';
+            $badFields[] = 'user';
+        }
         if ($values['password'] === '') {
             $errors[] = 'The database password is empty. The server refuses an empty '
                 . 'credential rather than fail later with a driver message nobody can '
                 . 'read; give the user a password.';
+            $badFields[] = 'password';
         }
         if (!extension_loaded('pdo_mysql')) {
             $errors[] = 'The PHP extension pdo_mysql is missing on this server, so '
@@ -1040,14 +1101,24 @@ function ap_i_questions()
     return array(
         array(
             'key'    => 'audience',
-            'legend' => 'Who this server is for',
+            /* THE QUESTION IS WHICH SITES, NOT HOW MANY. It read `One site,
+               mine` against `Anyone`, which asks about a COUNT -- and the
+               answer on the left has never been about one: a project may
+               carry a staging address and the production it becomes, and
+               origins.php has taken a list since the day it was written. What
+               separates the two answers is whether there IS a list. The site's
+               own dial says `Who it answers for`, which is nearer, and the
+               left answer there is `My site`; both are said in terms of the
+               list now, and the list itself is asked for two fields below --
+               it used to be discovered after the install, in a comment. */
+            'legend' => 'Which sites may write here',
             'answers' => array(
                 array('value' => 'one-site', 'id' => 'a-one', 'class' => 'if-one',
-                      'label' => 'One site, mine',
-                      'say'   => 'You declare its project by hand, and nothing else '
-                                 . 'can write here.'),
+                      'label' => 'The ones I list',
+                      'say'   => 'You write their addresses below. Any other origin is '
+                                 . 'refused with a 403.'),
                 array('value' => 'anyone', 'id' => 'a-anyone', 'class' => 'if-anyone',
-                      'label' => 'Anyone',
+                      'label' => 'Any site',
                       /* THE NUMBER IS THE ONE THIS INSTALLATION WRITES, and it
                          has to be re-read every time that number moves. It said
                          500 for two releases after the cap became 2000 and then
@@ -1079,9 +1150,14 @@ function ap_i_questions()
             'answers' => array(
                 array('value' => 'cron', 'id' => 'u-cron', 'class' => 'if-cron',
                       'label' => 'A shell cron',
-                      'say'   => 'Best, and nothing to grant: <code>php '
-                                 . 'internal/update.php</code> once a day. The next '
-                                 . 'screen gives you that line with the real path in it.'),
+                      /* THE LINE ITSELF, ON THIS SCREEN. It said the next
+                         screen would give it -- which is a page telling
+                         somebody it has the answer and is keeping it. The
+                         real path is under this dial now, and the next
+                         screen still repeats it: twice in two places beats
+                         once, later, somewhere else. */
+                      'say'   => 'Best, and nothing to grant: one line in your crontab, '
+                                 . 'once a day.'),
                 array('value' => 'url', 'id' => 'u-url', 'class' => 'if-url',
                       'label' => 'An address to call',
                       /* The sentence about the address being shown once lives in
@@ -1142,70 +1218,18 @@ function ap_i_questions()
 function ap_i_settings()
 {
     return array(
-        array('key' => 'max_notes_per_project', 'hint' => 'Rows, replies included. 0 is no limit.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'notes',
-            'label' => 'Notes one project may hold',
-            'decided' => array('one-site' => 'no limit', 'anyone' => '6000 rows, about '
-                                                         . '2000 remarks'),
-            'say'   => 'Counted in ROWS, not in remarks: a reply is a row of its own, '
-                       . 'so a discussed thread costs two or three. Past it a write is '
-                       . 'refused with a 403 and NOTHING is erased -- but a reply is a '
-                       . 'write, so the project goes silent until somebody raises this. '
-                       . '0 is no limit, which is what a server carrying one team\'s own '
-                       . 'notes wants. A relay needs one: it stores for strangers. '
-                       . 'Measured: six reviewers over three months write about 3600 '
-                       . 'rows, and a relay is capped at 6000 unless you say otherwise.'),
-        array('key' => 'max_note_age_days', 'hint' => 'From a thread&rsquo;s last message. 0 keeps everything.', 'group' => 'advanced', 'kind' => 'int', 'unit' => 'days',
-            'label' => 'How long a thread is kept',
+        /* A NOTE AND ITS REPLIES, WHICH IS WHAT EVERYTHING ELSE CALLS IT.
+           `thread` is this codebase's word -- store.php, FORMAT.md, the export
+           -- and it had reached the one screen written for somebody who has
+           never read any of them. The client's own labels say note and reply;
+           so does the site. */
+        array('key' => 'max_note_age_days', 'hint' => 'Counted from its last reply. 0 keeps everything.', 'group' => 'advanced', 'kind' => 'int', 'unit' => 'days',
+            'label' => 'How long a note is kept',
             'decided' => array('one-site' => '90 days', 'anyone' => '90 days'),
-            'say'   => 'Counted from its LAST message, so a live discussion is never '
-                       . 'cut short, and the whole thread goes at once. 0 keeps '
-                       . 'everything for ever, which is what config.php decides for a '
-                       . 'server this file never installed.'),
-        array('key' => 'rate_window_seconds', 'hint' => 'Fixed, not sliding.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'seconds',
-            'label' => 'The window the limits below are counted in',
-            'say'   => 'Fixed, not sliding: hitting a limit early in a window costs the '
-                       . 'rest of it. A long window makes a refusal last longer.'),
-        array('key' => 'rate_writes_per_ip', 'hint' => '', 'group' => 'fine', 'kind' => 'int', 'unit' => 'writes',
-            'label' => 'Writes per address, per window',
-            'say'   => 'Everybody behind one office address counts as one machine, on '
-                       . 'all of their projects together.'),
-        array('key' => 'rate_writes_per_project', 'hint' => 'All of its writers together.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'writes',
-            'label' => 'Writes per project, per window',
-            'decided' => array('one-site' => '0, which is off -- everybody who can '
-                                             . 'write here is already behind your door',
-                               'anyone'   => '300'),
-            'say'   => 'All of that project\'s writers together. It is the anti-abuse '
-                       . 'ceiling, not the working budget.'),
-        array('key' => 'rate_exports_per_ip', 'hint' => 'An assistant spends about three per remark.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'exports',
-            'label' => 'Exports per address, per window',
-            'decided' => array('one-site' => '0, which is off -- the only reader of an '
-                                             . 'export here is your own assistant',
-                               'anyone'   => '90'),
-            'say'   => 'An export is how an assistant READS: its whole loop -- read, '
-                       . 'reply, resolve -- costs about three per remark, so 90 per '
-                       . 'window is thirty remarks. Measured: at 20 an assistant met '
-                       . 'the refusal in the middle of its seventh remark, on day one.'),
-        array('key' => 'rate_reads_per_ip', 'hint' => '0 costs nothing: the counter is never touched.', 'group' => 'fine', 'kind' => 'int', 'unit' => 'page loads',
-            'label' => 'Page loads per address, per window',
-            'say'   => 'OFF, and 0 means the counter is never touched: a page load then '
-                       . 'costs no database write, which is why it is the default. It is '
-                       . 'the only thing that bounds a loop of `list` -- 200 bytes asked, '
-                       . 'several hundred kilobytes answered on a heavily annotated page '
-                       . '-- so a server open to strangers with nothing in front of PHP '
-                       . 'wants it. Set it far above a person: one page load is one call, '
-                       . 'so 600 in five minutes is two a second and no reviewer will '
-                       . 'ever meet it.'),
-        array('key' => 'max_body_bytes', 'hint' => '', 'group' => 'fine', 'kind' => 'int', 'unit' => 'bytes',
-            'label' => 'Largest request body',
-            'say'   => 'Read before anything is parsed; over it, a 413. Sized by the '
-                       . 'envelope bounds of the format, not by what people write: the '
-                       . 'longest remark measured on a real project used 5% of it.'),
-        array('key' => 'client_ip_header', 'hint' => 'Only behind a proxy you trust: a client can write it itself.', 'group' => 'fine', 'kind' => 'text', 'unit' => '',
-            'label' => 'Header carrying the real address, behind a proxy',
-            'say'   => 'Empty unless a TRUSTED proxy rewrites it on every request: a '
-                       . 'header the client can set itself makes every limit above '
-                       . 'bypassable in one line. Without it, everyone behind that proxy '
-                       . 'counts as one machine.'),
+            'say'   => 'Counted from its LAST reply, so a live discussion is never cut '
+                       . 'short, and a note leaves with its replies rather than losing '
+                       . 'them one by one. 0 keeps everything for ever, which is what '
+                       . 'config.php decides for a server this file never installed.'),
         array('key' => 'publish_server_totals', 'hint' => 'Three figures, to anybody who opens an annotated page.', 'group' => 'advanced', 'kind' => 'bool', 'unit' => '',
             'label' => 'Publish what the whole server holds',
             'say'   => 'Three integers -- projects, notes, pages -- answered to anybody '
@@ -1213,6 +1237,7 @@ function ap_i_settings()
                        . 'measured at 5.7 ms without it and 41.8 ms with it on 60,000 '
                        . 'notes.'),
         array('key' => 'forward_root_to', 'hint' => 'The directory only, never api.php.', 'group' => 'advanced', 'kind' => 'text', 'unit' => '',
+            'example' => 'https://annotepage.com',
             'label' => 'Where a bare visit to this directory goes',
             'say'   => 'Empty gives a 404. An absolute http(s) URL sends it there with a '
                        . '302 -- what a public relay wants, so that somebody landing on '
@@ -1226,6 +1251,69 @@ function ap_i_settings()
                        . 'even when the configuration cannot be read, which is when it '
                        . 'is needed; `full` is the whole report, for the length of a '
                        . 'diagnosis; `off` makes the action not exist.'),
+        array('key' => 'rate_window_seconds', 'hint' => 'Fixed, not sliding. Everything under it is counted in one.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'seconds',
+            'label' => 'The window',
+            'say'   => 'Fixed, not sliding: hitting a limit early in a window costs the '
+                       . 'rest of it. A long window makes a refusal last longer.'),
+        array('key' => 'rate_writes_per_ip', 'hint' => '', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
+            'label' => 'Writes per address, per window',
+            'say'   => 'Everybody behind one office address counts as one machine, on '
+                       . 'all of their projects together.'),
+        array('key' => 'rate_writes_per_project', 'hint' => 'All of its writers together.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'writes',
+            'label' => 'Writes per project, per window',
+            'decided' => array('one-site' => '0, which is off -- everybody who can '
+                                             . 'write here is already behind your door',
+                               'anyone'   => '300'),
+            'say'   => 'All of that project\'s writers together. It is the anti-abuse '
+                       . 'ceiling, not the working budget.'),
+        array('key' => 'rate_exports_per_ip', 'hint' => 'An assistant spends about three per remark.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'exports',
+            'label' => 'Exports per address, per window',
+            'decided' => array('one-site' => '0, which is off -- the only reader of an '
+                                             . 'export here is your own assistant',
+                               'anyone'   => '90'),
+            'say'   => 'An export is how an assistant READS: its whole loop -- read, '
+                       . 'reply, resolve -- costs about three per remark, so 90 per '
+                       . 'window is thirty remarks. Measured: at 20 an assistant met '
+                       . 'the refusal in the middle of its seventh remark, on day one.'),
+        array('key' => 'rate_reads_per_ip', 'hint' => '0 costs nothing: the counter is never touched.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'page loads',
+            'label' => 'Page loads per address, per window',
+            'say'   => 'OFF, and 0 means the counter is never touched: a page load then '
+                       . 'costs no database write, which is why it is the default. It is '
+                       . 'the only thing that bounds a loop of `list` -- 200 bytes asked, '
+                       . 'several hundred kilobytes answered on a heavily annotated page '
+                       . '-- so a server open to strangers with nothing in front of PHP '
+                       . 'wants it. Set it far above a person: one page load is one call, '
+                       . 'so 600 in five minutes is two a second and no reviewer will '
+                       . 'ever meet it.'),
+        /* NOT `request body`, WHICH IS THE PROTOCOL'S WORD AND NOT THE
+           OPERATOR'S: the person setting this wants to know how big a thing
+           somebody may send, and half of them do not know what a body is. */
+        array('key' => 'max_body_bytes', 'hint' => 'One call, in bytes. A long remark uses 5% of it.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'bytes',
+            'label' => 'Biggest thing a browser may send at once',
+            'say'   => 'The size of ONE call -- a remark, a reply, a resolution, with '
+                       . 'the envelope round it. Read before anything is parsed; over '
+                       . 'it, a 413. Sized by the bounds of the format, not by what '
+                       . 'people write: the longest remark measured on a real project '
+                       . 'used 5% of it.'),
+        array('key' => 'max_notes_per_project', 'hint' => 'Rows, replies included. 0 is no limit.', 'group' => 'rate', 'kind' => 'int', 'unit' => 'notes',
+            'label' => 'Notes one project may hold',
+            'decided' => array('one-site' => 'no limit', 'anyone' => '6000 rows, about '
+                                                         . '2000 remarks'),
+            'say'   => 'Counted in ROWS, not in remarks: a reply is a row of its own, '
+                       . 'so a discussed note costs two or three rows. Past it a write is '
+                       . 'refused with a 403 and NOTHING is erased -- but a reply is a '
+                       . 'write, so the project goes silent until somebody raises this. '
+                       . '0 is no limit, which is what a server carrying one team\'s own '
+                       . 'notes wants. A relay needs one: it stores for strangers. '
+                       . 'Measured: six reviewers over three months write about 3600 '
+                       . 'rows, and a relay is capped at 6000 unless you say otherwise.'),
+        array('key' => 'client_ip_header', 'hint' => 'Only behind a proxy you trust: a client can write it itself.', 'group' => 'fine', 'kind' => 'text', 'unit' => '',
+            'example' => 'HTTP_X_FORWARDED_FOR',
+            'label' => 'Header carrying the real address, behind a proxy',
+            'say'   => 'Empty unless a TRUSTED proxy rewrites it on every request: a '
+                       . 'header the client can set itself makes every limit above '
+                       . 'bypassable in one line. Without it, everyone behind that proxy '
+                       . 'counts as one machine.'),
         array('key' => 'table_prefix', 'hint' => 'Only on a database shared with something else.', 'group' => 'fine', 'kind' => 'text', 'unit' => '',
             'label' => 'Prefix of the table names',
             'say'   => 'The tables are <prefix>notes, <prefix>rate and <prefix>tally. '
@@ -1364,19 +1452,30 @@ function ap_i_setting_sections()
                        . 'remark is kept, what a stranger can read from the outside, '
                        . 'and where a bare visit to this directory goes.',
         ),
-        /* AND THE NUMBERS, WHICH ALMOST NOBODY TOUCHES. The row cap belongs
-           here and not up front: it is a ceiling nobody meets on a server
-           carrying one team's notes, where it is off, and a relay's own is
-           written for them. Same for the counters and the table prefix. */
-        'fine' => array(
-            'title' => 'Fine tuning: the limits, and where the tables live',
-            'hint'  => 'Counted per address and per project, in a fixed window. Past a '
-                       . 'limit the answer is a 429 saying when to come back; 0 switches '
-                       . 'one off.',
+        /* THE LIMITS, AND THEY ARE ONE SETTING WITH PARTS. Six numbered
+           fields in a column are six questions, and four of them are counted
+           inside the fifth: the window. Stacked as paragraphs they read as
+           `a title, a box, a sentence` six times over, which is what the
+           screen was told it read as. Given a section of their own, the
+           window goes on top and the four it counts line up in a column
+           under it, where the eye compares them -- and the two that are not
+           per window sit below a rule rather than pretending to be a fifth
+           counter. */
+        'rate' => array(
+            'title' => 'The limits: how much, and how often',
+            'hint'  => 'Past a limit the answer says when to come back; 0 switches one '
+                       . 'off.',
             'say'   => 'Counted per address and per project, in a fixed window. Past a '
                        . 'limit the answer is a 429 saying when to come back, and nothing '
                        . 'is lost. 0 switches a counter off entirely -- and off means the '
                        . 'counter is never touched, not touched and ignored.',
+        ),
+        'fine' => array(
+            'title' => 'Two for an unusual host',
+            'hint'  => 'A database shared with something else, or a proxy in front.',
+            'say'   => 'Neither is worth touching on an ordinary host: the table names '
+                       . 'only collide on a database somebody else already writes to, '
+                       . 'and the header is only ever set by a proxy you trust.',
         ),
         'risky' => array(
             'title' => 'Two that can undo what this tool is for',
@@ -1511,7 +1610,21 @@ function ap_i_tick()
  */
 function ap_i_rail($at, $blocked = false, $lastHref = null)
 {
-    $steps = array('Answer', 'It installs', 'Delete the installer');
+    /* AND EACH ONE SAYS WHAT IT IS. Three words in a row of small type was a
+       breadcrumb, not a rail: `Answer / It installs / Delete the installer`
+       told a reader the order and nothing about the size of any of it -- which
+       is the one thing somebody deciding whether to start wants. A line under
+       each, and circles big enough to be looked at rather than read past. */
+    $steps = array(
+        array('Answer', 'the questions below'),
+        array('It installs', 'one press, about a second'),
+        /* THE THIRD LINE DEPENDS ON WHICH SCREEN IS ASKING. `on the next
+           screen` is true while you are answering and false the moment you
+           are on it -- and the button is 3 400px down that page, which is the
+           whole reason this step is a link there. */
+        array('Delete the installer', $lastHref === null
+            ? 'one click, on the next screen' : 'one click, at the foot of this page'),
+    );
     $out = '<ol class="rail" aria-label="Where you are">' . "\n";
     for ($i = 1; $i <= 3; $i++) {
         if ($i > 1) {
@@ -1523,7 +1636,7 @@ function ap_i_rail($at, $blocked = false, $lastHref = null)
         $class = 'rail-step'
                . ($done ? ' is-done' : '')
                . ($now && $blocked ? ' is-blocked' : '');
-        $label = ap_i_h($steps[$i - 1]);
+        $label = ap_i_h($steps[$i - 1][0]);
         if ($now && $lastHref !== null) {
             $label = '<a href="' . ap_i_h($lastHref) . '">' . $label . '</a>';
         }
@@ -1531,19 +1644,39 @@ function ap_i_rail($at, $blocked = false, $lastHref = null)
               . '<span class="rail-n" aria-hidden="true">'
               . ($done ? ap_i_tick() : $i) . '</span>'
               . ($done ? '<span class="rail-hid">Done: </span>' : '')
-              . '<span class="rail-t">' . $label . '</span></li>' . "\n";
+              . '<span class="rail-b"><span class="rail-t">' . $label . '</span>'
+              /* WHAT A STEP COSTS IS ONLY WORTH SAYING BEFORE IT IS PAID. A
+                 tick and `one press, about a second` under it is the page
+                 telling somebody what is about to happen to them next, about
+                 a thing that already has. */
+              . ($done ? ''
+                  : '<span class="rail-s">' . ap_i_h($steps[$i - 1][1]) . '</span>')
+              . '</span></li>' . "\n";
     }
     return $out . '</ol>' . "\n";
 }
 
-/** WHERE EVERYTHING GOES. The folder is base.css's own .sc-ic path. */
+/**
+ * WHERE EVERYTHING GOES. The folder is base.css's own .sc-ic path.
+ *
+ * AND AN ARROW INTO IT, because the line sits under three steps and read as a
+ * fourth thing on the list rather than as the place the three of them happen
+ * in. The elbow is drawn the way every other glyph on this page is -- a
+ * stroked path in the same weight, no glyph and no font to be missing -- and
+ * it comes off the rail above and turns into the folder.
+ */
 function ap_i_here_line($here)
 {
     return '<p class="here">'
+         . '<span class="here-arrow" aria-hidden="true">'
+         . '<svg viewBox="0 0 20 20" focusable="false">'
+         . '<path d="M5 2.5v9a2 2 0 0 0 2 2h8"/><path d="M12 10.5l3.2 3-3.2 3"/>'
+         . '</svg></span>'
          . '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">'
          . '<path d="M2.6 15.4V4.6h4.6l1.7 2h8.5v8.8a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1z"/>'
          . '</svg><b>' . ap_i_h($here) . '</b>'
-         . '<span class="here-say">everything goes here</span></p>' . "\n";
+         . '<span class="here-say">everything is installed in this folder</span>'
+         . '</p>' . "\n";
 }
 
 function ap_i_render_html(array $screen)
@@ -1647,8 +1780,8 @@ function ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
        screen that reports what was done, not left to a comment inside a
        file and a line in a diagnostic nobody opens. */
     $screen[] = array('h2', 'How long a remark is kept');
-    $screen[] = array('p', 'Ninety days after the last message of its thread &mdash; a review '
-        . 'cycle with room to spare &mdash; and then the whole thread goes at '
+    $screen[] = array('p', 'Ninety days after a note&rsquo;s last reply &mdash; a review '
+        . 'cycle with room to spare &mdash; and then the note and its replies go at '
         . 'once, so a reply is never cut off its remark. Nobody chooses which: '
         . 'there is no moderation here and no takedown, which is the point of '
         . "saying age and only age.");
@@ -1895,6 +2028,11 @@ function ap_i_cli_options()
         );
     }
 
+    /* THE SAME LIST THE FORM ASKS FOR, AS ONE ARGUMENT. Commas rather than
+       lines, which is what a shell can pass without a here-document; the
+       parsing is the same function either way. */
+    $options['origins'] = array('kind' => 'value', 'field' => 'origins',
+        'label' => 'The sites the notes will be written from, separated by commas');
     $options['api-address'] = array('kind' => 'value', 'field' => null,
         'label' => 'The address api.php will answer at');
     $options['dir'] = array('kind' => 'value', 'field' => null,
@@ -2686,6 +2824,7 @@ function ap_i_cli(array $options)
         'name'     => isset($given['mysql-name']) ? $given['mysql-name'] : '',
         'user'     => isset($given['mysql-user']) ? $given['mysql-user'] : '',
         'password' => $password,
+        'origins'  => isset($given['origins']) ? $given['origins'] : '',
     );
     foreach (ap_i_settings() as $setting) {
         $flag = str_replace('_', '-', $setting['key']);
@@ -2886,9 +3025,18 @@ function ap_i_config_text(array $values)
         $text .= "    // here. The server does not compute that id, it recognises it.\n";
     }
     $text .= "    //\n";
+    /* THE ADDRESSES THE OPERATOR TYPED, IN THE BLOCK THAT WAS WAITING FOR
+       THEM. The example read `https://www.example.com` on every installation
+       ever made by this file, including the ones where the person had just
+       said which sites they meant -- so the one fact the block needed was the
+       one it did not have. */
+    $originList = isset($values['origins']) && $values['origins']
+        ? $values['origins'] : array('https://www.example.com');
+    $written = array();
+    foreach ($originList as $one) { $written[] = "'" . $one . "'"; }
     $text .= "    // 'projects' => array(\n";
     $text .= "    //     '<the 22 characters the setup screen shows>' => array(\n";
-    $text .= "    //         'origins' => array('https://www.example.com'),\n";
+    $text .= "    //         'origins' => array(" . implode(', ', $written) . "),\n";
     $text .= "    //         'mode'    => 'encrypted',\n";
     $text .= "    //     ),\n";
     $text .= "    // ),\n";
@@ -2914,11 +3062,11 @@ function ap_i_config_text(array $values)
        chooses which -- there is still no moderation and no takedown. The
        client says it in its panel and the export says it in its header,
        because "nothing is ever deleted" stops being true here. */
-    $text .= "    // HOW LONG A THREAD IS KEPT, counted from its LAST message: a whole\n";
-    $text .= "    // thread goes at once, so a reply is never cut off its remark. Ninety\n";
-    $text .= "    // days is a review cycle with room to spare. Set it to 0 to keep\n";
-    $text .= "    // everything for ever -- the client stops announcing an age, and this\n";
-    $text .= "    // server stops removing anything.\n";
+    $text .= "    // HOW LONG A NOTE IS KEPT, counted from its LAST reply: it goes at\n";
+    $text .= "    // once with its replies, so a reply is never cut off the remark it\n";
+    $text .= "    // answers. Ninety days is a review cycle with room to spare. Set it\n";
+    $text .= "    // to 0 to keep everything for ever -- the client stops announcing an\n";
+    $text .= "    // age, and this server stops removing anything.\n";
     if (!isset($chosen['max_note_age_days'])) {
         $text .= "    'max_note_age_days'     => 90,\n\n";
     }
@@ -3073,7 +3221,7 @@ function ap_i_config_text(array $values)
         $text .= "    // you raise it.\n";
         if (!isset($chosen['max_notes_per_project'])) {
             $text .= "    // 500, then 2000, and both were measured too low: the cap\n";
-            $text .= "    // counts ROWS, and a discussed thread is three of them. A\n";
+            $text .= "    // counts ROWS, and a discussed note is three of them. A\n";
             $text .= "    // simulated team of six reviewers over three months writes\n";
             $text .= "    // 1200 remarks -- 3600 rows -- so 2000 stopped them at week\n";
             $text .= "    // two, and past the cap nobody can even reply. 6000 rows is\n";
@@ -3326,21 +3474,35 @@ function ap_i_head($title, $head = null)
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 
-/* --measure PLUS ITS GUTTERS, and not --measure: with border-box the padding
-   is inside the max-width, so a bare `max-width: var(--measure)` would give a
-   column of 40rem and every sentence here would be four characters shorter
-   than the same sentence on the page that sent this reader here. The gutter
-   is the site's own clamp -- 1rem on a phone, 2rem from 32rem up -- and 4rem
-   is the pair of them at the width where the cap actually bites. */
+/* THE PAGE IS AS WIDE AS THE SITE, AND THE SENTENCES ARE AS NARROW.
+   This was one number for both, `--measure + 4rem`, which gave every sentence
+   the site's own reading width and gave the PANELS the same -- so the box of
+   dials this installer draws came out at 704px against the 1360 the same box
+   has on how-to-install-it.html, and the whole screen read as a narrow strip
+   on anything wider than a phone. Measured at 1408: dials 704 here against
+   1344 there, on a page whose text column was already identical.
+
+   So it is the site's own pair of rules, copied. 85rem is `.wrap`; the cap
+   on what the wrap HOLDS is `main .wrap > *`, and what opts out of it over
+   there is what opts out here -- the things that are looked at rather than
+   read. Not one line of prose changes width. */
 body {
     margin: 0 auto;
     padding: 2.5rem clamp(1rem, 4vw, 2rem) 6rem;
-    max-width: calc(var(--measure) + 4rem);
+    max-width: calc(85rem + 4rem);
     background: var(--bg);
     color: var(--text);
     font: 17px/1.6 var(--sans);
     overflow-wrap: break-word;
 }
+body > *, form > * { max-width: var(--measure); }
+/* WHAT SPANS. The three steps are a diagram, and the four panels are the
+   site's own card -- the one that is 85rem wide on the page this reader has
+   just come from. The form itself spans because what it HOLDS is capped one
+   level down, which is the site's rule for a wrapper (`main .wrap > .split`). */
+body > form, body > .rail,
+form > .dials, form > .if-mysql-box, form > .more-switch, form > .more,
+form > .go { max-width: none; }
 
 a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
 a:hover { text-decoration-thickness: 2px; }
@@ -3369,7 +3531,7 @@ h1::before {
     border-radius: 3px; background: var(--accent);
 }
 p.lede {
-    margin: 0 0 2.4rem;
+    margin: 0 0 .2rem;
     font-size: clamp(1.02rem, 2.6vw, 1.15rem);
     color: var(--dim);
 }
@@ -3383,17 +3545,24 @@ p.lede {
    same hairline over the word `Install`. Before, an h2 was one bold line at
    1.05rem in the middle of the prose, so `Install` -- the question the whole
    page exists to ask -- weighed the same as the sentence above it. */
+/* AND THE AIR ROUND IT IS THE SITE'S OWN NUMBER, NOT HALF OF IT. base.css
+   gives a chapter `padding: clamp(3rem, 8vw, 5.5rem) 0` on either side of its
+   hairline -- 48 to 88px above the rule and the same below it. This had 38 and
+   38, measured at 1408, so the two halves of this screen sat closer together
+   than two paragraphs of the page that sends the reader here, and the whole
+   thing read as one block of stuck-together rows. */
 h2 {
-    margin: 2.4rem 0 1rem;
-    padding-top: 1.9rem;
+    margin: clamp(2.4rem, 5vw, 3.6rem) 0 0;
+    padding-top: clamp(2.4rem, 5vw, 3.6rem);
     border-top: 1px solid var(--line-soft);
     font-size: 1.4rem; font-weight: 650;
     line-height: 1.25; letter-spacing: -.02em;
 }
+h2 + p, h2 + div, h2 + table, h2 + details { margin-top: .9rem; }
 /* The first one has the lede over it, which is a separation already. */
 p.lede + h2 { margin-top: 0; padding-top: 0; border-top: 0; }
 h3 {
-    margin: 2rem 0 .6rem;
+    margin: 2.6rem 0 .7rem;
     font-size: 1.08rem; font-weight: 650;
     line-height: 1.3; letter-spacing: -.01em;
 }
@@ -3414,14 +3583,14 @@ h2 + h3 { margin-top: 0; }
    1280: 288, 289, 306.6, 308.2, 311.4, 328.4. The site's own drawing of this
    screen has one. */
 .dials, .if-mysql-box {
-    margin: 0 0 1.4rem; padding: 1.1rem 1.2rem;
+    margin: 0 0 1.9rem; padding: 1.5rem 1.5rem;
     border: 1px solid var(--line-soft); border-radius: var(--radius);
     background: var(--bg-soft);
 }
 .dial-title { margin: 0 0 1.1rem; font-size: 1rem; font-weight: 650; color: var(--text); }
 
 .dial-row {
-    display: grid; gap: 1.4rem 2.4rem;
+    display: grid; gap: 1.9rem 2.4rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 @media (max-width: 34rem) { .dial-row { grid-template-columns: minmax(0, 1fr); } }
@@ -3503,11 +3672,88 @@ input::placeholder { color: var(--dim); opacity: 1; }
 /* THE FIELD THAT HAS TO CHANGE IS MARKED. It sat seven hundred pixels below
    the red block that refused it, with the same grey border as the fourteen
    fields that were fine. */
-input.bad-field { border-color: var(--bad); border-width: 2px; }
-input:focus-visible, select:focus-visible {
+input.bad-field, textarea.bad-field {
+    border-color: var(--bad); border-width: 2px;
+}
+/* AND A BOX THE READER HAS ALREADY SPOILED. `:invalid` matches an empty
+   required field from the first paint, so the page would open with a red ring
+   round a box nobody has touched; `:user-invalid` waits until it has been
+   typed in or submitted. A browser that does not know the selector simply
+   draws nothing, and the server still refuses -- this marks, it does not
+   decide. */
+input:user-invalid { border-color: var(--bad); border-width: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible {
     outline: 2px solid var(--accent); outline-offset: 2px;
     border-color: var(--accent); border-radius: 8px;
 }
+textarea {
+    display: block; margin-top: .35rem;
+    width: 26rem; max-width: 100%;
+    padding: .45rem .7rem;
+    font: inherit; font-size: .95rem; line-height: 1.5;
+    color: var(--text); background: var(--bg);
+    border: 1px solid var(--control-line); border-radius: 8px;
+    resize: vertical;
+}
+textarea::placeholder { color: var(--dim); opacity: 1; }
+.origins { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid var(--line-soft); }
+.origins p:has(label) { margin-bottom: .35rem; }
+.origins .note { margin-bottom: 0; }
+
+/* -- THE ADDRESS, AND THE TWO PARTS OF IT THAT ARE NOT YOURS -------------
+
+   The field is one box holding a whole URL, and it has to stay one: the
+   scheme is whatever this host really answers on, and splitting it into
+   fixed affixes would be a lie on the plain-http host the setting below
+   exists for. What was missing is that the shape was never drawn -- so a
+   reader was handed a text box and left to guess how much of it was theirs.
+   Four parts, named under the box, with the two that are decided in the
+   ground the page sets code in. */
+.addr { margin-bottom: .3rem; }
+.addr input { width: 26rem; }
+.shape {
+    margin: 0 0 .5rem;
+    font-family: var(--mono); font-size: .8rem;
+}
+.shape .fx {
+    padding: .1em .3em; border-radius: 4px;
+    background: var(--bg-code); color: var(--dim);
+}
+.shape .yours { padding: .1em .3em; color: var(--accent); font-weight: 650; }
+
+/* -- FIVE CREDENTIALS THAT ARE THREE FACTS ------------------------------
+
+   Host and port are one address and shared a column with three unrelated
+   things; the box for `3306` was 352px wide beside a box for a password. */
+.creds {
+    display: grid; gap: .9rem 1.2rem;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+.cred { margin: 0; }
+.cred input { width: 100%; margin-top: .3rem; }
+.cred-port input { width: 100%; }
+.cred-name, .cred-user, .cred-password { grid-column: 1 / -1; }
+@media (max-width: 34rem) { .creds { grid-template-columns: minmax(0, 1fr); } }
+
+/* -- THE LINE, DRAWN THE WAY A CRONTAB IS ------------------------------- */
+.cron-line { margin: 1rem 0 0; }
+.cron-line pre { margin: 0; }
+.cron-line .note { margin: .45rem 0 0; }
+
+/* -- THE PRESS ----------------------------------------------------------- */
+
+/* IT IS THE END OF THE PAGE, SO IT LOOKS LIKE ONE. A chip-sized control hard
+   left under the last card, after fifteen fields, was the smallest object on
+   a screen where it is the only irreversible one -- and it sat closer to the
+   switch that reveals the settings than to anything it concludes. Its own
+   band, a rule above it, centred, and wide enough to be aimed at. */
+.go {
+    margin: clamp(3rem, 8vw, 5rem) 0 0; padding-top: clamp(2.6rem, 6vw, 3.4rem);
+    border-top: 1px solid var(--line-soft);
+    text-align: center;
+}
+.go button { margin: 0; min-width: 16rem; padding: .8rem 2.4rem; font-size: 1.08rem; }
+.go-say { margin: .7rem 0 0; font-size: .85rem; color: var(--dim); }
 
 
 /* -- the one button ------------------------------------------------------ */
@@ -3529,12 +3775,9 @@ button {
 button:hover { box-shadow: none; }
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
-/* THE PRESS IS NOT PART OF WHAT PRECEDES IT. This was written as
-   `details + button`, and the button's previous sibling has never been a
-   `<details>` -- it is the card of settings, or the box that offers them. The
-   rule never fired once: measured, 6.4px of air under a card, where every
-   other block on this page gets 30.4. */
-.more + button, .more-switch + button { margin-top: 1.9rem; }
+/* The band this one sits in is `.go`, further down; a button anywhere else on
+   this page -- the delete button on the screen that follows -- keeps the
+   drawing above and nothing more. */
 
 
 /* -- what is said under a field ------------------------------------------ */
@@ -3619,8 +3862,8 @@ form > details {
    hairline ABOVE the title. It used to be a hairline BELOW it, which is a
    heading underlined -- and an underline groups a title with what is over it
    rather than with the fields it owns. */
-.part { margin: 1.9rem 0 0; padding-top: 1.4rem; border-top: 1px solid var(--line-soft); }
-.part-title { margin: 0 0 .9rem; font-size: 1.08rem; font-weight: 650; letter-spacing: -.01em; }
+.part { margin: 2.8rem 0 0; padding-top: 2.1rem; border-top: 1px solid var(--line-soft); }
+.part-title { margin: 0 0 1.1rem; font-size: 1.08rem; font-weight: 650; letter-spacing: -.01em; }
 
 
 /* -- code ---------------------------------------------------------------- */
@@ -3655,7 +3898,10 @@ code {
     background: var(--bg-code); border: 1px solid var(--line-soft);
     border-radius: 5px; padding: .08em .32em;
 }
-pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+pre code {
+    background: none; border: 0; padding: 0; font-size: inherit;
+    white-space: pre-wrap;
+}
 
 
 /* -- the measured rows --------------------------------------------------- */
@@ -3697,6 +3943,27 @@ form:has(#u-cron:checked) .if-url, form:has(#u-cron:checked) .if-self,
 form:has(#u-url:checked) .if-cron, form:has(#u-url:checked) .if-self,
 form:has(#u-self:checked) .if-cron, form:has(#u-self:checked) .if-url { display: none; }
 
+/* -- WHAT WAS REFUSED ---------------------------------------------------- */
+
+/* THE LIST OF WHAT HAS TO CHANGE, AND THE BOXES IT IS ABOUT. It was a run of
+   red paragraphs with a heading over them, seven hundred pixels above fields
+   that carried no mark at all -- so somebody read what was wrong and then went
+   hunting. A panel, the same one a failed measurement gets, with the leading
+   edge in --bad; and every box it names wears .bad-field, which is the rule
+   two blocks up. */
+.refused {
+    margin: 0 0 1.9rem; padding: 1rem 1.2rem;
+    background: var(--bg-soft); border-radius: var(--radius);
+    border-inline-start: 3px solid var(--bad);
+}
+.refused-h { margin: 0; }
+.refused ul { margin: .6rem 0 0; padding-left: 1.15rem; font-size: .93rem; }
+.refused li { margin: 0 0 .35rem; }
+.refused li:last-child { margin-bottom: 0; }
+.refused table.what { margin-top: .8rem; }
+.ok { color: var(--ok); font-weight: 700; }
+
+
 /* -- the statement at the top -------------------------------------------- */
 
 /* WHAT IS ABOUT TO BE WRITTEN, AND WHERE. Two facts, both measured rather
@@ -3714,7 +3981,7 @@ table.what td { border-bottom: 0; padding-bottom: .2rem; }
    is what hides them -- the same direction as the MySQL box, for the same
    reason. */
 .more-switch {
-    margin: 1.9rem 0 0; padding: 1.1rem 1.2rem;
+    margin: 2.6rem 0 0; padding: 1.4rem 1.5rem;
     border: 1px solid var(--line-soft); border-radius: var(--radius);
     background: var(--bg-soft);
 }
@@ -3758,7 +4025,7 @@ form:has(#ap-more:not(:checked)) .more { display: none; }
    ground, its own air. What is inside it is the part somebody chose to open,
    and it can be seen to end. */
 .more {
-    margin: 1.3rem 0 0; padding: 1.1rem 1.2rem;
+    margin: 1.3rem 0 0; padding: 1.5rem 1.5rem 1.9rem;
     border: 1px solid var(--line-soft); border-radius: var(--radius);
     background: var(--bg-soft);
 }
@@ -3766,39 +4033,90 @@ form:has(#ap-more:not(:checked)) .more { display: none; }
 .more > .part:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
 /* A box inside the card stands on the page's own ground, or two greys sit on
    each other and neither reads as a boundary. */
-.more .limits, .more input, .more select { background: var(--bg); }
+.more input, .more select, .more textarea { background: var(--bg); }
 @media (max-width: 34rem) { .more { padding: 1rem .9rem; } }
 
 
-/* -- the counters and their window --------------------------------------- */
+/* -- ONE GRID, AND FIFTEEN SETTINGS IN IT --------------------------------
 
-/* SIX FIELDS STACKED READ AS SIX QUESTIONS. Boxed, with the window on top of
-   the table it applies to, they read as one setting with parts -- and the
-   four per-window numbers land in one column, where the eye compares them.
-   The body cap is not per window, so it sits under a rule of its own rather
-   than pretending to be a fifth counter. */
-/* NOT A BOX INSIDE A BOX. Its own padding was the sixth left edge on the
-   page; a rule above and below says "these belong together" without moving
-   anything sideways. */
-.limits {
-    margin: 1rem 0 0; padding: 1rem 0 0;
+   WHAT WAS WRONG WITH THE COLUMN. Every setting was a paragraph holding a
+   label, a break and a box, followed by a second paragraph of explanation --
+   so a section of six was eighteen blocks in a stack: a title, a box, a
+   sentence, a title, a box, a sentence, said of this screen as "un titre une
+   fenetre une description a chaque fois". Nothing lined up with anything,
+   because nothing could: the width of a box in normal flow is the width of
+   that box. Measured at 1408 inside the panel, the fifteen labels started on
+   one edge and the fifteen boxes started on fifteen.
+
+   `display: contents` ON THE ROW is what makes the column possible. The three
+   cells of a setting are not a box of their own -- they ARE the section's
+   three columns -- so every label shares one left edge, every box shares
+   another, and every sentence shares the third, across a section and across
+   the whole panel. It is also the reason a row can be a heading (`.sub`
+   spanning `1 / -1`) without anything nesting.
+
+   AND IT UNDOES ITSELF ON A PHONE. Below 48rem the grid is a block, the row is
+   a block, and a setting is a label, a box and a line again -- which is the
+   only shape that fits 390px. */
+.grid {
+    display: grid;
+    grid-template-columns: minmax(9rem, 17rem) minmax(0, auto) minmax(11rem, 1fr);
+    /* A ROW IS NOT A LINE OF A TABLE. Fifteen settings at .8rem apart read as
+       one block of text with boxes in it; a row of a form is a group of three
+       things, and the air between two rows has to beat the air inside one. */
+    gap: 1.25rem 1.5rem;
+    align-items: baseline;
+}
+.set { display: contents; }
+.set-k { font-weight: 600; font-size: .95rem; }
+.set-k label { display: inline; font-weight: 600; }
+/* THE UNIT IS A LABEL, NOT A PLACEHOLDER. It spent two releases inside the box
+   as grey text -- `notes`, in a number field -- which reads as the name of a
+   variable and tells nobody what to type. Outside it, beside the number, it is
+   what it always was: what the number counts. */
+.set-v { white-space: nowrap; }
+.set-v input, .set-v select { margin-top: 0; }
+.set-v input[type=number] { width: 8rem; }
+.set-v input[type=text] { width: 18rem; }
+.unit { margin-left: .5rem; font-size: .85rem; color: var(--dim); }
+.set-y .note { margin: 0; font-size: .87rem; }
+/* WHAT AN EMPTY BOX IS WORTH, SET APART FROM WHAT THE SETTING IS. Same
+   sentence, two jobs: the first half explains the thing, the second states a
+   value. Run together in one grey line the value was the easiest fact on the
+   page to miss. */
+.empty { font-style: normal; color: var(--text); }
+/* A HEADING INSIDE THE GRID, and it is one row of it. */
+.sub {
+    grid-column: 1 / -1;
+    margin: 1.1rem 0 -.15rem; padding-top: 1.1rem;
     border-top: 1px solid var(--line-soft);
+    font-size: .78rem; font-weight: 650;
+    letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
 }
-.limits > p { margin: 0; }
-.limits-window label { font-weight: 650; }
-.limits-window input, .counters input, .limits-body input { width: 8rem; }
-.limits .note { margin: .3rem 0 0; }
-table.counters { margin: .9rem 0 0; }
-.counters td { padding: .5rem .5rem .5rem 0; border-bottom: 1px solid var(--line-soft); }
-.counters tr:last-child td { border-bottom: 0; }
-td.c-what { width: 40%; font-weight: 600; }
-td.c-set { width: 8.5rem; }
+.grid > .sub:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 
-td.c-why { color: var(--dim); font-size: .9rem; padding-left: .9rem; }
-.limits-body {
-    margin: .9rem 0 0; padding-top: .8rem; border-top: 1px solid var(--line-soft);
+/* THE PARAGRAPH, WITHOUT LEAVING THE SHORT READING. `title` is the browser's
+   own tooltip: no script to place a popover with, no second copy of the text
+   to keep in step, and it is the same string --help --verbose prints. It is
+   gone in the explained reading, where that paragraph is already on screen --
+   a mark offering what is written beside it is furniture. */
+.q {
+    display: inline-grid; place-items: center;
+    width: 1.05rem; height: 1.05rem; margin-left: .35rem;
+    vertical-align: .04em;
+    border: 1px solid var(--control-line); border-radius: 999px;
+    color: var(--dim); font-size: .7rem; font-weight: 700;
+    cursor: help;
 }
-.limits-body label { font-weight: 650; }
+.q:hover { border-color: var(--accent); color: var(--accent); }
+body:has(#ap-explain:checked) .q { display: none; }
+
+@media (max-width: 48rem) {
+    .grid { display: block; }
+    .set { display: block; margin: 0 0 1.3rem; }
+    .set-v { white-space: normal; margin: .3rem 0; }
+    .set-y .note { margin: 0; }
+}
 
 
 /* -- and all of that on a phone ------------------------------------------ */
@@ -3809,22 +4127,19 @@ td.c-why { color: var(--dim); font-size: .9rem; padding-left: .9rem; }
 @media (max-width: 34rem) {
     table.what, table.what tbody, table.what tr, table.what td,
     .more-switch table, .more-switch tbody, .more-switch tr,
-    .more-switch td,
-    .counters, .counters tbody, .counters tr, .counters td {
+    .more-switch td {
         display: block; width: auto;
     }
     table.what tr, .more-switch tr { padding: 0 0 .55rem; }
-    .more-switch tr, .counters tr {
+    .more-switch tr {
         border-bottom: 1px solid var(--line-soft); margin-bottom: .55rem;
     }
-    .counters tr { padding: .55rem 0; }
-    .more-switch tr:last-child, .counters tr:last-child { border-bottom: 0; }
+    .more-switch tr:last-child { border-bottom: 0; }
     table.what td.k, .more-switch td.k {
         width: auto; font-size: .78rem;
         text-transform: uppercase; letter-spacing: .02em; color: var(--dim);
     }
-    .more-switch td, table.what td, .counters td { border-bottom: 0; padding: .1rem 0; }
-    .counters input { max-width: 12rem; }
+    .more-switch td, table.what td { border-bottom: 0; padding: .1rem 0; }
 }
 
 
@@ -3851,8 +4166,17 @@ body:has(#ap-explain:checked) .l-short { display: none; }
 /* The page's own control, under the title: two chips and a line saying what
    they do. Not a setting -- nothing here is written or posted -- so it is
    above everything the form asks. */
-.views { margin: 0 0 2.2rem; }
-.views .seg { margin: 0; }
+.views { margin: clamp(2.2rem, 5vw, 3rem) 0 0; }
+.views .seg { margin: .45rem 0 0; }
+/* THE QUESTION THE TWO CHIPS ANSWER. Every other choice on this page has a
+   legend over it; this one had two answers and a sentence underneath that
+   explained one of them, so a reader going down the page met `Simple |
+   Explained` with nothing saying what was being asked. Drawn like a legend,
+   because it is one -- the only difference is that nothing here is posted. */
+.views-q {
+    margin: 0; font-size: .78rem; font-weight: 650;
+    letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
+}
 .views-say { margin: .5rem 0 0; font-size: .85rem; color: var(--dim); }
 
 /* A LABEL AND ITS BOX ARE ONE THING. The markup separates them with a <br>,
@@ -4021,14 +4345,27 @@ form:has(#ap-more:checked) .more {
    and travel here unchanged -- the circle, the arrow, and the rule that dims
    everything except the one being pointed at. The fourth does not, and the
    note on .rail-dot says exactly what was left behind and why. */
+/* AND IT IS BIG ENOUGH TO BE LOOKED AT. It was a row of three small circles
+   and three words at .95rem, 24.8px tall, hard left, with 8.8px of air under
+   it -- which is a breadcrumb: it says the order and nothing about the size of
+   any of it, and it was the first thing on a page whose whole argument is that
+   there are only three of these. Each step is a column now -- circle, name,
+   and one line saying what it costs -- with the arrow running between them at
+   the height of the circles, and real air above and below. */
 .rail {
-    display: flex; align-items: center; flex-wrap: wrap;
-    gap: .5rem .55rem;
-    margin: 0 0 .55rem; padding: 0; list-style: none;
+    display: flex; align-items: flex-start; flex-wrap: nowrap;
+    gap: .5rem .8rem;
+    /* THE DIAGRAM NEEDS ROOM ROUND IT OR IT IS A ROW OF THE PAGE. Measured at
+       1408 before this: 35px above and 24px below, against the 48-88 the site
+       gives anything it calls a chapter. */
+    margin: clamp(2.4rem, 6vw, 3.6rem) 0 clamp(2rem, 5vw, 2.8rem);
+    padding: 0; list-style: none;
 }
 .rail-step {
-    display: flex; align-items: center; gap: .5rem;
-    font-size: .95rem; font-weight: 600; color: var(--dim);
+    flex: 1 1 0; min-width: 0;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: .8rem;
+    font-size: 1rem; font-weight: 600; color: var(--dim);
     /* THE LANDING PAGE'S OWN CADENCE, delays included: .10s, .26s, .42s,
        160ms apart. Written there as "one after another, once, on arrival --
        enough to read as a sequence, too small to be a movement", which is the
@@ -4048,11 +4385,20 @@ form:has(#ap-more:checked) .more {
 .rail-n {
     flex: none;
     display: grid; place-items: center;
-    width: 1.55rem; height: 1.55rem;
+    width: 2.7rem; height: 2.7rem;
     border-radius: 999px;
     background: var(--bg); color: var(--dim);
     border: 1px solid var(--control-line);
-    font: 650 .78rem/1 var(--mono);
+    font: 650 1.1rem/1 var(--mono);
+}
+/* THE NAME OF THE STEP AND WHAT IT COSTS. The second line is the whole reason
+   the circles grew: `It installs` says nothing about whether this takes a
+   second or an afternoon, and that is what somebody deciding to start wants. */
+.rail-b { display: block; min-width: 0; }
+.rail-t { display: block; }
+.rail-s {
+    display: block; margin-top: .3rem;
+    font-size: .84rem; font-weight: 400; color: var(--dim);
 }
 /* WHERE YOU ARE. Filled --accent under --on-accent, which is the pair this
    site uses wherever a thing is the chosen one -- the checked chip, the
@@ -4067,7 +4413,7 @@ form:has(#ap-more:checked) .more {
     background: var(--ok-soft); color: var(--ok); border-color: var(--ok-soft);
 }
 .rail-step.is-done .rail-n svg {
-    width: .95rem; height: .95rem;
+    width: 1.5rem; height: 1.5rem;
     fill: none; stroke: currentColor; stroke-width: 2.4;
     stroke-linecap: round; stroke-linejoin: round;
 }
@@ -4093,8 +4439,11 @@ form:has(#ap-more:checked) .more {
    arrows of the diagram are; the head is the two-border triangle this page
    already draws on `summary::after`, so it is not a glyph and not a file. */
 .rail-link {
-    position: relative; flex: 1 1 1.4rem;
-    min-width: 1.4rem; max-width: 2.6rem;
+    position: relative; flex: 0 1 5rem;
+    min-width: 1.4rem; max-width: 6rem;
+    /* The middle of a 2.7rem circle, so the arrow runs between the two of them
+       and not under the words. */
+    margin-top: 1.35rem;
     height: 1px; background: var(--line-soft);
 }
 .rail-link::after {
@@ -4144,8 +4493,6 @@ form:has(#ap-more:checked) .more {
     100% { transform: translateX(100%); opacity: 0; }
 }
 
-.rail-say { margin: 0 0 .5rem; font-size: .9rem; color: var(--dim); }
-
 /* -- WHERE EVERYTHING GOES ------------------------------------------------
 
    IT WAS THE MIDDLE CELL OF A THREE-COLUMN TABLE, at 40% of the column, with
@@ -4160,10 +4507,21 @@ form:has(#ap-more:checked) .more {
    its own and the folder naming it is left alone on the line above --
    measured, four lines for one fact. Inline, the folder is a character of the
    first line and the path wraps where paths wrap. */
+/* AND IT IS THE END OF THE ARROW, NOT THE FOURTH ITEM ON A LIST. Under three
+   steps, a fourth line of the same weight reads as a fourth step. Its own
+   ground and its own edge make it the thing the three of them land in, and
+   the elbow at its head is the only mark on this page that points. */
 .here {
-    margin: 0 0 1.9rem;
+    margin: 0;
+    padding: .7rem .95rem;
+    background: var(--bg-soft);
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
     font-family: var(--mono); font-size: .84rem; line-height: 1.7;
     overflow-wrap: anywhere;
+}
+.here-arrow svg {
+    width: 1.1rem; height: 1.1rem; margin-right: .5rem;
+    color: var(--accent);
 }
 .here svg {
     width: 1rem; height: 1rem; vertical-align: -.16em; margin-right: .45rem;
@@ -4186,11 +4544,17 @@ form:has(#ap-more:checked) .more {
    short vertical stub in the circle's own column -- the same answer the
    diagram gives at its own narrow width, where the square becomes a column
    and the arrows become one glyph each. */
-@media (max-width: 30rem) {
+@media (max-width: 34rem) {
     .rail { display: grid; grid-template-columns: 1fr; gap: 0; }
+    .rail-step {
+        flex-direction: row; align-items: center; text-align: left;
+        gap: .8rem; padding: .45rem 0;
+    }
+    .rail-n { width: 2.2rem; height: 2.2rem; font-size: .95rem; }
+    .rail-step.is-done .rail-n svg { width: 1.2rem; height: 1.2rem; }
     .rail-link {
-        justify-self: start; margin-left: .77rem;
-        width: 1px; height: .9rem; max-width: none; min-width: 0; flex: none;
+        justify-self: start; margin-left: 1.1rem; margin-top: 0;
+        width: 1px; height: 1rem; max-width: none; min-width: 0; flex: none;
     }
     .rail-link::after {
         right: auto; left: 50%; top: auto; bottom: -1px;
@@ -4316,8 +4680,13 @@ function ap_i_run(array $options)
     // puts what it downloaded and verified here, so that the one page the person
     // looks at carries the whole story and not the half of it this file saw.
     $report = isset($options['report']) ? $options['report'] : array();
+    /* WHAT A WIZARD'S SUBTITLE SAYS. It said `Three questions, and all three
+       have a default that works`, which is a description of the form -- and by
+       then the form had fifteen more behind a switch, so it was also becoming
+       untrue. What somebody standing on step one of three wants under the
+       title is the one fact that makes the rest of the page safe to read. */
     $lede = isset($options['lede']) ? $options['lede']
-        : 'Three questions, and all three have a default that works.';
+        : 'Nothing is written until you press Install.';
 
     // The METHOD is an argument and not a reading of the environment: the caller
     // may have consumed a POST of its own -- the bootstrap's "fetch the release"
@@ -4429,7 +4798,10 @@ function ap_i_run(array $options)
     /* Values a refusal hands over to be compared, kept apart from the sentences
        that explain it -- see where they are filled in. */
     $facts = array();
-    $badAddress = false;
+    /* AND WHICH BOX EACH REFUSAL IS ABOUT. The sentences arrived at the top of
+       the page and the fields were hundreds of pixels below them, wearing the
+       same grey border as the ones nobody had complained about. */
+    $badFields = array();
     $installed = false;
     // Carried out of the POST branch because the last screen tells the operator
     // what is still theirs to do, and on a relay that is nothing.
@@ -4451,6 +4823,7 @@ function ap_i_run(array $options)
                 || ($parts['scheme'] !== 'http' && $parts['scheme'] !== 'https')) {
                 $errors[] = 'The address must be a full URL beginning with http:// or '
                     . 'https:// and ending in api.php. Nothing was installed.';
+                $badFields[] = 'api_address';
             } else {
                 $urlDir = isset($parts['path']) ? rtrim(dirname($parts['path']), '/') : '';
                 $host   = $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
@@ -4473,7 +4846,7 @@ function ap_i_run(array $options)
                     $errors[] = 'Give the address this directory really answers at. '
                         . 'Without it, the check that proves your notes cannot be '
                         . "downloaded would be about somebody else's directory.";
-                    $badAddress = true;
+                    $badFields[] = 'api_address';
                 }
             }
         }
@@ -4484,7 +4857,8 @@ function ap_i_run(array $options)
         /* The answers arrive from the form here, and from the command line in
            the other face. Everything past this line is the same code either
            way -- see ap_i_install(). */
-        $done = ap_i_install($_POST, $here, $configPath, $selfName, $report, $errors);
+        $done = ap_i_install($_POST, $here, $configPath, $selfName, $report, $errors,
+                             $badFields);
         $installed      = $done['installed'];
         $installedRelay = $done['relay'];
         $updateToken    = $done['token'];
@@ -4530,36 +4904,28 @@ function ap_i_run(array $options)
        of two states you are in until you read its label backwards. Two chips,
        drawn like every other choice on this page, and the one in force is
        filled. No script: the sentences are all in the page and a `:has()` rule
-       picks. */
-    echo '<div class="views"><div class="seg">' . "\n";
+       picks.
+       AND THE QUESTION IS WRITTEN. Two answers stood there with nothing above
+       them -- `Simple` and `Explained`, which are answers to a question the
+       reader had to reconstruct from the sentence underneath. Every other
+       choice on this page has its legend; this one is the only control that
+       belongs to the page rather than to the server, and it had none. */
+    echo '<div class="views">' . "\n";
+    echo '<p class="views-q">How much explanation do you want on this page?</p>' . "\n";
+    echo '<div class="seg">' . "\n";
     echo '<label><input type="radio" name="ap-view" id="ap-simple" checked>'
-        . "<span>Simple</span></label>\n";
+        . "<span>Just the fields</span></label>\n";
     echo '<label><input type="radio" name="ap-view" id="ap-explain">'
-        . "<span>Explained</span></label>\n";
+        . "<span>Explain each one</span></label>\n";
     echo "</div>\n";
-    echo '<p class="views-say">Explained puts a paragraph under every field &mdash; the '
-        . "same sentences as <code>--help --verbose</code>.</p>\n";
+    echo '<p class="views-say">The long sentences are the ones <code>--help '
+        . "--verbose</code> prints.</p>\n";
     echo "</div>\n";
 
-    /* WHAT IS BEING DONE, AND WHAT IT IS BEING DONE TO -- above everything,
-       because a page whose first heading is "What this server offers" has told
-       you about the host before it has told you what it is here to do. Two
-       facts, both measured rather than assumed: the file this press writes,
-       and the address these pages will call. */
-    /* WHAT PRESSING IT DOES, IN ONE SENTENCE. It said "writes one file", which
-       is true of the file and reads as the whole act; then it said all four
-       things and ran to eighty-three words, which is a paragraph at the top of
-       a page whose whole point is that it is short. Four verbs, one line, and
-       the detail is in the screens that follow -- each one arrives when it is
-       the thing you are doing. */
     /* THE THREE STEPS, AND THE FOLDER THEY HAPPEN IN -- see ap_i_rail() and
        the sheet. What they replace is the paragraph that used to be here (one
        clause per step, thirty-three words, no way to see where you are) and
-       the two-row table under it. The address row of that table is gone from
-       here and not lost: it is a field of the form below, with its own label
-       and its own sentence, which is where somebody who wants to change it was
-       always going to find it. Saying it twice was the fold's own mistake in
-       another form.
+       the two-row table under it.
        $blocked is decided below and needed here, so the measurement moved up
        the function; nothing else about it changed. */
     list($environment, $outbound) = ap_i_environment($here, $outboundUrl);
@@ -4569,14 +4935,24 @@ function ap_i_run(array $options)
     }
 
     echo ap_i_rail(1, (bool) $missing);
-    echo '<p class="rail-say">Nothing is written until you press.</p>' . "\n";
     echo ap_i_here_line($here);
 
+    /* WHAT WAS REFUSED, AND WHICH BOX HAS TO CHANGE. The sentences were here
+       and the fields were eight hundred pixels below them, wearing the same
+       grey border as the ones that were fine -- so a person read what was
+       wrong and then hunted for where. Every refusal names its field now, the
+       field carries the sentence again beside it, and its border is red. */
     if ($errors) {
-        echo '<h2>Nothing was installed</h2>' . "\n";
+        echo '<div class="refused">' . "\n";
+        echo '<p class="refused-h"><b class="bad">Nothing was installed.</b> '
+            . ap_i_h(count($errors) === 1 ? 'One thing has to change:'
+                                          : count($errors) . ' things have to change:')
+            . "</p>\n";
+        echo "<ul>\n";
         foreach ($errors as $line) {
-            echo '<p class="bad">' . ap_i_h($line) . "</p>\n";
+            echo '<li>' . ap_i_h($line) . "</li>\n";
         }
+        echo "</ul>\n";
         if ($facts) {
             echo "<table class=\"what\">\n";
             foreach ($facts as $fact) {
@@ -4585,6 +4961,7 @@ function ap_i_run(array $options)
             }
             echo "</table>\n";
         }
+        echo "</div>\n";
     }
 
     if ($report) {
@@ -4597,42 +4974,32 @@ function ap_i_run(array $options)
         echo "</table>\n";
     }
 
-    /* WHAT THIS HOST OFFERS, FOLDED AWAY UNLESS SOMETHING IS WRONG.
-       Eight rows of measurements, each with a paragraph explaining why it is
-       measured, opened this page -- and the reader had to read a diagnostic
-       before reaching the first question. On a phone the button sat four
-       screens down, under a page whose own first line says "press the button".
-       Nobody presses a button they cannot see.
-       So: when everything this needs is here, the fold stays shut and says so
-       in one line. When something is missing, THAT row is shown outside the
-       fold, and the fold opens by itself -- the answer arrives before the
-       evidence, which is the order somebody wants it in. */
-    /* WHAT THIS SERVER OFFERS, AND WHETHER IT IS A SECTION AT ALL.
+    /* THE FIRST OF THE TWO THINGS THIS SCREEN DOES, AND IT IS A QUESTION.
+       It was headed `What this server offers`, which is a report's title: a
+       reader arriving on a page that has just said `install annotepage` was
+       shown a diagnostic before being told why anybody was measuring
+       anything. Asked instead -- can this host run it? -- the green mark is
+       the ANSWER, the fold under it is the evidence, and the second heading
+       below is the other half of the same sentence: first we check, then you
+       answer.
 
-       WHEN EVERYTHING PASSES IT IS NOT ONE. It is one line of reassurance, and
-       it had a heading, a rule, a sentence and a chip round it -- four pieces
-       of furniture for a fact nobody is going to read twice. So the good state
-       loses the heading and becomes one row: the mark, the sentence, and the
-       fold under it at the size of a note. The fold stays, because the
-       measurements are somebody's evidence when a host is odd; it stops being
-       drawn as something worth pressing, because almost nobody will.
+       WHEN EVERYTHING PASSES IT IS ONE ROW. The mark, the answer, and a fold
+       at the size of a note -- nobody reads eight measurements that passed.
 
-       WHEN SOMETHING FAILS IT IS A SECTION, and it keeps the heading, the rule
-       and the whole width of the column -- plus the failing rows themselves,
-       inside the panel, rather than a sentence pointing at a fold. The rail at
-       the top of the page has already said it: step one is red up there.
-
-       THE FOLD STILL PRINTS EVERYTHING, INCLUDING WHAT FAILED. That was true
-       before and the reason has not changed: the row that failed carries its
-       own explanation above, and the rest is for whoever wants it. */
+       WHEN SOMETHING FAILS IT IS A PANEL, with the failing rows inside it
+       rather than a sentence pointing at a fold, and the rail at the top has
+       already gone red. The fold still prints everything, including what
+       failed: the row that failed carries its own explanation above, and the
+       rest is for whoever wants it. */
+    echo '<h2>First, can this server run it?</h2>' . "\n";
     if ($missing) {
-        echo '<h2>What this server offers</h2>' . "\n";
         echo '<div class="verdict is-bad">' . "\n";
         echo ap_i_mark(false) . "\n";
         echo '<div class="verdict-body">' . "\n";
-        echo '<p class="verdict-say"><b class="bad">' . ap_i_h((string) count($missing))
-            . ' of ' . ap_i_h((string) count($environment))
-            . ' did not pass.</b> Installed now, this server answers wrongly rather '
+        echo '<p class="verdict-say"><b class="bad">No.</b> '
+            . ap_i_h((string) count($missing)) . ' of '
+            . ap_i_h((string) count($environment))
+            . ' did not pass. Installed now, this server answers wrongly rather '
             . "than not at all.</p>\n";
         ap_i_render_html(array(array('table-env', $missing)));
         echo "</div>\n</div>\n";
@@ -4643,13 +5010,13 @@ function ap_i_run(array $options)
         echo '<div class="verdict">' . "\n";
         echo ap_i_mark(true) . "\n";
         echo '<div class="verdict-body">' . "\n";
-        echo '<p class="verdict-say">PHP ' . ap_i_h(PHP_VERSION) . ', the extensions, a '
-            . 'directory it can write to.'
+        echo '<p class="verdict-say"><b class="ok">Yes.</b> PHP ' . ap_i_h(PHP_VERSION)
+            . ', the extensions, a directory it can write to.'
             . ($outbound ? '' : ' No way out over HTTPS, which stops only automatic '
                 . 'updates.')
             . "</p>\n";
-        echo "<details>\n<summary>All " . ap_i_h((string) count($environment))
-            . " measurements</summary>\n";
+        echo "<details>\n<summary>Why it says yes &mdash; all "
+            . ap_i_h((string) count($environment)) . " measurements</summary>\n";
         ap_i_render_html(array(array('table-env', $environment)));
         echo "</details>\n</div>\n</div>\n";
     }
@@ -4658,21 +5025,21 @@ function ap_i_run(array $options)
     $field = function ($name, $fallback = '') {
         return isset($_POST[$name]) ? (string) $_POST[$name] : $fallback;
     };
+    /* Which boxes carry a refusal of their own. Filled by ap_i_install() for
+       what it checked, and here for the address, which is checked before it. */
+    $bad = function ($name) use ($badFields) {
+        return in_array($name, $badFields, true) ? ' bad-field' : '';
+    };
 
     $postedRelay = ($method === 'POST' && isset($_POST['audience'])
         && $_POST['audience'] === 'anyone');
 
-
-    echo '<h2>Install</h2>' . "\n";
+    echo '<h2>Then, your answers</h2>' . "\n";
     echo '<form method="post" action="' . ap_i_h($selfName) . '">' . "\n";
 
     /* THE TWO DIALS, IN THE SITE'S OWN BOX. Everything the reader of
        how-to-install-it.html has just answered there, asked here in the same
-       shape -- and only the two that change what gets installed. The long
-       paragraph that used to sit under each radio is one sentence now, and it
-       follows the choice instead of describing both. What that paragraph
-       carried and is worth keeping is under the box, where it is read once
-       rather than twice. */
+       shape -- and only the two that change what gets installed. */
     echo '<div class="dials">' . "\n";
     echo '<p class="dial-title">What this server is, and where it puts the '
         . "notes.</p>\n";
@@ -4682,35 +5049,67 @@ function ap_i_run(array $options)
 
     ap_i_render_dial(ap_i_question('storage'), $postedMysql ? 'mysql' : 'sqlite');
 
-    echo "</div>\n</div>\n";
+    echo "</div>\n";
 
-    /* WHAT THE SHORT SENTENCES LEAVE OUT, AND IT IS ONE SENTENCE EACH. A relay
-       costs disk and a hosting bill for notes nobody here can read; the SQLite
-       probe is a refusal to install rather than a warning. Both were a
-       paragraph under a radio, where they were read once and then scrolled
-       past twice. */
-    echo '<p class="note">A relay keeps what it cannot read, so it cannot moderate it '
-        . "either.</p>\n";
+    /* AND THE LIST ITSELF, ASKED HERE RATHER THAN DISCOVERED LATER. The
+       answer on the left is `the ones I list` and there was nowhere to write
+       the list: it lived in a commented block at the bottom of the generated
+       file, which somebody found the day their first note was refused. Typed
+       here, the addresses are checked by origins.php's own rule -- the same
+       function api.php compares an incoming Origin against -- and written
+       into that block, ready with the id the setup screen will hand over.
+       IT IS NOT A SECRET AND IT IS NOT A LOCK ON READING: it is what stops
+       another site picking a project id out of a page and writing noise into
+       it. Left empty, the block keeps its example and nothing is lost. */
+    echo '<div class="if-one origins">' . "\n";
+    echo '<p><label for="origins">The sites these notes will be written from</label>'
+        . '<textarea id="origins" name="origins" rows="2"' . ap_i_class($bad('origins'))
+        . ' placeholder="https://www.example.com&#10;https://staging.example.com">'
+        . ap_i_h($field('origins')) . "</textarea></p>\n";
+    echo '<p class="note"><span class="l-short">One per line, '
+        . '<code>scheme://host</code>, no path.</span><span class="l-long">One per '
+        . 'line, written exactly as the browser sends them: '
+        . '<code>scheme://host</code> with no path and no trailing slash. A staging '
+        . 'address and the production it becomes are the same project and both belong '
+        . 'here. There is no wildcard: a pattern over subdomains opens the project to '
+        . 'the first page hosted on one you no longer control.</span> Empty: the '
+        . "generated file keeps an example to fill in.</p>\n";
+    echo "</div>\n";
+    echo "</div>\n";
+
+    /* WHAT THE SHORT SENTENCES LEAVE OUT, AND IT IS ONE SENTENCE. A relay
+       costs disk and a hosting bill for notes nobody here can read. */
+    echo '<p class="note if-anyone">A relay keeps what it cannot read, so it cannot '
+        . "moderate it either.</p>\n";
 
     /* THE ADDRESS, SHOWN AND EDITABLE, AND IT WAS NEITHER. Opened in a browser
        this installer reads the address off the request that reached it, which
        is right almost always and invisible always -- and the two cases where
        it is wrong are ordinary: a site reached through a proxy or a CDN whose
        public name is not the one PHP sees, and an installation done through a
-       temporary address before the real domain is pointed at it. The tag on
-       every page carries this value; getting it silently wrong means a tag
-       that loads nothing, on a screen that said everything went well.
-       Pre-filled, so the normal case is still a button press. Changed, it is
-       checked the way the command line checks it -- a file written here and
-       asked for there -- because a typed address is a typed address whichever
-       face typed it. */
-    echo '<p><label>The address these pages will point at<br>'
-        . '<input type="text"' . ($badAddress ? ' class="bad-field"' : '')
-        . ' name="api_address" value="'
-        . ap_i_h(ap_i_base_url() . 'api.php') . '"></label></p>' . "\n";
-    echo '<p class="note">Read off the request that opened this page. Correct it if '
-        . 'your visitors reach the site under another name; it is checked before '
-        . "anything is installed.</p>\n";
+       temporary address before the real domain is pointed at it. Pre-filled,
+       so the normal case is still a button press. Changed, it is checked the
+       way the command line checks it -- a file written here and asked for
+       there.
+       AND WHAT IS NOT YOURS TO CHANGE IS DRAWN. Two of the four parts are
+       fixed -- the scheme has to be one this host answers on, and the last
+       segment has to be api.php, because that is the file being installed --
+       and the field said neither. The shape under it names the four parts and
+       greys the two that are decided. */
+    echo '<p class="addr"><label for="api_address">The address these pages will '
+        . 'call</label>'
+        . '<input type="text" id="api_address"' . ap_i_class($bad('api_address'))
+        . ' required name="api_address" value="'
+        . ap_i_h($field('api_address', ap_i_base_url() . 'api.php')) . '"></p>' . "\n";
+    $scheme = strpos(ap_i_base_url(), 'http://') === 0 ? 'http://' : 'https://';
+    echo '<p class="shape" aria-hidden="true"><span class="fx">' . $scheme . '</span>'
+        . '<span class="yours">your host</span><span class="fx">/</span>'
+        . '<span class="yours">this folder</span><span class="fx">/api.php</span></p>' . "\n";
+    echo '<p class="note"><span class="l-short">Read off the request that opened this '
+        . 'page.</span><span class="l-long">Read off the request that opened this page, '
+        . 'which is right unless your visitors reach the site under another name -- '
+        . 'behind a proxy or a CDN, or before the real domain points here.</span> '
+        . "It is checked before anything is installed.</p>\n";
 
     /* THE MySQL BOX APPEARS BECAUSE MySQL WAS CHOSEN, and disappears with
        SQLite. It was a fold that had to be opened by hand: choosing MySQL
@@ -4723,27 +5122,34 @@ function ap_i_run(array $options)
        robustness of it: a browser too old for `:has()` ignores the rule and
        shows the fields, which is what this page did yesterday for everybody.
        Hidden fields are still posted, empty, and the server reads them only
-       when storage is mysql. */
+       when storage is mysql -- which is also why not one of them carries
+       `required`: a browser refusing to submit because of a box no rule is
+       drawing is a form that has simply stopped working.
+       FIVE BOXES IN A COLUMN WERE FIVE QUESTIONS. Host and port are one fact
+       and share a row; the three that follow are the credential. */
     echo '<div class="if-mysql-box">' . "\n";
     echo '<p class="dial-title">Where the MySQL server is.</p>' . "\n";
     echo '<p class="note">The installer connects and creates the tables before writing '
-        . "anything.</p>\n";
+        . "anything. Every one of them is needed.</p>\n";
+    echo '<div class="creds">' . "\n";
     foreach (ap_i_credential_fields() as $box) {
-        echo '<p><label>' . $box['label'] . '<br><input type="' . $box['type']
-            . '" name="' . $box['name'] . '"';
+        echo '<p class="cred cred-' . $box['name'] . '">'
+            . '<label for="my-' . $box['name'] . '">' . $box['label'] . '</label>'
+            . '<input type="' . $box['type'] . '" id="my-' . $box['name'] . '"'
+            . ap_i_class($bad($box['name'])) . ' name="' . $box['name'] . '"';
         if ($box['default'] !== null) {
             echo ' value="' . ap_i_h($field($box['name'], $box['default'])) . '"';
         }
-        echo "></label></p>\n";
+        echo "></p>\n";
     }
+    echo "</div>\n";
     echo "</div>\n";
 
     /* THREE WAYS, AND THEY ARE NOT EQUAL -- SO IT IS ONE CHOICE, IN ORDER.
        Two checkboxes said "tick what you like" over a paragraph explaining
        that the second is a mistake when the first is open to you. A dial says
        that by construction: three answers, one chosen, the first being the one
-       that needs no permission granted to anybody. The site has drawn it this
-       way since the install page was rebuilt. */
+       that needs no permission granted to anybody. */
     $canDefer = ap_i_can_defer();
     $wants = ($method === 'POST' && isset($_POST['updates']))
         ? (string) $_POST['updates']
@@ -4752,6 +5158,20 @@ function ap_i_run(array $options)
     echo '<div class="dials">' . "\n";
     echo '<p class="dial-title">How this server gets its updates.</p>' . "\n";
     ap_i_render_dial(ap_i_question('updates'), $wants);
+    /* AND THE LINE ITSELF, WITH THE REAL PATH IN IT. It used to say the next
+       screen would give it -- a page announcing that it has the answer and is
+       keeping it. Drawn the way a crontab is drawn, comment header included,
+       because the person reading this is about to paste it into one; the next
+       screen still repeats it. */
+    echo '<div class="if-cron cron-line">' . "\n";
+    echo '<pre><code># m h dom mon dow  command' . "\n"
+        . ap_i_h(ap_i_cron_time() . ' php ' . ap_i_update_script($here))
+        . "</code></pre>\n";
+    echo '<p class="note">Paste it into <code>crontab -e</code>. The minute and the '
+        . "hour are drawn for this installation, so nobody's server is asked at the "
+        . "same second as everybody else's; any other pair does the same work. It is "
+        . "on the next screen too.</p>\n";
+    echo "</div>\n";
     /* WHAT IT COSTS HERE, IN THE NUMBERS THIS INTERFACE WILL ACTUALLY PAY, and
        not a refusal. This host cannot hand the response over and go on working,
        so the wait falls on a visitor -- which is a reason to say how long, not
@@ -4781,26 +5201,20 @@ function ap_i_run(array $options)
 
     /* AND EVERYTHING ELSE, BEHIND ONE CONTROL.
        The three questions are the front door and stay it. What sat under them
-       was fifteen settings in four sections, two of them open -- eight number
-       boxes between the last question and the Install button, on a page whose
-       own first line promises three questions. It read as a form of twelve
-       questions with a default nobody could see.
-       So: ONE checkbox, named on the screen, and everything else behind it. It
-       carries no `name`, so nothing of it is posted; the rule that hides the
-       block is a `:has()` on the form, exactly like the MySQL box, and a
-       browser that cannot read the rule shows the settings -- never the
-       reverse.
+       was fifteen settings, on a page whose own first line promises three
+       questions. So: ONE checkbox, named on the screen, and everything else
+       behind it. It carries no `name`, so nothing of it is posted; the rule
+       that hides the block is a `:has()` on the form, exactly like the MySQL
+       box, and a browser that cannot read the rule shows the settings -- never
+       the reverse.
        AND WHAT IT DECIDES IF NOBODY OPENS IT IS PRINTED ON THE OUTSIDE. Four
        of these are written according to the answers above; a fold that hides
-       them hides a decision. The table under the switch says what each answer
-       gets, in the same words the field itself would use, and it swaps with
-       the audience dial. */
+       them hides a decision. */
     $settings = ap_i_settings();
     $sections = ap_i_setting_sections();
 
     /* The switch comes back open when the person had it open: a rejected POST
        that carried a setting must not hide the value it is showing. */
-    /* What the switch actually hides, which is no longer all fifteen. */
     $behind = array();
     foreach ($settings as $setting) {
         $behind[] = $setting;
@@ -4810,23 +5224,22 @@ function ap_i_run(array $options)
         if ($field($setting['key']) !== '') { $openMore = true; }
     }
 
-    /* One control, one field: shared by the paragraph form and the table of
-       counters, so that the two ways of drawing a setting cannot disagree
-       about what it accepts. */
-    $control = function (array $setting) use ($field) {
+    /* One control, one field: shared by every way of drawing a setting, so
+       that they cannot disagree about what the box accepts. */
+    $control = function (array $setting) use ($field, $bad) {
         $key = $setting['key'];
         $id  = ' id="set-' . $key . '"';
         if ($setting['kind'] === 'choice' || $setting['kind'] === 'bool') {
             $values = $setting['kind'] === 'choice'
                 ? $setting['values'] : array('true', 'false');
-            /* THE UNTOUCHED OPTION SAYS WHAT UNTOUCHED MEANS. It read
-               "(leave it as it is)", which names the gesture and not the
-               state: a reader looking at three of these in a column could not
-               tell what was on and what was off without opening config.php.
-               It carries the value now, and so does the sentence under the
-               field. */
+            /* THE UNTOUCHED OPTION SAYS WHAT UNTOUCHED MEANS, AND CALLS IT
+               WHAT IT IS. It read `(leave it as it is)`, which names the
+               gesture and not the state; then `Leave it: false`, which names
+               the state and still asks the reader to work out that leaving it
+               is the default. `Default:` is the word every other form on the
+               planet uses for this. */
             $out = '<select name="' . $key . '"' . $id . ">\n"
-                 . '<option value="">Leave it: '
+                 . '<option value="">Default: '
                  . ap_i_h(ap_i_effective_value($setting)) . '</option>' . "\n";
             foreach ($values as $value) {
                 $out .= '<option value="' . ap_i_h($value) . '"'
@@ -4835,20 +5248,33 @@ function ap_i_run(array $options)
             }
             return $out . "</select>\n";
         }
-        /* THE DEFAULT IS THE PLACEHOLDER, not the value -- see the note this
-           replaced: written into the field it would be submitted, and every
-           default would freeze into the file as though somebody had chosen it.
-           Where this installation decides instead of config.php the
-           placeholder says nothing rather than something false. */
-        $hint = isset($setting['decided'])
-            ? $setting['unit']
-            : trim(ap_i_setting_default($key) . ' ' . $setting['unit']);
+        /* THE PLACEHOLDER IS AN EXAMPLE OF WHAT GOES IN THE BOX, and for two
+           releases it was neither. On a number whose value this installation
+           decides it printed the UNIT -- `notes`, grey, inside the box --
+           which reads as the name of a variable and not as a number to type;
+           the unit stands outside the box now, where it is a label. On a text
+           field with no default at all it printed nothing, so
+           `Header carrying the real address` was an empty box with no shape
+           to it. What is left is: the live default where there is one, an
+           example where there is not, and nothing where the number is written
+           from the answers above -- the sentence beside it says that one. */
+        $hint = '';
+        if ($setting['kind'] === 'int') {
+            $hint = isset($setting['decided']) ? '' : ap_i_setting_default($key);
+        } else {
+            $hint = ap_i_setting_default($key);
+            if ($hint === '' && isset($setting['example'])) {
+                $hint = 'e.g. ' . $setting['example'];
+            }
+        }
         /* A PLACEHOLDER TOO LONG FOR ITS BOX IS A DEFAULT NOBODY CAN READ --
            see ap_i_shorten_middle(), and the whole value is in the sentence
            under the field, where there is room for it. */
         $hint = ap_i_shorten_middle($hint, 34);
         return '<input type="' . ($setting['kind'] === 'int' ? 'number' : 'text')
-            . '" name="' . $key . '"' . $id . ' value="' . ap_i_h($field($key)) . '"'
+            . '" name="' . $key . '"' . $id . ap_i_class($bad($key))
+            . ($setting['kind'] === 'int' ? ' min="0" step="1"' : '')
+            . ' value="' . ap_i_h($field($key)) . '"'
             . ($hint !== '' ? ' placeholder="' . ap_i_h($hint) . '"' : '') . ">\n";
     };
 
@@ -4859,18 +5285,16 @@ function ap_i_run(array $options)
        now: the short line, the paragraph, and one checkbox that swaps them.
 
        NO SCRIPT FOR IT EITHER. This is the same `:has()` the dials and the
-       advanced switch already use; nothing on this page has ever needed
-       JavaScript and this did not change that. What an unsupported browser
-       gets is BOTH sentences at once -- verbose, complete, and never a field
-       with nothing under it. */
+       advanced switch already use. What an unsupported browser gets is BOTH
+       sentences at once -- verbose, complete, and never a field with nothing
+       under it. */
     $said = function (array $setting) {
         $short = $setting['hint'];
         $long  = $setting['say'];
         /* WHAT AN EMPTY FIELD IS WORTH, UNDER ALL FIFTEEN AND NOT UNDER FOUR.
            The four this installation decides say it per audience, since the
            answer above changes the number; the other eleven say the default
-           that stays in force. Either way the reader can see the value without
-           opening a file. */
+           that stays in force. */
         if (isset($setting['decided'])) {
             $decided = '<span class="if-one">Empty: '
                 . ap_i_h(ap_i_effective_value($setting, 'one-site')) . '.</span>'
@@ -4888,17 +5312,42 @@ function ap_i_run(array $options)
             $out .= '<span class="l-long">' . $long . '</span>';
         }
         if ($decided !== '') {
-            $out .= ($out !== '' ? ' ' : '') . $decided;
+            $out .= ($out !== '' ? ' ' : '') . '<em class="empty">' . $decided . '</em>';
         }
         return $out;
     };
 
-    $paragraph = function (array $setting) use ($control, $said) {
-        echo '<p><label for="set-' . $setting['key'] . '">'
-            . ap_i_h($setting['label']) . "</label><br>\n" . $control($setting)
-            . "</p>\n";
+    /* THE PARAGRAPH THE WHOLE SENTENCE IS IN, WITHOUT ASKING FOR IT. In the
+       short reading a field shows one line; the reasoning behind it was a
+       reload away on the other face and a chip away on this one, which is
+       fine for a reader going through the page and useless for the one
+       stopped on a single box. The mark carries it in `title`, which is the
+       browser's own tooltip: no script, no popover to place, and it is gone
+       in the explained reading where the paragraph is already on screen. */
+    $tip = function (array $setting) {
+        if ($setting['say'] === '') { return ''; }
+        return '<span class="q" title="' . ap_i_h(ap_i_plain($setting['say']))
+             . '" aria-hidden="true">?</span>';
+    };
+
+    /* ONE ROW OF THE GRID: what it is called, the box, and what it is worth
+       left alone. Three cells and not a stack of three paragraphs -- see the
+       sheet: `.set { display: contents }` puts the three in the section's own
+       columns, so fifteen labels share one left edge and fifteen boxes share
+       another, which a column of <p><label><br><input> could never do. */
+    $row = function (array $setting) use ($control, $said, $tip) {
+        $key = $setting['key'];
+        echo '<div class="set">' . "\n";
+        echo '<div class="set-k"><label for="set-' . $key . '">'
+            . ap_i_h($setting['label']) . '</label>' . $tip($setting) . "</div>\n";
+        echo '<div class="set-v">' . $control($setting)
+            . ($setting['unit'] !== ''
+                ? '<span class="unit">' . ap_i_h($setting['unit']) . '</span>' : '')
+            . "</div>\n";
         $note = $said($setting);
-        if ($note !== '') { echo '<p class="note">' . $note . "</p>\n"; }
+        echo '<div class="set-y">'
+            . ($note !== '' ? '<p class="note">' . $note . '</p>' : '') . "</div>\n";
+        echo "</div>\n";
     };
 
     // --- The switch, and what is decided if it is never opened. --------------
@@ -4910,8 +5359,7 @@ function ap_i_run(array $options)
         . ' settings myself</span><span class="when-open">Hide the other '
         . count($behind) . ' settings</span></span></label></p>' . "\n";
     echo '<div class="shut-only">' . "\n";
-    echo '<p class="note">The limits, and what this server says about itself. Left '
-        . "alone, this installation writes:</p>\n";
+    echo '<p class="note">Left alone, this installation writes:</p>' . "\n";
     echo "<table>\n";
     $others = 0;
     foreach ($behind as $setting) {
@@ -4930,7 +5378,7 @@ function ap_i_run(array $options)
     // --- Everything the switch reveals. --------------------------------------
 
     echo '<div class="more">' . "\n";
-    echo '<p class="note">All optional. Each field says what it is worth left '
+    echo '<p class="note">All optional. Each one says what it is worth left '
         . "empty.</p>\n";
 
     foreach ($sections as $group => $shape) {
@@ -4956,46 +5404,45 @@ function ap_i_run(array $options)
             echo '<p class="note' . (!empty($shape['warn']) ? ' bad' : '') . '">'
                 . $intro . "</p>\n";
         }
+        echo "<div class=\"grid\">\n";
         if ($group !== 'rate') {
-            foreach ($fields as $setting) { $paragraph($setting); }
-            echo "</div>\n";
+            foreach ($fields as $setting) { $row($setting); }
+            echo "</div>\n</div>\n";
             continue;
         }
-        /* THE WINDOW ON TOP OF THE TABLE IT APPLIES TO. Five counters and a
-           window, stacked as six labelled boxes, are six questions; the window
-           says "the limits below" to a reader who has to scroll to find out
-           which ones. Boxed, with the four per-window counters as four rows of
-           one table under the window that counts them, they are one setting
-           with parts -- and the fifth, which is not counted in a window at
-           all, sits under a rule of its own rather than pretending to be. */
-        $window = ap_i_setting('rate_window_seconds');
-        $body   = ap_i_setting('max_body_bytes');
-        echo '<div class="limits">' . "\n";
-        echo '<p class="limits-window"><label for="set-' . $window['key'] . '">'
-            . ap_i_h($window['label']) . '</label>' . $control($window) . "</p>\n";
-        $note = $said($window);
-        if ($note !== '') { echo '<p class="note">' . $note . "</p>\n"; }
-        echo "<table class=\"counters\">\n";
+        /* THE WINDOW ON TOP OF WHAT IT COUNTS. Seven numbers in a column are
+           seven questions, and four of them are counted inside the fifth --
+           which the reader could only learn from a label saying "the limits
+           below", about limits they had to scroll to find. The window comes
+           first, then a line naming the four it counts, then the two that are
+           not counted in a window at all under a line of their own. Three
+           groups in one grid, so every box in the section still shares one
+           edge. */
+        $inWindow = array();
+        $apart    = array();
         foreach ($fields as $setting) {
-            if ($setting['key'] === $window['key'] || $setting['key'] === $body['key']) {
-                continue;
-            }
-            echo '<tr><td class="c-what"><label for="set-' . $setting['key'] . '">'
-                . ap_i_h($setting['label']) . '</label></td><td class="c-set">'
-                . $control($setting) . '</td><td class="c-why">' . $said($setting)
-                . "</td></tr>\n";
+            if ($setting['key'] === 'rate_window_seconds') { continue; }
+            if (strpos($setting['key'], 'rate_') === 0) { $inWindow[] = $setting; }
+            else { $apart[] = $setting; }
         }
-        echo "</table>\n";
-        echo '<p class="limits-body"><label for="set-' . $body['key'] . '">'
-            . ap_i_h($body['label']) . "</label><br>\n" . $control($body) . "</p>\n";
-        $note = $said($body);
-        if ($note !== '') { echo '<p class="note">' . $note . "</p>\n"; }
-        echo "</div>\n";
-        echo "</div>\n";
+        $row(ap_i_setting('rate_window_seconds'));
+        echo '<p class="sub">Counted inside each window</p>' . "\n";
+        foreach ($inWindow as $setting) { $row($setting); }
+        echo '<p class="sub">Not counted in a window</p>' . "\n";
+        foreach ($apart as $setting) { $row($setting); }
+        echo "</div>\n</div>\n";
     }
     echo "</div>\n";
 
+    /* THE ONE PRESS, AND IT IS NOT A CONTROL IN A CORNER. It sat hard left
+       under the last card, at the size of a chip, after a page of fields --
+       the only irreversible thing on the screen drawn smaller than the switch
+       that reveals the settings. Its own band, a rule above it, centred, and
+       wide enough to be the end of the page. */
+    echo '<div class="go">' . "\n";
     echo '<button type="submit">Install</button>' . "\n";
+    echo '<p class="go-say">Nothing has been written yet.</p>' . "\n";
+    echo "</div>\n";
     echo "</form>\n";
 
     ap_i_foot();
