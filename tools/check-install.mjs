@@ -550,6 +550,28 @@ check(`the rail carries ${railSays} subtitles and there are three steps`,
 check('the Install button is not in a band of its own',
     /<div class="go">[\s\S]*?<button type="submit">Install<\/button>/.test(malformed.form));
 
+/* AND THE THINGS A BROWSER MEASURED, HELD BY THE SOURCE THAT PRODUCED THEM.
+   A reviewer opened this page at four widths in both themes and measured it;
+   what it found is fixed, and these three lines are what stop each one coming
+   back through an edit that looks harmless.
+
+   THE CONNECTOR IS THE ONLY GRAPHIC ON THE RAIL THAT MEANS "in this order",
+   and it was drawn in --line-soft: 1.26:1 against the page in light, 1.34:1 in
+   dark, where WCAG 1.4.11 asks for 3. --control-line is 3.62 and 4.0. */
+check('the rail connector is drawn in a hairline nobody can see',
+    !/\.rail-link \{[^}]*background: var\(--line-soft\)/.test(malformed.form)
+    && malformed.form.includes('height: 1px; background: var(--control-line);'));
+/* THE THREE COLUMNS OF THE SETTINGS PANEL ARE DECLARED, NOT DERIVED. `auto` on
+   the middle one sized it to the widest control of THAT section, so the column
+   of sentences jogged 77.8px sideways halfway down the panel. */
+check('the settings grid sizes its middle column to whatever is in it',
+    /grid-template-columns: minmax\(9rem, 19rem\) 19rem minmax\(11rem, 1fr\);/
+        .test(malformed.form));
+/* A TICKED BOX ASSERTS WHAT IT SAYS. Open, it was ticked and read "Hide the
+   other 15 settings" -- a checked control naming the opposite of its state. */
+check('the switch says the opposite of the state it is in',
+    !/Hide the other \d+ settings/.test(malformed.form));
+
 /* THE PAGE IS AS WIDE AS THE SITE AND THE SENTENCES ARE NOT. One cap for both
    gave the box of dials 704px where how-to-install-it.html draws the same box
    at 1344 -- measured at 1408 -- so the whole screen read as a narrow strip. */

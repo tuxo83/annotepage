@@ -3503,6 +3503,12 @@ body > *, form > * { max-width: var(--measure); }
 body > form, body > .rail,
 form > .dials, form > .if-mysql-box, form > .more-switch, form > .more,
 form > .go { max-width: none; }
+/* AND THE CHAPTER RULES WITH THEM. On the site the hairline belongs to
+   `section`, which spans; here it is the top border of an h2, and an h2 capped
+   at the measure drew a rule that stopped 640px short of the panels beneath
+   it. The heading spans, its text is four words, and the rule is the width of
+   what it separates. */
+body > h2 { max-width: none; }
 
 a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
 a:hover { text-decoration-thickness: 2px; }
@@ -3696,9 +3702,13 @@ textarea {
     resize: vertical;
 }
 textarea::placeholder { color: var(--dim); opacity: 1; }
-.origins { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid var(--line-soft); }
-.origins p:has(label) { margin-bottom: .35rem; }
-.origins .note { margin-bottom: 0; }
+.origins, .addr-box {
+    margin-top: 1.3rem; padding-top: 1.1rem;
+    border-top: 1px solid var(--line-soft);
+}
+.origins p:has(label), .addr-box p:has(label) { margin-bottom: .35rem; }
+.origins .note, .addr-box .note { margin-bottom: 0; }
+.dials > .note { margin: .9rem 0 0; }
 
 /* -- THE ADDRESS, AND THE TWO PARTS OF IT THAT ARE NOT YOURS -------------
 
@@ -3715,24 +3725,28 @@ textarea::placeholder { color: var(--dim); opacity: 1; }
     margin: 0 0 .5rem;
     font-family: var(--mono); font-size: .8rem;
 }
-.shape .fx {
-    padding: .1em .3em; border-radius: 4px;
-    background: var(--bg-code); color: var(--dim);
+.shape .fx { color: var(--dim); }
+.shape .yours {
+    padding: .1em .35em; margin: 0 .1em; border-radius: 4px;
+    background: var(--bg-code); color: var(--accent); font-weight: 650;
 }
-.shape .yours { padding: .1em .3em; color: var(--accent); font-weight: 650; }
 
 /* -- FIVE CREDENTIALS THAT ARE THREE FACTS ------------------------------
 
    Host and port are one address and shared a column with three unrelated
    things; the box for `3306` was 352px wide beside a box for a password. */
+/* AND THEY ARE THE SIZE OF WHAT GOES IN THEM. Stretched to the panel they
+   measured 1294px for a database name and 424.9px for a four-digit port, on a
+   page where the address field is 416. The grid is the width of a credential,
+   not the width of the card it sits on. */
 .creds {
     display: grid; gap: .9rem 1.2rem;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-columns: 18rem 8rem;
+    max-width: 100%;
 }
 .cred { margin: 0; }
 .cred input { width: 100%; margin-top: .3rem; }
-.cred-port input { width: 100%; }
-.cred-name, .cred-user, .cred-password { grid-column: 1 / -1; }
+.cred-name, .cred-user, .cred-password { grid-column: 1 / 2; }
 @media (max-width: 34rem) { .creds { grid-template-columns: minmax(0, 1fr); } }
 
 /* -- THE LINE, DRAWN THE WAY A CRONTAB IS ------------------------------- */
@@ -4011,12 +4025,12 @@ table.what td { border-bottom: 0; padding-bottom: .2rem; }
 }
 .switch-line input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .more-switch .note { margin: .5rem 0 0; }
-.more-switch table { margin: .55rem 0 0; font-size: .92rem; }
-.more-switch td.k { width: 38%; }
-.when-open { display: none; }
-form:has(#ap-more:checked) .when-shut,
+/* THE VALUE 504.9px FROM ITS KEY. `width: 38%` was written when this card was
+   704px wide; at 1344 it gives a four-word label 682.9px and puts `90 days`
+   half a screen from `How long a note is kept`. A column, not a fraction. */
+.more-switch table { margin: .55rem 0 0; font-size: .92rem; max-width: 54rem; }
+.more-switch td.k { width: 22rem; }
 form:has(#ap-more:checked) .shut-only { display: none; }
-form:has(#ap-more:checked) .when-open { display: inline; }
 form:has(#ap-more:not(:checked)) .more { display: none; }
 /* WHAT OPENS IS A PLACE, NOT MORE PAGE. Revealed inline, the fifteen settings
    ran on from the questions above them with nothing to say where the one
@@ -4060,7 +4074,18 @@ form:has(#ap-more:not(:checked)) .more { display: none; }
    only shape that fits 390px. */
 .grid {
     display: grid;
-    grid-template-columns: minmax(9rem, 17rem) minmax(0, auto) minmax(11rem, 1fr);
+    /* THE SAME THREE COLUMNS IN EVERY SECTION, AND THEY ARE DECLARED RATHER
+       THAN DERIVED. `auto` on the middle one sized it to the widest control of
+       THAT section -- 288px where a section holds a text field, 210px where it
+       holds only numbers -- so the sentences on the right jogged 77.8px
+       sideways halfway down the panel. Measured. Declared, the fifteen labels,
+       the fifteen boxes and the fifteen sentences each hold one edge from the
+       top of the panel to the bottom.
+       19rem is the widest control plus its unit; 19rem on the key column is
+       what stops the `?` from being orphaned on a line of its own under a
+       label that filled its line (measured: 263.0px of label in a 272px
+       column, with 17px of mark left over). */
+    grid-template-columns: minmax(9rem, 19rem) 19rem minmax(11rem, 1fr);
     /* A ROW IS NOT A LINE OF A TABLE. Fifteen settings at .8rem apart read as
        one block of text with boxes in it; a row of a form is a group of three
        things, and the air between two rows has to beat the air inside one. */
@@ -4075,9 +4100,13 @@ form:has(#ap-more:not(:checked)) .more { display: none; }
    variable and tells nobody what to type. Outside it, beside the number, it is
    what it always was: what the number counts. */
 .set-v { white-space: nowrap; }
+/* TWO WIDTHS, NOT FOUR. Measured: nine boxes ended at 481.0, two selects at
+   491.4, one select at 516.4 and four text fields at 641.0 -- four right edges
+   in one column. A number gets a box the size of a number and everything else
+   gets the column; that difference is deliberate and it is the only one. */
 .set-v input, .set-v select { margin-top: 0; }
 .set-v input[type=number] { width: 8rem; }
-.set-v input[type=text] { width: 18rem; }
+.set-v input[type=text], .set-v select { width: 18rem; }
 .unit { margin-left: .5rem; font-size: .85rem; color: var(--dim); }
 .set-y .note { margin: 0; font-size: .87rem; }
 /* WHAT AN EMPTY BOX IS WORTH, SET APART FROM WHAT THE SETTING IS. Same
@@ -4102,7 +4131,7 @@ form:has(#ap-more:not(:checked)) .more { display: none; }
    a mark offering what is written beside it is furniture. */
 .q {
     display: inline-grid; place-items: center;
-    width: 1.05rem; height: 1.05rem; margin-left: .35rem;
+    width: 1.05rem; height: 1.05rem;
     vertical-align: .04em;
     border: 1px solid var(--control-line); border-radius: 999px;
     color: var(--dim); font-size: .7rem; font-weight: 700;
@@ -4326,6 +4355,12 @@ form:has(#ap-more:checked) .more {
 .verdict.is-bad td.k { width: 24%; }
 .verdict.is-bad td.v { width: 18%; }
 .verdict.is-bad td.m { width: 58%; }
+/* AND THE SAME MISTAKE IN THE GOOD ONE. Measured inside the fold: the value
+   column had 266.3px for `8.3.6` and `present`, and the column carrying the
+   reason had 226.3 and ran to six wrapped lines, 127.3px tall. */
+.verdict td.k { width: 30%; }
+.verdict td.v { width: 20%; }
+.verdict td.m { width: 50%; }
 
 
 /* == THE THREE STEPS, AND WHICH ONE YOU ARE ON ============================
@@ -4361,6 +4396,12 @@ form:has(#ap-more:checked) .more {
     margin: clamp(2.4rem, 6vw, 3.6rem) 0 clamp(2rem, 5vw, 2.8rem);
     padding: 0; list-style: none;
 }
+/* THE FIVE PIECES SHARE THE ROW, AND THE CONNECTORS TAKE THE LARGER SHARE.
+   Sized to their own words the three steps left the first circle against the
+   left margin and the third against the right; sized as equal fifths the
+   connector was half the gap. 1.6 puts it at about 62% of the distance between
+   two circles at 1408, which is what the diagram on how-to-install-it.html
+   looks like. */
 .rail-step {
     flex: 1 1 0; min-width: 0;
     display: flex; flex-direction: column; align-items: center;
@@ -4438,18 +4479,27 @@ form:has(#ap-more:checked) .more {
 /* THE ARROW BETWEEN TWO STEPS. A line and a head, which is what the four
    arrows of the diagram are; the head is the two-border triangle this page
    already draws on `summary::after`, so it is not a glyph and not a file. */
+/* IT SPANS THE GAP, OR IT IS NOT A CONNECTOR. Measured at 1408: the circles
+   sat 483.2px apart and this stub was 80px of it -- 16.6% -- so the rail read
+   as three islands with a hairline floating between them. The steps take the
+   width of their own words and the connector takes what is left.
+   AND IT IS DRAWN IN AN INK THAT EXISTS. --line-soft measures 1.26:1 against
+   the page in light and 1.34:1 in dark; this line is the only thing on the
+   rail carrying the meaning "these happen in order", so 1.4.11 asks for 3.
+   --control-line is 3.62:1 and 4.0:1 -- the ink the circles' own border is
+   already drawn in. */
 .rail-link {
-    position: relative; flex: 0 1 5rem;
-    min-width: 1.4rem; max-width: 6rem;
+    position: relative; flex: 1.6 1 0;
+    min-width: 1.4rem;
     /* The middle of a 2.7rem circle, so the arrow runs between the two of them
        and not under the words. */
     margin-top: 1.35rem;
-    height: 1px; background: var(--line-soft);
+    height: 1px; background: var(--control-line);
 }
 .rail-link::after {
     content: ""; position: absolute; right: -1px; top: 50%;
     width: 0; height: 0; margin-top: -.28rem;
-    border: .28rem solid transparent; border-left-color: var(--line-soft);
+    border: .28rem solid transparent; border-left-color: var(--control-line);
 }
 
 /* -- THE DOT, WITHOUT THE SCRIPT THAT MEASURES IT ------------------------
@@ -4513,6 +4563,7 @@ form:has(#ap-more:checked) .more {
    the elbow at its head is the only mark on this page that points. */
 .here {
     margin: 0;
+    width: fit-content; max-width: 100%;
     padding: .7rem .95rem;
     background: var(--bg-soft);
     border: 1px solid var(--line-soft); border-radius: var(--radius);
@@ -4544,7 +4595,7 @@ form:has(#ap-more:checked) .more {
    short vertical stub in the circle's own column -- the same answer the
    diagram gives at its own narrow width, where the square becomes a column
    and the arrows become one glyph each. */
-@media (max-width: 34rem) {
+@media (max-width: 52rem) {
     .rail { display: grid; grid-template-columns: 1fr; gap: 0; }
     .rail-step {
         flex-direction: row; align-items: center; text-align: left;
@@ -4559,7 +4610,7 @@ form:has(#ap-more:checked) .more {
     .rail-link::after {
         right: auto; left: 50%; top: auto; bottom: -1px;
         margin: 0 0 0 -.28rem;
-        border-left-color: transparent; border-top-color: var(--line-soft);
+        border-left-color: transparent; border-top-color: var(--control-line);
     }
     .rail-step { padding: .18rem 0; }
     /* Down instead of along, and it is the same wrapper travelling. */
@@ -5051,6 +5102,12 @@ function ap_i_run(array $options)
 
     echo "</div>\n";
 
+    /* WHAT THE SHORT SENTENCE LEAVES OUT, AND IT IS ONE SENTENCE. A relay
+       costs disk and a hosting bill for notes nobody here can read. Inside the
+       panel, under the answer it belongs to. */
+    echo '<p class="note if-anyone">A relay keeps what it cannot read, so it cannot '
+        . "moderate it either.</p>\n";
+
     /* AND THE LIST ITSELF, ASKED HERE RATHER THAN DISCOVERED LATER. The
        answer on the left is `the ones I list` and there was nowhere to write
        the list: it lived in a commented block at the bottom of the generated
@@ -5075,12 +5132,6 @@ function ap_i_run(array $options)
         . 'the first page hosted on one you no longer control.</span> Empty: the '
         . "generated file keeps an example to fill in.</p>\n";
     echo "</div>\n";
-    echo "</div>\n";
-
-    /* WHAT THE SHORT SENTENCES LEAVE OUT, AND IT IS ONE SENTENCE. A relay
-       costs disk and a hosting bill for notes nobody here can read. */
-    echo '<p class="note if-anyone">A relay keeps what it cannot read, so it cannot '
-        . "moderate it either.</p>\n";
 
     /* THE ADDRESS, SHOWN AND EDITABLE, AND IT WAS NEITHER. Opened in a browser
        this installer reads the address off the request that reached it, which
@@ -5096,12 +5147,18 @@ function ap_i_run(array $options)
        segment has to be api.php, because that is the file being installed --
        and the field said neither. The shape under it names the four parts and
        greys the two that are decided. */
+    echo '<div class="addr-box">' . "\n";
     echo '<p class="addr"><label for="api_address">The address these pages will '
         . 'call</label>'
         . '<input type="text" id="api_address"' . ap_i_class($bad('api_address'))
         . ' required name="api_address" value="'
         . ap_i_h($field('api_address', ap_i_base_url() . 'api.php')) . '"></p>' . "\n";
     $scheme = strpos(ap_i_base_url(), 'http://') === 0 ? 'http://' : 'https://';
+    /* AND THE EMPHASIS THE RIGHT WAY ROUND. The two fixed parts wore the grey
+       chip this page sets code in and the two you fill wore nothing, so the
+       line read as three grey patches with holes between them -- the opposite
+       of what it is saying. The chip is the SLOT now, and what is decided is
+       plain dim mono. */
     echo '<p class="shape" aria-hidden="true"><span class="fx">' . $scheme . '</span>'
         . '<span class="yours">your host</span><span class="fx">/</span>'
         . '<span class="yours">this folder</span><span class="fx">/api.php</span></p>' . "\n";
@@ -5110,6 +5167,8 @@ function ap_i_run(array $options)
         . 'which is right unless your visitors reach the site under another name -- '
         . 'behind a proxy or a CDN, or before the real domain points here.</span> '
         . "It is checked before anything is installed.</p>\n";
+    echo "</div>\n";
+    echo "</div>\n";
 
     /* THE MySQL BOX APPEARS BECAUSE MySQL WAS CHOSEN, and disappears with
        SQLite. It was a fold that had to be opened by hand: choosing MySQL
@@ -5183,8 +5242,6 @@ function ap_i_run(array $options)
             . 'check and <b>2.3 s</b> for a real update, at most once a day. Past 15 '
             . "seconds it changes nothing and retries tomorrow.</p>\n";
     }
-    echo "</div>\n";
-
     /* THE COST OF THE THIRD ANSWER, AND ONLY WHERE IT APPLIES. It is the one
        thing on this page somebody can regret, so it is said -- in two lines,
        not in the paragraph it used to be. --help has the paragraph. */
@@ -5198,6 +5255,7 @@ function ap_i_run(array $options)
         echo '<p class="note bad">This server has no way out to HTTPS, so nothing here '
             . "can fetch anything until that is fixed.</p>\n";
     }
+    echo "</div>\n";
 
     /* AND EVERYTHING ELSE, BEHIND ONE CONTROL.
        The three questions are the front door and stay it. What sat under them
@@ -5267,10 +5325,13 @@ function ap_i_run(array $options)
                 $hint = 'e.g. ' . $setting['example'];
             }
         }
-        /* A PLACEHOLDER TOO LONG FOR ITS BOX IS A DEFAULT NOBODY CAN READ --
-           see ap_i_shorten_middle(), and the whole value is in the sentence
-           under the field, where there is room for it. */
-        $hint = ap_i_shorten_middle($hint, 34);
+        /* A PLACEHOLDER TOO LONG FOR ITS BOX IS NO PLACEHOLDER. It used to be
+           elided in the middle, which put a literal ellipsis inside the box --
+           `https://raw.githu...(/server/webroot/` -- and that reads as a string
+           somebody failed to finish, cannot be copied, and is printed in full
+           in the sentence beside it anyway. Over the width of the box, there
+           is nothing to show. */
+        if (ap_i_length($hint) > 34) { $hint = ''; }
         return '<input type="' . ($setting['kind'] === 'int' ? 'number' : 'text')
             . '" name="' . $key . '"' . $id . ap_i_class($bad($key))
             . ($setting['kind'] === 'int' ? ' min="0" step="1"' : '')
@@ -5338,8 +5399,14 @@ function ap_i_run(array $options)
     $row = function (array $setting) use ($control, $said, $tip) {
         $key = $setting['key'];
         echo '<div class="set">' . "\n";
+        /* THE MARK IS TIED TO THE LAST WORD OF THE LABEL. Measured: `How much
+           ?action=diagnostic tells` filled its line and the 17px mark dropped
+           alone onto the next one, with nothing beside it. A no-break space is
+           the whole fix -- the break happens before the last word instead, and
+           the word takes the mark with it. */
         echo '<div class="set-k"><label for="set-' . $key . '">'
-            . ap_i_h($setting['label']) . '</label>' . $tip($setting) . "</div>\n";
+            . ap_i_h($setting['label']) . '</label>'
+            . ($tip($setting) === '' ? '' : '&nbsp;' . $tip($setting)) . "</div>\n";
         echo '<div class="set-v">' . $control($setting)
             . ($setting['unit'] !== ''
                 ? '<span class="unit">' . ap_i_h($setting['unit']) . '</span>' : '')
@@ -5355,9 +5422,8 @@ function ap_i_run(array $options)
     echo '<div class="more-switch">' . "\n";
     echo '<p class="switch-line"><label><input type="checkbox" id="ap-more"'
         . ($openMore ? ' checked' : '')
-        . '><span><span class="when-shut">Set the other ' . count($behind)
-        . ' settings myself</span><span class="when-open">Hide the other '
-        . count($behind) . ' settings</span></span></label></p>' . "\n";
+        . '><span>Set the other ' . count($behind)
+        . ' settings myself</span></label></p>' . "\n";
     echo '<div class="shut-only">' . "\n";
     echo '<p class="note">Left alone, this installation writes:</p>' . "\n";
     echo "<table>\n";
