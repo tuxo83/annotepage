@@ -1091,12 +1091,12 @@ function ap_update_on_demand(array $config, $force)
 
     if (!$force && !ap_update_due()) {
         $state = ap_update_state();
-        return array(
+        return array_merge(array(
             'checked already today; nothing fetched',
             'last check: ' . (isset($state['when']) ? $state['when'] : 'unknown'),
             'last result: ' . (isset($state['result']) ? $state['result'] : 'unknown'),
             'add &force=1 to check anyway',
-        );
+        ), ap_update_then_maintain($config));
     }
 
     /* The slot is claimed BEFORE the work, exactly as the deferred path does
@@ -1130,7 +1130,31 @@ function ap_update_on_demand(array $config, $force)
     if ($report['changed']) {
         ap_log('updated to ' . $report['published']);
     }
-    return $report['lines'];
+    return array_merge($report['lines'], ap_update_then_maintain($config));
+}
+
+/**
+ * THE HOUSEKEEPING, ON THE ROUTE A HOST WITHOUT A SHELL USES.
+ *
+ * The scheduler that calls ?action=update is that host's only cron, so it is
+ * the only place its retention can run on time -- it ran on one write in
+ * fifty, which on a quiet server is never. Loaded from disk here, so that a
+ * release this same call has just installed is maintained by its own code.
+ * Nothing in it can undo the update: a failure is a line in the answer.
+ */
+function ap_update_then_maintain(array $config)
+{
+    if (empty($config['active'])) {
+        return array();
+    }
+    try {
+        require_once __DIR__ . '/maintenance.php';
+        $kept = ap_maintenance_run($config);
+        return $kept['lines'];
+    } catch (Exception $e) {
+        ap_log('maintenance after update failed : ' . $e->getMessage());
+        return array('maintenance failed: ' . $e->getMessage());
+    }
 }
 
 // --- The diagnostic -------------------------------------------------------
@@ -1337,25 +1361,74 @@ function ap_update_state_lines()
 // --- The command line -----------------------------------------------------
 
 if (defined('AP_UPDATE_CLI')) {
+    /* ONE DAILY LINE, AND IT DOES BOTH. It fetched a newer release and that
+       was all; the housekeeping -- retention, and the storage brought in
+       line with the code -- was a second cron line beside this one, and a
+       reader asked why a server needs two jobs to stay current. It needs one.
+       The update first, then the maintenance, so that a release that has
+       just landed is maintained by its OWN maintenance.php, loaded from disk
+       after the swap. Either half alone, on request. An option this file does
+       not know is refused with exit 2 and nothing is done: a typo in a
+       crontab must not turn into a silently different job. */
+    $args = array_slice(isset($GLOBALS['argv']) ? $GLOBALS['argv'] : array(), 1);
+    $known = array('--only-update', '--only-maintenance', '--help');
+    $unknown = array_values(array_diff($args, $known));
+    $onlyUpdate = in_array('--only-update', $args, true);
+    $onlyMaintenance = in_array('--only-maintenance', $args, true);
+    if (in_array('--help', $args, true)) {
+        echo "php internal/update.php                     update if a release is due, then maintain\n"
+            . "php internal/update.php --only-update       the update, nothing else\n"
+            . "php internal/update.php --only-maintenance  retention and storage, nothing fetched\n"
+            . "\nExit codes: 0 done or nothing to do, 1 something failed, 2 the command line.\n";
+        exit(0);
+    }
+    if ($unknown || ($onlyUpdate && $onlyMaintenance)) {
+        fwrite(STDERR, ($unknown
+                ? 'Unknown option: ' . implode(' ', $unknown)
+                : '--only-update and --only-maintenance together leave nothing to do')
+            . ".\nNothing was done. php internal/update.php --help lists the options.\n");
+        exit(2);
+    }
+
     // Typing this command IS the consent, so `auto_update` does not gate it:
     // it gates the WEB path, where nobody typed anything. A host that will
     // never make its code directory writable to the web server can still be
     // updated from a shell or from cron, which is the arrangement the
     // installer puts first.
     $config = ap_config();
-    $report = ap_update_run($config);
-    foreach ($report['lines'] as $line) {
-        echo $line . "\n";
+    $ok = true;
+    if (!$onlyMaintenance) {
+        $report = ap_update_run($config);
+        foreach ($report['lines'] as $line) {
+            echo $line . "\n";
+        }
+        ap_update_save_state(array(
+            'last_check' => time(),
+            'when'       => gmdate('Y-m-d\TH:i:sP'),
+            'published'  => $report['published'],
+            'changed'    => $report['changed'],
+            'result'     => $report['summary'],
+        ));
+        // 0 when there was nothing wrong -- including "already up to date" and
+        // "not writable", which are both correct outcomes. A cron line that
+        // mailed on those would teach its reader to ignore the mail.
+        $ok = $report['ok'];
     }
-    ap_update_save_state(array(
-        'last_check' => time(),
-        'when'       => gmdate('Y-m-d\TH:i:sP'),
-        'published'  => $report['published'],
-        'changed'    => $report['changed'],
-        'result'     => $report['summary'],
-    ));
-    // 0 when there was nothing wrong -- including "already up to date" and
-    // "not writable", which are both correct outcomes. A cron line that mailed
-    // on those would teach its reader to ignore the mail.
-    exit($report['ok'] ? 0 : 1);
+    if (!$onlyUpdate) {
+        /* NOT ACTIVE IS NOT A FAILURE HERE. Run alone, maintenance.php says so
+           and exits 1, because being run with nothing to maintain is the
+           mistake. Called after an update on a server that is not configured
+           yet, it is simply nothing to do, and the update's result stands. */
+        if (empty($config['active'])) {
+            echo "Maintenance: skipped, annotepage is not active on this server yet.\n";
+        } else {
+            require_once __DIR__ . '/maintenance.php';
+            $kept = ap_maintenance_run($config);
+            foreach ($kept['lines'] as $line) {
+                echo $line . "\n";
+            }
+            $ok = $ok && $kept['ok'];
+        }
+    }
+    exit($ok ? 0 : 1);
 }

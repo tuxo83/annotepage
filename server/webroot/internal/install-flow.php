@@ -1803,25 +1803,19 @@ function ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
         . 'While it is set, the panel on your pages says so and every export '
         . "carries it in its header &mdash; nobody discovers it late.");
 
-    /* WHAT ACTUALLY SWEEPS. Without this line the ceiling is kept by a die
-       rolled on writes -- which is enough on a busy relay and is nothing at
-       all on the case retention exists for: a project nobody has come back
-       to. A promise measured in days needs a job measured in days. */
-    $sweepScript = ap_i_update_script($here, 'maintenance.php');
-    $screen[] = array('p', 'One line makes it happen on time. Without it the sweep is a die '
-        . 'rolled on writes, which on a project nobody comes back to &mdash; the '
-        . 'very case this exists for &mdash; is never rolled at all:');
-    $screen[] = array('pre', ap_i_h(ap_i_cron_time()) . ' php ' . ap_i_h($sweepScript)
-        . " &gt;/dev/null");
-    $screen[] = array('p', 'Drawn for you, like the update line further down, so that a hundred '
-        . 'installations do not rewrite their databases at the same second. It '
-        . 'also brings the storage in line with the code after an update that '
-        . 'changes what a column should be, on a table small enough to rebuild '
-        . 'unasked -- above that it prints the SQL and leaves the moment to you. '
-        . 'It prints what it swept and exits 0 when there was nothing to do. It is '
-        . 'not reachable over the web, and there is no address for it: the only '
-        . 'thing that could buy anybody is making somebody else\'s deletions '
-        . "happen sooner.");
+    /* WHAT ACTUALLY SWEEPS -- AND IT IS THE UPDATE LINE, NOT A SECOND ONE.
+       This screen handed over two cron lines, one for the update and one for
+       the sweep, and a reader asked why a server needs two jobs to stay
+       current. It needs one: the daily update line below maintains after it
+       updates. Without it the sweep is a die rolled on writes -- enough on a
+       busy relay, nothing at all on a project nobody comes back to, which is
+       the case retention exists for. */
+    $screen[] = array('p', 'What makes it happen on time is the daily update line further '
+        . 'down: after it updates, it sweeps, and it brings the storage in line with '
+        . 'the code when an update changes what a column should be &mdash; on a '
+        . 'table small enough to rebuild unasked; above that it prints the SQL and '
+        . 'leaves the moment to you. Without that line the sweep is a die rolled on '
+        . 'writes, which on a project nobody comes back to is never rolled at all.');
     $screen[] = array('h2', 'What was measured');
     $screen[] = array('table', $report);
 
@@ -1879,9 +1873,12 @@ function ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
         . "watch it work, then give cron this line:");
     $screen[] = array('pre', 'php ' . ap_i_h($updateScript) . "\n\n"
         . ap_i_h($cronWhen) . ' php ' . ap_i_h($updateScript) . " &gt;/dev/null");
-    $screen[] = array('p', 'That minute and that hour were drawn for you, and any others do as '
-        . 'well: what matters is that every installation does not ask the same host '
-        . 'for the same file at the same second. It '
+    $screen[] = array('p', 'It updates when a release is due, then does the housekeeping '
+        . '&mdash; retention and storage &mdash; so it is the only line this server '
+        . 'needs. <code>--only-update</code> and <code>--only-maintenance</code> run '
+        . 'either half alone. That minute and that hour were drawn for you, and any '
+        . 'others do as well: what matters is that every installation does not ask '
+        . 'the same host for the same file at the same second. It '
         . 'exits 0 when there was nothing to do &mdash; which is most nights &mdash; '
         . 'and 1 only when something really failed, so a scheduler that reports '
         . 'failures has something to report on. Drop the <code>&gt;/dev/null</code> '
@@ -1905,7 +1902,9 @@ function ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
             . 'what it did &mdash; allowed at that address and nowhere else, because '
             . 'they came for it and no reader of a page is kept waiting. At most one '
             . 'real check a day however often it is called; add '
-            . '<code>&amp;force=1</code> to check anyway. To retire the address, '
+            . '<code>&amp;force=1</code> to check anyway. Every call also does the '
+            . 'housekeeping, so the notes past their age go on time on a host with no '
+            . 'shell as well. To retire the address, '
             . 'empty <code>update_token</code> in '
             . '<code>internal/config-local.php</code> and it stops existing &mdash; '
             . "unknown, not refused.");

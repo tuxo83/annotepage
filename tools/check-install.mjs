@@ -368,14 +368,18 @@ if (own.config) {
     }
 }
 
-/* WHAT THE LAST SCREEN HANDS OVER. Both cron lines, with the real path of this
-   installation in them: the sweep that keeps the retention promise, and the
-   update. An example is a thing to adapt, and the adaptation is where it goes
-   wrong on a host whose operator has a control panel and no shell. */
-check('the last screen does not hand over the sweep line',
-    own.done.includes('internal/maintenance.php'));
+/* WHAT THE LAST SCREEN HANDS OVER. ONE daily line, with the real path of this
+   installation in it -- the update, which maintains after it updates. It
+   handed over two, update and sweep, and a reader asked why a server needs two
+   jobs; a second line on this screen now would be that question coming back.
+   An example is a thing to adapt, and the adaptation is where it goes wrong on
+   a host whose operator has a control panel and no shell. */
+check('the last screen hands over a second cron line for the sweep',
+    !own.done.includes('internal/maintenance.php'));
 check('the last screen does not hand over the update line',
     own.done.includes('internal/update.php'));
+check('the last screen does not say the update line also sweeps',
+    own.done.includes('--only-maintenance'));
 check('the last screen does not say how long a remark is kept',
     own.done.includes('How long a remark is kept'));
 
@@ -1124,6 +1128,41 @@ return array('active' => true, 'allow_plain_http' => true,
             (r.stdout || '') === '', JSON.stringify((r.stdout || '').slice(0, 120)));
         check(`${script} says nothing about what is wrong`,
             /deployment/.test(r.stderr || ''), JSON.stringify((r.stderr || '').slice(0, 120)));
+    }
+    rmSync(dir, { recursive: true, force: true });
+}
+
+/* -- ONE DAILY LINE, AND THE OLD SECOND ONE STILL WORKS -------------------
+   update.php maintains after it updates, and each half runs alone on request.
+   maintenance.php stays runnable on its own because every server installed
+   before carries it in a crontab. Checked with no network: --only-maintenance
+   fetches nothing, and a refused command line fetches nothing either. */
+{
+    const dir = mkdtempSync(join(tmpdir(), 'annotepage-daily-'));
+    const root = join(dir, 'web');
+    cpSync(webroot, root, { recursive: true });
+    writeFileSync(join(root, 'internal', 'config-local.php'),
+        "<?php\nreturn array('active' => true, 'allow_plain_mode' => true,"
+        + " 'require_origin_on_writes' => false, 'storage' => 'sqlite',"
+        + " 'database' => array('file' => " + JSON.stringify(join(dir, 'notes.sqlite')) + "),"
+        + " 'projects' => array(), 'max_note_age_days' => 90);\n");
+    const run = (script, args) => spawnSync('php', [join(root, 'internal', script), ...args],
+        { encoding: 'utf8' });
+    for (const [script, args] of [['update.php', ['--only-maintenance']], ['maintenance.php', []]]) {
+        const r = run(script, args);
+        check(`${script} ${args.join(' ')} does not maintain`,
+            r.status === 0 && /^Swept: 0 rows/m.test(r.stdout || ''),
+            'exit ' + r.status + ' ' + JSON.stringify((r.stdout || '') + (r.stderr || '')).slice(0, 200));
+        check(`${script} ${args.join(' ')} fetched something`,
+            !/published version|source:/.test(r.stdout || ''), (r.stdout || '').slice(0, 200));
+    }
+    for (const args of [['--bogus'], ['--only-update', '--only-maintenance']]) {
+        const r = run('update.php', args);
+        check(`update.php ${args.join(' ')} is not refused with exit 2`, r.status === 2,
+            'exit ' + r.status);
+        check(`update.php ${args.join(' ')} did something anyway`,
+            (r.stdout || '') === '' && /Nothing was done/.test(r.stderr || ''),
+            JSON.stringify((r.stdout || '') + (r.stderr || '')).slice(0, 200));
     }
     rmSync(dir, { recursive: true, force: true });
 }

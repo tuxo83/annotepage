@@ -1632,6 +1632,12 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         &mdash; so that every server running this does not knock
                         at the same second. Any others do as well.
                     </p>
+                    <p class="say">
+                        It updates when a release is out, then tidies up: a
+                        note leaves ninety days after its last reply &mdash;
+                        <a href="questions.html#kept">what that means</a> &mdash;
+                        and the storage follows the code. One line, both jobs.
+                    </p>
                 </div>
                 <div>
                     <div class="snip">
@@ -1647,7 +1653,8 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <p class="say">
                         One line in your crontab, or the same address pasted
                         into your host&rsquo;s scheduler. The installer writes
-                        the secret and shows it <b>once</b>.
+                        the secret and shows it <b>once</b>. Each call also
+                        tidies up: notes past their age go on time.
                     </p>
                 </div>
                 <div>
@@ -1658,39 +1665,13 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 </div>
             </li>
 
-            <!-- THE SWEEP, AND IT IS NOT ON THE UPDATE DIAL. Retention is set on
-                 every installation this installer creates, whichever way that
-                 installation takes its updates -- so this step is shown to
-                 everybody, and it is the only one on this page that is. What it
-                 keeps is a promise made in two other places: the panel on the
-                 annotated pages, and the header of every export. -->
-            <li>
-                <div>
-                    <p class="cap"><span class="n"></span> Let it tidy up</p>
-                    <p class="say">
-                        Your server keeps a thread ninety days after its last
-                        message, then removes it &mdash;
-                        <a href="questions.html#kept">what that means</a>. This
-                        line is what makes it happen on time, and its minute and
-                        hour are drawn for you too. With no shell to run it, the
-                        sweep still happens on writes, now and then: enough on a
-                        busy site, never on a quiet one.
-                    </p>
-                    <p class="say">
-                        It also brings the storage in line with the code when an
-                        update changes what a column should be &mdash; on a
-                        table small enough to rebuild without being asked. Above
-                        that it does nothing and prints the SQL, so the moment
-                        stays yours.
-                    </p>
-                </div>
-                <div>
-                    <div class="snip">
-                                <button class="copy" type="button" data-copy="snip-cronsweep" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-cronsweep"><code id="cron-sweep"><span class="op">42 3 * * *</span> <span class="tg">php</span> &lt;your install&gt;/internal/maintenance.php <span class="op">&gt;</span>/dev/null</code></pre>
-                            </div>
-                </div>
-            </li>
+            <!-- NO SEPARATE SWEEP STEP ANY MORE. It stood here for everybody,
+                 with its own cron line calling internal/maintenance.php, and a
+                 reader asked why a server needs two jobs. It needs one: the
+                 update line maintains after it updates, on the shell route and
+                 on the URL route alike, so the step above is the whole of it.
+                 maintenance.php still runs on its own for the servers that
+                 carry it in a crontab from before. -->
 
             <!-- AND THE FILE THE INSTALLER WROTE, LAID OUT LIKE EVERY OTHER
                  STEP. It stood after the list, under a small label, with a
@@ -2799,7 +2780,7 @@ return array(
 <script src="/annotepage-client-2.26.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.8"
+        data-version="2026.9.9"
         defer></script>
 
 </body>
