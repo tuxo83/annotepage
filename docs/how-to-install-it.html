@@ -491,6 +491,15 @@ code:not(pre code) {
     font-size: .85rem; font-weight: 650;
 }
 @media (max-width: 32.5rem) { .wiz-two { grid-template-columns: minmax(0, 1fr); } }
+/* The MySQL box, in the installer's own grid: host and port share a row, the
+   three that follow take the first column. */
+.wiz-note { margin-top: .35rem; }
+.wiz-creds {
+    display: grid; gap: .1rem .8rem; margin-top: .2rem;
+    grid-template-columns: minmax(0, 12rem) minmax(0, 5.5rem);
+}
+.wiz-c1 { grid-column: 1 / 2; }
+.wiz-cl { margin-top: .5rem; font-weight: 650; color: var(--text); }
 .dial { border: 0; margin: 0; padding: 0; min-width: 0; }
 .dial legend { padding: 0; font-size: .78rem; font-weight: 650; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); }
 .seg { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
@@ -612,6 +621,24 @@ code:not(pre code) {
     border: 0; border-radius: 0; background: transparent;
 }
 .dial-box .dial-in:focus-visible { outline: 0; }
+
+/* THE DATABASE'S FIVE FIELDS, ON ONE LINE WHERE ONE FITS. The installer
+   stacks them in a column; up here they are one answer among the dials, and
+   a column of five would be the tallest thing in the box for the least-asked
+   question. Each is the width of what goes in it -- a port is four digits. */
+.dial-db { margin: 1.6rem 0 0; }
+.db-row { display: flex; flex-wrap: wrap; gap: .6rem 1rem; margin-top: .5rem; }
+.db-f { display: block; flex: 0 1 12rem; min-width: 0; }
+.db-f span { display: block; font-size: .82rem; font-weight: 600; color: var(--text); }
+.db-f .dial-in { margin-top: .3rem; max-width: none; }
+.db-port { flex-basis: 6rem; }
+.db-password { flex-basis: 8rem; }
+/* SWITCHED OFF, AND IT LOOKS IT: the XXX is the page saying "not here", and a
+   field drawn like its neighbours would read as one waiting to be filled. */
+.dial-in:disabled {
+    color: var(--dim); background: var(--bg-soft);
+    border-style: dashed; cursor: not-allowed;
+}
 
 /* WHAT EACH DIAL REMOVES. No script: a radio and :has do it, so the page
    answers the dials with JavaScript off as well as on. The tag block is the
@@ -1267,7 +1294,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
              prerequisite the installer cannot check for them lives: the
              database's name, user and password. -->
             <div class="dials-2 if-own">
-                <p class="dial-when">Running the notes server yourself asks four more, and one address:</p>
+                <p class="dial-when">Running the notes server yourself asks four more, and one address<span class="if-mysql">, and where the database is</span>:</p>
 
 
 
@@ -1379,6 +1406,42 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         class="if-cli">The command takes it, and checks that it
                         leads to the folder you run it in.</span> Left empty, the
                         blocks guess.
+                    </p>
+                </div>
+                <!-- THE DATABASE, ASKED WHERE THE DIAL THAT NEEDS IT IS.
+                     Choosing MySQL asked nothing: the command carried
+                     your-database and your-user for the reader to edit after
+                     copying it, and the drawn screen a single box reading
+                     "Host, port, database name, user, password" where the
+                     installer draws five. Asked for: the MySQL credentials
+                     here, and the password among them but switched off, with
+                     XXX in it -- present, so the five read as the installer's
+                     five, and never typed, because this page has no business
+                     holding a database password: it would sit in the reader's
+                     browser history of form fields, and the command it would
+                     go into is world-readable while it runs (the installer's
+                     own help says so, and reads it from a file instead).
+
+                     The labels are the installer's, from
+                     ap_i_credential_fields(), and tools/check-install-questions.mjs
+                     holds them to it. Host and port show the installer's
+                     defaults as placeholders and reach the command only when
+                     typed: the installer uses those defaults itself. -->
+                <div class="dial dial-db if-mysql">
+                    <p class="dial-legend">Where the MySQL server is</p>
+                    <div class="db-row">
+                        <label class="db-f db-host"><span>Host</span><input class="dial-in" id="db-host" type="text" autocomplete="off" spellcheck="false" placeholder="127.0.0.1"></label>
+                        <label class="db-f db-port"><span>Port</span><input class="dial-in" id="db-port" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="3306"></label>
+                        <label class="db-f db-name"><span>Database name</span><input class="dial-in" id="db-name" type="text" autocomplete="off" spellcheck="false" placeholder="your-database"></label>
+                        <label class="db-f db-user"><span>User</span><input class="dial-in" id="db-user" type="text" autocomplete="off" spellcheck="false" placeholder="your-user"></label>
+                        <label class="db-f db-password"><span>Password</span><input class="dial-in" id="db-password" type="text" value="XXX" disabled aria-describedby="db-say"></label>
+                    </div>
+                    <p class="dial-say" id="db-say">
+                        <span class="if-web">The password is typed on the
+                        installer's screen, never on this page.</span><span
+                        class="if-cli">The password is read from a file on the
+                        server, never typed on this page nor in the
+                        command.</span>
                     </p>
                 </div>
             </div>
@@ -1723,9 +1786,23 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                                 <p class="wiz-l">The address these pages will call</p>
                                 <p class="wiz-f" id="wiz-api">https://api.staging.example.com/api.php</p>
                             </div>
+                            <!-- FIVE BOXES, AS THE INSTALLER DRAWS THEM: host and
+                                 port on one row, the credential under them. It
+                                 was one box holding the five words, which is
+                                 no screen anybody meets. What they hold comes
+                                 from the fields at the top; the password is
+                                 drawn as a password field draws what is typed
+                                 into it. -->
                             <div class="wiz-card if-mysql">
                                 <p class="wiz-card-t">Where the MySQL server is.</p>
-                                <p class="wiz-f">Host, port, database name, user, password</p>
+                                <p class="wiz-note">The installer connects and creates the tables before writing anything. Every one of them is needed.</p>
+                                <div class="wiz-creds">
+                                    <div><p class="wiz-cl">Host</p><p class="wiz-f" id="wiz-db-host">127.0.0.1</p></div>
+                                    <div><p class="wiz-cl">Port</p><p class="wiz-f" id="wiz-db-port">3306</p></div>
+                                    <div class="wiz-c1"><p class="wiz-cl">Database name</p><p class="wiz-f" id="wiz-db-name">your-database</p></div>
+                                    <div class="wiz-c1"><p class="wiz-cl">User</p><p class="wiz-f" id="wiz-db-user">your-user</p></div>
+                                    <div class="wiz-c1"><p class="wiz-cl">Password</p><p class="wiz-f">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</p></div>
+                                </div>
                             </div>
                             <div class="wiz-card">
                                 <p class="wiz-card-t">How this server gets its updates.</p>
@@ -2548,6 +2625,20 @@ return array(
     var stoMysql  = document.getElementById('d-mysql');
     var wizOrigins = document.getElementById('wiz-origins');
     var wizApi    = document.getElementById('wiz-api');
+    /* The database's four typed answers, and where the drawn screen shows
+       them. The password has no variable: nothing here reads it. */
+    var dbIn = {
+        host: document.getElementById('db-host'),
+        port: document.getElementById('db-port'),
+        name: document.getElementById('db-name'),
+        user: document.getElementById('db-user')
+    };
+    var wizDb = {
+        host: document.getElementById('wiz-db-host'),
+        port: document.getElementById('wiz-db-port'),
+        name: document.getElementById('wiz-db-name'),
+        user: document.getElementById('wiz-db-user')
+    };
 
     /* A MINUTE AND AN HOUR NOBODY ELSE HAS. The line read 17 4 on every copy of
        this page, so everybody who pasted it woke their host at the same second
@@ -2584,6 +2675,9 @@ return array(
         || !askCode || !siteIn || !srvIn || !cronSh || !wizUrl || !open || !shared
         || !pinned || !installCode || !audAny || !updUrl || !updSelf
         || !stoMysql || !wizOrigins || !wizApi) return;
+    for (var dk in dbIn) {
+        if (!dbIn[dk] || !wizDb[dk]) return;
+    }
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
        Math.random would be guessable -- which is worse than no key at all,
@@ -2689,6 +2783,16 @@ return array(
         var origin = 'https://' + site;
         wizOrigins.textContent = origin;
         wizApi.textContent = ownApi;
+        /* WHAT WAS TYPED, OR WHAT THE FIELD SHOWS AS ITS PLACEHOLDER -- the
+           installer's defaults for host and port, a name that reads as one to
+           replace for the other two. Spaces go: none of the four can hold one,
+           and a pasted value carries them at both ends. */
+        var db = {};
+        for (var k in dbIn) {
+            var typed = (dbIn[k].value || '').replace(/\s+/g, '');
+            db[k] = { typed: typed, shown: typed || dbIn[k].placeholder };
+            wizDb[k].textContent = db[k].shown;
+        }
         var api = shared.checked ? SHARED_API : ownApi;
         var locked = pinned.checked;
 
@@ -2850,16 +2954,19 @@ return array(
         opt('answers-for', aud);
         if (aud === 'one-site') opt('origins', origin);
         opt('storage', sto);
-        /* THE THREE A SHELL CANNOT GUESS, AS PLACEHOLDERS THAT READ AS SUCH.
-           Host and port have defaults the installer states; the name, the user
+        /* THE THREE A SHELL CANNOT GUESS: WHAT THE READER TYPED, OR
+           PLACEHOLDERS THAT READ AS SUCH. Host and port have defaults the
+           installer states, so they appear only when typed; the name, the user
            and the password do not. No angle brackets: unquoted, `<` and `>`
            are redirections, and a command pasted before its placeholders are
            replaced must fail on a name, not truncate a file. The password
            comes from a file, never an argument: the installer's own help says
-           why. */
+           why, and it is why the page has no field for it. */
         if (sto === 'mysql') {
-            opt('mysql-name', 'your-database');
-            opt('mysql-user', 'your-user');
+            if (db.host.typed) opt('mysql-host', db.host.typed);
+            if (db.port.typed) opt('mysql-port', db.port.typed);
+            opt('mysql-name', db.name.shown);
+            opt('mysql-user', db.user.shown);
             opt('mysql-password-file', '/path/to/db-password');
         }
         opt('updated-by', upd);
@@ -2908,6 +3015,7 @@ return array(
         if (SCHEME.test(srvIn.value)) srvIn.value = srvIn.value.trim().replace(SCHEME, '');
         paint();
     });
+    for (var dn in dbIn) dbIn[dn].addEventListener('input', paint);
     srvIn.addEventListener('change', function () {
         srvIn.value = srvIn.value.trim().split(/[?#]/)[0]
             .replace(/\/+$/, '').replace(/\/api\.php$/i, '').replace(/\/+$/, '');
@@ -3014,7 +3122,7 @@ return array(
 <template id="annotepage-tool"><script src="/annotepage-client-2.27.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.12"
+        data-version="2026.9.13"
         defer></script></template>
 <script>
 (function () {

@@ -150,6 +150,31 @@ for (const name of (derived.stdout || '').trim().split(/\s+/).filter(Boolean)) {
 }
 void optionNames;
 
+/* THE FIVE MySQL FIELDS, TWICE: asked in the dials and drawn in the MySQL box
+   of the screen. Both carry the installer's labels, in its order, or the
+   reader types "Database name" here and meets something else there. An empty
+   read is a failure: markup that moved would otherwise check nothing. */
+const creds = spawnSync('php', ['-r',
+    'define("AP_INTERNAL", 1); require ' + JSON.stringify(flowPath) + ';'
+    + ' foreach (ap_i_credential_fields() as $b) { echo $b["label"], "\n"; }'],
+    { encoding: 'utf8' });
+const credLabels = (creds.stdout || '').trim().split('\n').filter(Boolean);
+const dbBox = (page.match(/<div class="dial dial-db[^"]*">([\s\S]*?)<p class="dial-say"/) || [])[1] || '';
+const askedLabels = [...dbBox.matchAll(/<label class="db-f[^"]*"><span>([^<]+)<\/span>/g)]
+    .map((m) => entities(m[1]));
+const wizDb = (drawing.match(/<div class="wiz-creds">([\s\S]*?)<\/div>\s*<\/div>/) || [])[1] || '';
+const drawnLabels = [...wizDb.matchAll(/<p class="wiz-cl">([^<]+)<\/p>/g)].map((m) => entities(m[1]));
+if (credLabels.length < 5) {
+    failures.push(`ap_i_credential_fields() answered ${credLabels.length} labels; the MySQL`
+        + ' fields cannot be checked');
+}
+for (const [where, got] of [['the dials ask', askedLabels], ['the drawn screen shows', drawnLabels]]) {
+    if (got.join('|') !== credLabels.join('|')) {
+        failures.push(`for MySQL, ${where} ${JSON.stringify(got)}; the installer asks`
+            + ` ${JSON.stringify(credLabels)}`);
+    }
+}
+
 if (failures.length) {
     console.error('install questions:\n' + failures.map((f) => '  ' + f).join('\n'));
     process.exit(1);
