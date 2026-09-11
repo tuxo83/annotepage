@@ -539,6 +539,8 @@ code:not(pre code) {
 body:has(#m-open:checked)   .if-secure { display: none; }
 body:has(#m-secure:checked) .if-open   { display: none; }
 body:has(#s-shared:checked) .if-own    { display: none; }
+body:has(#i-web:checked)    .if-cli    { display: none; }
+body:has(#i-cli:checked)    .if-web    { display: none; }
 body:has(#s-own:checked)    .if-shared { display: none; }
 
 /* THE SECOND SERIES, WHICH ONLY EXISTS UNDER `Your own`. Written as "hide the
@@ -689,6 +691,10 @@ a.lp-box { text-decoration: none; }
 a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 .lp-hold { white-space: nowrap; }
+/* AN OPTION IS ONE WORD. `--storage=mysql` broke after its two dashes in the
+   narrow column of a step, and a flag cut in half reads as two things -- and
+   is copied as two. */
+.say code { white-space: nowrap; }
 .lp-lock { display: inline-block; width: .78em; height: auto; vertical-align: -.06em; color: var(--accent); }
 
 .lp-arr {
@@ -1160,7 +1166,30 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
              is what it is. A dial that changes no step would say the page
              depends on it, and it does not. -->
             <div class="dials-2 if-own">
-                <p class="dial-when">Running the notes server yourself asks two more, and one address:</p>
+                <p class="dial-when">Running the notes server yourself asks three more, and one address:</p>
+
+                <!-- HOW YOU INSTALL IT, AND IT IS A DIAL NOW. It was a sentence
+                     under the first step -- "with a shell, one command does the
+                     whole thing" -- on the argument that a dial must take a
+                     route away and this one would add one. It does take one
+                     away: answer "With a shell" and the upload, the browser and
+                     the drawing of its screen go, replaced by the one command
+                     that carries every answer on this page. Asked for by the
+                     person who installs these servers, because a sentence
+                     pointing at --help left them to assemble that command by
+                     hand from four dials. -->
+                <fieldset class="dial dial-wide">
+                    <legend>How you install it</legend>
+                    <div class="seg">
+                        <label><input type="radio" name="how" id="i-web" checked> <span>In a browser</span></label>
+                        <label><input type="radio" name="how" id="i-cli"> <span>With a shell</span></label>
+                    </div>
+                    <p class="dial-say">
+                    <span class="if-web">Upload one file and open it: the page
+                    asks the questions.</span><span class="if-cli">One command,
+                    with the answers below already in it.</span>
+                    </p>
+                </fieldset>
 
                 <!-- THE ADDRESS, IN THE BOX WITH THE OTHER FIELD. It was in the
                      server chapter, after the step that prints it, on the
@@ -1181,7 +1210,10 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                            autocomplete="off" spellcheck="false"
                            placeholder="https://api.staging.example.com/api.php">
                     <p class="dial-say">
-                        Your installer prints it. Left empty, the blocks guess.
+                        <span class="if-web">Your installer prints it.</span><span
+                        class="if-cli">The command takes it, and checks that it
+                        leads to the folder you run it in.</span> Left empty, the
+                        blocks guess.
                     </p>
                 </div>
 
@@ -1378,7 +1410,43 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
              installer does on its own belongs in the sentence, not in a step
              of its own. -->
         <ol class="use-steps">
-            <li>
+            <!-- THE SHELL ROUTE: ONE STEP WHERE THE BROWSER HAS TWO. The
+                 command is built by the script at the foot of this page from
+                 the dials above -- the API address, which sites may write,
+                 who updates it -- so it is the reader's own and not an example
+                 to edit. Every option in it is one the installer takes, and
+                 tools/check-install-cli-page.mjs holds that against
+                 ap_i_cli_options() in install-flow.php. Without JavaScript the
+                 block keeps the example written here, which is complete. -->
+            <li class="if-cli">
+                <div>
+                    <p class="cap"><span class="n"></span> Run one command on the server</p>
+                    <p class="say">
+                        In the folder that answers at your API address. It
+                        downloads the release, checks every file, installs,
+                        then deletes itself.
+                    </p>
+                    <p class="say small dim">
+                        MySQL instead of a file: <code>--storage=mysql</code>
+                        and its options, which
+                        <code>php annotepage-install.php --help</code> lists.
+                    </p>
+                </div>
+                <div>
+                    <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-install" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-install"><code id="install-code"><span class="tg">curl</span> <span class="op">-fsSO</span> <span class="st">https://annotepage.com/annotepage-install.php</span>
+<span class="tg">php</span> annotepage-install.php \
+    <span class="op">--api-address=</span><span class="st">https://api.staging.example.com/api.php</span> \
+    <span class="op">--answers-for=</span><span class="st">one-site</span> \
+    <span class="op">--origins=</span><span class="st">https://staging.example.com</span> \
+    <span class="op">--updated-by=</span><span class="st">cron</span> \
+    <span class="op">--delete-installer</span></code></pre>
+                            </div>
+                </div>
+            </li>
+
+            <li class="if-web">
                 <div>
                     <p class="cap"><span class="n"></span> Upload one PHP file</p>
                     <!-- TWO SENTENCES, AND THEY ARE THE TWO GESTURES. This
@@ -1393,18 +1461,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                     <p class="say">
                         It ends by printing your API address, for the field at
                         the top.
-                    </p>
-                    <!-- THE SHELL ROUTE, AS A SENTENCE AND NOT AS A DIAL. The
-                         dials take routes away -- each names a case you are
-                         already in -- and this one would add one: everybody
-                         has a browser, and whoever has a shell knows they do.
-                         So it is said where the gesture is, in one line, and
-                         the option list lives in the tool's own --help, which
-                         is the only place it exists. -->
-                    <p class="say small dim">
-                        With a shell, one command does the whole thing:
-                        <code>php annotepage-install.php --help</code> says what
-                        it takes. It asks nothing, and installs the same server.
                     </p>
                 </div>
                 <div>
@@ -1458,7 +1514,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                  copied from server/webroot/internal/install-flow.php; the
                  answers under them are what this page has already asked, which
                  is the point of the step. -->
-            <li>
+            <li class="if-web">
                 <div>
                     <p class="cap"><span class="n"></span> Answer its three questions</p>
                     <!-- WHAT IS LEFT FOR THE READER TO DO, AND NOTHING ELSE.
@@ -2339,6 +2395,10 @@ return array(
     var askCode   = document.getElementById('ask-code');
     var cronCode  = document.getElementById('cron-code');
     var cronSh    = document.getElementById('cron-sh');
+    var installCode = document.getElementById('install-code');
+    var audAny    = document.getElementById('a-any');
+    var updUrl    = document.getElementById('u-url');
+    var updSelf   = document.getElementById('u-self');
 
     /* A MINUTE AND AN HOUR NOBODY ELSE HAS. The line read 17 4 on every copy of
        this page, so everybody who pasted it woke their host at the same second
@@ -2373,7 +2433,7 @@ return array(
        ready to be copied. */
     if (!tagCode || !keyCode || !orgCode || !jsonCode || !cronCode
         || !askCode || !siteIn || !srvIn || !cronSh || !wizUrl || !open || !shared
-        || !pinned) return;
+        || !pinned || !installCode || !audAny || !updUrl || !updSelf) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
        Math.random would be guessable -- which is worse than no key at all,
@@ -2596,6 +2656,39 @@ return array(
             'connect to ' + site
             + ' with annotepage and fix what the reviewers flagged';
 
+        /* THE COMMAND, FROM THE SAME ANSWERS AS EVERY OTHER BLOCK. One option
+           per dial and the address field, in the installer's own vocabulary --
+           the values are the exact strings ap_i_cli_options() accepts, and
+           tools/check-install-cli-page.mjs refuses one it would not. `--origins`
+           only when there IS a list: a relay declares nobody, and the installer
+           would write the list into a block nobody uses.
+           A VALUE IS QUOTED WHEN THE SHELL WOULD READ IT. The address is typed
+           by the reader, and an `&` or a space pasted with it would cut the
+           command in two at the moment of pasting it on a server. */
+        var sh = function (v) {
+            return /^[A-Za-z0-9._:\/@%+=-]+$/.test(v) ? v : "'" + v.replace(/'/g, "'\\''") + "'";
+        };
+        var aud = audAny.checked ? 'anyone' : 'one-site';
+        var upd = updUrl.checked ? 'url' : (updSelf.checked ? 'self' : 'cron');
+        while (installCode.firstChild) installCode.removeChild(installCode.firstChild);
+        var w = function (cls, txt) {
+            installCode.appendChild(cls ? piece(cls, txt) : document.createTextNode(txt));
+        };
+        var opt = function (name, val, last) {
+            w(null, '    ');
+            w('op', '--' + name + (val === null ? '' : '='));
+            if (val !== null) w('st', sh(val));
+            w(null, last ? '' : ' \\\n');
+        };
+        w('tg', 'curl'); w(null, ' '); w('op', '-fsSO'); w(null, ' ');
+        w('st', 'https://annotepage.com/annotepage-install.php'); w(null, '\n');
+        w('tg', 'php'); w(null, ' annotepage-install.php \\\n');
+        opt('api-address', ownApi);
+        opt('answers-for', aud);
+        if (aud === 'one-site') opt('origins', origin);
+        opt('updated-by', upd);
+        opt('delete-installer', null, true);
+
 
     }
 
@@ -2706,7 +2799,7 @@ return array(
 <script src="/annotepage-client-2.26.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.7"
+        data-version="2026.9.8"
         defer></script>
 
 </body>
