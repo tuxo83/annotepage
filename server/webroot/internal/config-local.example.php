@@ -120,8 +120,12 @@ return array(
     // declare several, and that is intended -- a staging site and the production
     // it becomes are the same project, with the same notes. Write them as the
     // browser sends them: scheme://host[:port], with no path and no trailing
-    // slash. This is an ANTI-ABUSE measure; it is NOT a protection against XSS,
-    // which runs inside the page itself.
+    // slash. `https://*.example.com` covers every subdomain of example.com at
+    // any depth -- not example.com itself, which is written on its own line --
+    // and every page on every one of them, including a subdomain nobody renewed.
+    // A star anywhere else, or in front of a single label, is refused when this
+    // file is loaded. This is an ANTI-ABUSE measure; it is NOT a protection
+    // against XSS, which runs inside the page itself.
     //
     // 'mode': 'encrypted' (default) or 'plain'. Plain mode is only acceptable
     // when self-hosted, where it protects nothing: the notes are in the same

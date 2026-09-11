@@ -927,6 +927,21 @@ A project may declare several, and that is intended: a staging site and the
 production it becomes are the same project, with the same notes. It is the
 operational counterpart of the rule "the domain is not in the key".
 
+**A declaration may cover every subdomain**, written out:
+`https://*.example.com`. The star stands alone in front of the host and for
+at least one label, so it matches `https://a.example.com` and
+`https://b.a.example.com`, and not `https://example.com`, which is declared
+on its own line if it is wanted. Scheme and port are compared exactly, as
+everywhere else. A star anywhere else, or in front of a single label
+(`https://*.com`), is a configuration failure. Nothing checks the public
+suffix list: `https://*.co.uk` is accepted and covers every site under it.
+The cost of a pattern is every page on every subdomain, including one nobody
+renewed and one a hosting service hands its customers.
+
+A **request** never carries a pattern. No browser writes a `*` in `Origin`;
+one that arrives is treated as an unknown origin, never compared against the
+declaration it was copied from.
+
 Rule applied:
 
 - `Origin` header present and absent from the list: **403**, in `text/plain`;

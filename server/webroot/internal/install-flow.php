@@ -51,9 +51,15 @@
  * to it, because a relay opened by a typo stores strangers' notes on somebody
  * who never asked for that.
  *
- * NO JAVASCRIPT. The MySQL fields are revealed by a <details> element, which
- * the browser opens on its own. A form that needs script to be fillable is a
- * form that does not work on the machine of the one person who has to use it.
+ * NOTHING HERE NEEDS JAVASCRIPT. Every field, every answer that reveals
+ * another -- the MySQL box, the list of sites, the long sentences -- is a CSS
+ * `:has()` rule. A form that needs script to be fillable is a form that does
+ * not work on the machine of the one person who has to use it.
+ *
+ * ONE SCRIPT RUNS ALL THE SAME, and it adds rather than enables: the copy
+ * button on the code blocks, see ap_i_copy_script(). The policy admits it by
+ * its sha256 and admits nothing else; with scripting off the blocks are there
+ * and the buttons are not.
  *
  * WHAT IT PROVES RATHER THAN ASSUMES
  *
@@ -684,10 +690,17 @@ function ap_i_install(array $answers, $here, $configPath, $selfName,
         $one = trim($one);
         if ($one === '') { continue; }
         $normalised = ap_normalise_origin($one);
-        if ($normalised === null) {
+        /* AND A PATTERN BY THE SAME RULE AS api.php'S. `https://*.com` read as
+           an origin by the function above, and would have been written into
+           the file; it is refused here, with the sentence origins.php gives. */
+        $why = ($normalised !== null && strpos($normalised, '*') !== false)
+            ? ap_origin_pattern_problem($normalised) : null;
+        if ($normalised === null || $why !== null) {
             $errors[] = 'The site address `' . ap_i_plain($one) . '` is not an origin. '
+                . ($why !== null ? $why . ' ' : '')
                 . 'An origin is scheme://host, with no path and no trailing slash: '
-                . 'https://www.example.com';
+                . 'https://www.example.com -- or https://*.example.com for every '
+                . 'subdomain of it.';
             $badFields[] = 'origins';
             continue;
         }
@@ -3357,9 +3370,16 @@ function ap_i_head($title, $head = null)
     header('Cache-Control: no-store');
     header('X-Content-Type-Options: nosniff');
     header('X-Robots-Tag: noindex, nofollow');
-    // No script anywhere on this page, and the header says so: an installer is
-    // the last place that should be able to run somebody else's code.
+    /* ONE SCRIPT ON THIS PAGE, AND THE HEADER NAMES IT BY ITS BYTES. An
+       installer is the last place that should be able to run somebody else's
+       code, which is why this page had none at all for thirty releases. It has
+       one now -- the copy button, asked for by the person who pastes these
+       lines -- and the policy admits exactly that script: its sha256, computed
+       here from the same string ap_i_foot() prints, so the two cannot drift.
+       No 'unsafe-inline' for scripts, no source, no eval: anything injected
+       into this page, by any route, still does not run. */
     header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; "
+        . "script-src '" . ap_i_copy_script_hash() . "'; "
         . "form-action 'self'; base-uri 'none'");
     echo "<!doctype html>\n<html lang=\"en\">\n<head>\n";
     echo "<meta charset=\"utf-8\">\n";
@@ -3379,9 +3399,9 @@ function ap_i_head($title, $head = null)
 
    WHY IT IS COPIED AND NOT LINKED. This page runs on a stranger's server
    before anything is configured, under
-   `default-src 'none'; style-src 'unsafe-inline'`. It cannot fetch
-   annotepage.com/base.css, cannot fetch a font, cannot fetch an image, and
-   must not need a script. So the tokens are copied out of base.css, VALUE FOR
+   `default-src 'none'; style-src 'unsafe-inline'`, and one script admitted by
+   its hash. It cannot fetch annotepage.com/base.css, cannot fetch a font,
+   cannot fetch an image, and must not need a script. So the tokens are copied out of base.css, VALUE FOR
    VALUE, and nothing else is: the drawings that sheet carries -- frames,
    pills, replays -- belong to pages that draw pictures, and this page draws a
    form.
@@ -3915,6 +3935,25 @@ code {
 pre code {
     background: none; border: 0; padding: 0; font-size: inherit;
     white-space: pre-wrap;
+}
+/* THE COPY BUTTON, WHICH THE SCRIPT ADDS. It is the site's copy button --
+   how-to-install-it.html puts one in the corner of every block -- drawn as a
+   chip and not as the Install button this page otherwise gives a <button>:
+   the global rule above makes every button a filled accent pill, which in
+   the corner of a code block would be the loudest thing on the screen. The
+   block keeps room on its right so the chip never sits on the text. */
+pre.has-copy { position: relative; padding-right: 5.6rem; }
+pre .copy {
+    position: absolute; top: .45rem; right: .45rem;
+    margin: 0; padding: .2rem .65rem;
+    font: 600 .78rem/1.4 var(--sans);
+    color: var(--dim); background: var(--bg);
+    border: 1px solid var(--control-line); border-radius: 999px;
+    box-shadow: none; cursor: pointer;
+}
+pre .copy:hover { color: var(--accent); border-color: var(--accent); }
+@media (max-width: 34rem) {
+    pre.has-copy { padding-right: .9rem; padding-top: 2.4rem; }
 }
 
 
@@ -4507,7 +4546,8 @@ form:has(#ap-more:checked) .more {
    how-to-install-it.html moves its dot with `translateX(var(--lp-run))` and
    sets --lp-run from the arrow's measured width, on load and on every resize,
    because those arrows are clamp()-sized SVGs whose length no stylesheet
-   knows. There is no script here and there will not be one.
+   knows. The one script this page has copies text and measures nothing, and
+   a rail that only moves for readers with scripting on would be two rails.
 
    SO THE WRAPPER TRAVELS, NOT THE DOT. The wrapper is the connector --
    `inset: 0` -- and a percentage translate resolves against the element's own
@@ -4666,8 +4706,71 @@ CSS;
     echo '<h1>' . ap_i_h($head === null ? 'annotepage' : $head) . "</h1>\n";
 }
 
+/**
+ * THE COPY BUTTON, AND THE ONLY SCRIPT THIS INSTALLER RUNS.
+ *
+ * It puts a button on every code block the screen draws -- the crontab line
+ * on the form, and on the next screen the tag, the address and the lines to
+ * paste. The button is INSERTED by the script, so a browser with scripting off
+ * gets the block and no dead control; the text itself was always selectable.
+ *
+ * WHAT IT COPIES is `data-copy` when the block has one -- the crontab line
+ * without the comment header drawn above it -- and the block's text
+ * otherwise. textContent only, in both directions: nothing it reads or writes
+ * is parsed as markup, which tools/check-no-html-injection.mjs enforces.
+ *
+ * WITHOUT THE CLIPBOARD API -- an installer opened over plain http has none,
+ * since it exists only in a secure context -- it selects the text instead and
+ * says so, which leaves one keystroke rather than a drag across a path.
+ */
+function ap_i_copy_script()
+{
+    return <<<'JS'
+(function () {
+    var blocks = document.querySelectorAll('pre');
+    Array.prototype.forEach.call(blocks, function (pre) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'copy';
+        button.textContent = 'Copy';
+        button.addEventListener('click', function () {
+            var text = pre.getAttribute('data-copy');
+            if (text === null) { text = pre.textContent; }
+            var say = function (word) {
+                button.textContent = word;
+                setTimeout(function () { button.textContent = 'Copy'; }, 1800);
+            };
+            var select = function () {
+                var range = document.createRange();
+                range.selectNodeContents(pre.querySelector('code') || pre);
+                var chosen = window.getSelection();
+                chosen.removeAllRanges();
+                chosen.addRange(range);
+                say('Selected');
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text.trim()).then(
+                    function () { say('Copied'); }, select);
+            } else {
+                select();
+            }
+        });
+        pre.classList.add('has-copy');
+        pre.appendChild(button);
+    });
+})();
+JS;
+}
+
+/** The CSP source for that script: 'sha256-<base64 of its digest>'. */
+function ap_i_copy_script_hash()
+{
+    return 'sha256-' . base64_encode(hash('sha256', ap_i_copy_script(), true));
+}
+
 function ap_i_foot()
 {
+    echo '<script>' . ap_i_copy_script() . "</script>\n";
     echo "</body>\n</html>\n";
 }
 
@@ -5124,12 +5227,14 @@ function ap_i_run(array $options)
         . ' placeholder="https://www.example.com&#10;https://staging.example.com">'
         . ap_i_h($field('origins')) . "</textarea></p>\n";
     echo '<p class="note"><span class="l-short">One per line, '
-        . '<code>scheme://host</code>, no path.</span><span class="l-long">One per '
+        . '<code>scheme://host</code>, no path; <code>*.</code> in front for every '
+        . 'subdomain.</span><span class="l-long">One per '
         . 'line, written exactly as the browser sends them: '
         . '<code>scheme://host</code> with no path and no trailing slash. A staging '
         . 'address and the production it becomes are the same project and both belong '
-        . 'here. There is no wildcard: a pattern over subdomains opens the project to '
-        . 'the first page hosted on one you no longer control.</span> Empty: the '
+        . 'here. <code>https://*.example.com</code> covers every subdomain, at any '
+        . 'depth, but not example.com itself -- and every page on every one of '
+        . 'them, including a subdomain you forgot to renew.</span> Empty: the '
         . "generated file keeps an example to fill in.</p>\n";
     echo "</div>\n";
 
@@ -5223,10 +5328,10 @@ function ap_i_run(array $options)
        because the person reading this is about to paste it into one; the next
        screen still repeats it. */
     echo '<div class="if-cron cron-line">' . "\n";
-    echo '<pre><code># m h dom mon dow  command' . "\n"
-        . ap_i_h(ap_i_cron_time() . ' php ' . ap_i_update_script($here))
-        . "</code></pre>\n";
-    echo '<p class="note">Paste it into <code>crontab -e</code>. The minute and the '
+    $cronLine = ap_i_cron_time() . ' php ' . ap_i_update_script($here);
+    echo '<pre data-copy="' . ap_i_h($cronLine) . '"><code># m h dom mon dow  command'
+        . "\n" . ap_i_h($cronLine) . "</code></pre>\n";
+    echo '<p class="note">Copy it into <code>crontab -e</code>. The minute and the '
         . "hour are drawn for this installation, so nobody's server is asked at the "
         . "same second as everybody else's; any other pair does the same work. It is "
         . "on the next screen too.</p>\n";

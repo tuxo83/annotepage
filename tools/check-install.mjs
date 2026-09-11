@@ -30,6 +30,7 @@ import { createServer } from 'node:net';
 import { mkdtempSync, cpSync, rmSync, existsSync, readFileSync, readdirSync,
          chmodSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -390,6 +391,37 @@ check('the API answers over plain http after the install',
     'status ' + own.apiStatus);
 check('the redirect does not lead to the same address in https',
     /^https:\/\/127\.0\.0\.1:\d+\/api\.php/.test(own.apiLocation), own.apiLocation);
+
+/* ONE SCRIPT, AND THE POLICY ADMITS THAT SCRIPT AND NOTHING ELSE. The page
+   had no script for thirty releases; it has the copy button now, and what
+   keeps an installer from running somebody else's code is that the header
+   names the one it runs by its bytes. So: exactly one <script>, exactly one
+   script source in the policy, that source is the sha256 of those bytes as
+   the browser computes it, and nothing like 'unsafe-inline' next to it. */
+{
+    const head = await fetch('http://127.0.0.1:' + own.port + '/install.php');
+    const policy = head.headers.get('content-security-policy') || '';
+    const scripts = [...own.form.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    const sources = ((policy.match(/script-src ([^;]*)/) || [])[1] || '').trim().split(/\s+/);
+    const digest = scripts.length === 1
+        ? "'sha256-" + createHash('sha256').update(scripts[0], 'utf8').digest('base64') + "'"
+        : '(not one script)';
+    check(`the page runs ${scripts.length} inline scripts, and it runs exactly one`,
+        scripts.length === 1);
+    check('the policy admits something other than the one script it runs, by its hash',
+        sources.length === 1 && sources[0] === digest, policy + '\n    page script: ' + digest);
+    check('the policy lets inline scripts or evaluated code run',
+        !/unsafe-inline'[^;]*;|unsafe-eval/.test(policy.replace(/style-src[^;]*;/, '')), policy);
+    check('the policy stopped refusing everything else by default',
+        policy.startsWith("default-src 'none';"), policy);
+    /* And what the crontab block copies is the line, not the comment header
+       drawn over it -- a header pasted twice into a crontab is harmless and
+       looks like a mistake. */
+    const cron = own.form.match(/<pre data-copy="([^"]*)"><code># m h dom mon dow/);
+    check('the crontab block copies something other than the line alone',
+        cron && /^\d+ \d+ \* \* \* php \/.*\/internal\/update\.php$/.test(cron[1]),
+        cron ? cron[1] : '(no data-copy on the crontab block)');
+}
 
 stop(own);
 

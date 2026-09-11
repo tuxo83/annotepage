@@ -135,12 +135,32 @@ function ap_declared_projects(array $config)
         }
         foreach ($declared as $origin) {
             $normalised = ap_normalise_origin($origin);
+            /* A PATTERN IS CHECKED WHERE IT IS READ, NOT WHERE IT FAILS TO
+               MATCH. A `*` anywhere but in front of the host, or one in front
+               of a single label -- `https://*.com`, which is every site on a
+               top-level domain -- is refused here, with the configuration,
+               rather than accepted and left to answer 403 to everybody. Until
+               the pattern existed such a line was accepted without a word and
+               matched nothing: no browser ever sends a `*`. */
+            if ($normalised !== null && strpos($normalised, '*') !== false) {
+                $why = ap_origin_pattern_problem($normalised);
+                if ($why !== null) {
+                    throw new ApFailure(
+                        "Invalid configuration: `" . ap_readable_excerpt((string) $origin)
+                        . "` is not an origin pattern.\n" . $why . "\n"
+                        . "A pattern is written scheme://*.domain[:port], the star alone "
+                        . "in front: https://*.example.com covers every subdomain of "
+                        . "example.com, at any depth, and not example.com itself.",
+                        500);
+                }
+            }
             if ($normalised === null) {
                 throw new ApFailure(
                     "Invalid configuration: `" . ap_readable_excerpt((string) $origin)
                     . "` is not an origin.\n"
                     . "An origin is written scheme://host[:port], with no path and no "
-                    . "trailing slash: https://staging.example.com\n"
+                    . "trailing slash: https://staging.example.com -- or, for every "
+                    . "subdomain at once, https://*.example.com\n"
                     . "That is exactly what the browser puts in the Origin header; "
                     . "anything else will never match.",
                     500);
@@ -190,9 +210,17 @@ function ap_readable_excerpt($value)
  * scheme's default port removed.
  *
  * That is the form the browser puts in the Origin header. The comparison is
- * then a string equality, exact: no prefix, no wildcard, no implicit
- * subdomain. A wildcard on subdomains would look convenient and would open the
- * project to the first page hosted on a subdomain one no longer controls.
+ * then a string equality, exact -- no prefix, no implicit subdomain -- EXCEPT
+ * against a declaration that asks for subdomains in so many words, with a
+ * leading `*.`: see ap_origin_allowed().
+ *
+ * THAT PATTERN WAS REFUSED FOR THREE RELEASES, and the reason is still true:
+ * it opens the project to every page on every subdomain, including the one
+ * somebody forgot to renew and the one a hosting service hands its customers.
+ * It was asked for by the person who runs the servers, for a network where
+ * keeping an exhaustive list is the harder problem; so it exists, it has to be
+ * written out -- nothing is implied from a bare domain -- and the cost is said
+ * wherever it can be typed.
  *
  * @return string|null null if this is not an origin
  */
@@ -257,7 +285,80 @@ function ap_request_origin()
         return 'null';
     }
     $normalised = ap_normalise_origin($raw);
-    return $normalised === null ? 'null' : $normalised;
+    /* A REQUEST NEVER CARRIES A PATTERN. No browser writes a `*` in Origin,
+       so one that arrives was typed by hand -- and compared as a string it
+       would equal the declaration it was copied from, and be let through by
+       the rule written for declarations. It is an unknown origin. */
+    if ($normalised === null || strpos($normalised, '*') !== false) {
+        return 'null';
+    }
+    return $normalised;
+}
+
+/**
+ * What is wrong with a declared origin that carries a `*`, or null if it is a
+ * well-formed pattern.
+ *
+ * Well-formed is: the star alone as the first label of the host, followed by
+ * at least two labels -- `*.example.com`, not `*.com`, which would be every
+ * site on a top-level domain. Nothing here knows which suffixes are public
+ * (`*.co.uk` passes, and covers every company in the United Kingdom): that
+ * list changes monthly and is not shipped. The line that says so is in
+ * FORMAT.md section 6.2, and in the installer beside the field.
+ */
+function ap_origin_pattern_problem($origin)
+{
+    if (!preg_match('#^(https?)://\*\.([^/*]+)$#', $origin, $m)) {
+        return 'The star must stand alone in front of the host, and nowhere else.';
+    }
+    $host = preg_replace('#:\d+$#', '', $m[2]);
+    if (strpos($host, '.') === false) {
+        return 'A star in front of a single label covers every site on a top-level '
+            . 'domain.';
+    }
+    if (!preg_match('#^[a-z0-9_-]+(\.[a-z0-9_-]+)+$#', $host)) {
+        return 'What follows the star is not a domain.';
+    }
+    return null;
+}
+
+/**
+ * Is this request origin one of the declared ones?
+ *
+ * Exact equality first, which is every declaration but the patterns. A
+ * pattern `scheme://*.base[:port]` then matches an origin with the same scheme
+ * whose `host[:port]` ends in `.base[:port]` -- so the port has to be the same
+ * too, since both sides are canonical, and `base` itself is NOT matched: the
+ * star stands for at least one label. `https://evil-example.com` does not end
+ * in `.example.com`, which is why the dot is part of what is compared.
+ *
+ * @param string $origin   the request's, from ap_request_origin() -- never a
+ *                         pattern, see there
+ * @param array  $declared the project's, normalised
+ */
+function ap_origin_allowed($origin, array $declared)
+{
+    if (in_array($origin, $declared, true)) {
+        return true;
+    }
+    $cut = strpos($origin, '://');
+    if ($cut === false) {
+        return false;
+    }
+    $scheme = substr($origin, 0, $cut);
+    $rest   = substr($origin, $cut + 3);
+    foreach ($declared as $pattern) {
+        $star = strpos($pattern, '://*.');
+        if ($star === false || substr($pattern, 0, $star) !== $scheme) {
+            continue;
+        }
+        $suffix = '.' . substr($pattern, $star + 5);
+        if (strlen($rest) > strlen($suffix)
+            && substr($rest, -strlen($suffix)) === $suffix) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -318,7 +419,7 @@ function ap_apply_origin_lock(array $config, $id, array $project, $write)
         return;
     }
 
-    if (!in_array($origin, $project['origins'], true)) {
+    if (!ap_origin_allowed($origin, $project['origins'])) {
         // The refused origin is copied into the message: it is the one to
         // compare, character by character, with the line in the configuration
         // file. `http` against `https`, a port, a trailing slash: those are the
