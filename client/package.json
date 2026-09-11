@@ -23,6 +23,7 @@
     ".": "./dist/annotepage.js",
     "./dist/annotepage.js": "./dist/annotepage.js",
     "./labels/fr.json": "./labels/fr.json",
+    "./labels/fr.js": "./labels/fr.js",
     "./package.json": "./package.json"
   },
   "files": [

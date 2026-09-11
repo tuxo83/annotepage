@@ -50,8 +50,17 @@ you like without touching the code:
 ```
 
 before the tag, or a file of your own declared on it with `data-labels`. A
-missing label falls back on English, so a partial translation is usable. A
-complete French set ships in the package, in `labels/fr.json`.
+missing label falls back on English, so a partial translation is usable.
+
+A complete French set ships in the package, ready for `data-labels` — from the
+same CDN and range as the client, nothing to copy into your repository:
+
+```html
+data-labels="https://cdn.jsdelivr.net/npm/annotepage-client@2/labels/fr.js"
+```
+
+Labels your page set before the tag are kept over it. The same set, as JSON, is
+`labels/fr.json`.
 
 ## What it does not touch
 

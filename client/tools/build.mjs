@@ -19,6 +19,7 @@
    ============================================================================ */
 
 import { createHash } from 'node:crypto';
+import { labelsScript } from './labels-script.mjs';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -117,6 +118,10 @@ const tag = [
     '        data-project="<22 characters>"',
     '        defer></' + 'script>'
 ].join('\n');
+
+/* THE FRENCH SET, AS A FILE THE TAG CAN LOAD -- see labels-script.mjs. */
+const frJson = readFileSync(join(ROOT, 'labels', 'fr.json'), 'utf8');
+writeFileSync(join(ROOT, 'labels', 'fr.js'), labelsScript(frJson, 'fr'), 'utf8');
 
 const log = join(DIST, 'HASHES.txt');
 const previous = existsSync(log) ? readFileSync(log, 'utf8').split('\n') : [];

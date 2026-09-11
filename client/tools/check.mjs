@@ -20,7 +20,7 @@
    No dependency. "node tools/check.mjs".
    ============================================================================ */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { webcrypto } from 'node:crypto';
@@ -216,6 +216,26 @@ const main = async () => {
         'none missing');
     check('and none translates something that no longer exists',
         extra.length === 0 ? 'none left over' : extra.join(', '), 'none left over');
+
+    /* AND THE SCRIPT A TAG LOADS SAYS WHAT THE JSON SAYS. labels/fr.js is
+       generated from fr.json by the build; one edited by hand, or left behind
+       by a build that was not run, would be a French set that differs
+       depending on which file a site loads. */
+    const { labelsScript } = await import('./labels-script.mjs');
+    const frJs = join(HERE, '..', 'labels', 'fr.js');
+    const shipped = existsSync(frJs) ? readFileSync(frJs, 'utf8') : '(missing)';
+    check('labels/fr.js is what the build makes from labels/fr.json',
+        shipped === labelsScript(french, 'fr') ? 'identical' : 'differs -- run npm run build',
+        'identical');
+    /* And it does what a tag needs: run it, and the labels are there, with
+       one the page set itself kept over the French one. */
+    const sandbox = { window: { Annotepage: { labels: { 'button.open': 'Page wins' } } } };
+    new Function('window', shipped)(sandbox.window);
+    check('loading labels/fr.js leaves the French set in window.Annotepage.labels',
+        sandbox.window.Annotepage.labels['button.close'] === french['button.close']
+            && sandbox.window.Annotepage.labels['button.open'] === 'Page wins'
+            ? 'French set, page label kept' : JSON.stringify(sandbox.window.Annotepage.labels).slice(0, 80),
+        'French set, page label kept');
 
     process.stdout.write(failures ? '\n' + failures + ' failure(s)\n' : '\neverything conforms\n');
     process.exit(failures ? 1 : 0);
