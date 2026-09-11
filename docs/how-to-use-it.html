@@ -1687,11 +1687,58 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
      makes no third-party request to show its own tool working. (The reason
      written here before -- jsDelivr's @2 resolving to 2.0.1 -- was true when it
      was written; @2 answers 2.11.0 now.) -->
-<script src="/annotepage-client-2.27.0.js"
+<!-- THE TOOL IS OFF UNTIL YOU TURN IT ON, IN YOUR OWN BROWSER.
+     It loaded for every visitor, so every visitor met a pill offering to
+     annotate the documentation of an annotation tool -- and the notes it
+     collects are the site owner's own review, read by an assistant on a
+     schedule. So the tag stays here exactly as it was, inert inside a
+     <template>, and a command typed in the developer console wakes it:
+
+         annotepage.on()     on, in this browser, on every page of this site
+         annotepage.off()    off again
+
+     The choice is kept in this browser's localStorage and nowhere else;
+     nothing is sent anywhere by turning it on or off. The tag is copied
+     attribute by attribute into a live <script>, which is what makes it run:
+     the same file, the same key, the same data-version, and
+     tools/check-sri.mjs still reads them where they have always been. -->
+<template id="annotepage-tool"><script src="/annotepage-client-2.27.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.10"
-        defer></script>
+        data-version="2026.9.11"
+        defer></script></template>
+<script>
+(function () {
+    'use strict';
+    var FLAG = 'annotepage/on';
+    function load() {
+        var model = document.getElementById('annotepage-tool');
+        if (!model || document.querySelector('script[data-annotepage-on]')) return;
+        var inert = model.content.querySelector('script');
+        var live = document.createElement('script');
+        for (var i = 0; i < inert.attributes.length; i++) {
+            live.setAttribute(inert.attributes[i].name, inert.attributes[i].value);
+        }
+        live.setAttribute('data-annotepage-on', '');
+        document.body.appendChild(live);
+    }
+    window.annotepage = {
+        on: function () {
+            try { localStorage.setItem(FLAG, '1'); } catch (e) { /* private mode: this page only */ }
+            load();
+            return 'annotepage is on in this browser, on every page of this site. annotepage.off() turns it off.';
+        },
+        off: function () {
+            try { localStorage.removeItem(FLAG); } catch (e) { /* nothing was kept */ }
+            location.reload();
+            return 'annotepage is off in this browser.';
+        }
+    };
+    var wanted = false;
+    try { wanted = localStorage.getItem(FLAG) === '1'; } catch (e) { /* unreadable: stays off */ }
+    if (wanted) load();
+}());
+</script>
 
 </body>
 </html>
