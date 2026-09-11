@@ -45,6 +45,15 @@ const check = (what, ok, detail) => {
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/* A RESPONSE IS READ TO THE END EVEN WHEN ONLY ITS STATUS IS WANTED -- see the
+   same helper in check-install.mjs: an unread 90 KB installer page keeps the
+   socket paused, and when its server is killed the fetch of Node 24, the one
+   GitHub's runners use, dies on `assert(!this.paused)`. */
+const answered = async (response) => {
+    try { await response.arrayBuffer(); } catch (e) { /* the status is what was asked */ }
+    return response;
+};
+
 const freePort = () => new Promise((resolve, reject) => {
     const probe = createServer();
     probe.on('error', reject);
@@ -71,7 +80,7 @@ const done = () => {
 };
 for (let i = 0; i < 40; i += 1) {
     await sleep(150);
-    try { await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' }); break; }
+    try { await answered(await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' })); break; }
     catch (e) { /* not listening yet */ }
 }
 
@@ -281,7 +290,7 @@ if (tooMany) {
     });
     for (let i = 0; i < 40; i += 1) {
         await sleep(150);
-        try { await fetch('http://127.0.0.1:' + port2 + '/install.php', { redirect: 'manual' }); break; }
+        try { await answered(await fetch('http://127.0.0.1:' + port2 + '/install.php', { redirect: 'manual' })); break; }
         catch (e) { /* not listening yet */ }
     }
     /* One site's own server: plain mode is allowed there, and plain mode is
@@ -408,7 +417,7 @@ if (tooMany) {
     });
     for (let i = 0; i < 40; i += 1) {
         await sleep(150);
-        try { await fetch('http://127.0.0.1:' + port3 + '/install.php', { redirect: 'manual' }); break; }
+        try { await answered(await fetch('http://127.0.0.1:' + port3 + '/install.php', { redirect: 'manual' })); break; }
         catch (e) { /* not listening yet */ }
     }
 
@@ -473,7 +482,7 @@ if (tooMany) {
     });
     for (let i = 0; i < 40; i += 1) {
         await sleep(150);
-        try { await fetch('http://127.0.0.1:' + port4 + '/install.php', { redirect: 'manual' }); break; }
+        try { await answered(await fetch('http://127.0.0.1:' + port4 + '/install.php', { redirect: 'manual' })); break; }
         catch (e) { /* not listening yet */ }
     }
     const post = async (body) => (await (await fetch(

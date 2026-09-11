@@ -55,6 +55,17 @@ const check = (what, ok, detail) => {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/* EVERY RESPONSE IS READ TO THE END, EVEN WHEN ONLY ITS STATUS IS WANTED. A
+   body left unread keeps the socket with its parser paused -- the installer's
+   page is 90 KB, more than a socket buffers -- and when the test server is
+   killed under it, the fetch of Node 24 (the one GitHub's runners use) dies on
+   `assert(!this.paused)` and takes the whole suite with it. Node 22 did not,
+   which is how it went unseen on a workstation and red in CI. */
+const answered = async (response) => {
+    try { await response.arrayBuffer(); } catch (e) { /* the status is what was asked */ }
+    return response;
+};
+
 /* A PORT NOBODY ELSE HOLDS, ASKED OF THE SYSTEM RATHER THAN CHOSEN. A fixed
    number cost an afternoon: a crashed run left its server listening, the next
    run failed to bind, and every request went to the OLD installation -- which
@@ -84,7 +95,7 @@ const rehearse = async (port, body, prepare) => {
     let up = false;
     for (let i = 0; i < 40 && !up; i += 1) {
         await sleep(150);
-        try { up = (await fetch(url, { redirect: 'manual' })).ok; } catch (e) { /* not listening yet */ }
+        try { up = (await answered(await fetch(url, { redirect: 'manual' }))).ok; } catch (e) { /* not listening yet */ }
     }
     const form = up ? await (await fetch(url, { redirect: 'manual' })).text() : '';
     const done = up ? await (await fetch(url, {
@@ -107,8 +118,8 @@ const rehearse = async (port, body, prepare) => {
        secure context, and WebCrypto -- which is where the notes are sealed --
        does not exist there. */
     const api = up
-        ? await fetch('http://127.0.0.1:' + port + '/api.php?action=diagnostic',
-                      { redirect: 'manual' })
+        ? await answered(await fetch('http://127.0.0.1:' + port + '/api.php?action=diagnostic',
+                      { redirect: 'manual' }))
         : null;
     return { dir, root, port, up, form, done, again, config, configPath, server,
              apiStatus: api ? api.status : 0,
@@ -405,6 +416,12 @@ check('the redirect does not lead to the same address in https',
 {
     const head = await fetch('http://127.0.0.1:' + own.port + '/install.php');
     const policy = head.headers.get('content-security-policy') || '';
+    /* THE BODY IS READ, EVEN THOUGH ONLY THE HEADER IS WANTED. Left unread, the
+       response holds the socket open with its parser paused, the test server
+       is killed a few lines down, and the Node on GitHub's runners dies inside
+       fetch with `assert(!this.paused)` -- the whole suite red, the publish
+       workflow with it, while the newer Node on a workstation shrugged. */
+    await answered(head);
     const scripts = [...own.form.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
     const sources = ((policy.match(/script-src ([^;]*)/) || [])[1] || '').trim().split(/\s+/);
     const digest = scripts.length === 1
@@ -820,7 +837,7 @@ const shell = async (dir, args) => {
     });
     for (let i = 0; i < 40; i += 1) {
         await sleep(150);
-        try { await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' }); break; }
+        try { await answered(await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' })); break; }
         catch (e) { /* not listening yet */ }
     }
     const address = '--api-address=http://127.0.0.1:' + port + '/api.php';
@@ -918,7 +935,7 @@ const shell = async (dir, args) => {
     });
     for (let i = 0; i < 40; i += 1) {
         await sleep(150);
-        try { await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' }); break; }
+        try { await answered(await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' })); break; }
         catch (e) { /* not listening yet */ }
     }
     /* The site root answers `?probe=` too -- that is exactly why the control
@@ -968,7 +985,7 @@ const shell = async (dir, args) => {
     });
     for (let i = 0; i < 40; i += 1) {
         await sleep(150);
-        try { await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' }); break; }
+        try { await answered(await fetch('http://127.0.0.1:' + port + '/install.php', { redirect: 'manual' })); break; }
         catch (e) { /* not listening yet */ }
     }
     const ok = spawnSync('php', [join(first, 'install.php'),
@@ -1006,7 +1023,7 @@ const shell = async (dir, args) => {
         });
         for (let i = 0; i < 40; i += 1) {
             await sleep(150);
-            try { await fetch('http://127.0.0.1:' + port2 + '/install.php', { redirect: 'manual' }); break; }
+            try { await answered(await fetch('http://127.0.0.1:' + port2 + '/install.php', { redirect: 'manual' })); break; }
             catch (e) { /* not listening yet */ }
         }
         chmodSync(join(second, 'internal'), 0o555);
