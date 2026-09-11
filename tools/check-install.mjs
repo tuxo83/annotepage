@@ -862,6 +862,16 @@ const shell = async (dir, args) => {
         wrongValue.code === 2 && /not one of/.test(wrongValue.err),
         'exit ' + wrongValue.code);
 
+    /* WHAT WAS TYPED COMES BACK AS TYPED. The messages go through the same
+       tag stripper as the browser's, and a path in angle brackets -- the
+       shape of a placeholder somebody forgot to replace -- was removed from
+       the one sentence that named it: "Could not read ." */
+    const bracketed = await shell(dir, [address, '--answers-for=one-site', '--storage=mysql',
+        '--mysql-name=n', '--mysql-user=u', '--mysql-password-file=<the password file>']);
+    check('a refused value in angle brackets vanished from its own error',
+        bracketed.code === 2 && /Could not read <the password file>\./.test(bracketed.err),
+        'exit ' + bracketed.code + '\n' + bracketed.err.slice(0, 300));
+
     const noAddress = await shell(dir, ['--answers-for=one-site']);
     check('it installed without being told the address',
         noAddress.code === 2 && /api-address is required/.test(noAddress.err),

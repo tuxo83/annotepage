@@ -466,6 +466,80 @@ code {
             through it. Whichever one you run, its address is what goes in the tag.</p>
             </article>
 
+            <!-- THE DAILY LINE, BEFORE SOMEBODY PASTES IT. The install page
+                 said what the line does in two paragraphs and was asked to say
+                 it in one, with a link here for the rest. Which questions: the
+                 ones a developer who looks after other people's shared hosting
+                 asked when shown that one sentence -- what does it touch, where
+                 does it come from, what if it breaks, who else can set it off,
+                 can I do it by hand. Every answer is read off
+                 server/webroot/internal/update.php, maintenance.php and api.php,
+                 not off a description of them. The tag is what the install
+                 page's link filters on: ?tag=updates. -->
+            <article class="qa" data-tags="Updates|Your own server">
+                <h3 class="qa-q" id="updates">What does the daily line change on my server?</h3>
+                <p class="qa-tags"><span class="qa-tag">Updates</span><span class="qa-tag">Your own server</span></p>
+                <p class="qa-a">Two things, in this order. <b>The update</b>: it asks
+            which version is published, and when it is newer, downloads only the
+            files that differ, checks each one, and swaps them in. The files it
+            replaced are kept in <code>.update/previous-&lt;version&gt;-&lt;date&gt;</code>,
+            beside the install. <b>The maintenance</b>: it removes the threads
+            older than your configuration keeps them &mdash;
+            <a href="#kept">ninety days after the last reply</a>, unless you
+            changed it &mdash; and adjusts the tables when a release needs
+            it.</p>
+                <p class="qa-a">It never touches
+            <code>internal/config-local.php</code>, never puts
+            <code>install.php</code> back once it is deleted, and never replaces
+            a store file you have edited yourself.</p>
+            </article>
+
+            <article class="qa" data-tags="Updates|Your own server|Privacy">
+                <h3 class="qa-q">Where does an update come from, and what if it fails halfway?</h3>
+                <p class="qa-tags"><span class="qa-tag">Updates</span><span class="qa-tag">Your own server</span><span class="qa-tag">Privacy</span></p>
+                <p class="qa-a">From <a href="https://github.com/tuxo83/annotepage">the
+            project&rsquo;s repository</a> on GitHub, over HTTPS with the
+            certificate checked. Every file is hashed once it is on your disk and
+            compared with the SHA-256 in the published manifest: <b>one mismatch
+            and nothing is changed</b>. The new files wait beside the old ones
+            and are swapped in together; if the swap fails, the old ones go
+            back. A run that overruns its time swaps nothing and tries again the
+            next day.</p>
+                <p class="qa-a">What leaves your server is a request for the version
+            number, once a day, and the files when there is a release. Nothing
+            about your notes, your sites or your visitors. The line the install
+            page gives you runs at a minute and an hour drawn for your install,
+            so servers do not all ask at the same second.</p>
+            </article>
+
+            <article class="qa" data-tags="Updates|Your own server">
+                <h3 class="qa-q">Is the address for the scheduler safe if somebody finds it?</h3>
+                <p class="qa-tags"><span class="qa-tag">Updates</span><span class="qa-tag">Your own server</span></p>
+                <p class="qa-a">It carries a long secret the installer writes and
+            shows you once. Without it, the server answers as if the action did
+            not exist. With it, somebody can make your server check for a
+            release and run its maintenance &mdash; at most one real check a
+            day, or every time with <code>&amp;force=1</code> &mdash; and
+            nothing else: what gets installed is still only a release whose
+            every file matches the published manifest.</p>
+                <p class="qa-a">If it leaks, into a host&rsquo;s logs for instance,
+            change <code>update_token</code> in
+            <code>internal/config-local.php</code> and paste the new address
+            into the scheduler.</p>
+            </article>
+
+            <article class="qa" data-tags="Updates|Your own server">
+                <h3 class="qa-q">Can I update by hand instead, or not at all?</h3>
+                <p class="qa-tags"><span class="qa-tag">Updates</span><span class="qa-tag">Your own server</span></p>
+                <p class="qa-a">Yes. Run <code>php internal/update.php</code> when
+            you choose; <code>--only-maintenance</code> does the housekeeping
+            and fetches nothing, and <code>--help</code> lists both.</p>
+                <p class="qa-a">With nothing scheduled, the server keeps working on
+            the version it has. Old threads still go, but only when somebody
+            writes a note, and then one time in fifty &mdash; so a quiet project
+            keeps them longer than its configuration says.</p>
+            </article>
+
             <!-- WHERE IT ALL IS, IN ONE PLACE. The menu carries one link, and
                  one is right for a menu; but "GitHub" named a host rather than
                  a thing, and the two published packages were nowhere. Here they
@@ -733,7 +807,7 @@ code {
 <template id="annotepage-tool"><script src="/annotepage-client-2.27.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.11"
+        data-version="2026.9.12"
         defer></script></template>
 <script>
 (function () {

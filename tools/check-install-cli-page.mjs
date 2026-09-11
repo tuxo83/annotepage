@@ -64,6 +64,14 @@ for (const v of pick(/var aud = ([^;]+);/).map((s) => s.slice(1, -1))) {
 for (const v of pick(/var upd = ([^;]+);/).map((s) => s.slice(1, -1))) {
     if (!options['updated-by'].values.includes(v)) failures.push(`the script writes --updated-by=${v}`);
 }
+/* The Storage dial joined the page, so its values are held the same way -- and
+   an empty pick is a failure, not a pass: a renamed variable would otherwise
+   check nothing and say nothing. */
+const stored = pick(/var sto = ([^;]+);/).map((s) => s.slice(1, -1));
+if (!stored.length) failures.push('the script no longer chooses --storage from a `var sto`');
+for (const v of stored) {
+    if (!options.storage.values.includes(v)) failures.push(`the script writes --storage=${v}`);
+}
 
 if (failures.length) {
     console.error('install cli page:\n  ' + failures.join('\n  '));

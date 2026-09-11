@@ -2131,12 +2131,19 @@ function ap_i_parse_options(array $argv)
     $given  = array();
     $errors = array();
 
+    /* WHAT THE OPERATOR TYPED IS ESCAPED BEFORE IT JOINS A SENTENCE. Every
+       message here goes through ap_i_plain(), which strips tags before it
+       decodes -- so a value in angle brackets was read as markup and removed.
+       Measured with the command how-to-install-it.html hands out for MySQL,
+       before its placeholders were replaced: `--mysql-password-file='<a file
+       holding the password>'` answered "Could not read ." -- the one word the
+       reader needed to see, gone. Escaped, it comes back out as typed. */
     foreach (array_slice($argv, 1) as $argument) {
         if ($argument === '--') {
             continue;
         }
         if (substr($argument, 0, 2) !== '--') {
-            $errors[] = 'Not an option: ' . $argument
+            $errors[] = 'Not an option: ' . ap_i_h($argument)
                 . '. Everything this takes is written --name=value.';
             continue;
         }
@@ -2146,7 +2153,7 @@ function ap_i_parse_options(array $argv)
         $value = $eq === false ? true : substr($body, $eq + 1);
 
         if (!isset($known[$name])) {
-            $errors[] = 'Unknown option: --' . $name
+            $errors[] = 'Unknown option: --' . ap_i_h($name)
                 . '. Run with --help for the ones there are.';
             continue;
         }
@@ -2160,7 +2167,7 @@ function ap_i_parse_options(array $argv)
             continue;
         }
         if ($shape['kind'] === 'choice' && !in_array($value, $shape['values'], true)) {
-            $errors[] = '--' . $name . '=' . $value . ' is not one of: '
+            $errors[] = '--' . $name . '=' . ap_i_h($value) . ' is not one of: '
                 . implode(', ', $shape['values']) . '.';
             continue;
         }
@@ -2680,7 +2687,7 @@ function ap_i_cli(array $options)
        runs where nothing is yet. */
     if (isset($given['dir']) && $here !== ''
         && !is_file($here . '/api.php') && !is_file($here . '/MANIFEST')) {
-        $errors[] = $here . ' does not hold a server: no api.php and no MANIFEST. '
+        $errors[] = ap_i_h($here) . ' does not hold a server: no api.php and no MANIFEST. '
             . 'Point --dir at the directory the release was unpacked into.';
     }
 
@@ -2712,7 +2719,7 @@ function ap_i_cli(array $options)
     if (isset($given['mysql-password-file'])) {
         $read = @file_get_contents($given['mysql-password-file']);
         if ($read === false) {
-            $errors[] = 'Could not read ' . $given['mysql-password-file'] . '.';
+            $errors[] = 'Could not read ' . ap_i_h($given['mysql-password-file']) . '.';
         } else {
             // The trailing newline an editor adds is not part of a password.
             $password = rtrim($read, "\r\n");

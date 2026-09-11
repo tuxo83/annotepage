@@ -411,40 +411,86 @@ code:not(pre code) {
     font-family: var(--mono); font-size: .74rem; color: var(--dim);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* What a wizard ends on. Drawn at the weight of a primary button and left
-   where a form's submit sits, so it reads as the end of the screen. */
-.wiz-go { margin: 1.3rem 0 0; }
+/* THE INSTALLER'S OWN PAGE, AT A THIRD OF ITS SIZE, IN ITS OWN ORDER. The
+   drawing that stood here was a title, three legends and a button, and it was
+   reported as not looking like the real page -- which it did not: measured
+   against the page annotepage-install.php serves once the release is down,
+   it lacked the square before the title, the three-step rail, the check that
+   runs first, the two boxes the questions sit in, both fields, and the button
+   centred at the foot. Every one of those is here now, in that order, drawn
+   with this site's tokens. What is left out is what the reader does not meet
+   on a first run: the explanation toggle, the report of what was downloaded,
+   and the fifteen other settings folded at the bottom. */
+.wiz-body { padding: 1rem 1.1rem 1.2rem; font-size: .8rem; color: var(--dim); }
+.wiz-h1 {
+    display: flex; align-items: center; gap: .45rem; margin: 0;
+    font-size: 1.2rem; font-weight: 700; letter-spacing: -.02em; color: var(--text);
+}
+.wiz-h1::before {
+    content: ""; flex: none; width: .55em; height: .55em; border-radius: 2px;
+    background: var(--accent);
+}
+.wiz-lede { margin-top: .25rem; font-size: .84rem; }
+/* The rail: three numbers joined by two lines, the first one filled. */
+.wiz-rail {
+    display: grid; grid-template-columns: auto 1fr auto 1fr auto;
+    align-items: center; gap: .5rem; margin: 1rem 0 0;
+    font-size: .74rem; line-height: 1.3; text-align: center;
+}
+.wiz-rail i {
+    font-style: normal; display: grid; place-items: center;
+    width: 1.5rem; height: 1.5rem; margin: 0 auto .2rem; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--dim); font-weight: 650;
+}
+.wiz-rail .now i { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.wiz-rail b { display: block; color: var(--text); font-weight: 650; }
+.wiz-rail .wiz-line { display: block; border-top: 1px solid var(--line); margin-bottom: 1.6rem; }
+.wiz-h2 {
+    margin-top: 1rem; padding-top: .8rem; border-top: 1px solid var(--line-soft);
+    font-size: .95rem; font-weight: 650; color: var(--text);
+}
+.wiz-ok { display: flex; align-items: baseline; gap: .4rem; margin-top: .3rem; }
+.wiz-ok::before {
+    content: "\2713"; flex: none; display: grid; place-items: center;
+    width: 1.3em; height: 1.3em; border-radius: 999px;
+    background: var(--ok-soft); color: var(--ok); font-weight: 700;
+}
+.wiz-ok b { color: var(--ok); }
+/* The two boxes the questions sit in on the real page. */
+.wiz-card {
+    margin: .6rem 0 0; padding: .7rem .8rem .8rem;
+    border: 1px solid var(--line-soft); border-radius: 8px; background: var(--bg-soft);
+}
+.wiz-card-t { margin: 0; font-weight: 650; color: var(--text); }
+.wiz-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; }
+.wiz-q {
+    margin-top: .7rem; font-size: .7rem; font-weight: 650;
+    letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
+}
+.wiz-a { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+/* The chips of the dials at the top of the page, one weight lighter: these are
+   not controls, they are what the installer will show. Nothing here is
+   clickable and nothing pretends to be. Which one is filled is decided by the
+   dials, in the rules beside theirs. */
+.wiz-a span {
+    padding: .2rem .6rem; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--bg); font-size: .76rem; font-weight: 600; color: var(--dim);
+}
+.wiz-l { margin-top: .8rem; padding-top: .6rem; border-top: 1px solid var(--line-soft); font-weight: 650; color: var(--text); }
+.wiz-f {
+    margin-top: .3rem; max-width: 20rem; padding: .25rem .5rem;
+    border: 1px solid var(--line); border-radius: 5px; background: var(--bg);
+    color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* What a wizard ends on: a primary button, centred at the foot, as the real
+   page draws it. */
+.wiz-go { margin-top: 1.1rem; text-align: center; }
 .wiz-go span {
-    display: inline-block; padding: .35rem 1rem; border-radius: 999px;
+    display: inline-block; padding: .4rem 2.2rem; border-radius: 999px;
     background: var(--accent); color: var(--on-accent);
     font-size: .85rem; font-weight: 650;
 }
-.wiz-body { padding: .9rem 1rem 1.1rem; }
-/* The head of the installer's own page, at the weight a screenshot gives it:
-   large enough to be a title, small enough that nobody mistakes it for one of
-   this page's. */
-.wiz-h1 { margin: 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); }
-.wiz-lede { margin: .3rem 0 0; font-size: .82rem; color: var(--dim); }
-.wiz-h2 {
-    margin: 1.1rem 0 0; padding-top: .9rem; border-top: 1px solid var(--line-soft);
-    font-size: .95rem; font-weight: 650; color: var(--text);
-}
-.wiz-h2 + .wiz-q { margin-top: .9rem; }
-.wiz-q {
-    margin: 1.1rem 0 0; font-size: .78rem; font-weight: 650;
-    letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
-}
-.wiz-a { display: flex; flex-wrap: wrap; gap: .4rem; margin: .45rem 0 0; }
-/* The chips of the dials at the top of the page, one weight lighter: these are
-   not controls, they are what the installer will show. Nothing here is
-   clickable and nothing pretends to be. */
-.wiz-a span {
-    padding: .28rem .7rem; border: 1px solid var(--line); border-radius: 999px;
-    font-size: .82rem; color: var(--dim);
-}
-.wiz-a span.on {
-    border-color: var(--accent); background: var(--accent); color: var(--on-accent);
-}
+@media (max-width: 32.5rem) { .wiz-two { grid-template-columns: minmax(0, 1fr); } }
 .dial { border: 0; margin: 0; padding: 0; min-width: 0; }
 .dial legend { padding: 0; font-size: .78rem; font-weight: 650; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); }
 .seg { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
@@ -492,19 +538,27 @@ code:not(pre code) {
    shown cut, which is the one thing a placeholder must not be. Measured, not
    chosen: 22rem is 352px, and the cap is on this field alone. */
 .dials-2 .dial-wide { margin: 1.6rem 0 0; }
-.dials-2 .dial-in { max-width: 22rem; }
+.dials-2 .dial-box { max-width: 26rem; }
 .dial-when {
     margin: 0 0 1rem; font-size: .9rem; font-weight: 600; color: var(--dim);
 }
 /* TWO HERE, NOT THREE: a two-item row laid on a three-column grid would leave
    a third of the box empty and read as an item that failed to load. */
+/* FOUR NOW, SINCE STORAGE JOINED THEM: four across where four fit, two by two
+   where they do not, one column on a phone. Never three and one -- a lone
+   dial on a second line reads as one that failed to fit. */
 .dial-row-2 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     /* No rule above this one: its own line says what it is, and there is no
        first half for it to be separated from. */
     margin-top: 0; padding-top: 0; border-top: 0;
 }
-@media (max-width: 56rem) { .dial-row-2 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 80rem) { .dial-row-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* A narrower gutter than the row above: four columns share the width three
+   had, and at 2.6rem "Who updates it" put its third chip on a line of its
+   own at 1376px. */
+.dial-row-2 { column-gap: 1.6rem; }
+@media (max-width: 40rem) { .dial-row-2 { grid-template-columns: minmax(0, 1fr); } }
 
 /* THE FIELD, AND IT IS NOT A THIRD DIAL. The two dials take routes away; this
    takes EXAMPLES away -- it is asked once and answers in all three chapters,
@@ -532,6 +586,33 @@ code:not(pre code) {
 .dial-in::placeholder { color: var(--dim); opacity: 1; }
 .dial-in:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-color: var(--accent); }
 
+/* THE PARTS NOBODY GETS TO CHOOSE, WRITTEN IN THE FIELD AND NOT TYPED INTO IT.
+   Asked for: "show that https is mandatory, in the field itself" -- and, for
+   the API address, "and /api.php at the end, is that true?". Measured, both
+   are: the server answers plain http with a 308 unless `allow_plain_http` is
+   set, an https page may not call an http address at all, and the installer
+   keeps the DIRECTORY of the address it is given and puts api.php after it --
+   so https://api.example.com/notes/ is read as https://api.example.com/api.php.
+   Only the middle is the reader's, so only the middle is an input.
+
+   The pill that was the input's is the wrapper's now; the input inside it is
+   bare, and the ring goes on the wrapper when the input has the focus. */
+.dial-box {
+    display: flex; align-items: baseline;
+    margin-top: .5rem; width: 100%; max-width: 18rem;
+    padding: .3rem .7rem;
+    font-size: .86rem;
+    background: var(--bg);
+    border: 1px solid var(--line); border-radius: 999px;
+}
+.dial-box:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; border-color: var(--accent); }
+.dial-fix { flex: none; font-family: var(--mono); font-size: .8rem; color: var(--dim); }
+.dial-box .dial-in {
+    flex: 1; min-width: 0; max-width: none; margin: 0; padding: 0 .1rem;
+    border: 0; border-radius: 0; background: transparent;
+}
+.dial-box .dial-in:focus-visible { outline: 0; }
+
 /* WHAT EACH DIAL REMOVES. No script: a radio and :has do it, so the page
    answers the dials with JavaScript off as well as on. The tag block is the
    one exception and the reason is in its own script -- a block that is COPIED
@@ -554,6 +635,23 @@ body:has(#a-mine:checked)  .if-any      { display: none; }
 body:has(#u-url:checked)   .if-cron, body:has(#u-self:checked) .if-cron { display: none; }
 body:has(#u-cron:checked)  .if-url,  body:has(#u-self:checked) .if-url  { display: none; }
 body:has(#u-cron:checked)  .if-self, body:has(#u-url:checked)  .if-self { display: none; }
+body:has(#d-sqlite:checked) .if-mysql  { display: none; }
+body:has(#d-mysql:checked)  .if-sqlite { display: none; }
+
+/* THE DRAWN SCREEN SHOWS EVERY CHIP, AND LIGHTS THE ONE THE DIALS CHOSE. It
+   hid the others -- `if-declared` on one chip, `if-any` on the other -- so the
+   drawing showed one answer per question where the installer shows two or
+   three, and it was reported as not looking like the real page. It did not.
+   Nothing is hidden now; only the fill moves. */
+body:has(#a-mine:checked)   .wiz-a .w-one,
+body:has(#a-any:checked)    .wiz-a .w-any,
+body:has(#d-sqlite:checked) .wiz-a .w-sqlite,
+body:has(#d-mysql:checked)  .wiz-a .w-mysql,
+body:has(#u-cron:checked)   .wiz-a .w-cron,
+body:has(#u-url:checked)    .wiz-a .w-url,
+body:has(#u-self:checked)   .wiz-a .w-self {
+    border-color: var(--accent); background: var(--accent); color: var(--on-accent);
+}
 
 /* == THE FRAMEWORK TABS =================================================== */
 
@@ -1068,9 +1166,10 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 
             <div class="dial dial-wide">
                 <label class="dial-legend" for="site">Your site</label>
-                <input class="dial-in" id="site" type="text" inputmode="url"
+                <span class="dial-box"><span class="dial-fix">https://</span><input
+                       class="dial-in" id="site" type="text" inputmode="url"
                        autocomplete="off" spellcheck="false"
-                       placeholder="staging.example.com">
+                       placeholder="staging.example.com"></span>
                 <p class="dial-say">
                     It fills in the examples.
                 </p>
@@ -1159,14 +1258,16 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
 
              The chapter is `if-own` as a whole, so they disappear with it.
 
-             THE THIRD QUESTION THE INSTALLER ASKS IS NOT HERE. Where the notes
-             live -- a file it creates, or a MySQL you already have -- changes
-             nothing you do on this page: same upload, same steps, same tag. It
-             is at the foot of the chapter with the other prerequisites, which
-             is what it is. A dial that changes no step would say the page
-             depends on it, and it does not. -->
+             AND THE INSTALLER'S THIRD QUESTION IS HERE NOW. Storage was left
+             out on the argument that it changed no step. It changes the one
+             command the shell route hands over -- `--storage=mysql` and the
+             database it names -- and it was reported as missing: a choice the
+             reader will meet on the installer's screen, and that the command
+             they copy should already carry. Its line is also where the one
+             prerequisite the installer cannot check for them lives: the
+             database's name, user and password. -->
             <div class="dials-2 if-own">
-                <p class="dial-when">Running the notes server yourself asks three more, and one address:</p>
+                <p class="dial-when">Running the notes server yourself asks four more, and one address:</p>
 
 
 
@@ -1213,6 +1314,20 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 </fieldset>
 
                 <fieldset class="dial">
+                    <legend>Storage</legend>
+                    <div class="seg">
+                        <label><input type="radio" name="sto" id="d-sqlite" checked> <span>SQLite</span></label>
+                        <label><input type="radio" name="sto" id="d-mysql"> <span>MySQL</span></label>
+                    </div>
+                    <p class="dial-say">
+                    <span class="if-sqlite">One file, created for you. Nothing
+                    to prepare.</span><span class="if-mysql">A database you
+                    already have: its name, user and password to
+                    hand.</span>
+                    </p>
+                </fieldset>
+
+                <fieldset class="dial">
                     <legend>Who updates it</legend>
                     <div class="seg">
                     <!-- "A URL CRON" AND NOT "AN ADDRESS". Both of the first
@@ -1242,16 +1357,23 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                      adding a second site -- had to hunt for where to put it.
 
                      PLACEHOLDER, NEVER A VALUE, and that is what makes it safe
-                     up here. Left empty the page falls back to the guess it
-                     used to write silently -- https://<your site>/notes/api.php
-                     -- which is right for most people and now reads as a
+                     up here. Left empty the page falls back to a guess --
+                     https://api.<your site>/api.php -- which reads as a
                      suggestion. The step below says where the real one comes
-                     from. -->
+                     from.
+
+                     ONLY THE MIDDLE IS TYPED. https:// and /api.php are written
+                     in the field and cannot be edited, because neither is a
+                     choice: see the comment over .dial-box. Somebody who pastes
+                     the whole address loses nothing -- the script takes both
+                     ends off what was pasted and puts them back itself. -->
                 <div class="dial dial-wide">
                     <label class="dial-legend" for="srv">The API address</label>
-                    <input class="dial-in" id="srv" type="text" inputmode="url"
+                    <span class="dial-box"><span class="dial-fix">https://</span><input
+                           class="dial-in" id="srv" type="text" inputmode="url"
                            autocomplete="off" spellcheck="false"
-                           placeholder="https://api.staging.example.com/api.php">
+                           placeholder="api.staging.example.com"><span
+                           class="dial-fix">/api.php</span></span>
                     <p class="dial-say">
                         <span class="if-web">Your installer prints it.</span><span
                         class="if-cli">The command takes it, and checks that it
@@ -1424,16 +1546,22 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                  block keeps the example written here, which is complete. -->
             <li class="if-cli">
                 <div>
+                    <!-- ONE SENTENCE, AND THE HELP THAT REALLY ANSWERS. This
+                         told what the command does inside -- downloads, checks,
+                         installs, deletes itself -- and pointed at `--help`
+                         for the MySQL options. Measured on an empty folder,
+                         `php annotepage-install.php --help` lists NO option:
+                         the file carries no release, so it says to fetch one
+                         first. The options come after `--fetch`, and the line
+                         says that. The MySQL options are in the block itself
+                         now, whenever the Storage dial says MySQL. -->
                     <p class="cap"><span class="n"></span> Run one command on the server</p>
                     <p class="say">
-                        In the folder that answers at your API address. It
-                        downloads the release, checks every file, installs,
-                        then deletes itself.
+                        It carries your answers above, and installs.
                     </p>
                     <p class="say small dim">
-                        MySQL instead of a file: <code>--storage=mysql</code>
-                        and its options, which
-                        <code>php annotepage-install.php --help</code> lists.
+                        Every option: <code>--fetch</code>, then
+                        <code>--help</code>.
                     </p>
                 </div>
                 <div>
@@ -1444,6 +1572,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
     <span class="op">--api-address=</span><span class="st">https://api.staging.example.com/api.php</span> \
     <span class="op">--answers-for=</span><span class="st">one-site</span> \
     <span class="op">--origins=</span><span class="st">https://staging.example.com</span> \
+    <span class="op">--storage=</span><span class="st">sqlite</span> \
     <span class="op">--updated-by=</span><span class="st">cron</span> \
     <span class="op">--delete-installer</span></code></pre>
                             </div>
@@ -1530,7 +1659,7 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                          itself, and leaving an installer on a web root is the
                          mistake this page should not let anybody make. -->
                     <p class="say">
-                        Two of the three you have answered above.
+                        You have answered all three above.
                     </p>
                     <p class="say">
                         Under them it shows the address your pages will point
@@ -1561,30 +1690,48 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                             <svg class="wiz-lock" viewBox="0 0 14 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="7.2" width="10.8" height="8.2" rx="1.6"/><path d="M4.4 7.2V4.8a2.6 2.6 0 0 1 5.2 0v2.4"/></svg>
                             <span class="wiz-url" id="wiz-url">staging.example.com/annotepage-install.php</span>
                         </p>
+                        <!-- THE SCREEN annotepage-install.php SERVES ONCE THE
+                             RELEASE IS DOWN, measured at 1376px and drawn in
+                             its order: title, rail, the check, the answers in
+                             their two boxes, the button. The words are its
+                             own -- the lede is the bootstrap's, the legends and
+                             chips are install-flow.php's, and
+                             tools/check-install-questions.mjs holds the chips
+                             to them. Which chip is filled, and what the two
+                             fields hold, come from the dials at the top. -->
                         <div class="wiz-body">
-                            <!-- THE SCREEN STARTS WHERE THE REAL ONE STARTS.
-                                 Without these three lines the drawing was a
-                                 stack of legends and chips, and it was read as
-                                 a set of questions the PAGE was asking -- the
-                                 reader answered them in their head and wondered
-                                 why nothing changed. The installer opens on its
-                                 own name, one line saying where it is up to,
-                                 and the heading "Install"; copied from
-                                 annotepage-install.php and install-flow.php. -->
                             <p class="wiz-h1" aria-hidden="true">Install annotepage</p>
-                            <p class="wiz-lede">The server is downloaded. Nothing is written until you press Install.</p>
+                            <p class="wiz-lede">The server is downloaded. Three questions, and all three have a default that works.</p>
+                            <div class="wiz-rail" aria-hidden="true"><span class="now"><i>1</i><b>Answer</b></span><span class="wiz-line"></span><span><i>2</i><b>It installs</b></span><span class="wiz-line"></span><span><i>3</i><b>Delete the installer</b></span></div>
+                            <p class="wiz-h2">First, can this server run it?</p>
+                            <p class="wiz-ok"><span><b>Yes.</b> PHP 8.3, the extensions, a directory it can write to.</span></p>
                             <p class="wiz-h2">Then, your answers</p>
-                            <p class="wiz-q">Which sites may write here</p>
-                            <p class="wiz-a"><span class="on if-declared">The ones I list</span><span class="on if-any">Any site</span></p>
-                            <p class="wiz-q">Storage</p>
-                            <p class="wiz-a"><span class="on">SQLite</span><span>MySQL</span></p>
-                            <p class="wiz-q">Keeping this server up to date</p>
-                            <p class="wiz-a"><span class="on if-cron">A shell cron</span><span class="on if-url">An address to call</span><span class="on if-self">It updates itself</span></p>
-                            <!-- AND A WIZARD ENDS ON A BUTTON. Three rows of
-                                 answers with nothing under them is a form
-                                 somebody abandoned; the thing that makes it a
-                                 wizard is that it goes somewhere when you press
-                                 it. Drawn, not clickable, and said to be. -->
+                            <div class="wiz-card">
+                                <p class="wiz-card-t">What this server is, and where it puts the notes.</p>
+                                <div class="wiz-two">
+                                    <div>
+                                        <p class="wiz-q">Which sites may write here</p>
+                                        <p class="wiz-a"><span class="w-one">The ones I list</span><span class="w-any">Any site</span></p>
+                                    </div>
+                                    <div>
+                                        <p class="wiz-q">Storage</p>
+                                        <p class="wiz-a"><span class="w-sqlite">SQLite</span><span class="w-mysql">MySQL</span></p>
+                                    </div>
+                                </div>
+                                <p class="wiz-l if-declared">The sites these notes will be written from</p>
+                                <p class="wiz-f if-declared" id="wiz-origins">https://staging.example.com</p>
+                                <p class="wiz-l">The address these pages will call</p>
+                                <p class="wiz-f" id="wiz-api">https://api.staging.example.com/api.php</p>
+                            </div>
+                            <div class="wiz-card if-mysql">
+                                <p class="wiz-card-t">Where the MySQL server is.</p>
+                                <p class="wiz-f">Host, port, database name, user, password</p>
+                            </div>
+                            <div class="wiz-card">
+                                <p class="wiz-card-t">How this server gets its updates.</p>
+                                <p class="wiz-q">Keeping this server up to date</p>
+                                <p class="wiz-a"><span class="w-cron">A shell cron</span><span class="w-url">An address to call</span><span class="w-self">It updates itself</span></p>
+                            </div>
                             <p class="wiz-go" aria-hidden="true"><span>Install</span></p>
                         </div>
                     </div>
@@ -1598,10 +1745,21 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                  nothing else says: the origin it will answer from. -->
             <li class="if-declared">
                 <div>
+                    <!-- WHY THE STEP EXISTS, SAID IN THE WORDS OF THE ANSWER
+                         THAT CAUSES IT. This said the installer leaves the
+                         block empty because the id does not exist while it
+                         runs -- true, and an explanation of the installer,
+                         not of what to do. And "your browser drew it above"
+                         pointed up at a tag that is in the NEXT chapter,
+                         below. Asked for instead: say, simply, that answering
+                         "The ones I list" means declaring the project and its
+                         address. -->
                     <p class="cap"><span class="n"></span> Declare your project</p>
                     <p class="say">
-                        The installer leaves this empty on purpose: the id does
-                        not exist while it runs. Your browser drew it above.
+                        You chose <b>The ones I list</b>: the server only takes
+                        notes from the projects and addresses written in
+                        <code>internal/config-local.php</code>. Paste this block
+                        there.
                     </p>
                 </div>
                 <div>
@@ -1628,19 +1786,20 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                  route away takes the whole route. -->
             <li class="if-cron">
                 <div>
+                    <!-- WHAT THE LINE DOES, AND A LINK FOR THE REST. Two
+                         paragraphs stood here -- the random minute, the path,
+                         the ninety days, the storage -- and they were reported
+                         as far too long for one crontab line. What somebody
+                         pasting it needs is what it does; what they may want
+                         before pasting it is on the FAQ, filtered to the
+                         questions about exactly this. -->
                     <p class="cap"><span class="n"></span> Keep it up to date</p>
                     <p class="say">
-                        One line in your crontab, once a day. The last screen
-                        gives it to you with the real path already in it, and
-                        with a minute and an hour <b>drawn for your install</b>
-                        &mdash; so that every server running this does not knock
-                        at the same second. Any others do as well.
+                        Once a day, from your crontab: it updates when a release
+                        is out, then does the maintenance.
                     </p>
-                    <p class="say">
-                        It updates when a release is out, then tidies up: a
-                        note leaves ninety days after its last reply &mdash;
-                        <a href="questions.html#kept">what that means</a> &mdash;
-                        and the storage follows the code. One line, both jobs.
+                    <p class="say small">
+                        <a href="questions.html?tag=updates">What it changes, and what it never touches</a>
                     </p>
                 </div>
                 <div>
@@ -1655,10 +1814,12 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                 <div>
                     <p class="cap"><span class="n"></span> Keep it up to date</p>
                     <p class="say">
-                        One line in your crontab, or the same address pasted
-                        into your host&rsquo;s scheduler. The installer writes
-                        the secret and shows it <b>once</b>. Each call also
-                        tidies up: notes past their age go on time.
+                        Once a day, from your host&rsquo;s scheduler: it updates
+                        when a release is out, then does the maintenance. The
+                        installer shows the secret <b>once</b>.
+                    </p>
+                    <p class="say small">
+                        <a href="questions.html?tag=updates">What it changes, and what it never touches</a>
                     </p>
                 </div>
                 <div>
@@ -1771,16 +1932,16 @@ return array(
             <a href="https://github.com/tuxo83/annotepage/blob/main/server/webroot/internal/config-local.example.php">written out</a>.</span>
         </p>
 
-        <!-- WHAT YOU NEED BEFORE STARTING, AND ONLY THAT. This also
-             described the installer's storage question -- which file, or which
-             database -- and that question is drawn two steps up now, in the
-             screen that asks it. What is left is the one thing no step shows:
-             what has to be true of the machine before any of this runs. -->
-        <p class="small dim">
-            PHP 7.4, with <code>pdo_sqlite</code> or <code>pdo_mysql</code>. For
-            MySQL, have its host, name, user and password to hand. The rest is in
-            <a href="https://github.com/tuxo83/annotepage/blob/main/server/INSTALL.md">INSTALL.md</a>.
-        </p>
+        <!-- NO LINE OF PREREQUISITES UNDER THE CHAPTER ANY MORE. It read
+             "PHP 7.4, with pdo_sqlite or pdo_mysql. For MySQL, have its host,
+             name, user and password to hand. The rest is in INSTALL.md." and it
+             was reported as having no reason to be here. Measured, it had none
+             left: the installer's first section, "First, can this server run
+             it?", checks the PHP version, the extensions and a writable
+             directory before asking anything, and says which one is missing;
+             the MySQL credentials are said by the Storage dial, at the moment
+             MySQL is chosen. INSTALL.md is for whoever operates a server once
+             it runs, and the repository's README points at it. -->
 
     </div>
 </section>
@@ -2384,6 +2545,9 @@ return array(
     var audAny    = document.getElementById('a-any');
     var updUrl    = document.getElementById('u-url');
     var updSelf   = document.getElementById('u-self');
+    var stoMysql  = document.getElementById('d-mysql');
+    var wizOrigins = document.getElementById('wiz-origins');
+    var wizApi    = document.getElementById('wiz-api');
 
     /* A MINUTE AND AN HOUR NOBODY ELSE HAS. The line read 17 4 on every copy of
        this page, so everybody who pasted it woke their host at the same second
@@ -2418,7 +2582,8 @@ return array(
        ready to be copied. */
     if (!tagCode || !keyCode || !orgCode || !jsonCode || !cronCode
         || !askCode || !siteIn || !srvIn || !cronSh || !wizUrl || !open || !shared
-        || !pinned || !installCode || !audAny || !updUrl || !updSelf) return;
+        || !pinned || !installCode || !audAny || !updUrl || !updSelf
+        || !stoMysql || !wizOrigins || !wizApi) return;
 
     /* Without a secure context there is no WebCrypto, and a key drawn from
        Math.random would be guessable -- which is worse than no key at all,
@@ -2506,12 +2671,24 @@ return array(
            exists BECAUSE the two are usually apart: a server that answered from
            inside the site would have nothing to declare. `api.` mirrors what
            this project runs itself, and it is a placeholder either way. */
-        var guess  = 'https://api.' + site + '/api.php';
-        srvIn.placeholder = guess;
+        /* THE FIELD HOLDS THE MIDDLE ONLY: https:// and /api.php are drawn
+           around it and are not the reader's to choose (see .dial-box). What
+           is pasted whole loses its two ends here and gets them back below,
+           so a pasted address and a typed host come out the same. */
+        var middle = (srvIn.value || '').trim()
+            .replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '')
+            .split(/[?#]/)[0]
+            .replace(/\s+/g, '')
+            .replace(/\/+$/, '')
+            .replace(/\/api\.php$/i, '')
+            .replace(/\/+$/, '');
+        srvIn.placeholder = 'api.' + site;
+        var ownApi = 'https://' + (middle || 'api.' + site) + '/api.php';
         /* The installer is opened at the reader's own address. */
         wizUrl.textContent = site + '/annotepage-install.php';
-        var ownApi = srvIn.value.trim() || guess;
         var origin = 'https://' + site;
+        wizOrigins.textContent = origin;
+        wizApi.textContent = ownApi;
         var api = shared.checked ? SHARED_API : ownApi;
         var locked = pinned.checked;
 
@@ -2655,6 +2832,7 @@ return array(
         };
         var aud = audAny.checked ? 'anyone' : 'one-site';
         var upd = updUrl.checked ? 'url' : (updSelf.checked ? 'self' : 'cron');
+        var sto = stoMysql.checked ? 'mysql' : 'sqlite';
         while (installCode.firstChild) installCode.removeChild(installCode.firstChild);
         var w = function (cls, txt) {
             installCode.appendChild(cls ? piece(cls, txt) : document.createTextNode(txt));
@@ -2671,6 +2849,19 @@ return array(
         opt('api-address', ownApi);
         opt('answers-for', aud);
         if (aud === 'one-site') opt('origins', origin);
+        opt('storage', sto);
+        /* THE THREE A SHELL CANNOT GUESS, AS PLACEHOLDERS THAT READ AS SUCH.
+           Host and port have defaults the installer states; the name, the user
+           and the password do not. No angle brackets: unquoted, `<` and `>`
+           are redirections, and a command pasted before its placeholders are
+           replaced must fail on a name, not truncate a file. The password
+           comes from a file, never an argument: the installer's own help says
+           why. */
+        if (sto === 'mysql') {
+            opt('mysql-name', 'your-database');
+            opt('mysql-user', 'your-user');
+            opt('mysql-password-file', '/path/to/db-password');
+        }
         opt('updated-by', upd);
         opt('delete-installer', null, true);
 
@@ -2696,8 +2887,32 @@ return array(
        their own address arrive rather than having to leave the field to find
        out whether it took. Nothing is sent on either event -- there is no code
        here that sends anything, which is what makes the claim checkable. */
-    siteIn.addEventListener('input', paint);
-    srvIn.addEventListener('input', paint);
+    /* WHAT IS PASTED WHOLE IS TRIMMED IN THE FIELD ITSELF, not only in the
+       blocks. The field draws https:// before the input and /api.php after
+       it, so a pasted address showed "https://https://..." -- the page
+       quoting its own fixed parts back at the reader. The scheme goes as soon
+       as it arrives; the tail goes when the field is left, so that typing
+       ".../api.php" a letter at a time is not rewritten under the cursor. */
+    var SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+    siteIn.addEventListener('input', function () {
+        if (SCHEME.test(siteIn.value)) {
+            siteIn.value = siteIn.value.trim().replace(SCHEME, '').split(/[\/?#]/)[0];
+        }
+        paint();
+    });
+    siteIn.addEventListener('change', function () {
+        siteIn.value = siteIn.value.trim().split(/[\/?#]/)[0];
+        paint();
+    });
+    srvIn.addEventListener('input', function () {
+        if (SCHEME.test(srvIn.value)) srvIn.value = srvIn.value.trim().replace(SCHEME, '');
+        paint();
+    });
+    srvIn.addEventListener('change', function () {
+        srvIn.value = srvIn.value.trim().split(/[?#]/)[0]
+            .replace(/\/+$/, '').replace(/\/api\.php$/i, '').replace(/\/+$/, '');
+        paint();
+    });
 
     fresh();
 }());
@@ -2799,7 +3014,7 @@ return array(
 <template id="annotepage-tool"><script src="/annotepage-client-2.27.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.11"
+        data-version="2026.9.12"
         defer></script></template>
 <script>
 (function () {
