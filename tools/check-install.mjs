@@ -414,6 +414,15 @@ check('the redirect does not lead to the same address in https',
         !/unsafe-inline'[^;]*;|unsafe-eval/.test(policy.replace(/style-src[^;]*;/, '')), policy);
     check('the policy stopped refusing everything else by default',
         policy.startsWith("default-src 'none';"), policy);
+    /* AND IT READS THE TEXT BEFORE IT PUTS THE BUTTON IN. The button is a
+       child of the block, so a textContent taken at click time ended in the
+       word "Copy" -- measured on the screen after the install, where the first
+       block copied `data-server="..."Copy`. No browser runs in this suite, so
+       the order is held on the source: the read comes before the append. */
+    const script = scripts[0] || '';
+    check('the copy button reads its text after it has put itself inside the block',
+        script.indexOf('pre.textContent') !== -1
+        && script.indexOf('pre.textContent') < script.indexOf('pre.appendChild(button)'));
     /* And what the crontab block copies is the line, not the comment header
        drawn over it -- a header pasted twice into a crontab is harmless and
        looks like a mistake. */

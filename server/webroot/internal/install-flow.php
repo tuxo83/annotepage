@@ -4729,13 +4729,15 @@ function ap_i_copy_script()
 (function () {
     var blocks = document.querySelectorAll('pre');
     Array.prototype.forEach.call(blocks, function (pre) {
+        /* Read BEFORE the button goes in: it is a child of the block, and a
+           textContent taken afterwards ends in the word Copy. */
+        var text = pre.getAttribute('data-copy');
+        if (text === null) { text = pre.textContent; }
         var button = document.createElement('button');
         button.type = 'button';
         button.className = 'copy';
         button.textContent = 'Copy';
         button.addEventListener('click', function () {
-            var text = pre.getAttribute('data-copy');
-            if (text === null) { text = pre.textContent; }
             var say = function (word) {
                 button.textContent = word;
                 setTimeout(function () { button.textContent = 'Copy'; }, 1800);
