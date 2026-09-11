@@ -491,7 +491,7 @@ code:not(pre code) {
    is 240px, and the address it offers as a placeholder needs 303 -- so it was
    shown cut, which is the one thing a placeholder must not be. Measured, not
    chosen: 22rem is 352px, and the cap is on this field alone. */
-.dials-2 .dial-wide { margin: 1rem 0 1.3rem; }
+.dials-2 .dial-wide { margin: 1.6rem 0 0; }
 .dials-2 .dial-in { max-width: 22rem; }
 .dial-when {
     margin: 0 0 1rem; font-size: .9rem; font-weight: 600; color: var(--dim);
@@ -499,7 +499,7 @@ code:not(pre code) {
 /* TWO HERE, NOT THREE: a two-item row laid on a three-column grid would leave
    a third of the box empty and read as an item that failed to load. */
 .dial-row-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     /* No rule above this one: its own line says what it is, and there is no
        first half for it to be separated from. */
     margin-top: 0; padding-top: 0; border-top: 0;
@@ -1168,6 +1168,15 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
             <div class="dials-2 if-own">
                 <p class="dial-when">Running the notes server yourself asks three more, and one address:</p>
 
+
+
+                <!-- THE THREE QUESTIONS ON ONE LINE, THE ADDRESS UNDER THEM.
+                     The first version of this box stacked the new question and
+                     the address above a row of two, and it read as a form:
+                     three shapes for three kinds of thing. The box above lays
+                     its three choices out on one row; this one does the same,
+                     and the one field typed rather than clicked comes after. -->
+                <div class="dial-row dial-row-2">
                 <!-- HOW YOU INSTALL IT, AND IT IS A DIAL NOW. It was a sentence
                      under the first step -- "with a shell, one command does the
                      whole thing" -- on the argument that a dial must take a
@@ -1178,19 +1187,53 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                      person who installs these servers, because a sentence
                      pointing at --help left them to assemble that command by
                      hand from four dials. -->
-                <fieldset class="dial dial-wide">
+                <fieldset class="dial">
                     <legend>How you install it</legend>
                     <div class="seg">
                         <label><input type="radio" name="how" id="i-web" checked> <span>In a browser</span></label>
                         <label><input type="radio" name="how" id="i-cli"> <span>With a shell</span></label>
                     </div>
                     <p class="dial-say">
-                    <span class="if-web">Upload one file and open it: the page
-                    asks the questions.</span><span class="if-cli">One command,
-                    with the answers below already in it.</span>
+                    <span class="if-web">Upload one file; its page asks the
+                    rest.</span><span class="if-cli">One command, carrying
+                    these answers.</span>
+                    </p>
+                </fieldset>
+                <fieldset class="dial">
+                    <legend>Which sites may write here</legend>
+                    <div class="seg">
+                        <label><input type="radio" name="aud" id="a-mine" checked> <span>The ones I list</span></label>
+                        <label><input type="radio" name="aud" id="a-any"> <span>Any site</span></label>
+                    </div>
+                    <p class="dial-say">
+                    <span class="if-declared">Your origins in, every other
+                    out.</span><span class="if-any">A relay: any project that asks
+                    is served.</span>
                     </p>
                 </fieldset>
 
+                <fieldset class="dial">
+                    <legend>Who updates it</legend>
+                    <div class="seg">
+                    <!-- "A URL CRON" AND NOT "AN ADDRESS". Both of the first
+                         two ARE crons -- the installer's own screens call them
+                         "cron with a shell" and "cron that can only fetch a
+                         URL" -- and naming one of them after the thing it calls
+                         made them read as two different kinds of answer. What
+                         separates them is what the host gives you. -->
+                        <label><input type="radio" name="upd" id="u-cron" checked> <span>A shell cron</span></label>
+                        <label><input type="radio" name="upd" id="u-url"> <span>A URL cron</span></label>
+                        <label><input type="radio" name="upd" id="u-self"> <span>Itself</span></label>
+                    </div>
+                    <p class="dial-say">
+                    <span class="if-cron">A line in your crontab. Only you can
+                    touch the code.</span><span class="if-url">For a host with no
+                    shell: its scheduler calls an address.</span><span
+                    class="if-self">Nothing to schedule. The web server can
+                    rewrite the code.</span>
+                    </p>
+                </fieldset>
+                </div>
                 <!-- THE ADDRESS, IN THE BOX WITH THE OTHER FIELD. It was in the
                      server chapter, after the step that prints it, on the
                      argument that it does not exist yet up here. True, and it
@@ -1215,45 +1258,6 @@ a.lp-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; 
                         leads to the folder you run it in.</span> Left empty, the
                         blocks guess.
                     </p>
-                </div>
-
-                <div class="dial-row dial-row-2">
-                <fieldset class="dial">
-                    <legend>Which sites may write here</legend>
-                    <div class="seg">
-                        <label><input type="radio" name="aud" id="a-mine" checked> <span>The ones I list</span></label>
-                        <label><input type="radio" name="aud" id="a-any"> <span>Any site</span></label>
-                    </div>
-                    <p class="dial-say">
-                    <span class="if-declared">Declared, so it answers your origin
-                    and refuses every other.</span><span class="if-any">A relay: any
-                    project that asks is served, and none of them has an origin
-                    lock.</span>
-                    </p>
-                </fieldset>
-
-                <fieldset class="dial">
-                    <legend>Who updates it</legend>
-                    <div class="seg">
-                    <!-- "A URL CRON" AND NOT "AN ADDRESS". Both of the first
-                         two ARE crons -- the installer's own screens call them
-                         "cron with a shell" and "cron that can only fetch a
-                         URL" -- and naming one of them after the thing it calls
-                         made them read as two different kinds of answer. What
-                         separates them is what the host gives you. -->
-                        <label><input type="radio" name="upd" id="u-cron" checked> <span>A shell cron</span></label>
-                        <label><input type="radio" name="upd" id="u-url"> <span>A URL cron</span></label>
-                        <label><input type="radio" name="upd" id="u-self"> <span>Itself</span></label>
-                    </div>
-                    <p class="dial-say">
-                    <span class="if-cron">A line in your crontab. The code stays
-                    writable by you and never by the web server.</span><span
-                    class="if-url">The same thing, for a host with no shell:
-                    a scheduler that takes an address and nothing else.</span><span class="if-self">Nothing
-                    to schedule, and nothing below to do. The price is the code
-                    directory writable by the web server, for good.</span>
-                    </p>
-                </fieldset>
                 </div>
             </div>
         </section>
@@ -2780,7 +2784,7 @@ return array(
 <script src="/annotepage-client-2.26.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.9"
+        data-version="2026.9.10"
         defer></script>
 
 </body>
