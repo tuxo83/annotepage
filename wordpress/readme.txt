@@ -8,8 +8,7 @@ Stable tag: 1.0.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
-Annotate this site. It works the moment you activate it, for administrators
-only, until you say otherwise.
+Annotate this site. It works the moment you activate it, for administrators only, until you say otherwise.
 
 == Description ==
 
@@ -73,6 +72,31 @@ yourself (one PHP file, PHP 7.4 and `pdo_sqlite`). In both cases the notes are
 end-to-end encrypted and the server cannot read one. It sees counts, times,
 sizes, IP addresses and your domain &mdash; never your paths and never your
 text.
+
+== External services ==
+
+This plugin relies on two external services. Its own PHP contacts neither of
+them: both are reached by the reader's browser, only on pages where the tag is
+written, and only for the people the audience includes.
+
+**cdn.jsdelivr.net**, which serves the annotation tool itself. The tag this
+plugin writes loads
+`https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js`, so on
+every page load that carries the tag, the browser sends jsDelivr what any
+request for a file carries: the reader's IP address, their user agent, and the
+address of the file asked for. No note, no page path and no key is sent there.
+Terms of use: https://www.jsdelivr.com/terms
+Privacy policy: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
+
+**The notes server** &mdash; `https://api.annotepage.com/api.php`, the shared
+relay filled in at activation, or whichever address you set on the settings
+screen. It receives every note a reviewer writes and every request that reads
+notes back, at the moment they are written and read. The notes are encrypted in
+the browser before they leave it, so the server sees counts, times, sizes, IP
+addresses and your domain &mdash; never your paths and never your text. Setting
+the address to a copy of `api.php` you host yourself replaces this service with
+your own server.
+What the shared relay sees: https://annotepage.com/questions.html#data
 
 == Installation ==
 
@@ -141,6 +165,11 @@ screen that only said "delete". Reinstalling picks up where you left off.
 
 The interface strings belong to the tool and are overridable through a label
 file belonging to your site. That is a file you upload, not a setting here.
+
+== Screenshots ==
+
+1. The settings screen: who sees it, where the notes go, and the key &mdash; with the tag this site now writes shown at the foot of it.
+2. The plugins screen straight after activation: it drew a key, pointed at the shared relay, and says so.
 
 == Changelog ==
 

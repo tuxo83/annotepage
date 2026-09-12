@@ -926,8 +926,15 @@ function annotepage_save() {
 	   here: a role added by another plugin is a real role, and a role removed
 	   since must not stay in our option pointing at nothing. */
 	$known = array_keys( wp_roles()->get_names() );
-	$roles = isset( $_POST['ap_roles'] ) ? (array) wp_unslash( $_POST['ap_roles'] ) : array();
-	$new['roles'] = array_values( array_intersect( $known, array_map( 'sanitize_key', $roles ) ) );
+
+	/* Sanitized where the superglobal is read, and not a line later on the way
+	   into array_intersect(): the values and their order are the same either
+	   way, but the guarantee is only legible -- to a reader, and to the
+	   directory's scanner -- at the point the request is touched. */
+	$roles = isset( $_POST['ap_roles'] )
+		? array_map( 'sanitize_key', (array) wp_unslash( $_POST['ap_roles'] ) )
+		: array();
+	$new['roles'] = array_values( array_intersect( $known, $roles ) );
 
 	$unknown        = array();
 	$typed_people   = isset( $_POST['ap_people'] ) ? sanitize_textarea_field( wp_unslash( $_POST['ap_people'] ) ) : '';
