@@ -509,6 +509,26 @@ code {
             keeps them longer than its configuration says.</p>
             </article>
 
+            <!-- THE INSTALL THE INSTALL PAGE NO LONGER SHOWS. Its assistant
+                 chapter says there is nothing to install and links here: this
+                 is the option, with its price stated where it is chosen. -->
+            <article class="qa" data-tags="Setting it up|Updates">
+                <h3 class="qa-q" id="for-good">Can I install the assistant's tool for good?</h3>
+                <p class="qa-tags"><span class="qa-tag">Setting it up</span><span class="qa-tag">Updates</span></p>
+                <p class="qa-a">Yes. By default nothing is installed: you say
+            <code>npx</code> when you ask, and your assistant fetches the latest
+            version each time. Installed and plugged in, its tools are there in
+            every conversation instead:</p>
+<pre class="qa-code">npm install -g annotepage-mcp
+claude mcp add annotepage -- annotepage-mcp</pre>
+                <p class="qa-a">The price is that it no longer updates itself:
+            <code>npm install -g annotepage-mcp@latest</code> does it, when you
+            choose. It says when a newer version is out, once, the first time it
+            reaches a server that knows &mdash; and <code>npx annotepage-mcp</code>
+            then runs this installed copy too, so update it rather than
+            expecting npx to.</p>
+            </article>
+
             <!-- WHERE IT ALL IS, IN ONE PLACE. The menu carries one link, and
                  one is right for a menu; but "GitHub" named a host rather than
                  a thing, and the two published packages were nowhere. Here they

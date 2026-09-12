@@ -721,17 +721,6 @@ body:has(#fw-laravel:checked) .fw-laravel { display: block; }
 body:has(#fw-symfony:checked) .fw-symfony { display: block; }
 body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 
-/* The assistant chapter's two ways, drawn by the same control. Hidden by the
-   tab, never by the mode dial: .if-open stays on its own rule. */
-/* HIDDEN BY THE OTHER TAB, never shown by setting a display: the quick panel is
-   a .frame.term, which is a flex column, and a `display: block` here would
-   flatten it. The id in :has() outranks .frame.term, so the hiding wins. */
-body:has(#mw-good:checked)  .mw-quick,
-body:has(#mw-quick:checked) .mw-good { display: none; }
-.mw-tabs { margin: 0 0 .7rem; }
-/* The label opens the right-hand column, level with the step's title. */
-.sub-lead.mw-lead { margin-top: 0; }
-.mw-note { margin: .6rem 0 0; }
 
 /* == THE LOOP, IN FOUR BOXES ==============================================
 
@@ -2253,74 +2242,27 @@ return array(
 <!-- 3. THE ASSISTANT ===================================================== -->
 <section id="assistant">
     <div class="wrap">
-        <h2>Install the MCP on the assistant</h2>
+        <h2>Connect your assistant</h2>
 
-        <!-- THREE STEPS, AND THE SPLIT IS THE REMARK. It was two: "Plug it
-             in", carrying two commands AND a configuration file AND the three
-             places a key can live, and then "Then ask it". Installing a program
-             and telling it a secret are not one gesture -- one is the same in
-             every project, the other is the only thing on this page a reader
-             can get wrong.
+        <!-- NOTHING TO INSTALL, SO NO STEP FOR IT. "Install it" stood first,
+             then with two tabs, Quick and For good -- and in the quick way it
+             had nothing to show but the sentence the last step already holds.
+             The assistant fetches the tool itself when the sentence names npx.
+             So installing it for good is what this line offers, as an option,
+             and the two commands and their price (updating by hand) are a FAQ
+             card rather than a choice put to every reader.
 
-             AND THE MIDDLE ONE ONLY EXISTS IN SECURE MODE. In open mode the key
-             is in the tag the assistant can read, so there is nothing to hand
-             over: the dial takes the whole step away rather than leaving an
-             empty one. The chapter runs 01 02 in open, 01 02 03 in secure, and
-             the numbers are counted rather than written. -->
+             THE KEY STEP ONLY EXISTS IN SECURE MODE. In open mode the key is in
+             the tag the assistant can read, so there is nothing to hand over,
+             and the chapter is the marker and one numbered step. The numbers
+             are counted rather than written. -->
+        <p class="note-aside is-info">
+            <span class="mk" aria-hidden="true">&#9432;</span>
+            <span><b>Nothing to install.</b> Say <b>npx</b> when you ask, and your
+            assistant fetches the latest version itself.
+            <a href="questions.html#for-good">Install it for good instead</a>.</span>
+        </p>
         <ol class="use-steps">
-            <li>
-                <div>
-                    <p class="cap"><span class="n"></span> Install it</p>
-                    <p class="say if-open">
-                        The key is on the page, so that is all there is.
-                    </p>
-                </div>
-                <!-- TWO WAYS, AND EVERYTHING THAT DIFFERS IS UNDER THE TABS.
-                     The sentence describing each way stood on the left, both at
-                     once, beside a control that shows one -- reported. Each now
-                     sits under its own block and changes with the tab, and a
-                     label over the tabs says there is a choice to make, which two
-                     pills alone did not.
-                     THIS STEP NAMES THE COMPONENT, NOT THE SITE. Quick showed the
-                     whole sentence to the assistant, site included, which is the
-                     last step's job -- and in secure mode the key comes in
-                     between. So Quick shows what the assistant runs; the sentence
-                     with the site stays in "Then ask it", naming npx when this tab
-                     is on. These tabs are not part of .dials. -->
-                <div>
-                    <p class="sub-lead mw-lead">Two ways, pick one:</p>
-                    <div class="tabs mw-tabs" role="radiogroup" aria-label="How to install it">
-                        <label><input type="radio" name="mcpway" id="mw-quick" checked> <span>Quick</span></label>
-                        <label><input type="radio" name="mcpway" id="mw-good"> <span>For good</span></label>
-                    </div>
-                    <!-- A REQUEST FROM THE HUMAN, NOT A COMMAND (note 352). In the
-                         quick way nobody types a command: the reader tells the
-                         assistant which tool to use, so what is shown is that
-                         sentence, in the same terminal crop as the last step and
-                         the home page. It names the tool and not the site (note
-                         347): the site belongs to "Then ask it". -->
-                    <div class="mw-quick">
-                        <div class="frame term">
-                            <button class="copy" type="button" data-copy="ask-quick" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-                            <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
-                            <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-quick">use npx annotepage-mcp to read the review notes</span><span class="cur"></span></div>
-                        </div>
-                        <p class="say mw-note">Nothing to install. Because you say
-                        <b>npx</b>, your assistant fetches the latest version each
-                        time, and there is nothing to update.</p>
-                    </div>
-                    <div class="mw-good">
-                    <div class="snip">
-                                <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
-<span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
-                            </div>
-                        <p class="say mw-note">Installed once and plugged in: its tools
-                        are there in every conversation, and it tells you when a newer
-                        version is out.</p>
-                    </div>
-                </div>
-            </li>
 
             <!-- THE SAME FILE how-to-use-it.html DRAWS, AND THE SAME DRAWING.
                  That page shows a reviewer's machine with the file open on the
@@ -2502,7 +2444,7 @@ return array(
                         <div class="rp-flow">
 <p class="rp-restart">[figure: playing it again]</p>
 
-<p class="rp-user" data-step="ask"><span class="ps" aria-hidden="true">&#x276F;</span> <span class="band" id="ask-code">connect to staging.example.com with annotepage and fix what the reviewers flagged</span></p>
+<p class="rp-user" data-step="ask"><span class="ps" aria-hidden="true">&#x276F;</span> <span class="band" id="ask-code">use npx annotepage-mcp to fix what the reviewers flagged on staging.example.com</span></p>
 
 <code class="rp-tool" data-step="t1" data-at="2220"><b>Bash</b>(annotepage open)</code>
 <code class="rp-out" data-step="o1" data-at="2600"><span class="trunc">&#x2026; +41 lines (ctrl+o to expand)</span></code>
@@ -2975,14 +2917,11 @@ return array(
         cronCode.appendChild(piece('st',
             "'" + api + "?action=update&token=<the secret>'"));
 
-        /* THE SENTENCE FOLLOWS THE TAB OF STEP 01. Quick names npx, because
-           nothing is installed and the assistant has to be told how to fetch
-           it; for good, the tools are already plugged in and the name is
-           enough. */
-        var quick = document.getElementById('mw-quick');
-        askCode.textContent = (!quick || quick.checked)
-            ? 'use npx annotepage-mcp to fix what the reviewers flagged on ' + site
-            : 'connect to ' + site + ' with annotepage and fix what the reviewers flagged';
+        /* NAMING npx, because nothing is installed: the sentence is what tells
+           the assistant how to fetch the tool. Whoever installed it for good
+           (questions.html#for-good) can say it the same way. */
+        askCode.textContent =
+            'use npx annotepage-mcp to fix what the reviewers flagged on ' + site;
 
         /* THE COMMAND, FROM THE SAME ANSWERS AS EVERY OTHER BLOCK. One option
            per dial and the address field, in the installer's own vocabulary --
@@ -3051,10 +2990,6 @@ return array(
     var dials = document.querySelectorAll('.dials input[type="radio"]');
     for (var i = 0; i < dials.length; i++) {
         dials[i].addEventListener('change', paint);
-    }
-    var ways = document.querySelectorAll('input[name="mcpway"]');
-    for (var j = 0; j < ways.length; j++) {
-        ways[j].addEventListener('change', paint);
     }
     /* input and not change: the blocks follow the typing, so the reader sees
        their own address arrive rather than having to leave the field to find
@@ -3188,7 +3123,7 @@ return array(
 <template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.20"
+        data-version="2026.9.21"
         defer></script></template>
 <script>
 (function () {
