@@ -133,10 +133,11 @@ purpose: it holds your key, and deleting it on uninstall would turn every note
 ever written into ciphertext nobody can open, from a screen that only said
 "delete". Reinstalling picks up where you left off.
 
-= Can I translate the panel? =
+= What language is it in? =
 
-The interface strings belong to the tool and are overridable through a label
-file belonging to your site. That is a file you upload, not a setting here.
+This screen follows your WordPress language, and French ships complete. What a
+*visitor* reads is the tool's own text, which is a separate file belonging to
+your site &mdash; a French set ships with the tool as well.
 
 == Screenshots ==
 

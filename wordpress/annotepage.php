@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       annotepage
  * Plugin URI:        https://annotepage.com/how-to-install-it.html
- * Description:       Annotate this site. It works the moment you activate it, for administrators only, until you say otherwise.
+ * Description:       Annotate a page. Your assistant answers in the thread. Activate it and it works, for administrators only, until you say otherwise.
  * Version:           1.0.0
  * Requires at least: 5.2
  * Requires PHP:      7.4
