@@ -30,24 +30,38 @@ const SRC = join(HERE, '..', 'src');
 
 const read = (name) => readFileSync(join(SRC, name), 'utf8');
 
-/* The same assembly as the build, cut down to the two sections that depend
-   on no DOM. "window" is cut down to what those sections read: if one of them
-   ever starts touching the document, this file falls over, and that is the
-   point. */
+/* The same assembly as the build, cut down to the sections that depend on no
+   DOM. "window" is cut down to what those sections read: if one of them ever
+   starts touching the document, this file falls over, and that is the point.
+
+   AND "document" ANSWERS EXACTLY ONE QUESTION: the lang attribute of <html>.
+   Two things read the page's language now -- the dates and the choice of
+   label set -- and they read it through one function, which these checks
+   call. Nothing else is on that object, so a section that starts querying the
+   document still falls over here, which is what this harness is for. */
+const page = { lang: null };
 const window = { crypto: webcrypto };
+const document = { documentElement: {
+    getAttribute: (name) => (name === 'lang' ? page.lang : null) } };
 const code = [
     read('10-utils.js'),
+    /* 15-labels.js is data and nothing but data: the English set T() falls
+       back on. It is loaded here so that the fallback can be PROVEN rather
+       than described -- a label file that never arrives leaves exactly these
+       words on the screen. */
+    read('15-labels.js'),
     read('20-crypto.js'),
     /* 80-upgrade.js joins them for the same reason: its decisions -- is that
        announced version newer, does it even look like a version, which
-       address do we build from it -- are pure, they touch no DOM, and they
-       are the ones a hostile answer would try to bend. Everything in that
-       file that touches the document is inside a function, so evaluating it
-       here costs nothing. */
+       address do we build from it, which label set ships beside this file --
+       are pure, they touch no DOM, and they are the ones a hostile answer
+       would try to bend. Everything in that file that touches the document is
+       inside a function, so evaluating it here costs nothing. */
     read('80-upgrade.js'),
     'return { b64url, fromB64url, generateSalt, keyFromText, derive,',
-    '         indexOfPath, seal, open, compact,',
-    '         versionNumbers, announcedVersion, cdnServing, officialUrl };'
+    '         indexOfPath, seal, open, compact, T, pageLanguage,',
+    '         versionNumbers, announcedVersion, cdnServing, officialUrl,',
+    '         shippedLabelsFor, shippedLabelsUrl, labelsFileFor };'
 ].join('\n');
 
 /* The same values the build injects, and for the same reason: these sections
@@ -55,8 +69,8 @@ const code = [
 const FORMAT = 2;
 const TOOL_VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
 const SITE_VERSION = '';
-const module = new Function('window', 'FORMAT', 'TOOL_VERSION', 'SITE_VERSION', code)(
-    window, FORMAT, TOOL_VERSION, SITE_VERSION);
+const module = new Function('window', 'document', 'FORMAT', 'TOOL_VERSION', 'SITE_VERSION', code)(
+    window, document, FORMAT, TOOL_VERSION, SITE_VERSION);
 
 let failures = 0;
 const check = (name, got, expected) => {
@@ -396,6 +410,89 @@ const main = async () => {
             && sandbox.window.Annotepage.labels['button.open'] === 'Page wins'
             ? 'French set, page label kept' : JSON.stringify(sandbox.window.Annotepage.labels).slice(0, 80),
         'French set, page label kept');
+
+    /* -- THE LANGUAGE THE PAGE ITSELF DECLARES ---------------------------
+       The panel stayed English until somebody declared a file, and the reason
+       written on the site was aimed at the wrong target: it argued against
+       reading the BROWSER -- where two people at one screen would get two
+       panels -- and applied that to the PAGE, which says one thing to
+       everybody looking at it. The browser is still never consulted. The page
+       now is, and data-labels stays the way to overrule it.
+
+       Every check below was made to fail before it was kept. */
+    process.stdout.write('\nthe language the page declares\n');
+
+    page.lang = 'fr-CA';
+    check('the language is read off <html>, in one place', module.pageLanguage(), 'fr-CA');
+    page.lang = '  fr  ';
+    check('and what surrounds it is not part of it', module.pageLanguage(), 'fr');
+    page.lang = null;
+    check('no lang attribute is no language', module.pageLanguage(), '');
+
+    const CDN = 'https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js';
+    const FRENCH = 'https://cdn.jsdelivr.net/npm/annotepage-client@2/labels/fr.js';
+    const OURS = 'https://site.example.com/labels/our-own.js';
+
+    check('a French page loads the French set, from beside the client it already loaded',
+        module.labelsFileFor('', CDN, 'fr'), FRENCH);
+    check('fr-CA is French: the region says which French, and there is one',
+        module.labelsFileFor('', CDN, 'fr-CA'), FRENCH);
+    check('and the case it is written in decides nothing',
+        module.labelsFileFor('', CDN, 'FR-ca'), FRENCH);
+
+    /* NULL IS THE INTERESTING ANSWER IN THE NEXT FOUR: no address means no
+       <script>, which means no request, which means no 404 in the console of
+       every page of that site. A guess would cost every visitor one. */
+    check('a language this package does not ship stays English, and asks for nothing',
+        module.labelsFileFor('', CDN, 'de'), null);
+    check('a page declaring no language stays English, and asks for nothing either',
+        module.labelsFileFor('', CDN, ''), null);
+    check('a copy served by the site deduces nothing: its neighbours are not ours to guess',
+        module.labelsFileFor('', 'https://annotepage.com/annotepage-client-2.0.0.js', 'fr'), null);
+    check('and a copy configured with no tag has no address to deduce one from',
+        module.labelsFileFor('', '', 'fr'), null);
+
+    check('the set comes from the exact version the tag pinned, never from one chosen here',
+        module.labelsFileFor('',
+            'https://cdn.jsdelivr.net/npm/annotepage-client@2.0.0/dist/annotepage.js', 'fr'),
+        'https://cdn.jsdelivr.net/npm/annotepage-client@2.0.0/labels/fr.js');
+    check('unpkg publishes the package the same way',
+        module.labelsFileFor('', 'https://unpkg.com/annotepage-client@2/dist/annotepage.js', 'fr'),
+        'https://unpkg.com/annotepage-client@2/labels/fr.js');
+
+    check('a file declared on the tag wins over the language of the page',
+        module.labelsFileFor(OURS, CDN, 'fr'), OURS);
+    check('and wins on a page whose language ships nothing, which is how every other '
+        + 'language arrives', module.labelsFileFor(OURS, CDN, 'de'), OURS);
+
+    /* AND THE BOOT CALLS THAT RULE RATHER THAN REPEATING IT. Everything above
+       exercises labelsFileFor; what 90-boot does with it cannot be run here,
+       since that file is all DOM. So what can be checked from outside is: the
+       call is there, and it is handed the three facts the rule needs. An
+       inlined "LOCAL_LABELS_URL ||" back in the boot would be a second copy of
+       the order, and a copy nobody runs is a copy that drifts -- the same
+       failure this file guards between the settings and the readme. */
+    const boot = read('90-boot.js');
+    check('90-boot asks labelsFileFor which file to load, with the tag, the page and '
+        + 'the language',
+        /labelsFileFor\(LOCAL_LABELS_URL,\s*SCRIPT_SRC,\s*pageLanguage\(\)\)/.test(boot)
+            ? 'it does' : (boot.match(/labels[A-Za-z]*\([^)]*\)?/) || ['no call at all'])[0],
+        'it does');
+
+    /* -- AND WHAT IS ON THE SCREEN WHEN NO FILE ARRIVES ------------------
+       The rule of silence, checked where it shows: T(). A 404, a CDN that is
+       down, a file that turns out not to be a label set -- none of them ever
+       writes window.Annotepage.labels, and the panel opens in English rather
+       than not at all. */
+    check('with no label file, the panel is in English',
+        module.T('button.open'), 'Annotate this page');
+    window.Annotepage.labels = 'not a set of labels';
+    check('a file that arrived and wrote something else leaves English in place',
+        module.T('button.open'), 'Annotate this page');
+    window.Annotepage.labels = null;
+    new Function('window', shipped)(window);
+    check('and the French set, once it has run, is what T() answers',
+        module.T('button.open'), french['button.open']);
 
     process.stdout.write(failures ? '\n' + failures + ' failure(s)\n' : '\neverything conforms\n');
     process.exit(failures ? 1 : 0);

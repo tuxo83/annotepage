@@ -118,19 +118,33 @@ const alreadyDeployed = (fixVersion) => {
 };
 
 /**
+ * THE LANGUAGE THE DOCUMENT DECLARES, or '' -- the lang attribute of <html>.
+ *
+ * Read in ONE place because two things now depend on it: the dates below, and
+ * which set of labels the panel speaks (80-upgrade, 90-boot). Read twice it
+ * would be two answers to the same question the day one of them started
+ * lowercasing, or stopped trimming.
+ *
+ * The BROWSER's language is deliberately not consulted anywhere: the page is
+ * the same document for everybody looking at it, and the browser is not.
+ */
+const pageLanguage = () =>
+    (document.documentElement.getAttribute('lang') || '').trim();
+
+/**
  * ISO date from the server -> THE READER'S LOCAL TIME.
  *
  * The server writes in UTC with an explicit offset; the conversion happens
  * here, once, and nobody has to wonder which time zone they are looking at.
  *
- * The language is THE DOCUMENT'S (the lang attribute of <html>), falling
- * back on the browser's: on a French page read from an English browser,
- * "20 aout 2026" is more accurate than "Aug 20, 2026".
+ * The language is THE DOCUMENT'S: on a French page read from an English
+ * browser, "20 aout 2026" is more accurate than "Aug 20, 2026". Without one,
+ * the browser's own formatting is what is left.
  */
 const readableDate = (iso) => {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return T('date.unknown');
-    const language = (document.documentElement.getAttribute('lang') || '').trim();
+    const language = pageLanguage();
     try {
         return d.toLocaleString(language || undefined,
             { dateStyle: 'medium', timeStyle: 'short' });

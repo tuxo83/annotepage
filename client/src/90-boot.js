@@ -40,14 +40,35 @@ const reload = () =>
    declared (data-setup) or asked for by a tag that already carries a
    project: either way, somebody put that tag here on purpose. */
 
-let localLabelsLoaded = false;
+let labelsLoaded = false;
 
-const loadLocalLabels = () => {
-    if (!LOCAL_LABELS_URL || localLabelsLoaded || !root) return Promise.resolve();
-    localLabelsLoaded = true;
+/**
+ * The labels this page speaks, fetched if there is a file to fetch.
+ *
+ * WHICH FILE IS NOT DECIDED HERE: labelsFileFor (80-upgrade) holds the order
+ * -- a file declared on the tag, failing that the set this package ships for
+ * the language the page declares, failing that nothing at all. No URL means
+ * no request and no <script>, which is how a language nobody ships costs a
+ * visitor exactly nothing.
+ *
+ * A FAILURE IS SILENT, and it has to be: the file is not there, the CDN is
+ * down, what arrives is not a label set -- in every one of those cases
+ * window.Annotepage.labels is simply never written, T() falls back on the
+ * English set (10-utils), and the panel opens in English. A host page is
+ * never broken over a translation.
+ *
+ * No integrity attribute, deliberately: this address is not a pinned version
+ * -- it follows whatever the tag pinned -- and there is no digest to write
+ * for a range. A policy that already allows the client's own CDN in
+ * script-src allows this, because it is that same CDN.
+ */
+const loadLabels = () => {
+    const url = labelsFileFor(LOCAL_LABELS_URL, SCRIPT_SRC, pageLanguage());
+    if (!url || labelsLoaded || !root) return Promise.resolve();
+    labelsLoaded = true;
     return new Promise((resolve) => {
         const s = document.createElement('script');
-        s.src = LOCAL_LABELS_URL;
+        s.src = url;
         s.addEventListener('load', () => resolve(true));
         s.addEventListener('error', () => resolve(false));
         // INSIDE THE SHADOW ROOT, and not in <head> or <body>: a script
@@ -85,7 +106,7 @@ const withdraw = () => {
 /** A blocking screen: the host exists from now on, the labels come first. */
 const showScreen = (open) => {
     buildHost();
-    loadLocalLabels().then(open);
+    loadLabels().then(open);
 };
 
 /**
@@ -202,7 +223,7 @@ function proceed(first) {
     // From here on the tool EXISTS, and will no longer keep quiet
     // about its failures.
     buildHost();
-    return loadLocalLabels().then(() => {
+    return loadLabels().then(() => {
         clearLayer();
         buildUi();
         if (first.ok) {

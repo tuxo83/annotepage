@@ -86,15 +86,31 @@ you like without touching the code:
 before the tag, or a file of your own declared on it with `data-labels`. A
 missing label falls back on English, so a partial translation is usable.
 
-A complete French set ships in the package, ready for `data-labels` — from the
-same CDN and range as the client, nothing to copy into your repository:
+A complete French set ships in the package, and **a French page gets it without
+declaring anything**. A tag served by one of the CDNs above, on a page that says
+`<html lang="fr">` — `fr-CA` and every other region included — loads
+`labels/fr.js` from beside the client, at the version or the range that tag
+pinned. Any other language stays English **and fetches nothing**: asking for a
+file this package has never published would put a 404 in the console of every
+page of the site.
+
+Two cases deduce nothing, on purpose, and `data-labels` is the answer to both: a
+copy of the client served by your own site, whose neighbouring files are yours to
+arrange and not ours to guess, and a client configured by `window.annotepageConfig`
+with no tag at all — there is no file address to deduce one from, the same reason
+`server` is required there.
 
 ```html
 data-labels="https://cdn.jsdelivr.net/npm/annotepage-client@2/labels/fr.js"
 ```
 
-Labels your page set before the tag are kept over it. The same set, as JSON, is
-`labels/fr.json`.
+A declared file wins over the page's language — it is how you force one, or ship
+a language nobody else does — and labels your page set before the tag win over
+both. The same set, as JSON, is `labels/fr.json`.
+
+The **browser's** language is never consulted, anywhere. Two people in front of
+one screen share the page and not the browser, and a panel that differed between
+them would leave neither able to tell the other what to click.
 
 ## What it does not touch
 

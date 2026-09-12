@@ -173,3 +173,77 @@ const handOverTo = (cdn, version, onFailure) => {
     (document.head || document.documentElement).appendChild(fresh);
     return true;
 };
+
+/* -- 19 bis. The label set that ships BESIDE this file --------------------
+   Why this lives here, in the file about upgrading: the question is the same
+   one, and the knowledge answering it is the same knowledge. This file is
+   where the published package's LAYOUT is written down -- that an exact
+   version of the client is at <base>@<version>/dist/annotepage.js on the two
+   CDNs above. labels/fr.js is one directory over, in the same package, at the
+   same version. Written down twice, the two copies drift the day the package
+   moves a file, and the half nobody runs is the one that breaks. */
+
+/* THE SETS THIS PACKAGE ACTUALLY SHIPS. English is not one of them: English
+   is what the tool already says (15-labels), and fetching a file to be told
+   so would be a request that buys nothing.
+
+   Everything else stays English AND ASKS FOR NOTHING. A page in German would
+   otherwise cost every one of its visitors a request for a de.js this package
+   has never published -- a 404 the browser writes into the console itself, on
+   every page of that site, for a file that is not coming. */
+const SHIPPED_LABELS = ['fr'];
+
+/**
+ * Which shipped set a declared language asks for, or '' for none.
+ *
+ * THE REGION IS NOT PART OF THE QUESTION. `lang="fr-CA"` is French -- the
+ * subtag says which French, and this package ships one. Comparing the whole
+ * string would leave every regional French page in English while its author
+ * watched a lang attribute that looks right, which is the likeliest way for
+ * this to fail in the wild.
+ */
+const shippedLabelsFor = (language) => {
+    const primary = String(language || '').trim().toLowerCase().split('-')[0];
+    return SHIPPED_LABELS.indexOf(primary) === -1 ? '' : primary;
+};
+
+/**
+ * The address of that set beside THIS copy of the client, or null.
+ *
+ * ONLY FROM A CDN WE RECOGNISE, and that is the rule rather than a gap. There
+ * the layout is the npm package's own, so labels/fr.js is published beside
+ * dist/annotepage.js and asking for it is asking for a file that exists. A
+ * copy served by the site itself is one file somebody arranged as they liked:
+ * deducing a neighbour for it is the request that answers 404 in every
+ * console, which is exactly why a local label file is declared and never
+ * looked for (15-labels). Those sites declare data-labels, as they do today.
+ *
+ * Relative to this file, so the set comes from the version -- or the range --
+ * the tag pinned, and a page can never end up with labels from one release
+ * and a panel from another.
+ *
+ * Nothing the page said is ever built into the address: the language SELECTS
+ * one of the names in SHIPPED_LABELS, and those are written above.
+ */
+const shippedLabelsUrl = (src, language) => {
+    const set = shippedLabelsFor(language);
+    if (!set || !cdnServing(src)) return null;
+    try {
+        return new URL('../labels/' + set + '.js', String(src)).href;
+    } catch (e) {
+        return null;
+    }
+};
+
+/**
+ * WHICH LABEL FILE THIS PAGE LOADS, if any -- the whole rule in one place,
+ * because the rule is an order and an order written across two files is an
+ * order that gets read wrong.
+ *
+ * A file DECLARED on the tag wins, always, including over a language this
+ * package does ship: data-labels is how somebody OVERRIDES, and a site that
+ * has said what its panel says must not be contradicted by its own lang
+ * attribute. It is also the only way to load a language nobody ships.
+ */
+const labelsFileFor = (declared, src, language) =>
+    declared || shippedLabelsUrl(src, language);

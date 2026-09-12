@@ -5,7 +5,7 @@
    screen. Translating the tool, or simply changing a word that does not suit
    a team, therefore never means touching the code.
 
-   TWO WAYS TO REPLACE A LABEL, in order of priority:
+   THREE WAYS TO REPLACE A LABEL, in order of priority:
 
      1. an object defined BEFORE the client is loaded:
 
@@ -26,11 +26,31 @@
         against the DOCUMENT, not against the CDN: a translation belongs to
         the site under review.
 
-   A full French set ships in labels/fr.json, as a worked example.
+     3. NOTHING AT ALL, on a page that says what language it is in:
 
-   Why the local file is DECLARED and not looked for: going to see "whether
-   it is there" means a request that usually answers 404 -- and the browser
-   logs that failure itself, in the console of EVERY page.
+            <html lang="fr">
+
+        A set this package SHIPS -- French is the only one so far -- is then
+        loaded from beside this very file, and the panel is French without
+        anybody declaring anything. A language the package does not ship
+        stays English and fetches nothing. The two above still win: a site
+        that has said what its panel says is not overruled by its own lang
+        attribute (80-upgrade holds the rule, 90-boot applies it).
+
+        The PAGE's language, never the BROWSER's. Two people in front of one
+        screen are looking at one document, so it says one thing to both of
+        them; their browsers do not, and a panel that differed between the
+        reviewer and the colleague leaning over their shoulder would leave
+        neither able to tell the other what to click.
+
+   A full French set ships in labels/fr.json, as a worked example, and in
+   labels/fr.js, which is that file ready to be loaded.
+
+   Why a local file is DECLARED and not looked for: going to see "whether it
+   is there" means a request that usually answers 404 -- and the browser logs
+   that failure itself, in the console of EVERY page. The set in 3 is not a
+   guess for the same reason -- it is asked for only where this package's own
+   layout says it exists, beside this file on the CDN serving it.
 
    A MISSING LABEL FALLS BACK ON ENGLISH. A partial translation is therefore
    usable as it is.
