@@ -54,50 +54,76 @@
  * the reason written beside the tag on how-to-install-it.html#locked. A pinned
  * digest is a fix that reaches nobody.
  *
- * WHY wp_footer AND NOT wp_enqueue_script. This is deliberate and it is not
- * negotiable.
+ * WHY THE QUEUE, NOW, WHERE THIS FILE USED TO REFUSE IT.
  *
- * The client reads `document.currentScript` to find its own attributes -- the
- * server address, the key, the version. That is how a CDN-served file learns
- * anything at all about the site under review. `wp_enqueue_script` hands the
- * tag to a queue, and a queue is entitled to decide HOW to load it: a
- * concatenation plugin merges it, an optimiser defers it as a module, a
- * "combine JS" switch inlines it. Every one of those leaves currentScript null
- * or the dataset empty, and the client's rule of silence then does exactly what
- * it promises: nothing happens, and NO ERROR IS RAISED. The site owner sees a
- * page with no annotation layer and no reason why.
+ * This section said "wp_footer, NEVER wp_enqueue_script" and argued it at
+ * length. The argument was right, and the thing it depended on has changed, so
+ * the conclusion has changed with it. What follows is the whole of it, because
+ * a reversed decision with its reasons deleted is a decision the next hand
+ * reverses back.
  *
- * how-to-install-it.html says it in five words: "A module leaves it silent."
+ * THE ORIGINAL REASON, WHICH IS STILL TRUE. The client reads
+ * `document.currentScript` to find its own attributes -- the server address,
+ * the key, the version. That is how a CDN-served file learns anything at all
+ * about the site under review. `wp_enqueue_script` hands the tag to a queue,
+ * and a queue is entitled to decide HOW to load it: a concatenation plugin
+ * merges it, an optimiser defers it as a module, a "combine JS" switch inlines
+ * it. Every one of those leaves currentScript null, and the client's rule of
+ * silence then did exactly what it promised: nothing happened, and NO ERROR WAS
+ * RAISED. The site owner saw a page with no annotation layer and no reason why.
  *
- * A hand-written tag in wp_footer cannot be re-typed by a queue. Optimisers can
- * still touch it -- they parse HTML too -- but they no longer have an
- * invitation. `defer` stays on it: defer is a classic-script attribute and
- * leaves currentScript intact; `type="module"` is what does not.
+ * WHAT CHANGED. Client 2.28.0 reads a second source: a plain
+ * `window.annotepageConfig = { server, project, key, version }` declared in the
+ * page, which owes nothing to currentScript and therefore survives every one of
+ * those transformations. The silence above is no longer the price of handing
+ * the tag to a queue, so the queue is no longer worth refusing -- and refusing
+ * it cost a real line, the plugin directory's scanner flagging the literal
+ * `<script ... src=` this file used to write by hand.
  *
- * AND NOT wp_print_script_tag() EITHER -- MEASURED, NOT ASSUMED. That function
- * exists precisely to print a script tag with arbitrary attributes without the
- * queue, and it is the obvious answer to the plugin directory's scanner, which
- * flags the literal `<script` written below. It was built, run against
- * WordPress 7.1, and refused. The scanner's line does fall; three things found
- * by running it cost more than that line is worth:
+ * SO BOTH ARE WRITTEN, AND BY ONE FUNCTION. The tag is enqueued; its `data-`
+ * attributes are put back by annotepage_script_tag() on `script_loader_tag`;
+ * and annotepage_config_script() declares the SAME settings in
+ * window.annotepageConfig, printed immediately above it by
+ * wp_add_inline_script(). Both come from annotepage_client_settings() and
+ * neither is written anywhere else, because the client's rule is that ONE
+ * SOURCE CONFIGURES A COPY WHOLE and never a merge: it accepts an object that
+ * repeats the tag exactly, and REFUSES a tag and an object that disagree,
+ * naming the setting they disagree about (00-preamble.js, "WHICH SOURCE WINS").
+ * Two producers here would be two chances to disagree, on a site nobody is
+ * watching.
  *
- *   - IT DOES NOT WRITE THIS TAG. wp_get_script_tag() now drives a
- *     WP_HTML_Tag_Processor, which emits a single line and returns the
- *     attributes in its own order -- `src` last rather than first, and no
- *     eight-space indentation. The tag on the page would stop being the tag
- *     how-to-install-it.html hands out, and annotepage_tag_markup() has two
- *     consumers: the footer prints it and the settings screen shows the same
- *     string back, escaped. They would still agree with each other and both
- *     disagree with the documentation.
- *   - IT REOPENS THE DOOR THIS SECTION EXISTS TO SHUT. It applies
- *     `wp_script_attributes`, so every other plugin on the site is invited to
- *     rewrite these attributes. One `type="module"` added there empties
- *     document.currentScript and the tool goes silent with no error -- the
- *     exact failure the paragraphs above refuse.
- *   - IT NEEDS WORDPRESS 5.7, where this plugin asks for 5.2. Until that floor
- *     is raised the scanner simply reports the incompatibility instead: the
- *     same two errors, one of them renamed. Raising a plugin's floor to quiet
- *     a scanner is paid for by the installs it drops.
+ * WHAT EACH ONE IS FOR, since neither is redundant:
+ *
+ *   the object   a concatenation, an inlining or a `type="module"` empties
+ *                document.currentScript. The tag is then unreadable and the
+ *                object is what configures the copy. This is the failure the
+ *                whole section above existed to avoid, and it is now covered.
+ *   the tag      a visitor whose browser still holds a cached client 2.27 has
+ *                a client that has never heard of window.annotepageConfig. The
+ *                attributes are what that copy reads, and dropping them would
+ *                break working installs for the length of a CDN cache.
+ *
+ * AND THE COST, WHICH IS NOT HIDDEN. If something on the site strips our
+ * attributes while leaving a readable classic tag -- neither of the two cases
+ * above -- the client sees a tag declaring nothing beside an object declaring
+ * something, and refuses, naming the setting. That is a LOUDER failure than the
+ * one this plugin used to risk, not a quieter one: the old shape failed by
+ * doing nothing at all and saying nothing at all. A refusal that names itself
+ * is the better end of that trade, and it is the reason the two are generated
+ * together rather than maintained apart.
+ *
+ * `defer` stays on the tag, and is still added by us rather than asked of the
+ * queue: defer is a classic-script attribute and leaves currentScript intact;
+ * `type="module"` is what does not.
+ *
+ * WHAT THIS GIVES UP, MEASURED AND NOT GUESSED. The tag is no longer
+ * byte-identical to the block how-to-install-it.html hands out: core writes the
+ * frame and puts its own `id="annotepage-js"` in it, ahead of `src`. So the
+ * frame is asked of core, by wp_get_script_tag(), in the ONE place that shows
+ * the tag to a person -- measured on WordPress 7.1 to be the same bytes the
+ * queue prints -- and the settings screen therefore still shows exactly what
+ * the site serves. That equality is the property worth keeping; identity with a
+ * documentation snippet was only ever a proxy for it.
  *
  * NOTHING HERE TALKS TO THE NETWORK. No wp_remote_get, no cURL, no update
  * check, no telemetry, no phone home. Grep the file: there is no HTTP call in
@@ -510,7 +536,7 @@ function annotepage_switched_off( $user ) {
 function annotepage_should_print() {
 	$user = wp_get_current_user();
 
-	if ( '' === annotepage_tag_markup() ) {
+	if ( ! annotepage_client_settings() ) {
 		$decision = false;
 	} elseif ( annotepage_switched_off( $user ) ) {
 		$decision = false;
@@ -551,81 +577,205 @@ function annotepage_should_print() {
  * ------------------------------------------------------------------------- */
 
 /**
- * One producer, two consumers: the footer echoes it, the settings screen shows
- * it escaped.
+ * WHAT THIS SITE DECLARES, AND THE ONE PLACE IT IS DECIDED.
  *
- * It is written to be byte-identical to the block
- * docs/how-to-install-it.html hands out for the same answers -- same order,
- * same eight-space continuation indent, same `defer`. Two places that write
- * the same tag must write the SAME tag: a reader who pastes one and installs
- * the other must not be able to tell.
+ * Both channels are built from this and from nothing else: the `data-`
+ * attributes on the tag, and the window.annotepageConfig object printed above
+ * it. The client accepts an object that repeats the tag exactly and REFUSES a
+ * tag and an object that disagree, naming the setting -- so there must be
+ * exactly one function able to answer "what does this site declare". Two
+ * producers would be two chances to disagree, on a site nobody is watching.
  *
- * @return string The markup, or '' when the answers are not complete.
+ * The names are the client's own (00-preamble.js, SETTINGS): `data-` plus the
+ * name on the tag, the name alone in the object.
+ *
+ * @return array<string,string> name => value, in the order the tag writes them,
+ *                              or array() when the answers are not complete.
  */
-function annotepage_tag_markup() {
+function annotepage_client_settings() {
 	$s = annotepage_settings();
 
 	if ( '' === $s['server'] ) {
-		return '';
+		return array();
 	}
 
 	/* NEVER BOTH. A tag carrying a key and an id is refused whole by the
 	   client when they disagree, and it does not pick a winner -- so this
-	   function must not be able to write two. The mode chooses one attribute;
+	   function must not be able to write two. The mode chooses one name;
 	   there is no branch here that can emit the other as well. */
 	if ( 'secure' === $s['mode'] ) {
-		$attribute  = 'data-project';
+		$name       = 'project';
 		$credential = $s['project'];
 	} else {
-		$attribute  = 'data-key';
+		$name       = 'key';
 		$credential = $s['key'];
 	}
 	if ( '' === $credential ) {
-		return '';
+		return array();
 	}
 
-	$lines   = array();
-	$lines[] = '<script src="' . esc_url( ANNOTEPAGE_CLIENT_SRC ) . '"';
-	$lines[] = '        data-server="' . esc_url( $s['server'] ) . '"';
-	$lines[] = '        ' . $attribute . '="' . esc_attr( $credential ) . '"';
+	$declared           = array();
+	$declared['server'] = $s['server'];
+	$declared[ $name ]  = $credential;
 
 	/* Absent when empty, and that is the whole handling of it. An empty
-	   data-version would declare "this site has no version", which is not the
-	   same statement as not declaring one, and the client's own comment says
-	   an invented version sends somebody hunting for a defect in a build that
+	   version would declare "this site has no version", which is not the same
+	   statement as not declaring one, and the client's own comment says an
+	   invented version sends somebody hunting for a defect in a build that
 	   never existed. */
 	if ( '' !== $s['version'] ) {
-		$lines[] = '        data-version="' . esc_attr( $s['version'] ) . '"';
+		$declared['version'] = $s['version'];
 	}
 
-	/* defer, and nothing that would make it a module. See the file header. */
-	$lines[] = '        defer></script>';
+	return $declared;
+}
 
-	return implode( "\n", $lines ) . "\n";
+/**
+ * The `data-` attributes and `defer`, as they go inside the opening tag.
+ *
+ * On their own lines, with the eight-space continuation indent the
+ * documentation uses, so that the tag somebody finds in their page source is
+ * the shape they were shown.
+ *
+ * @return string The attributes, or '' when there is nothing to declare.
+ */
+function annotepage_tag_attributes() {
+	$out = '';
+	foreach ( annotepage_client_settings() as $name => $value ) {
+		/* The server is an address a browser resolves, so it is escaped as one:
+		   esc_attr() alone would leave a `javascript:` intact.
+		   annotepage_is_server() refused that at the door already; this is the
+		   second of the two, where the value is written out. */
+		$out .= "\n" . '        data-' . $name . '="'
+			. ( 'server' === $name ? esc_url( $value ) : esc_attr( $value ) ) . '"';
+	}
+	/* defer, and nothing that would make it a module. See the file header. */
+	return '' === $out ? '' : $out . "\n" . '        defer';
+}
+
+/**
+ * OUR ATTRIBUTES, PUT BACK INTO THE TAG THE QUEUE IS ABOUT TO PRINT.
+ *
+ * The frame -- `<script id="..." src="..."></script>` -- is core's, and that is
+ * the whole point: this file no longer writes one. Only the attributes are
+ * ours.
+ *
+ * LATE, AT PRIORITY 20, so an optimiser rewriting the tag at the default 10 has
+ * already had its turn. Attributes added after a rewrite survive it; attributes
+ * added before it may not.
+ *
+ * AND IT NEVER PATCHES A TAG IT DOES NOT RECOGNISE. If something has already
+ * replaced the tag with a shape that has no `></script>` in it, it is handed
+ * back untouched rather than edited blind -- window.annotepageConfig is then the
+ * source that configures the copy, which is the reason it exists.
+ *
+ * @param string $tag    The tag core built.
+ * @param string $handle Which script this is.
+ * @return string
+ */
+function annotepage_script_tag( $tag, $handle ) {
+	if ( 'annotepage' !== $handle ) {
+		return $tag;
+	}
+	$attributes = annotepage_tag_attributes();
+	if ( '' === $attributes || false === strpos( $tag, '></script>' ) ) {
+		return $tag;
+	}
+	return str_replace( '></script>', $attributes . '></script>', $tag );
+}
+add_filter( 'script_loader_tag', 'annotepage_script_tag', 20, 2 );
+
+/**
+ * window.annotepageConfig, saying exactly what the tag says.
+ *
+ * JSON_HEX_TAG IS NOT DECORATION. The version is whatever somebody typed into
+ * the settings screen, and a value holding `</script>` would otherwise close
+ * this block and turn a text field into script this site runs on every page.
+ * Encoded, the browser's JSON parser hands the client back the very characters
+ * the tag's attribute does -- which is what keeps the two agreeing, and the
+ * client checks nothing else.
+ *
+ * @return string The declaration, or '' when there is nothing to declare.
+ */
+function annotepage_config_script() {
+	$declared = annotepage_client_settings();
+	if ( ! $declared ) {
+		return '';
+	}
+	return 'window.annotepageConfig = '
+		. wp_json_encode( $declared, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT )
+		. ';';
+}
+
+/**
+ * THE TAG THIS SITE SERVES, for the one screen that shows it to a person.
+ *
+ * The frame is asked of core -- the same function the queue itself calls, given
+ * the same id the queue gives it -- and our own filter is run over it. So what
+ * the screen shows is what the front end prints, on the same WordPress:
+ * measured against 7.1, byte for byte the line a visitor's page carries.
+ *
+ * WHY IT IS GUARDED. wp_get_script_tag() arrived in WordPress 5.7 and this
+ * plugin asks for 5.2. On anything older this screen says the tag is written
+ * rather than showing a line this file invented and nobody serves. The front
+ * end is untouched by that: there the frame comes from the queue either way.
+ *
+ * @return string The markup, or '' when there is nothing to declare or core
+ *                cannot be asked for the frame.
+ */
+function annotepage_tag_markup() {
+	if ( ! annotepage_client_settings() || ! function_exists( 'wp_get_script_tag' ) ) {
+		return '';
+	}
+	return annotepage_script_tag(
+		wp_get_script_tag(
+			array(
+				'src' => ANNOTEPAGE_CLIENT_SRC,
+				'id'  => 'annotepage-js',
+			)
+		),
+		'annotepage'
+	);
 }
 
 /**
  * The one thing this plugin does on the front end.
  *
- * Priority 100: late in wp_footer, so the tag sits near the end of <body> like
- * the documented one, and after whatever a theme prints at the default 10.
+ * `null` AS THE VERSION IS DELIBERATE AND WAS MEASURED: it is what stops
+ * WordPress appending `?ver=` to the address. The src is a CDN's, on a floating
+ * major range that the CDN itself re-resolves; a query string on it is a
+ * different file to every cache in between and buys nothing.
  *
- * PAGE CACHES. The tag now depends on who is looking, so a full-page cache that
+ * PAGE CACHES. The tag depends on who is looking, so a full-page cache that
  * serves one logged-out copy to everybody will serve the copy without it --
  * which is the harmless direction: no key goes out to somebody the audience
  * excluded. The other direction, audience "everyone", writes the same tag for
  * everybody and caches correctly.
  */
-function annotepage_print_tag() {
+function annotepage_enqueue() {
 	if ( ! annotepage_should_print() ) {
 		return;
 	}
-	/* Every value inside was escaped by annotepage_tag_markup() and the frame
-	   around them is a literal. There is nothing left to escape here, and
-	   escaping the assembled markup would escape the tag itself. */
-	echo annotepage_tag_markup(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	/* NO VERSION, AND THE SCANNER IS ANSWERED HERE RATHER THAN OBEYED.
+	   Its warning assumes a file this plugin SHIPS, whose bytes change when the
+	   plugin is released -- and then `?ver=` is what gets the new one past a
+	   cache. Neither half holds. The address is a CDN range, @2, which jsDelivr
+	   re-resolves on its own: the file changes without this plugin moving, so a
+	   number taken from this plugin cannot track it, and writing our 1.0.0 there
+	   would name a version of the client that no build of the client has ever
+	   carried -- the same invented version this file refuses to put in
+	   data-version, for the same reason, a hundred lines up. The version that is
+	   true is already in the address.
+	   NOT SILENCED, MOVED: tests/run.php asserts this null and says why, so the
+	   decision is checked by something that knows what it means. */
+	// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- the version is the @2 range in the address itself; see above.
+	wp_enqueue_script( 'annotepage', ANNOTEPAGE_CLIENT_SRC, array(), null, true );
+
+	/* 'before', so the declaration stands in the page ahead of the file that
+	   reads it. A client that loaded first would find nothing there. */
+	wp_add_inline_script( 'annotepage', annotepage_config_script(), 'before' );
 }
-add_action( 'wp_footer', 'annotepage_print_tag', 100 );
+add_action( 'wp_enqueue_scripts', 'annotepage_enqueue' );
 
 /* ---------------------------------------------------------------------------
  * WHAT IS TRUE RIGHT NOW, IN ONE SENTENCE
@@ -666,7 +816,7 @@ function annotepage_audience_words( $settings = null ) {
 
 function annotepage_state_line( $settings = null ) {
 	$s = ( null === $settings ) ? annotepage_settings() : $settings;
-	if ( '' === annotepage_tag_markup() ) {
+	if ( ! annotepage_client_settings() ) {
 		if ( '' === $s['server'] ) {
 			return __( 'Nothing is written: there is no server address.', 'annotepage' );
 		}
@@ -705,7 +855,7 @@ function annotepage_admin_bar( $bar ) {
 	}
 
 	$off     = annotepage_switched_off( $user );
-	$written = ( '' !== annotepage_tag_markup() );
+	$written = (bool) annotepage_client_settings();
 	$here    = $written && ! $off && annotepage_audience_allows( $user, $s );
 
 	$bar->add_node( array(
@@ -1213,6 +1363,7 @@ function annotepage_render() {
 
 	$s       = annotepage_settings();
 	$markup  = annotepage_tag_markup();
+	$config  = annotepage_config_script();
 	$id      = annotepage_project_id( $s );
 	$has     = ( '' !== $s['key'] || '' !== $s['project'] );
 	$notice  = '';
@@ -1540,8 +1691,13 @@ function annotepage_render() {
 					esc_html( annotepage_audience_words( $s ) )
 				);
 				?>
+				<?php esc_html_e( 'The first line declares the same settings a second time, in a form that survives a plugin concatenating your scripts &mdash; WordPress prints it just above the tag.', 'annotepage' ); ?>
 			</p>
-			<pre class="code" style="overflow:auto;padding:12px;background:#f6f7f7;border:1px solid #dcdcde;"><code><?php echo esc_html( $markup ); ?></code></pre>
+			<pre class="code" style="overflow:auto;padding:12px;background:#f6f7f7;border:1px solid #dcdcde;"><code><?php echo esc_html( $config . "\n" . $markup ); ?></code></pre>
+		<?php elseif ( annotepage_client_settings() ) : ?>
+			<p>
+				<?php esc_html_e( 'The tag is written on your pages. This WordPress is older than 5.7, so this screen cannot ask it for the exact line to show you.', 'annotepage' ); ?>
+			</p>
 		<?php else : ?>
 			<p>
 				<?php esc_html_e( 'Nothing is written yet. The tag needs a server address, and a key or a project id.', 'annotepage' ); ?>

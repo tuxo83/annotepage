@@ -370,7 +370,53 @@ function wp_safe_redirect( $url, $status = 302 ) {
 function wp_die( $message = '', $title = '', $args = array() ) {
 	throw new Ap_Died( is_string( $message ) ? $message : 'died' );
 }
-function wp_enqueue_script() {}
+/* -------------------------------------------------------------------------
+ * THE SCRIPT QUEUE, MODELLED RATHER THAN ERASED.
+ *
+ * This used to be `function wp_enqueue_script() {}` -- an empty stub, because
+ * the plugin printed its tag by hand and the queue was the thing it refused.
+ * The plugin enqueues now (see its header), so an empty stub would swallow the
+ * only thing left worth proving: that the tag goes out, with its attributes,
+ * beside a declaration that says exactly the same thing.
+ *
+ * What is modelled is what WordPress 7.1 was MEASURED to do with one enqueued
+ * script -- the `before` inline block in its own tag, then the tag itself, with
+ * script_loader_tag applied to a frame carrying `id` ahead of `src`, and no
+ * `?ver=` when the version is null.
+ * ---------------------------------------------------------------------- */
+
+$GLOBALS['ap_queue'] = array();
+
+function wp_enqueue_script( $handle = '', $src = '', $deps = array(), $ver = null, $args = false ) {
+	$GLOBALS['ap_queue'][ $handle ] = array(
+		'src'    => $src,
+		'ver'    => $ver,
+		'args'   => $args,
+		'before' => '',
+	);
+}
+function wp_add_inline_script( $handle, $data, $position = 'after' ) {
+	if ( ! isset( $GLOBALS['ap_queue'][ $handle ] ) ) {
+		return false;
+	}
+	$GLOBALS['ap_queue'][ $handle ][ $position ] = $data;
+	return true;
+}
+function wp_json_encode( $data, $options = 0, $depth = 512 ) {
+	return json_encode( $data, $options, $depth );
+}
+/* Core's own, reduced to the one shape this plugin asks it for. The attribute
+   ORDER is not a detail and is not invented here: `id` then `src` is what
+   WordPress 7.1 emits, and the settings screen shows this same string back. */
+function wp_get_script_tag( $attributes ) {
+	$out = '';
+	foreach ( array( 'id', 'src' ) as $name ) {
+		if ( isset( $attributes[ $name ] ) ) {
+			$out .= ' ' . $name . '="' . esc_attr( $attributes[ $name ] ) . '"';
+		}
+	}
+	return '<' . 'script' . $out . '></script>' . "\n";
+}
 function add_options_page() {}
 function submit_button( $text = '', $type = '', $name = '', $wrap = true, $other = array() ) {
 	echo '<button type="submit">' . esc_html( $text ) . '</button>';
@@ -447,11 +493,48 @@ function ap_as( $id ) {
 	$GLOBALS['ap_current'] = $id;
 }
 
-/* The footer, run for real: what a visitor's page would carry. */
+/* The footer, run for real: what a visitor's page would carry. The plugin only
+   enqueues now, so this runs the enqueue and then prints what the queue would
+   print for it -- nothing enqueued, nothing carried. */
 function ap_footer() {
-	ob_start();
-	annotepage_print_tag();
-	return ob_get_clean();
+	$GLOBALS['ap_queue'] = array();
+	annotepage_enqueue();
+	if ( ! isset( $GLOBALS['ap_queue']['annotepage'] ) ) {
+		return '';
+	}
+	$item = $GLOBALS['ap_queue']['annotepage'];
+	$out  = '';
+	if ( '' !== $item['before'] ) {
+		$out .= '<' . 'script id="annotepage-js-before">' . "\n"
+			. $item['before'] . "\n" . '</script>' . "\n";
+	}
+	$frame = wp_get_script_tag( array(
+		'src' => $item['src'],
+		'id'  => 'annotepage-js',
+	) );
+	return $out . apply_filters( 'script_loader_tag', $frame, 'annotepage', $item['src'] );
+}
+
+/* window.annotepageConfig, parsed back out of the page the way a browser's JSON
+   parser would read it. */
+function ap_object( $page ) {
+	if ( ! preg_match( '/window\.annotepageConfig = (\{.*?\});/', $page, $m ) ) {
+		return null;
+	}
+	return json_decode( $m[1], true );
+}
+
+/* The tag's data- attributes, as a browser's dataset hands them over: the
+   entities esc_attr() wrote come back decoded, which is the form the client
+   compares against the object. */
+function ap_dataset( $page ) {
+	$out = array();
+	if ( preg_match_all( '/\sdata-([a-z]+)="([^"]*)"/', $page, $all, PREG_SET_ORDER ) ) {
+		foreach ( $all as $m ) {
+			$out[ $m[1] ] = html_entity_decode( $m[2], ENT_QUOTES, 'UTF-8' );
+		}
+	}
+	return $out;
 }
 
 function ap_post( array $fields ) {
@@ -506,6 +589,49 @@ ap_check( 'the tag is a module or not deferred, either of which leaves '
    pick a winner. */
 ap_check( 'the tag carries both a key and a project id',
 	! ( false !== strpos( ap_footer(), 'data-key' ) && false !== strpos( ap_footer(), 'data-project' ) ) );
+
+/* -- THE TWO DECLARATIONS, AND THE RULE THAT THEY MUST AGREE --------------
+ *
+ * The client configures a copy from ONE source and never merges two. Given a
+ * readable tag AND a window.annotepageConfig, it refuses OUTRIGHT as soon as
+ * the object says anything the tag does not say identically, and it names the
+ * setting it refused over (00-preamble.js, "WHICH SOURCE WINS").
+ *
+ * So a drift between this plugin's two halves is not a cosmetic defect: it is
+ * every page of the site losing the tool at once. They are therefore compared
+ * here by reading both back out of the page -- not by trusting that one
+ * function produced them, which is the thing that would silently stop being
+ * true.
+ * ---------------------------------------------------------------------- */
+
+$page = ap_footer();
+
+ap_check( 'the client is not enqueued at all, so the queue never sees it',
+	isset( $GLOBALS['ap_queue']['annotepage'] ), implode( ',', array_keys( $GLOBALS['ap_queue'] ) ) );
+ap_check( 'the enqueue names a version, so WordPress appends ?ver= to a CDN '
+	. 'address -- where a query string is a different file to every cache '
+	. 'between this site and the reader, for a range the CDN already re-resolves',
+	null === $GLOBALS['ap_queue']['annotepage']['ver'],
+	var_export( $GLOBALS['ap_queue']['annotepage']['ver'], true ) );
+ap_check( 'the client is enqueued in the head rather than the foot of the page',
+	true === $GLOBALS['ap_queue']['annotepage']['args'] );
+ap_check( 'the tag is still printed by hand on wp_footer. The queue is what '
+	. 'removes the literal <' . 'script src= the directory\'s scanner reads',
+	! isset( $GLOBALS['ap_actions']['wp_footer'] ),
+	implode( ', ', isset( $GLOBALS['ap_actions']['wp_footer'] ) ? $GLOBALS['ap_actions']['wp_footer'] : array() ) );
+
+ap_check( 'the page carries no window.annotepageConfig, so a copy of the client '
+	. 'that cannot read document.currentScript -- concatenated, inlined, loaded '
+	. 'as a module -- has nothing left to configure itself from, and stands down '
+	. 'without raising anything',
+	is_array( ap_object( $page ) ), $page );
+ap_check( 'the declaration comes after the file that reads it, which is too late',
+	strpos( $page, 'annotepageConfig' ) < strpos( $page, 'cdn.jsdelivr.net' ), $page );
+ap_check( 'the object and the tag do not declare exactly the same settings. The '
+	. 'client refuses the pair outright and names the setting, so this is the '
+	. 'whole site losing the tool at once',
+	ap_object( $page ) === ap_dataset( $page ),
+	json_encode( ap_object( $page ) ) . "\n      vs " . json_encode( ap_dataset( $page ) ) );
 
 $drawn = $after['key'];
 
@@ -784,6 +910,21 @@ ap_check( 'a stored value is printed into the page unescaped, which is a script 
 	. 'this site runs in its own admin', false === strpos( $screen, '<script>alert(1)</script>' ) );
 ap_check( 'the screen does not show the tag it writes',
 	false !== strpos( $screen, 'cdn.jsdelivr.net/npm/annotepage-client@2' ) );
+
+/* THE VERSION IS SOMEBODY'S TEXT AND IT NOW GOES INSIDE A <' . 'script> BLOCK.
+   A value carrying </script> would close that block where it stands and turn a
+   settings field into script this site runs on every page it serves -- which is
+   why annotepage_config_script() encodes with JSON_HEX_TAG. Proved on the page
+   itself rather than trusted to a flag. */
+$hostile = ap_footer();
+ap_check( 'a stored version closed the declaration block, which is a script '
+	. 'this site then runs on every page',
+	false === strpos( $hostile, '<' . 'script>alert(1)</script>' ), $hostile );
+ap_check( 'the two declarations disagree once the value needs escaping, which '
+	. 'is where an encoding on one side only would show -- and the client '
+	. 'refuses the pair',
+	ap_object( $hostile ) === ap_dataset( $hostile ),
+	json_encode( ap_object( $hostile ) ) . "\n      vs " . json_encode( ap_dataset( $hostile ) ) );
 
 /* -- 9. What counts as a server address ---------------------------------
  *

@@ -419,6 +419,55 @@ if (derived) {
     }
 }
 
+/* -- 9. The tag goes out through the queue, and none of it is hand-written
+ *
+ * THE PLUGIN DIRECTORY'S SCANNER READS A LITERAL, and this is that literal.
+ * WordPress.WP.EnqueuedResources.NonEnqueuedScript matches `<script ... src=`
+ * inside any string, heredoc or run of inline HTML. So the check here is the
+ * sniff's own regular expression, over the same file, with comments taken out
+ * -- because the sniff reads tokens, and a comment is not one.
+ *
+ * IT IS NOT A LINTER BEING APPEASED. A plugin that writes its own script tag is
+ * a plugin the queue cannot see: no dependency, no loading strategy, and no way
+ * for the site's own code to filter what it emits. The tag is enqueued now, and
+ * what keeps it enqueued is that hand-writing one again fails here.
+ *
+ * AND THE WAY ROUND THIS IS NAMED SO THAT IT IS NOT TAKEN BY ACCIDENT: breaking
+ * the literal in two -- '<scr' . 'ipt src=' -- would satisfy the sniff and
+ * satisfy this check while putting the hand-written tag straight back. That is
+ * not a fix, it is a costume. Whoever does it has to delete this paragraph
+ * first, which is the only protection a check can offer against itself.
+ */
+{
+    const code = stripPhpComments(plugin);
+    const HAND_WRITTEN = /<script[^>]*(?<=src=)/;
+
+    check('annotepage.php writes a <script ... src= by hand, which is what the '
+        + 'directory\'s scanner reports. The tag is enqueued: core writes the '
+        + 'frame and only the attributes are this plugin\'s',
+        !HAND_WRITTEN.test(code), (code.match(HAND_WRITTEN) || [])[0]);
+
+    check('the client is never handed to wp_enqueue_script(), so nothing puts it '
+        + 'in the queue at all',
+        /wp_enqueue_script\(\s*'annotepage',\s*ANNOTEPAGE_CLIENT_SRC/.test(code));
+
+    check('the data- attributes are not put back on script_loader_tag, so the tag '
+        + 'would reach the page carrying nothing the client can read',
+        /add_filter\(\s*'script_loader_tag'/.test(code));
+
+    /* BOTH DECLARATIONS, OR THE OTHER ONE IS WORSE THAN USELESS. The client
+       configures a copy from one source and never merges two: it refuses a
+       readable tag beside an object that says anything different, and names the
+       setting. So the object is not a belt-and-braces extra to be dropped the
+       day it looks redundant -- and neither are the attributes, which are all a
+       browser still holding client 2.27 can read. tests/run.php compares what
+       the two actually emit, on the page; this refuses their disappearance. */
+    check('window.annotepageConfig is not declared, so a client that cannot read '
+        + 'document.currentScript -- concatenated, inlined, loaded as a module -- '
+        + 'has nothing left to configure itself from and stands down in silence',
+        /window\.annotepageConfig = /.test(code) && /wp_add_inline_script\(/.test(code));
+}
+
 /* -- Verdict ------------------------------------------------------------- */
 
 if (failures.length) {

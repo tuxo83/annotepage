@@ -57,9 +57,14 @@ In the header of `annotepage.php`, beside the code that carries them, and in
 - **it ships no client code** -- the tag points at the CDN on a floating major
   range, and the cost of that is stated rather than hidden: no `integrity`
   digest;
-- **`wp_footer`, never `wp_enqueue_script`** -- the client reads
-  `document.currentScript`, and a script queue is entitled to load a script in
-  ways that leave it null;
+- **the queue, and the settings declared twice** -- this said "`wp_footer`,
+  never `wp_enqueue_script`" until client 2.28.0, and the reason was real: the
+  client reads `document.currentScript`, and a script queue is entitled to load
+  a script in ways that leave it null, after which the tool does nothing and
+  says nothing. The client now also reads a `window.annotepageConfig` declared
+  in the page, which owes nothing to `currentScript` — so the tag is enqueued,
+  and the attributes and the object are written by **one** function, because the
+  client refuses two declarations that disagree;
 - **no `uninstall.php`** -- the stored option holds a key, and a key has no
   recovery.
 

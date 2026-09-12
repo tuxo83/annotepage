@@ -117,14 +117,26 @@ sent anywhere to obtain it: it is 32 random bytes from your own server, and this
 plugin makes no HTTP call of any kind. The notice on the plugins screen says so,
 with the way to change it.
 
-= Why is the tag not enqueued like every other script? =
+= Is the tag enqueued like every other script? =
 
-Because the tool reads `document.currentScript` to find its own settings, and a
-script queue is entitled to load a script however it likes. A concatenation
-plugin, a "combine JS" switch or an optimiser that defers it as a module all
-leave `currentScript` empty &mdash; and the tool's answer to not knowing where it
-is, is to do nothing at all, silently: no annotation layer, and no error to
-explain it. So the tag is written as text, on `wp_footer`.
+Yes &mdash; and it was not, until the version of the tool this release points at.
+The reason it was not is worth knowing, because it explains the second line this
+plugin writes.
+
+The tool reads `document.currentScript` to find its own settings, and a script
+queue is entitled to load a script however it likes. A concatenation plugin, a
+"combine JS" switch or an optimiser that defers it as a module all leave
+`currentScript` empty &mdash; and the tool's answer to not knowing where it is,
+is to do nothing at all, silently: no annotation layer, and no error to explain
+it.
+
+The tool now also reads a plain `window.annotepageConfig` declared in the page,
+which owes nothing to `currentScript`. So this plugin enqueues the tag and
+writes **both**: the `data-` attributes on the tag, and the same settings in
+that object just above it, from one piece of code &mdash; the tool refuses two
+declarations that disagree, and names the setting. A site that concatenates its
+scripts keeps working, and so does a browser still holding an older copy of the
+tool.
 
 = What happens if I delete the plugin? =
 
