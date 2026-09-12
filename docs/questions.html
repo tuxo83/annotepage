@@ -521,12 +521,13 @@ code {
             every conversation instead:</p>
 <pre class="qa-code">npm install -g annotepage-mcp
 claude mcp add annotepage -- annotepage-mcp</pre>
-                <p class="qa-a">The price is that it no longer updates itself:
-            <code>npm install -g annotepage-mcp@latest</code> does it, when you
-            choose. It says when a newer version is out, once, the first time it
-            reaches a server that knows &mdash; and <code>npx annotepage-mcp</code>
-            then runs this installed copy too, so update it rather than
-            expecting npx to.</p>
+                <p class="qa-a">The price is that it no longer updates on its own, and
+            <code>npx annotepage-mcp</code> then runs this installed copy too. It
+            says so when it is behind: the first time it reaches a server that
+            knows of a newer version, it tells your assistant, with the command
+            &mdash; <code>npm install -g annotepage-mcp@latest</code> &mdash; which
+            the assistant can run itself. The new version takes over the next time
+            the assistant starts.</p>
             </article>
 
             <!-- WHERE IT ALL IS, IN ONE PLACE. The menu carries one link, and
