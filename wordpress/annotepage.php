@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       annotepage
  * Plugin URI:        https://annotepage.com/how-to-install-it.html
- * Description:       Writes the annotepage tag in your footer. One settings screen, the key drawn in your browser, and nothing else.
+ * Description:       Annotate this site. It works the moment you activate it, for administrators only, until you say otherwise.
  * Version:           1.0.0
  * Requires at least: 5.2
  * Requires PHP:      7.4
@@ -12,6 +12,26 @@
  * License URI:       https://opensource.org/licenses/MIT
  *
  * ---------------------------------------------------------------------------
+ * IT WORKS ON ACTIVATION, WITH NOTHING TYPED. That is the first decision and
+ * every other one below serves it.
+ *
+ * Activation draws a key, points at the shared relay and shows the tool TO
+ * ADMINISTRATORS ONLY. An administrator installs, activates, reloads the site
+ * and annotates it. Nobody is asked a question they have no way to answer --
+ * "what is your api.php address" is not a question a first-time user can
+ * answer, and a plugin that does nothing until it is answered is a plugin that
+ * does nothing.
+ *
+ * The settings screen is then for the second day: who else sees it, where the
+ * notes go, which key.
+ *
+ * WHY ADMINISTRATORS AND NOT EVERYONE, on a plugin whose whole point is that it
+ * works straight away. In public mode the key is in the page, and whoever can
+ * read the page can read the notes AND write them. Defaulting to everyone would
+ * put that key on a live site in one click, for a visitor who never asked. The
+ * audience is a stored setting, it is on the first screen, and widening it is
+ * one radio button -- with the consequence written beside it.
+ *
  * THIS PLUGIN SHIPS NO CLIENT CODE, AND THAT IS THE DECISION THAT KEEPS IT
  * ALIVE.
  *
@@ -54,9 +74,8 @@
  *
  * NOTHING HERE TALKS TO THE NETWORK. No wp_remote_get, no cURL, no update
  * check, no telemetry, no phone home. Grep the file: there is no HTTP call in
- * it. The key is generated in the browser by admin.js and reaches PHP once, in
- * the form POST that stores it -- and in secure mode it does not reach PHP at
- * all.
+ * it. The key is drawn by this server at activation, or in the browser by
+ * admin.js -- and in secure mode it never reaches PHP at all.
  *
  * The strings are English, with no translation layer, because CONVENTIONS.md
  * section 1 makes that the law for everything this project ships. The strings
@@ -73,7 +92,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * THE ADDRESS. A floating major range, on purpose -- see the header.
+ * THE ADDRESS OF THE CLIENT. A floating major range, on purpose -- see the
+ * header.
  *
  * It is a constant and not a setting. A field for it would be a field whose
  * only correct answer is this string, offered to somebody who cannot check
@@ -83,7 +103,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 define( 'ANNOTEPAGE_CLIENT_SRC', 'https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js' );
 
-/* One option, one array. Five keys, no autoloaded sprawl.
+/**
+ * THE ADDRESS THE NOTES GO TO, when nobody has said otherwise.
+ *
+ * This one IS a setting, because the answer differs per site -- but it has a
+ * default, and the default is the shared relay, because "it works on
+ * activation" is impossible without one. A field whose correct value cannot be
+ * guessed by the person filling it in must arrive already filled in.
+ */
+define( 'ANNOTEPAGE_DEFAULT_SERVER', 'https://api.annotepage.com/api.php' );
+
+/* One option, one array.
  *
  * AND NO uninstall.php, WHICH IS A DECISION AND NOT AN OMISSION. Tidy plugins
  * delete their option on uninstall. This option holds a KEY, and a key has no
@@ -93,12 +123,22 @@ define( 'ANNOTEPAGE_CLIENT_SRC', 'https://cdn.jsdelivr.net/npm/annotepage-client
  * the reviewers wrote. Whoever really wants it gone deletes the option. */
 define( 'ANNOTEPAGE_OPTION', 'annotepage_settings' );
 
+/* Set at activation, removed when the notice is dismissed. Its presence is the
+   whole state of that notice. */
+define( 'ANNOTEPAGE_GREETING', 'annotepage_greeting' );
+
 define( 'ANNOTEPAGE_PAGE', 'annotepage' );
 
+/* Also the cache-buster on admin.js: one string to move, not two. */
+define( 'ANNOTEPAGE_VERSION', '1.0.0' );
+
+/* The per-person off switch, in user meta. Absent means on. */
+define( 'ANNOTEPAGE_USER_OFF', 'annotepage_off' );
+
 /**
- * The stored answers, with every key present and every value a string.
+ * The stored answers, with every key present and every value of its own type.
  *
- * @return array<string,string>
+ * @return array<string,mixed>
  */
 function annotepage_settings() {
 	$stored = get_option( ANNOTEPAGE_OPTION, array() );
@@ -107,16 +147,25 @@ function annotepage_settings() {
 	}
 
 	$out = array(
-		'server'  => '',
-		'mode'    => 'open',
-		'key'     => '',
-		'project' => '',
-		'version' => '',
+		'server'   => '',
+		'mode'     => 'open',
+		'key'      => '',
+		'project'  => '',
+		'version'  => '',
+		'audience' => 'admins',
+		'roles'    => array(),
+		'people'   => array(),
 	);
-	foreach ( $out as $name => $default ) {
+	foreach ( array( 'server', 'mode', 'key', 'project', 'version', 'audience' ) as $name ) {
 		if ( isset( $stored[ $name ] ) && is_string( $stored[ $name ] ) ) {
 			$out[ $name ] = $stored[ $name ];
 		}
+	}
+	if ( isset( $stored['roles'] ) && is_array( $stored['roles'] ) ) {
+		$out['roles'] = array_values( array_filter( array_map( 'strval', $stored['roles'] ) ) );
+	}
+	if ( isset( $stored['people'] ) && is_array( $stored['people'] ) ) {
+		$out['people'] = array_values( array_filter( array_map( 'intval', $stored['people'] ) ) );
 	}
 
 	/* Read back through the same judges that let it in. An option row can be
@@ -124,6 +173,9 @@ function annotepage_settings() {
 	   restored database -- and the tag is what the whole site serves. */
 	if ( 'secure' !== $out['mode'] ) {
 		$out['mode'] = 'open';
+	}
+	if ( ! annotepage_is_audience( $out['audience'] ) ) {
+		$out['audience'] = 'admins';
 	}
 	if ( ! annotepage_is_key( $out['key'] ) ) {
 		$out['key'] = '';
@@ -150,6 +202,10 @@ function annotepage_is_project( $value ) {
 	return is_string( $value ) && 1 === preg_match( '/^[A-Za-z0-9_-]{22}$/', $value );
 }
 
+function annotepage_is_audience( $value ) {
+	return in_array( $value, array( 'admins', 'signed-in', 'chosen', 'everyone' ), true );
+}
+
 /* http/https only. Not tidiness: this string is written into an attribute the
    browser resolves, so a `javascript:` in it would be a script the site runs on
    every page. esc_url() would already drop it; refusing it at the door means
@@ -165,9 +221,197 @@ function annotepage_is_server( $value ) {
 	return '' !== (string) wp_parse_url( $value, PHP_URL_HOST );
 }
 
+/* base64url with no padding, which is the alphabet every other component of
+   annotepage reads and writes. */
+function annotepage_b64url( $bytes ) {
+	return rtrim( strtr( base64_encode( $bytes ), '+/', '-_' ), '=' );
+}
+
 /**
- * THE TAG. One producer, two consumers: the footer echoes it, the settings
- * screen shows it escaped.
+ * A KEY DRAWN BY THIS SERVER -- and only ever for public mode.
+ *
+ * admin.js draws it in the browser, and the reason that exists is secure mode:
+ * there the key must never reach PHP, so PHP must not be the one who made it.
+ * In PUBLIC mode that property does not exist to protect -- the key is written
+ * into every page this site serves, which is what public mode IS. Drawing it
+ * here is what lets activation produce a working install with nothing typed.
+ *
+ * random_bytes or nothing. There is no weaker fallback, because a key that
+ * looks like a key and is guessable is worse than no key at all: it fails in
+ * six months, silently, on somebody else's staging site.
+ *
+ * @return string 43 base64url characters, or '' when this PHP has no CSPRNG.
+ */
+function annotepage_draw_key() {
+	try {
+		return annotepage_b64url( random_bytes( 32 ) );
+	} catch ( Exception $e ) {
+		return '';
+	} catch ( Error $e ) {
+		return '';
+	}
+}
+
+/**
+ * The project id a key derives to. HKDF-SHA256, salt "annotepage/1", info
+ * "id", first 16 bytes -- FORMAT.md, and the same computation admin.js and the
+ * client run.
+ *
+ * PHP does not need this to write the tag in public mode. It needs it to SHOW
+ * the id, so that the person sharing a key between dev, staging and production
+ * can see that the three sites landed on the same project -- which is the only
+ * visible sign that they did.
+ *
+ * @return string 22 base64url characters, or '' if the key is not one.
+ */
+function annotepage_project_from_key( $key ) {
+	if ( ! annotepage_is_key( $key ) ) {
+		return '';
+	}
+	$bytes = base64_decode( strtr( $key, '-_', '+/' ) . '=', true );
+	if ( false === $bytes || 32 !== strlen( $bytes ) ) {
+		return '';
+	}
+	if ( ! function_exists( 'hash_hkdf' ) ) {
+		return '';
+	}
+	return annotepage_b64url( substr( hash_hkdf( 'sha256', $bytes, 32, 'id', 'annotepage/1' ), 0, 16 ) );
+}
+
+/**
+ * The id in the tag, whichever mode wrote it.
+ */
+function annotepage_project_id( $settings = null ) {
+	$s = ( null === $settings ) ? annotepage_settings() : $settings;
+	if ( 'secure' === $s['mode'] ) {
+		return $s['project'];
+	}
+	return annotepage_project_from_key( $s['key'] );
+}
+
+/* ---------------------------------------------------------------------------
+ * ACTIVATION
+ *
+ * Fills in what is missing and touches nothing that is there. Re-activating
+ * after an upgrade must not draw a second key over the first: a key is the
+ * project, and a plugin that quietly replaced it would lose every note ever
+ * written, on an operation nobody thinks of as destructive.
+ * ------------------------------------------------------------------------- */
+
+function annotepage_activate() {
+	$stored = get_option( ANNOTEPAGE_OPTION, array() );
+	if ( ! is_array( $stored ) ) {
+		$stored = array();
+	}
+
+	$fresh = annotepage_settings();
+
+	if ( '' === $fresh['server'] ) {
+		$fresh['server'] = ANNOTEPAGE_DEFAULT_SERVER;
+	}
+	/* Only when there is NEITHER credential. A site coming back from secure
+	   mode has a project and no key, and drawing one here would silently move
+	   it to another project. */
+	if ( '' === $fresh['key'] && '' === $fresh['project'] ) {
+		$fresh['key']  = annotepage_draw_key();
+		$fresh['mode'] = 'open';
+	}
+
+	/* AUTOLOADED, unlike the first version of this plugin. It is read on every
+	   front-end page now -- the audience decides whether the tag goes out --
+	   so not autoloading it buys one extra query per page view and saves a row
+	   in a cache that already holds hundreds. */
+	update_option( ANNOTEPAGE_OPTION, $fresh, true );
+
+	/* The notice on the plugins screen lives until somebody dismisses it. An
+	   option and not a transient: a message that expires on its own is a
+	   message the person who was interrupted never sees. */
+	update_option( ANNOTEPAGE_GREETING, '1', false );
+}
+register_activation_hook( __FILE__, 'annotepage_activate' );
+
+/* ---------------------------------------------------------------------------
+ * WHO SEES IT
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Does the configured audience include this person?
+ *
+ * Answers about a WP_User, never about "the current request", so that the
+ * settings screen can ask the same question about somebody else and get the
+ * same answer.
+ *
+ * @param WP_User|null $user
+ * @return bool
+ */
+function annotepage_audience_allows( $user, $settings = null ) {
+	$s = ( null === $settings ) ? annotepage_settings() : $settings;
+
+	if ( 'everyone' === $s['audience'] ) {
+		return true;
+	}
+
+	$exists = ( $user instanceof WP_User ) && $user->exists();
+	if ( ! $exists ) {
+		return false;
+	}
+
+	if ( 'signed-in' === $s['audience'] ) {
+		return true;
+	}
+	if ( 'admins' === $s['audience'] ) {
+		return user_can( $user, 'manage_options' );
+	}
+
+	/* chosen: these roles, plus these people. The two are added together and
+	   not nested -- "the editors, and also Sam from marketing" is the sentence
+	   this setting exists to write. */
+	if ( in_array( (int) $user->ID, $s['people'], true ) ) {
+		return true;
+	}
+	foreach ( $s['roles'] as $role ) {
+		if ( in_array( $role, (array) $user->roles, true ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Has this person switched it off for themselves?
+ *
+ * Per person, in their own user meta, and it changes nothing for anybody else.
+ * A logged-out visitor cannot have switched anything off: there is nowhere to
+ * remember it.
+ */
+function annotepage_switched_off( $user ) {
+	if ( ! ( $user instanceof WP_User ) || ! $user->exists() ) {
+		return false;
+	}
+	return '1' === (string) get_user_meta( $user->ID, ANNOTEPAGE_USER_OFF, true );
+}
+
+/**
+ * The whole front-end decision, in one place.
+ */
+function annotepage_should_print() {
+	if ( '' === annotepage_tag_markup() ) {
+		return false;
+	}
+	$user = wp_get_current_user();
+	if ( annotepage_switched_off( $user ) ) {
+		return false;
+	}
+	return annotepage_audience_allows( $user );
+}
+
+/* ---------------------------------------------------------------------------
+ * THE TAG
+ * ------------------------------------------------------------------------- */
+
+/**
+ * One producer, two consumers: the footer echoes it, the settings screen shows
+ * it escaped.
  *
  * It is written to be byte-identical to the block
  * docs/how-to-install-it.html hands out for the same answers -- same order,
@@ -224,40 +468,285 @@ function annotepage_tag_markup() {
  *
  * Priority 100: late in wp_footer, so the tag sits near the end of <body> like
  * the documented one, and after whatever a theme prints at the default 10.
+ *
+ * PAGE CACHES. The tag now depends on who is looking, so a full-page cache that
+ * serves one logged-out copy to everybody will serve the copy without it --
+ * which is the harmless direction: no key goes out to somebody the audience
+ * excluded. The other direction, audience "everyone", writes the same tag for
+ * everybody and caches correctly.
  */
 function annotepage_print_tag() {
-	$markup = annotepage_tag_markup();
-	if ( '' === $markup ) {
+	if ( ! annotepage_should_print() ) {
 		return;
 	}
 	/* Every value inside was escaped by annotepage_tag_markup() and the frame
 	   around them is a literal. There is nothing left to escape here, and
 	   escaping the assembled markup would escape the tag itself. */
-	echo $markup; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo annotepage_tag_markup(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 }
 add_action( 'wp_footer', 'annotepage_print_tag', 100 );
+
+/* ---------------------------------------------------------------------------
+ * WHAT IS TRUE RIGHT NOW, IN ONE SENTENCE
+ *
+ * Written once and read by the admin bar, the greeting and the settings
+ * screen. Three screens that describe the same state in three wordings are
+ * three chances to describe it wrongly.
+ * ------------------------------------------------------------------------- */
+
+function annotepage_audience_words( $settings = null ) {
+	$s = ( null === $settings ) ? annotepage_settings() : $settings;
+	switch ( $s['audience'] ) {
+		case 'everyone':
+			return 'everyone, visitors included';
+		case 'signed-in':
+			return 'everybody signed in to this site';
+		case 'chosen':
+			$bits = array();
+			if ( ! empty( $s['roles'] ) ) {
+				$bits[] = count( $s['roles'] ) . ' role' . ( 1 === count( $s['roles'] ) ? '' : 's' );
+			}
+			if ( ! empty( $s['people'] ) ) {
+				$bits[] = count( $s['people'] ) . ' named ' . ( 1 === count( $s['people'] ) ? 'person' : 'people' );
+			}
+			return empty( $bits ) ? 'nobody yet -- no role and no person chosen' : implode( ' and ', $bits );
+	}
+	return 'administrators';
+}
+
+function annotepage_state_line( $settings = null ) {
+	$s = ( null === $settings ) ? annotepage_settings() : $settings;
+	if ( '' === annotepage_tag_markup() ) {
+		if ( '' === $s['server'] ) {
+			return 'Nothing is written: there is no server address.';
+		}
+		return 'Nothing is written: this mode has no credential to put in the page.';
+	}
+	return 'Written on every page, for ' . annotepage_audience_words( $s ) . '.';
+}
+
+/* ---------------------------------------------------------------------------
+ * THE ADMIN BAR
+ *
+ * The black bar is where somebody who has just activated the plugin looks, and
+ * it is the only place the per-person switch can live: the switch is about the
+ * page being looked at, so it belongs on that page and not two clicks into
+ * wp-admin.
+ *
+ * SWITCHING OFF IS PERSONAL AND SWITCHING ON IS NOT A BACK DOOR. The item
+ * appears for whoever the audience already includes; it cannot hand the tool
+ * to somebody the configuration leaves out. An administrator who wants that
+ * changes the audience, on a screen that says what it costs.
+ * ------------------------------------------------------------------------- */
+
+function annotepage_admin_bar( $bar ) {
+	if ( ! is_admin_bar_showing() ) {
+		return;
+	}
+	$user  = wp_get_current_user();
+	$admin = current_user_can( 'manage_options' );
+	$s     = annotepage_settings();
+
+	/* An administrator always sees the item, even when the audience leaves
+	   them out: they are the person who has to notice that it does. */
+	if ( ! $admin && ! annotepage_audience_allows( $user, $s ) ) {
+		return;
+	}
+
+	$off     = annotepage_switched_off( $user );
+	$written = ( '' !== annotepage_tag_markup() );
+	$here    = $written && ! $off && annotepage_audience_allows( $user, $s );
+
+	$bar->add_node( array(
+		'id'    => 'annotepage',
+		'title' => 'annotepage' . ( $here ? '' : ' (off)' ),
+		'href'  => $admin ? admin_url( 'options-general.php?page=' . ANNOTEPAGE_PAGE ) : false,
+		'meta'  => array( 'title' => annotepage_state_line( $s ) ),
+	) );
+
+	$bar->add_node( array(
+		'id'     => 'annotepage-state',
+		'parent' => 'annotepage',
+		'title'  => annotepage_state_line( $s ),
+		'meta'   => array( 'class' => 'annotepage-state' ),
+	) );
+
+	if ( $user->exists() ) {
+		$bar->add_node( array(
+			'id'     => 'annotepage-switch',
+			'parent' => 'annotepage',
+			'title'  => $off ? 'Turn it back on for me' : 'Turn it off for me',
+			'href'   => wp_nonce_url(
+				add_query_arg(
+					array(
+						'action' => 'annotepage_switch',
+						'back'   => rawurlencode( annotepage_current_url() ),
+					),
+					admin_url( 'admin-post.php' )
+				),
+				'annotepage_switch'
+			),
+		) );
+	}
+
+	if ( $admin ) {
+		$bar->add_node( array(
+			'id'     => 'annotepage-settings',
+			'parent' => 'annotepage',
+			'title'  => 'Settings',
+			'href'   => admin_url( 'options-general.php?page=' . ANNOTEPAGE_PAGE ),
+		) );
+	}
+}
+add_action( 'admin_bar_menu', 'annotepage_admin_bar', 100 );
+
+/**
+ * Where the person is standing, so the switch can put them back there.
+ *
+ * Rebuilt rather than taken from a header: it is handed back to
+ * wp_safe_redirect(), which refuses any host but this one -- so the worst a
+ * forged REQUEST_URI can do is send somebody to a wrong path on their own site.
+ */
+function annotepage_current_url() {
+	$path = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+	return home_url( $path );
+}
+
+function annotepage_switch() {
+	$user = wp_get_current_user();
+	if ( ! $user->exists() ) {
+		wp_die( 'This switch is remembered per person, so it needs an account.', '', array( 'response' => 403 ) );
+	}
+	check_admin_referer( 'annotepage_switch' );
+
+	if ( annotepage_switched_off( $user ) ) {
+		delete_user_meta( $user->ID, ANNOTEPAGE_USER_OFF );
+	} else {
+		update_user_meta( $user->ID, ANNOTEPAGE_USER_OFF, '1' );
+	}
+
+	$back = isset( $_GET['back'] ) ? esc_url_raw( wp_unslash( $_GET['back'] ) ) : '';
+	wp_safe_redirect( '' !== $back ? $back : home_url( '/' ) );
+	exit;
+}
+add_action( 'admin_post_annotepage_switch', 'annotepage_switch' );
+
+/* ---------------------------------------------------------------------------
+ * THE GREETING, ON THE PLUGINS SCREEN
+ *
+ * Activation did something without asking -- it drew a key and pointed at a
+ * server -- and the one honest way to do that is to say so, on the screen the
+ * person is already looking at, with the way to change it and the way to make
+ * the message go.
+ * ------------------------------------------------------------------------- */
+
+function annotepage_greeting() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	if ( '1' !== (string) get_option( ANNOTEPAGE_GREETING, '' ) ) {
+		return;
+	}
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+	if ( ! $screen || 'plugins' !== $screen->id ) {
+		return;
+	}
+
+	$s        = annotepage_settings();
+	$settings = admin_url( 'options-general.php?page=' . ANNOTEPAGE_PAGE );
+	$dismiss  = wp_nonce_url(
+		add_query_arg( 'annotepage_dismiss', '1', admin_url( 'plugins.php' ) ),
+		'annotepage_dismiss'
+	);
+	$loud = ( 'everyone' === $s['audience'] && 'secure' !== $s['mode'] );
+	?>
+	<div class="notice notice-<?php echo $loud ? 'warning' : 'success'; ?>">
+		<p>
+			<strong>annotepage is on.</strong>
+			<?php echo esc_html( annotepage_state_line( $s ) ); ?>
+			Open any page of the site and the button is at the bottom right.
+		</p>
+		<p>
+			It drew a key and pointed at
+			<code><?php echo esc_html( $s['server'] ); ?></code> so that there was
+			nothing to fill in first. The notes are encrypted in the browser before
+			they leave it, and that server cannot read one.
+			<?php if ( $loud ) : ?>
+				<strong>The key is in the page and the page is public:</strong>
+				anybody who opens it can read these notes and write them.
+			<?php else : ?>
+				The key is in the page, so whoever is shown the tool can read the
+				notes <em>and write them</em> &mdash; which is why it starts with
+				<?php echo esc_html( annotepage_audience_words( $s ) ); ?>.
+			<?php endif; ?>
+		</p>
+		<p>
+			<a href="<?php echo esc_url( $settings ); ?>" class="button button-primary">Settings</a>
+			<a href="<?php echo esc_url( $dismiss ); ?>" class="button">Dismiss</a>
+		</p>
+	</div>
+	<?php
+}
+add_action( 'admin_notices', 'annotepage_greeting' );
+
+function annotepage_dismiss() {
+	if ( ! isset( $_GET['annotepage_dismiss'] ) ) {
+		return;
+	}
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	check_admin_referer( 'annotepage_dismiss' );
+	delete_option( ANNOTEPAGE_GREETING );
+	wp_safe_redirect( admin_url( 'plugins.php' ) );
+	exit;
+}
+add_action( 'admin_init', 'annotepage_dismiss' );
+
+/* The two links on the plugins list row, where WordPress users look for a
+   settings screen before they look in a menu. */
+function annotepage_row_links( $links ) {
+	array_unshift(
+		$links,
+		'<a href="' . esc_url( admin_url( 'options-general.php?page=' . ANNOTEPAGE_PAGE ) ) . '">Settings</a>'
+	);
+	return $links;
+}
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'annotepage_row_links' );
 
 /* ---------------------------------------------------------------------------
  * THE SETTINGS SCREEN
  *
  * WHICH FIELDS EXIST, AND WHY THE OTHERS DO NOT.
  *
- * 00-preamble.js reads ten attributes. This screen offers four answers. Each
- * omission is a decision, and a setting nobody will ever touch is a setting
- * that costs a reader a question and gives back nothing.
+ * 00-preamble.js reads ten attributes. This screen offers four answers, plus
+ * the one question that is not an attribute at all: who sees it. Each omission
+ * is a decision, and a setting nobody will ever touch is a setting that costs
+ * a reader a question and gives back nothing.
  *
  * KEPT
+ *
+ *   Who sees it  Not an attribute -- it decides whether the tag is written for
+ *                this visitor at all. It is first on the screen because it is
+ *                the only answer that can hurt: in public mode the tag carries
+ *                the key, so the audience is the list of people who may write
+ *                notes. Everything else is plumbing.
  *
  *   data-server   Required, and underivable. The client served from a CDN can
  *                 no longer deduce the API address from its own -- that address
  *                 says nothing about this site. Nothing in WordPress knows it
- *                 either. Without this field the plugin cannot work at all.
+ *                 either. It arrives filled in with the shared relay, because
+ *                 an empty required field is an install that does nothing.
  *
  *   data-key / data-project
- *                 One of the two, never both, and WHICH ONE IS THE MODE. This
- *                 is not a field so much as the product: it is the value a
- *                 neophyte would otherwise have to go and fetch from another
- *                 page. It is generated here, in the browser (admin.js).
+ *                 One of the two, never both, and WHICH ONE IS THE MODE. The
+ *                 key can be drawn here, pasted from another site, or dropped
+ *                 entirely -- and the three are the same field, because they
+ *                 are the same decision: WHICH PROJECT THESE NOTES BELONG TO.
+ *                 Pasting the same key into dev, staging and production is how
+ *                 one set of notes is shared by three environments; the page
+ *                 index is HMAC(index key, path) and carries no domain, so the
+ *                 same path on the three sites is the same page.
  *
  *   data-version  The only attribute that changes what the tool DOES rather
  *                 than where it points: a note marked resolved compares the
@@ -316,10 +805,13 @@ add_action( 'wp_footer', 'annotepage_print_tag', 100 );
  *                 never guessed. So: not guessed, and not asked either -- on a
  *                 site with one environment it labels nothing.
  *
- *   An on/off switch
- *                 Deactivating the plugin is the switch, and it is the one
- *                 every WordPress user already knows how to find. An
- *                 incomplete configuration writes nothing on its own.
+ *   A site-wide on/off switch
+ *                 Deactivating the plugin is that switch, and it is the one
+ *                 every WordPress user already knows how to find. The switch in
+ *                 the admin bar is a different thing: it is per person, it
+ *                 changes nothing for anybody else, and it exists because
+ *                 somebody presenting their screen wants the pill gone for ten
+ *                 minutes without touching what the team sees.
  * ------------------------------------------------------------------------- */
 
 function annotepage_menu() {
@@ -349,11 +841,61 @@ function annotepage_admin_assets( $hook ) {
 		'annotepage-admin',
 		plugins_url( 'admin.js', __FILE__ ),
 		array(),
-		'1.0.0',
+		ANNOTEPAGE_VERSION,
 		true
 	);
 }
 add_action( 'admin_enqueue_scripts', 'annotepage_admin_assets' );
+
+/**
+ * The people named in the "chosen" list, as logins, for the form to show back.
+ */
+function annotepage_people_logins( array $ids ) {
+	$names = array();
+	foreach ( $ids as $id ) {
+		$user = get_user_by( 'id', (int) $id );
+		if ( $user ) {
+			$names[] = $user->user_login;
+		}
+	}
+	return $names;
+}
+
+/**
+ * Logins, emails or display names typed into a box, turned into user ids.
+ *
+ * A text box and not a multi-select: a select listing every account is a
+ * select that times out on a site with ten thousand of them, and the people
+ * being named here are three colleagues whose usernames are known.
+ *
+ * @param string   $typed
+ * @param string[] $unknown Out: what matched nothing, so the screen can say so.
+ * @return int[]
+ */
+function annotepage_people_from_text( $typed, &$unknown ) {
+	$unknown = array();
+	$ids     = array();
+	$parts   = preg_split( '/[,\r\n]+/', (string) $typed );
+	foreach ( (array) $parts as $part ) {
+		$name = trim( $part );
+		if ( '' === $name ) {
+			continue;
+		}
+		$user = get_user_by( 'login', $name );
+		if ( ! $user ) {
+			$user = get_user_by( 'email', $name );
+		}
+		if ( ! $user ) {
+			$user = get_user_by( 'slug', $name );
+		}
+		if ( $user ) {
+			$ids[] = (int) $user->ID;
+		} else {
+			$unknown[] = $name;
+		}
+	}
+	return array_values( array_unique( $ids ) );
+}
 
 /**
  * Save. POST -> validate -> redirect, so a reload does not resubmit.
@@ -372,8 +914,24 @@ function annotepage_save() {
 	$old = annotepage_settings();
 	$new = $old;
 
-	$mode = isset( $_POST['ap_mode'] ) ? sanitize_text_field( wp_unslash( $_POST['ap_mode'] ) ) : '';
+	$mode        = isset( $_POST['ap_mode'] ) ? sanitize_text_field( wp_unslash( $_POST['ap_mode'] ) ) : '';
 	$new['mode'] = ( 'secure' === $mode ) ? 'secure' : 'open';
+
+	$audience = isset( $_POST['ap_audience'] ) ? sanitize_text_field( wp_unslash( $_POST['ap_audience'] ) ) : '';
+	if ( annotepage_is_audience( $audience ) ) {
+		$new['audience'] = $audience;
+	}
+
+	/* Against the roles this site actually has, not against a list written
+	   here: a role added by another plugin is a real role, and a role removed
+	   since must not stay in our option pointing at nothing. */
+	$known = array_keys( wp_roles()->get_names() );
+	$roles = isset( $_POST['ap_roles'] ) ? (array) wp_unslash( $_POST['ap_roles'] ) : array();
+	$new['roles'] = array_values( array_intersect( $known, array_map( 'sanitize_key', $roles ) ) );
+
+	$unknown        = array();
+	$typed_people   = isset( $_POST['ap_people'] ) ? sanitize_textarea_field( wp_unslash( $_POST['ap_people'] ) ) : '';
+	$new['people']  = annotepage_people_from_text( $typed_people, $unknown );
 
 	/* `typed` is kept apart from `server` on purpose. esc_url_raw() answers a
 	   `javascript:` with an EMPTY STRING, which is indistinguishable from a
@@ -390,25 +948,22 @@ function annotepage_save() {
 		$version = substr( $version, 0, 64 );
 	}
 
-	/* THE KEY ARRIVES ONLY IN OPEN MODE. In secure mode admin.js disables that
-	   input, so the browser never sends it -- but a form is not a promise, so
-	   the mode decides here too and the other field is not even read. This is
-	   the difference between "the key does not transit" and "we did not look at
-	   it". */
-	$key     = $old['key'];
-	$project = $old['project'];
+	/* THE KEY ARRIVES ONLY IN PUBLIC MODE. In secure mode admin.js disables
+	   that input, so the browser never sends it -- but a form is not a promise,
+	   so the mode decides here too and the other field is not even read. This
+	   is the difference between "the key does not transit" and "we did not look
+	   at it".
+
+	   AND AN EMPTY KEY FIELD MEANS EMPTY. It used to mean "keep the old one",
+	   which made the field unable to express "no key here" -- and dropping the
+	   key is now something somebody may genuinely want, on a site that should
+	   ask each reviewer for it. */
+	$key     = '';
+	$project = '';
 	if ( 'secure' === $new['mode'] ) {
-		$key       = '';
-		$posted_id = isset( $_POST['ap_project'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['ap_project'] ) ) ) : '';
-		if ( '' !== $posted_id ) {
-			$project = $posted_id;
-		}
+		$project = isset( $_POST['ap_project'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['ap_project'] ) ) ) : '';
 	} else {
-		$project    = '';
-		$posted_key = isset( $_POST['ap_key'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['ap_key'] ) ) ) : '';
-		if ( '' !== $posted_key ) {
-			$key = $posted_key;
-		}
+		$key = isset( $_POST['ap_key'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['ap_key'] ) ) ) : '';
 	}
 
 	$notice = 'saved';
@@ -426,10 +981,26 @@ function annotepage_save() {
 		$new['version'] = $version;
 		$new['key']     = $key;
 		$new['project'] = $project;
-		update_option( ANNOTEPAGE_OPTION, $new, false );
+		update_option( ANNOTEPAGE_OPTION, $new, true );
 
+		/* Named rather than counted, and kept out of the redirect: what is
+		   printed back comes from our own row, escaped, never from the URL the
+		   browser was sent to. It is its own line on the screen, so it does not
+		   compete for the headline -- see below. */
+		if ( ! empty( $unknown ) ) {
+			set_transient( 'annotepage_unknown_' . get_current_user_id(), $unknown, 120 );
+		}
+
+		/* THE HEADLINE IS THE MOST EXPENSIVE THING THAT JUST HAPPENED.
+		   One slot means a ranking, and the first ranking here was the order
+		   the branches happened to be written in: a misspelt username hid "the
+		   key is now in a page every visitor can open". Ranked by consequence
+		   now, and nothing is lost by it -- the misspelt name is printed under
+		   the headline either way. */
 		if ( '' === $new['server'] || ( '' === $new['key'] && '' === $new['project'] ) ) {
 			$notice = 'incomplete';
+		} elseif ( 'everyone' === $new['audience'] && 'secure' !== $new['mode'] ) {
+			$notice = 'wide-open';
 		}
 	}
 
@@ -450,11 +1021,12 @@ add_action( 'admin_post_annotepage_save', 'annotepage_save' );
    a URL, so nothing that arrived in a URL is ever printed. */
 function annotepage_notice_text( $key ) {
 	$all = array(
-		'saved'       => 'Saved. The tag below is what every page of this site now carries.',
+		'saved'       => 'Saved. The tag below is what this site now carries.',
 		'incomplete'  => 'Saved, and the tag is NOT being written: it needs a server address and a key.',
+		'wide-open'   => 'Saved. The key is now in a page every visitor can open, so every visitor can read these notes and write them.',
 		'bad-server'  => 'Nothing was saved: the server address must be a full http:// or https:// URL.',
-		'bad-key'     => 'Nothing was saved: a key is 43 characters. Use the button to draw one.',
-		'bad-project' => 'Nothing was saved: a project id is 22 characters. Use the button to draw one.',
+		'bad-key'     => 'Nothing was saved: a key is 43 characters. Paste one, or use the button to draw one.',
+		'bad-project' => 'Nothing was saved: a project id is 22 characters. Paste one, or draw a key and let it derive.',
 	);
 	return isset( $all[ $key ] ) ? $all[ $key ] : '';
 }
@@ -464,154 +1036,140 @@ function annotepage_render() {
 		return;
 	}
 
-	$s      = annotepage_settings();
-	$markup = annotepage_tag_markup();
-	$has    = ( '' !== $s['key'] || '' !== $s['project'] );
+	$s       = annotepage_settings();
+	$markup  = annotepage_tag_markup();
+	$id      = annotepage_project_id( $s );
+	$has     = ( '' !== $s['key'] || '' !== $s['project'] );
+	$notice  = '';
+	$unknown = array();
 
-	$notice = '';
 	if ( isset( $_GET['ap_notice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$notice = annotepage_notice_text( sanitize_key( wp_unslash( $_GET['ap_notice'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	}
+
+	/* Read whatever the headline was: names that matched no account are shown
+	   beside every outcome, never instead of one. Ours, escaped, and gone once
+	   it has been read. */
+	$stored = get_transient( 'annotepage_unknown_' . get_current_user_id() );
+	if ( is_array( $stored ) ) {
+		$unknown = $stored;
+		delete_transient( 'annotepage_unknown_' . get_current_user_id() );
+	}
+
+	$loud = ( 'everyone' === $s['audience'] && 'secure' !== $s['mode'] );
 	?>
 	<div class="wrap">
 		<h1>annotepage</h1>
 
-		<?php if ( '' !== $notice ) : ?>
-			<div class="notice notice-info"><p><?php echo esc_html( $notice ); ?></p></div>
+		<?php if ( '' !== $notice || ! empty( $unknown ) ) : ?>
+			<div class="notice notice-info">
+				<?php if ( '' !== $notice ) : ?>
+					<p><?php echo esc_html( $notice ); ?></p>
+				<?php endif; ?>
+				<?php if ( ! empty( $unknown ) ) : ?>
+					<p>
+						This site has no account for
+						<code><?php echo esc_html( implode( ', ', $unknown ) ); ?></code>,
+						so nobody was added for that name.
+					</p>
+				<?php endif; ?>
+			</div>
 		<?php endif; ?>
 
 		<p>
-			This screen writes one script tag at the foot of every page. It
-			installs nothing else: the tool itself is served from a CDN and
-			updates on its own.
+			<strong><?php echo esc_html( annotepage_state_line( $s ) ); ?></strong>
+			This screen writes one script tag at the foot of the page. It installs
+			nothing else: the tool itself is served from a CDN and updates on its
+			own.
 		</p>
 
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ap-form">
 			<input type="hidden" name="action" value="annotepage_save">
 			<?php wp_nonce_field( 'annotepage_save' ); ?>
 
+			<h2>Who sees it</h2>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row">Shown to</th>
+					<td>
+						<fieldset id="ap-audience">
+							<label style="display:block;margin-bottom:6px;">
+								<input type="radio" name="ap_audience" value="admins"
+									<?php checked( 'admins', $s['audience'] ); ?>>
+								<strong>Administrators</strong> &mdash; where a fresh
+								install starts.
+							</label>
+							<label style="display:block;margin-bottom:6px;">
+								<input type="radio" name="ap_audience" value="signed-in"
+									<?php checked( 'signed-in', $s['audience'] ); ?>>
+								<strong>Everybody signed in</strong> to this site.
+							</label>
+							<label style="display:block;margin-bottom:6px;">
+								<input type="radio" name="ap_audience" value="chosen" id="ap-audience-chosen"
+									<?php checked( 'chosen', $s['audience'] ); ?>>
+								<strong>These roles, and these people.</strong>
+							</label>
+
+							<div id="ap-chosen" style="margin:0 0 10px 24px;">
+								<p style="margin:4px 0;">
+									<?php foreach ( wp_roles()->get_names() as $slug => $label ) : ?>
+										<label style="display:inline-block;margin-right:14px;">
+											<input type="checkbox" name="ap_roles[]"
+												value="<?php echo esc_attr( $slug ); ?>"
+												<?php checked( in_array( $slug, $s['roles'], true ) ); ?>>
+											<?php echo esc_html( $label ); ?>
+										</label>
+									<?php endforeach; ?>
+								</p>
+								<p style="margin:4px 0;">
+									<label for="ap-people">And these people, by username or email, one per line or separated by commas:</label><br>
+									<textarea name="ap_people" id="ap-people" rows="2" class="large-text code"
+										placeholder="jo, sam@example.com"><?php echo esc_textarea( implode( ', ', annotepage_people_logins( $s['people'] ) ) ); ?></textarea>
+								</p>
+							</div>
+
+							<label style="display:block;">
+								<input type="radio" name="ap_audience" value="everyone" id="ap-audience-everyone"
+									<?php checked( 'everyone', $s['audience'] ); ?>>
+								<strong>Everyone, visitors included.</strong>
+								<span class="description" style="display:block;margin-left:24px;">
+									On a public page in public mode this hands the key to
+									anybody who opens it, and the key is write access:
+									they can read every note and add their own. It is a
+									real answer on a site behind a login, a VPN or an IP
+									allowlist &mdash; and on a site that is genuinely open,
+									secure mode below is the pairing that survives it.
+								</span>
+							</label>
+						</fieldset>
+
+						<div id="ap-wide" class="notice notice-warning inline"
+							style="margin:12px 0 0;padding:8px 12px;<?php echo $loud ? '' : 'display:none;'; ?>">
+							<p style="margin:0.4em 0;">
+								<strong>Everyone, with the key in the page.</strong>
+								Every visitor to this site can read these notes and write
+								them, and somebody who copies the tag out of your page
+								source can write into them from anywhere. Sound behind a
+								login or a VPN. Worth a second thought on a public site.
+							</p>
+						</div>
+					</td>
+				</tr>
+			</table>
+
+			<h2>Where the notes go</h2>
 			<table class="form-table" role="presentation">
 				<tr>
 					<th scope="row"><label for="ap-server">Server address</label></th>
 					<td>
 						<input name="ap_server" id="ap-server" type="url" class="regular-text code"
 							value="<?php echo esc_attr( $s['server'] ); ?>"
-							placeholder="https://api.annotepage.com/api.php">
+							placeholder="<?php echo esc_attr( ANNOTEPAGE_DEFAULT_SERVER ); ?>">
 						<p class="description">
 							The address of <code>api.php</code> &mdash; the shared
-							relay, or your own install. The client is served from a
-							CDN and cannot guess it.
+							relay, filled in at activation, or your own install. The
+							client is served from a CDN and cannot guess it.
 						</p>
-					</td>
-				</tr>
-
-				<tr>
-					<th scope="row">Mode</th>
-					<td>
-						<!-- THE WARNING COMES BEFORE THE CHOICE, not after it.
-						     A screen that explains what cannot be undone under
-						     the radio somebody has already clicked has
-						     explained nothing. -->
-						<div class="notice notice-warning inline" style="margin:0 0 12px;padding:8px 12px;">
-							<p style="margin:0.4em 0;">
-								<strong>This choice cannot be taken back.</strong>
-								The mode is settled by the tag and by nothing else.
-								Changing it later means a new key, so a new project,
-								and <strong>the notes already written stay behind</strong>
-								&mdash; they are not moved and not deleted, this site
-								simply stops showing them.
-							</p>
-						</div>
-
-						<fieldset>
-							<label style="display:block;margin-bottom:8px;">
-								<input type="radio" name="ap_mode" value="open" id="ap-mode-open"
-									<?php checked( 'open', $s['mode'] ); ?>>
-								<strong>Public</strong> &mdash; the key is in the page.
-								Nobody is asked for anything.
-								<span class="description" style="display:block;margin-left:24px;">
-									Whoever can open the page can read these notes
-									<strong>and write them</strong>; there is no
-									reader-only role. Someone who copies the tag out
-									of your page source writes into your notes from
-									their own site. Fine behind a login, a VPN or an
-									IP allowlist. Not fine on a public page.
-								</span>
-							</label>
-							<label style="display:block;">
-								<input type="radio" name="ap_mode" value="secure" id="ap-mode-secure"
-									<?php checked( 'secure', $s['mode'] ); ?>>
-								<strong>Secure</strong> &mdash; only the project id is
-								in the page.
-								<span class="description" style="display:block;margin-left:24px;">
-									Each reviewer pastes the key once, in their own
-									browser. WordPress never stores it, and the server
-									never receives it. <strong>Lose it and the notes
-									are gone</strong>: there is no recovery and no
-									rotation.
-								</span>
-							</label>
-						</fieldset>
-					</td>
-				</tr>
-
-				<tr>
-					<th scope="row">Key</th>
-					<td>
-						<!-- The two values the browser produces. One of them is
-						     submitted; admin.js disables the other, and
-						     annotepage_save() does not read it either. -->
-						<input type="hidden" name="ap_key" id="ap-key" value="<?php echo esc_attr( $s['key'] ); ?>">
-						<input type="hidden" name="ap_project" id="ap-project" value="<?php echo esc_attr( $s['project'] ); ?>">
-
-						<p>
-							<button type="button" class="button" id="ap-generate">
-								<?php echo $has ? 'Draw a new key' : 'Draw a key'; ?>
-							</button>
-							<span id="ap-state" class="description" style="margin-left:8px;">
-								<?php
-								if ( 'secure' === $s['mode'] && '' !== $s['project'] ) {
-									echo 'Project <code>' . esc_html( $s['project'] ) . '</code>. The key is not stored here.';
-								} elseif ( '' !== $s['key'] ) {
-									echo 'A key is stored and written into the page.';
-								} else {
-									echo 'None yet.';
-								}
-								?>
-							</span>
-						</p>
-
-						<p class="description">
-							It is drawn in <em>this</em> browser, by the same
-							computation the install page and the tool itself run.
-							Nothing is sent anywhere to obtain it.
-						</p>
-
-						<!-- Filled by admin.js in secure mode, and only there:
-						     it is the one moment the key exists anywhere this
-						     administrator can read it. -->
-						<div id="ap-once" style="display:none;">
-							<div class="notice notice-warning inline" style="margin:12px 0 0;padding:8px 12px;">
-								<p style="margin:0.4em 0;">
-									<strong>Copy this now.</strong> In secure mode it is
-									not sent to WordPress and not stored anywhere. This
-									is the only time it will be shown.
-								</p>
-								<p style="margin:0.4em 0;">
-									<code id="ap-once-key" style="user-select:all;"></code>
-								</p>
-							</div>
-						</div>
-
-						<div id="ap-mismatch" style="display:none;">
-							<div class="notice notice-error inline" style="margin:12px 0 0;padding:8px 12px;">
-								<p style="margin:0.4em 0;">
-									This mode needs its own key. Draw one before
-									saving &mdash; and the notes written under the
-									current one stay behind.
-								</p>
-							</div>
-						</div>
 					</td>
 				</tr>
 
@@ -634,19 +1192,130 @@ function annotepage_render() {
 				</tr>
 			</table>
 
+			<h2>The key</h2>
+			<p class="description" style="max-width:46em;">
+				The key <em>is</em> the project: the same key on two sites is one set
+				of notes, and a different key is a different set. Draw one, or paste
+				the one another environment already uses &mdash; dev, staging and
+				production sharing a key share the notes of the same path, because a
+				page is found by its path and not by its domain.
+			</p>
+
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row">Mode</th>
+					<td>
+						<fieldset>
+							<label style="display:block;margin-bottom:8px;">
+								<input type="radio" name="ap_mode" value="open" id="ap-mode-open"
+									<?php checked( 'open', $s['mode'] ); ?>>
+								<strong>The key is in the page.</strong> Nobody is asked
+								for anything.
+								<span class="description" style="display:block;margin-left:24px;">
+									Whoever is shown the tool can read these notes
+									<strong>and write them</strong>; there is no
+									reader-only role.
+								</span>
+							</label>
+							<label style="display:block;">
+								<input type="radio" name="ap_mode" value="secure" id="ap-mode-secure"
+									<?php checked( 'secure', $s['mode'] ); ?>>
+								<strong>Only the project id is in the page.</strong> Each
+								reviewer pastes the key once, in their own browser.
+								<span class="description" style="display:block;margin-left:24px;">
+									WordPress does not store it and the server never
+									receives it. <strong>Lose it and the notes are
+									gone</strong>: there is no recovery and no rotation.
+								</span>
+							</label>
+						</fieldset>
+					</td>
+				</tr>
+
+				<tr>
+					<th scope="row"><label for="ap-key">Key</label></th>
+					<td>
+						<input name="ap_key" id="ap-key" type="text" class="large-text code"
+							autocomplete="off" spellcheck="false"
+							value="<?php echo esc_attr( $s['key'] ); ?>"
+							placeholder="43 characters, or empty">
+						<p>
+							<button type="button" class="button" id="ap-generate">
+								<?php echo $has ? 'Draw a new key' : 'Draw a key'; ?>
+							</button>
+							<span id="ap-state" class="description" style="margin-left:8px;">
+								<?php
+								if ( 'secure' === $s['mode'] && '' !== $s['project'] ) {
+									echo 'Project <code>' . esc_html( $s['project'] ) . '</code>. The key is not stored here.';
+								} elseif ( '' !== $id ) {
+									echo 'Project <code>' . esc_html( $id ) . '</code>.';
+								} else {
+									echo 'None yet.';
+								}
+								?>
+							</span>
+						</p>
+						<p class="description">
+							Drawn in <em>this</em> browser, by the same computation the
+							install page and the tool itself run. Nothing is sent
+							anywhere to obtain it. A new key is a new project:
+							<strong>the notes written under the old one stay where they
+							are</strong> &mdash; nothing is deleted &mdash; and this
+							site stops showing them.
+						</p>
+
+						<div id="ap-once" style="display:none;">
+							<div class="notice notice-warning inline" style="margin:12px 0 0;padding:8px 12px;">
+								<p style="margin:0.4em 0;">
+									<strong>Copy this now.</strong> In this mode it is not
+									sent to WordPress and not stored anywhere. This is the
+									only time it will be shown.
+								</p>
+								<p style="margin:0.4em 0;">
+									<code id="ap-once-key" style="user-select:all;"></code>
+								</p>
+								<p style="margin:0.4em 0;">
+									<label>
+										<input type="checkbox" id="ap-kept"> I have copied it
+									</label>
+								</p>
+							</div>
+						</div>
+					</td>
+				</tr>
+
+				<tr id="ap-project-row">
+					<th scope="row"><label for="ap-project">Project id</label></th>
+					<td>
+						<input name="ap_project" id="ap-project" type="text" class="regular-text code"
+							autocomplete="off" spellcheck="false"
+							value="<?php echo esc_attr( $s['project'] ); ?>"
+							placeholder="22 characters">
+						<p class="description">
+							What goes in the page when the key does not. It is derived
+							from the key, so pasting a key above fills it in &mdash; and
+							pasting an id here alone points this site at a project whose
+							key its reviewers already hold.
+						</p>
+					</td>
+				</tr>
+			</table>
+
 			<?php submit_button( 'Save', 'primary', 'submit', true, array( 'id' => 'ap-save' ) ); ?>
 		</form>
 
 		<h2>The tag on your pages</h2>
 		<?php if ( '' !== $markup ) : ?>
 			<p class="description">
-				Written by this plugin at the end of <code>&lt;body&gt;</code>.
-				There is nothing to paste.
+				Written by this plugin at the end of <code>&lt;body&gt;</code>, for
+				<?php echo esc_html( annotepage_audience_words( $s ) ); ?>. There is
+				nothing to paste.
 			</p>
 			<pre class="code" style="overflow:auto;padding:12px;background:#f6f7f7;border:1px solid #dcdcde;"><code><?php echo esc_html( $markup ); ?></code></pre>
 		<?php else : ?>
 			<p>
-				Nothing is written yet. The tag needs a server address and a key.
+				Nothing is written yet. The tag needs a server address, and a key or a
+				project id.
 			</p>
 		<?php endif; ?>
 	</div>

@@ -16,37 +16,59 @@
  * naming a project the client never computes -- and nothing, anywhere, would
  * raise an error. The person would simply never see a note.
  *
+ * WITHOUT THIS SCRIPT THE SCREEN STILL WORKS. Every field is a plain input,
+ * every block starts visible, and PHP judges everything again on arrival. What
+ * this file adds is the derivation, the live warnings, and the refusal to drop
+ * a key somebody has not copied. It hides; it never reveals.
+ *
  * MIT, like the rest of annotepage.
  */
 (function () {
     'use strict';
 
+    var form     = document.getElementById('ap-form');
     var keyIn    = document.getElementById('ap-key');
     var projIn   = document.getElementById('ap-project');
+    var projRow  = document.getElementById('ap-project-row');
     var button   = document.getElementById('ap-generate');
     var state    = document.getElementById('ap-state');
     var once     = document.getElementById('ap-once');
     var onceKey  = document.getElementById('ap-once-key');
-    var mismatch = document.getElementById('ap-mismatch');
+    var kept     = document.getElementById('ap-kept');
     var save     = document.getElementById('ap-save');
     var open     = document.getElementById('ap-mode-open');
     var secure   = document.getElementById('ap-mode-secure');
+    var chosen   = document.getElementById('ap-audience-chosen');
+    var everyone = document.getElementById('ap-audience-everyone');
+    var chosenIn = document.getElementById('ap-chosen');
+    var wide     = document.getElementById('ap-wide');
 
     /* Stop rather than half-run. A generator wired to elements the screen no
        longer has would leave the button doing nothing at all, which looks
        exactly like a slow one. */
-    if (!keyIn || !projIn || !button || !state || !once || !onceKey
-        || !mismatch || !save || !open || !secure) return;
+    if (!form || !keyIn || !projIn || !projRow || !button || !state || !once
+        || !onceKey || !kept || !save || !open || !secure || !chosen
+        || !everyone || !chosenIn || !wide) return;
 
-    /* No WebCrypto, no key. A value from Math.random is worse than no value:
-       it is guessable AND it looks like a key. The button says so and stays
-       disabled -- an administrator on plain http gets a reason, not a dud. */
-    if (!window.crypto || !window.crypto.subtle || !window.crypto.getRandomValues) {
-        button.disabled = true;
-        state.textContent =
-            'This screen must be served over https to draw a key.';
-        return;
-    }
+    var KEY_SHAPE  = /^[A-Za-z0-9_-]{43}$/;
+    var PROJ_SHAPE = /^[A-Za-z0-9_-]{22}$/;
+
+    /* What the screen was loaded with. Every sentence below is about the
+       difference between this and what is on screen now. */
+    var savedKey     = keyIn.value.trim();
+    var savedProject = projIn.value.trim();
+    var savedMode    = secure.checked ? 'secure' : 'open';
+
+    /* A key this browser has produced or derived from, and which the person
+       may be about to lose: the copy box is shown for THIS and never for a key
+       that is already stored and staying. */
+    var shown = '';
+
+    /* No WebCrypto, no derivation. A value from Math.random is worse than no
+       value: it is guessable AND it looks like a key. The button says so and
+       stays disabled -- an administrator on plain http gets a reason, not a
+       dud -- and pasting still works, because pasting needs no crypto. */
+    var able = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
 
     /* ---- BEGIN derivation: must agree with mcp/src/crypto.mjs.
             tools/check-landing-derivation.mjs runs this against it. ---- */
@@ -81,46 +103,100 @@
     }
     /* ---- END derivation ---- */
 
-    /* What the screen was loaded with. A mode change is only real once a key
-       for it has been drawn, and that is enforced here rather than explained
-       in a paragraph: the Save button will not go through on a mode whose
-       credential does not exist. Irreversible means the screen has to make
-       the cost happen in front of the person, not after them. */
-    var savedMode = secure.checked ? 'secure' : 'open';
-    var drew = false;
-
-    var fresh = { key: '', id: '' };
+    function bytesOfKey(text) {
+        var padded = text.replace(/-/g, '+').replace(/_/g, '/') + '=';
+        var raw;
+        try { raw = atob(padded); } catch (e) { return null; }
+        var out = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+        return out.length === 32 ? out : null;
+    }
 
     function mode() {
         return secure.checked ? 'secure' : 'open';
     }
 
+    function audience() {
+        var picked = form.querySelector('input[name="ap_audience"]:checked');
+        return picked ? picked.value : 'admins';
+    }
+
+    /* WHAT THE PERSON IS ABOUT TO LOSE, said before they lose it.
+       Three cases, and only the third is a loss:
+         - the project is not moving          -> nothing to say
+         - it is moving to one they named     -> which one, and that the old
+                                                 notes stay where they are
+         - the key itself is leaving this DB  -> copy it now, and prove it */
+    function describe(id) {
+        if (id === '') {
+            return keyIn.value.trim() === ''
+                ? 'No key. This site will ask each reviewer for one.'
+                : 'A key is 43 characters; this is ' + keyIn.value.trim().length + '.';
+        }
+        if (savedProject !== '' && id === savedProject) return 'Project ' + id + ', unchanged.';
+        if (savedKey !== '' && id === idOfSavedKey) return 'Project ' + id + ', unchanged.';
+        return 'Project ' + id + '. The notes written under the previous one stay '
+             + 'where they are, and this site stops showing them.';
+    }
+
+    var idOfSavedKey = '';
+
     function paint() {
         var m = mode();
-        var needsKey = (m !== savedMode) && !drew;
+        var typed = keyIn.value.trim();
+        var id = projIn.value.trim();
 
-        mismatch.style.display = needsKey ? '' : 'none';
-        save.disabled = needsKey;
+        /* Hidden, never revealed: a browser that never runs this line shows
+           the block, which is the harmless direction. */
+        chosenIn.hidden = (audience() !== 'chosen');
+        projRow.hidden = (m !== 'secure');
+        wide.style.display = (audience() === 'everyone' && m !== 'secure') ? '' : 'none';
 
-        /* THE KEY IS SHOWN EXACTLY WHEN IT IS ABOUT TO BE LOST. In secure mode
-           it is not stored, so this block is the only place it will ever be
-           readable; in public mode it stays in the page and on this screen,
-           and a scary "copy it now" box there would be noise. */
-        var show = (m === 'secure') && fresh.key !== '';
-        once.style.display = show ? '' : 'none';
-        onceKey.textContent = show ? fresh.key : '';
+        /* The key is about to leave WordPress when secure mode saves over a
+           stored key, or when one was drawn here and will not be stored. */
+        var leaving = (m === 'secure') && shown !== '';
+        once.style.display = leaving ? '' : 'none';
+        onceKey.textContent = leaving ? shown : '';
 
-        /* NEVER BOTH, and the browser must not even be able to send both: a
-           disabled input is not submitted. The server decides again on its own
-           side -- this is the belt, not the trousers. */
-        keyIn.disabled  = (m === 'secure');
-        projIn.disabled = (m !== 'secure');
+        var blocked = false;
+        if (leaving && !kept.checked) blocked = true;
+        if (m !== 'secure' && typed !== '' && !KEY_SHAPE.test(typed)) blocked = true;
+        if (m === 'secure' && id !== '' && !PROJ_SHAPE.test(id)) blocked = true;
+        save.disabled = blocked;
 
-        if (drew) {
-            state.textContent = (m === 'secure')
-                ? 'New project ' + fresh.id + '. Save to write it into the tag.'
-                : 'New key drawn. Save to write it into the tag.';
+        /* textContent and never innerHTML: what goes in here is a project id
+           and a length the person typed, and the day one of them arrives from
+           somewhere else this line must already be the safe one. */
+        if (m === 'secure') {
+            state.textContent = id === ''
+                ? 'No project id yet: paste one, or paste a key above and it is derived.'
+                : describe(id);
+        } else {
+            state.textContent = describe(KEY_SHAPE.test(typed) ? id : '');
         }
+    }
+
+    /* Derive whenever the key field holds something of the right shape. The
+       id field follows the key; it is only typed into on its own when there is
+       no key, which is the "point this site at somebody else's project" case. */
+    function derive() {
+        var typed = keyIn.value.trim();
+        if (!KEY_SHAPE.test(typed)) { paint(); return; }
+        if (!able) {
+            state.textContent = 'This screen must be served over https to derive the '
+                + 'project id. Paste the id below as well.';
+            return;
+        }
+        var bytes = bytesOfKey(typed);
+        if (!bytes) { paint(); return; }
+        projectIdFromSalt(bytes).then(function (id) {
+            projIn.value = id;
+            if (typed === savedKey) idOfSavedKey = id;
+            paint();
+        }, function () {
+            state.textContent = 'The browser refused to derive the project id. '
+                + 'Nothing was changed.';
+        });
     }
 
     function draw() {
@@ -128,7 +204,7 @@
            moment it costs something. A new key is a new project: the notes
            under the old one are not moved and not deleted, this site simply
            stops showing them. */
-        if ((keyIn.value || projIn.value) && !drew) {
+        if (keyIn.value.trim() !== '' || projIn.value.trim() !== '') {
             var ok = window.confirm(
                 'Draw a new key?\n\n'
                 + 'A new key is a new project. The notes already written stay '
@@ -143,11 +219,10 @@
 
         button.disabled = true;
         projectIdFromSalt(bytes).then(function (id) {
-            fresh.key = text;
-            fresh.id = id;
             keyIn.value = text;
             projIn.value = id;
-            drew = true;
+            shown = text;
+            kept.checked = false;
             button.disabled = false;
             paint();
         }, function () {
@@ -156,9 +231,40 @@
         });
     }
 
-    button.addEventListener('click', draw);
-    open.addEventListener('change', paint);
-    secure.addEventListener('change', paint);
+    if (!able) {
+        button.disabled = true;
+        state.textContent = 'This screen must be served over https to draw a key.';
+    } else {
+        button.addEventListener('click', draw);
+    }
 
+    keyIn.addEventListener('input', derive);
+    projIn.addEventListener('input', paint);
+    kept.addEventListener('change', paint);
+    open.addEventListener('change', paint);
+
+    /* Moving to secure mode is what makes a stored key leave: it is shown at
+       that moment, because it is the last moment it can be. */
+    secure.addEventListener('change', function () {
+        if (shown === '' && KEY_SHAPE.test(keyIn.value.trim())) {
+            shown = keyIn.value.trim();
+            kept.checked = false;
+        }
+        paint();
+    });
+
+    var radios = form.querySelectorAll('input[name="ap_audience"]');
+    for (var i = 0; i < radios.length; i++) radios[i].addEventListener('change', paint);
+
+    /* THE KEY MUST NOT BE SENT IN SECURE MODE, and a disabled input is not
+       sent. Disabled here rather than on every repaint, so that the field can
+       still be pasted into and derived from while the screen is open. PHP
+       refuses to read it either way -- this is the belt, not the trousers. */
+    form.addEventListener('submit', function () {
+        if (mode() === 'secure') keyIn.disabled = true;
+        else projIn.disabled = true;
+    });
+
+    if (KEY_SHAPE.test(savedKey)) derive();
     paint();
 }());

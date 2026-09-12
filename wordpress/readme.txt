@@ -8,25 +8,55 @@ Stable tag: 1.0.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
-Writes the annotepage tag at the foot of your pages. One screen, four answers,
-and the key drawn in your own browser.
+Annotate this site. It works the moment you activate it, for administrators
+only, until you say otherwise.
 
 == Description ==
 
 annotepage is an annotation layer for a site under review: a reviewer clicks an
 element of a page, leaves a remark on it, and the remark is encrypted in the
-browser before it goes anywhere. It is a single script tag, so it already works
-on every platform that lets you paste one.
+browser before it goes anywhere.
 
-This plugin exists for the case where pasting is the hard part: a theme whose
-footer you would rather not open, or a site where you are not the one with FTP.
-It does one thing.
-
-**It writes the tag. That is the whole plugin.**
+**Activate it and it works.** There is nothing to fill in first: activation
+draws a key, points at the shared relay, and shows the tool to administrators
+and nobody else. Open any page of your site and the button is at the bottom
+right. The settings screen is for the second day &mdash; who else sees it, where
+the notes go, which key.
 
 There is no dashboard of notes here, no new user role, no widget, no shortcode,
 no block. The notes live in the annotation panel on the site itself, where the
 element being discussed is, which is the only place they mean anything.
+
+= Who sees it =
+
+A fresh install shows it to administrators. One radio button widens that to
+everybody signed in, to chosen roles and named people, or to everyone including
+visitors &mdash; and the screen says what each one costs before you choose it.
+
+Everybody it is shown to also gets an item in the toolbar, with a switch that
+turns it off **for them alone**. Nobody else's view changes, and it is not a way
+into the tool for somebody the audience leaves out.
+
+= The key is the project =
+
+The same key on two sites is one set of notes. Paste the key of your staging
+site into your development site and the two share every remark, because a page
+is found by its path and not by its domain &mdash; which is how dev, staging and
+production end up reviewing the same list.
+
+Draw a new key and you have a new project: the notes written under the old one
+stay exactly where they are, nothing is deleted, and this site stops showing
+them. That is said on the screen, twice, before it happens.
+
+= Two modes =
+
+* **The key is in the page.** Nobody is asked for anything. Whoever is shown the
+  tool can read the notes *and write them*; there is no reader-only role. Sound
+  behind a login, a VPN, an IP allowlist, or with the audience left where it
+  starts.
+* **Only the project id is in the page.** Each reviewer pastes the key once, in
+  their own browser. WordPress does not store it and the server never receives
+  it. Lose that key and the notes are gone: no recovery, no rotation.
 
 = It ships no copy of the tool =
 
@@ -36,30 +66,9 @@ does, and you do not have to press Update to get a fix. What that gives up is
 the `integrity` attribute, deliberately: a pinned digest is a fix that reaches
 nobody.
 
-= The key is drawn in your browser =
-
-The settings screen generates it with WebCrypto, on your machine, by the same
-computation the tool itself runs. Nothing is sent anywhere to obtain it, and
-there is no account to create. In secure mode it is never sent to WordPress at
-all: you copy it once, and each reviewer pastes it once in their own browser.
-
-= What you should know before choosing the mode =
-
-The mode is settled by the tag and by nothing else, and it cannot be changed
-afterwards. Changing it means a new key, therefore a new project, and the notes
-already written stay behind.
-
-* **Public** &mdash; the key is in the page. Nobody is asked for anything, and
-  whoever can open the page can read the notes *and write them*. There is no
-  reader-only role. Sound behind a login, a VPN or an IP allowlist; not sound
-  on a public page.
-* **Secure** &mdash; only the project id is in the page. Each reviewer pastes
-  the key once per browser. Lose that key and the notes are gone: no recovery,
-  no rotation.
-
 = Where the notes go =
 
-To an `api.php` you name in the settings: the shared relay, or a copy you host
+To an `api.php`: the shared relay, filled in at activation, or a copy you host
 yourself (one PHP file, PHP 7.4 and `pdo_sqlite`). In both cases the notes are
 end-to-end encrypted and the server cannot read one. It sees counts, times,
 sizes, IP addresses and your domain &mdash; never your paths and never your
@@ -67,17 +76,24 @@ text.
 
 == Installation ==
 
-1. Install and activate the plugin.
-2. Go to **Settings &rarr; annotepage**.
-3. Paste the address of your `api.php`, choose the mode, press **Draw a key**,
-   and save.
+1. Install and activate the plugin. That is the whole of it: the tag is on your
+   pages from that moment, for administrators.
+2. Open any page of your site. The button is at the bottom right.
+3. **Settings &rarr; annotepage** when you want to widen the audience, point at
+   your own server, or share a key with another environment.
 
-The tag appears at the end of `<body>` on every page from that moment. To check
-it landed, open the console on your site and ask for
+To check the tag landed, open the console on your site and ask for
 `document.querySelector('script[data-key]')` &mdash; or `[data-project]` in
 secure mode.
 
 == Frequently Asked Questions ==
+
+= It activated itself and drew a key. Is that safe? =
+
+The key it drew is written into your pages, so it is only ever shown to people
+the audience includes &mdash; administrators, until you change it. Nothing was
+sent anywhere to obtain it: it is 32 random bytes from your own server. The
+notice on the plugins screen says all of this, with the way to change it.
 
 = Why is the tag not enqueued like every other script? =
 
@@ -92,14 +108,20 @@ annotation layer and no error to explain it. So the tag is written as text, on
 = Does anything phone home? =
 
 No. There is no HTTP call in this plugin's PHP, and none in its admin script.
-The only address it ever writes is the one you typed and the CDN address for
-the tool itself.
+The only address it ever writes is the one in the settings and the CDN address
+for the tool itself.
+
+= Can I use one set of notes across dev, staging and production? =
+
+Yes, and it is the reason the key can be pasted: give the three sites the same
+key and they share the notes of the same path. Give them different keys and they
+share nothing.
 
 = Where are my notes? =
 
 On the site, in the annotation panel, next to the element they are about. This
-plugin does not copy them into WordPress and does not read them: it cannot,
-they are encrypted with a key the server never receives.
+plugin does not copy them into WordPress and does not read them: it cannot, they
+are encrypted with a key the server never receives.
 
 = Can I set the path prefix, the domain list, or plain mode? =
 
@@ -120,14 +142,9 @@ screen that only said "delete". Reinstalling picks up where you left off.
 The interface strings belong to the tool and are overridable through a label
 file belonging to your site. That is a file you upload, not a setting here.
 
-== Screenshots ==
-
-1. The settings screen: the server address, the mode with what it costs said
-   before the choice, and the button that draws a key.
-2. The tag as it is written, shown on the same screen.
-
 == Changelog ==
 
 = 1.0.0 =
-* First release. Writes the tag, generates the key in the browser, and nothing
-  else.
+* First release. Works on activation for administrators, with an audience
+  setting, a per-person switch in the toolbar, and a key that can be drawn,
+  pasted or dropped.

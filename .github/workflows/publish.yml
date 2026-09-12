@@ -294,3 +294,141 @@ jobs:
               echo "Already online: nothing published."
             fi
           } >> "${GITHUB_STEP_SUMMARY}"
+
+  # ==========================================================================
+  # THE WORDPRESS PLUGIN, on the same rule as the packages: the version written
+  # in the file decides, and a version already online is never published again.
+  # Push to main, and this goes out with the rest.
+  #
+  # IT IS INERT UNTIL THREE THINGS EXIST OUTSIDE THIS REPOSITORY, and it says
+  # which one is missing rather than failing red. .github/workflows/README.md
+  # lists them. This is not a control being loosened: there is no wordpress.org
+  # repository to write to before a human at wordpress.org has approved the
+  # plugin, and a job that failed on every push until that day is a job somebody
+  # switches off and forgets.
+  #
+  # WHY A PASSWORD AND NOT A TOKEN. npm gave us trusted publishing, so the two
+  # packages go out with no stored secret at all. wordpress.org has no such
+  # thing: SVN authenticates with the account's own username and password, and
+  # that account owns every plugin it publishes. That is the weakest link in
+  # this file and it is worth knowing it is there.
+  #
+  # NOT ON `next`. There is one channel in the directory and it is what every
+  # site updates to; a pre-release has nowhere to go. The gate still runs on
+  # both branches.
+  # ==========================================================================
+  wordpress:
+    needs: gate
+    name: wordpress.org
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: publish-wordpress
+      cancel-in-progress: false
+    env:
+      SLUG: annotepage
+      WPORG_USERNAME: ${{ secrets.WPORG_USERNAME }}
+      WPORG_PASSWORD: ${{ secrets.WPORG_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Read the version, and decide whether there is anything to publish
+        id: target
+        run: |
+          set -eu
+
+          # The header is what WordPress installs by, and readme.txt's Stable
+          # tag is what the DIRECTORY serves. They are compared here as well as
+          # in `npm run check`, because this is the step that would publish the
+          # disagreement to everybody who has the plugin installed.
+          version="$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*//p' wordpress/annotepage.php | head -n 1 | tr -d '[:space:]')"
+          stable="$(sed -n 's/^Stable tag:[[:space:]]*//p' wordpress/readme.txt | head -n 1 | tr -d '[:space:]')"
+          case "${version}" in
+            [0-9]*.[0-9]*.[0-9]*) : ;;
+            *) echo "::error::the plugin header declares \"${version}\", which is not x.y.z"; exit 1 ;;
+          esac
+          [ "${version}" = "${stable}" ] \
+            || { echo "::error::the plugin header says ${version} and readme.txt says Stable tag: ${stable}. The directory serves the readme's number."; exit 1; }
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+          if [ -z "${WPORG_USERNAME}" ] || [ -z "${WPORG_PASSWORD}" ]; then
+            echo "::notice::no wordpress.org credentials in this repository's secrets: nothing published"
+            echo "publish=no" >> "${GITHUB_OUTPUT}"
+            echo "why=no credentials configured" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          # THE DIRECTORY IS ASKED, never assumed. An unanswered question is not
+          # a "no": it publishes nothing and comes out green, the same way the
+          # npm job refuses to guess when the registry is silent.
+          answer="$(curl -sS --max-time 30 "https://api.wordpress.org/plugins/info/1.0/${SLUG}.json" || echo '')"
+          if [ -z "${answer}" ] || [ "${answer}" = "null" ] || [ "${answer}" = "false" ]; then
+            echo "::notice::${SLUG} is not in the plugin directory yet, so there is no repository to write to. Submit it once by hand; see .github/workflows/README.md"
+            echo "publish=no" >> "${GITHUB_OUTPUT}"
+            echo "why=not in the directory yet" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          online="$(printf '%s' "${answer}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).version||""))}catch(e){process.stdout.write("")}})')"
+          if [ "${online}" = "${version}" ]; then
+            echo "::notice::${SLUG} ${version} is already online: nothing to publish"
+            echo "publish=no" >> "${GITHUB_OUTPUT}"
+            echo "why=already online" >> "${GITHUB_OUTPUT}"
+          else
+            echo "::notice::the directory serves ${online:-nothing}, this tree declares ${version}: publishing"
+            echo "publish=yes" >> "${GITHUB_OUTPUT}"
+            echo "why=publishing ${version}" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Publish to wordpress.org
+        if: steps.target.outputs.publish == 'yes'
+        env:
+          VERSION: ${{ steps.target.outputs.version }}
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq subversion
+
+          svn checkout --depth immediates "https://plugins.svn.wordpress.org/${SLUG}" svn
+          svn update --set-depth infinity svn/trunk
+          svn update --set-depth immediates svn/tags
+          svn update --set-depth infinity svn/assets
+
+          if [ -d "svn/tags/${VERSION}" ]; then
+            echo "::error::tags/${VERSION} already exists in SVN. A published tag is never rewritten: bump the version."
+            exit 1
+          fi
+
+          # WHAT SHIPS IS NOT WHAT IS IN THIS DIRECTORY. `tests/` is the harness
+          # -- a stubbed WordPress that has no business on somebody's server --
+          # and README.md is for whoever reads the code here; readme.txt is the
+          # plugin's own page and does ship. assets/ goes to SVN's assets/, not
+          # into the zip: that is where the directory looks for the icon, the
+          # banner and the screenshots.
+          rsync -a --delete \
+            --exclude 'tests/' --exclude 'README.md' --exclude 'assets/' \
+            wordpress/ svn/trunk/
+          if [ -d wordpress/assets ]; then
+            rsync -a --delete wordpress/assets/ svn/assets/
+          fi
+
+          cd svn
+          # rsync removes a file; svn has to be told it is gone, or the next
+          # commit silently keeps serving it.
+          svn status | sed -n 's/^! *//p' | xargs -r -d '\n' svn delete -q --force
+          svn add --force trunk assets --auto-props --parents --depth infinity -q
+          svn cp trunk "tags/${VERSION}" -q
+
+          svn commit -m "annotepage ${VERSION}" \
+            --username "${WPORG_USERNAME}" --password "${WPORG_PASSWORD}" \
+            --non-interactive --no-auth-cache
+
+      - name: Summarise
+        if: always()
+        run: |
+          set -eu
+          {
+            echo "## the WordPress plugin ${{ steps.target.outputs.version }}"
+            echo "${{ steps.target.outputs.why }}"
+          } >> "${GITHUB_STEP_SUMMARY}"

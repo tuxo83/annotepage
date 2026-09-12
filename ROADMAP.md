@@ -42,6 +42,22 @@ attached, which is the part worth keeping.
   not cover text on anybody's site.
 - **Plugins beyond WordPress.** WordPress ships. The others wait for somebody
   asking.
+- **The server inside the WordPress plugin.** An avenue, not a plan, and low
+  priority on purpose. Today the plugin writes a tag and the notes go to an
+  `api.php` somewhere else; a plugin that carried the server too would be a
+  one-click annotepage with nothing to install anywhere. What holds it back is
+  not difficulty, it is that the plugin's whole value is working first time,
+  simply, and being easy to hand to an assistant &mdash; and every structural
+  question this opens is a question a site owner would have to answer. Where do
+  the notes live: `wp_options`, a table of ours, a file? Whoever restores last
+  week's database restores last week's notes, and the remarks written since are
+  gone, silently, which is the one thing this tool promises never to do. The
+  bounds the relay applies &mdash; rate limits, body caps, the domain lock
+  &mdash; are a server's job, and inside WordPress they would be enforced after
+  WordPress has already booted, on a surface with a decade of its own
+  vulnerabilities. And a shared project across dev, staging and production stops
+  working the moment the server is one of the three sites. None of that is
+  fatal; all of it is a design, and the design is bigger than the plugin.
 - **The installer in another language, French first.** The annotation layer is
   already translatable — every text is a label, English is the fallback, a
   partial translation is usable, and a complete French set of 150 labels ships
