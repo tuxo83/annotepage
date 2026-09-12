@@ -72,6 +72,31 @@
  * invitation. `defer` stays on it: defer is a classic-script attribute and
  * leaves currentScript intact; `type="module"` is what does not.
  *
+ * AND NOT wp_print_script_tag() EITHER -- MEASURED, NOT ASSUMED. That function
+ * exists precisely to print a script tag with arbitrary attributes without the
+ * queue, and it is the obvious answer to the plugin directory's scanner, which
+ * flags the literal `<script` written below. It was built, run against
+ * WordPress 7.1, and refused. The scanner's line does fall; three things found
+ * by running it cost more than that line is worth:
+ *
+ *   - IT DOES NOT WRITE THIS TAG. wp_get_script_tag() now drives a
+ *     WP_HTML_Tag_Processor, which emits a single line and returns the
+ *     attributes in its own order -- `src` last rather than first, and no
+ *     eight-space indentation. The tag on the page would stop being the tag
+ *     how-to-install-it.html hands out, and annotepage_tag_markup() has two
+ *     consumers: the footer prints it and the settings screen shows the same
+ *     string back, escaped. They would still agree with each other and both
+ *     disagree with the documentation.
+ *   - IT REOPENS THE DOOR THIS SECTION EXISTS TO SHUT. It applies
+ *     `wp_script_attributes`, so every other plugin on the site is invited to
+ *     rewrite these attributes. One `type="module"` added there empties
+ *     document.currentScript and the tool goes silent with no error -- the
+ *     exact failure the paragraphs above refuse.
+ *   - IT NEEDS WORDPRESS 5.7, where this plugin asks for 5.2. Until that floor
+ *     is raised the scanner simply reports the incompatibility instead: the
+ *     same two errors, one of them renamed. Raising a plugin's floor to quiet
+ *     a scanner is paid for by the installs it drops.
+ *
  * NOTHING HERE TALKS TO THE NETWORK. No wp_remote_get, no cURL, no update
  * check, no telemetry, no phone home. Grep the file: there is no HTTP call in
  * it. The key is drawn by this server at activation, or in the browser by
