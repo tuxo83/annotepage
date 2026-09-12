@@ -982,6 +982,12 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
             <div>
                 <p class="cap"><span class="n"></span> You ask your assistant</p>
                 <p class="say">One line names the site. The rest is its own work.</p>
+                <!-- WHERE IT RUNS, said once (note 354). The notes tell it what to
+                     fix; the fix is made in the site's code, so the assistant has
+                     to be opened where that code is. Elsewhere it can read the
+                     notes and answer them, and nothing more. -->
+                <p class="say"><b>Open it in your site&rsquo;s code</b>, where it can edit
+                the files. Anywhere else it can only read the notes and reply.</p>
                 <p class="say if-secure"><b>Naming the site is enough.</b> The file above
                 says which key that site uses.</p>
             </div>
@@ -1707,7 +1713,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 <template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.25"
+        data-version="2026.9.26"
         defer></script></template>
 <script>
 (function () {
