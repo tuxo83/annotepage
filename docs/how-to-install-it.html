@@ -729,6 +729,9 @@ body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 body:has(#mw-good:checked)  .mw-quick,
 body:has(#mw-quick:checked) .mw-good { display: none; }
 .mw-tabs { margin: 0 0 .7rem; }
+/* The label opens the right-hand column, level with the step's title. */
+.sub-lead.mw-lead { margin-top: 0; }
+.mw-note { margin: .6rem 0 0; }
 
 /* == THE LOOP, IN FOUR BOXES ==============================================
 
@@ -2268,39 +2271,47 @@ return array(
             <li>
                 <div>
                     <p class="cap"><span class="n"></span> Install it</p>
-                    <p class="say">
-                        Quick: nothing to install, you tell your assistant to use
-                        npx. For good: two commands, once, and its tools are there
-                        in every conversation.
-                    </p>
                     <p class="say if-open">
                         The key is on the page, so that is all there is.
                     </p>
                 </div>
-                <!-- TWO WAYS, AND THE TABS SIT OVER WHAT CHANGES. The sentence on
-                     the left says both; only the right-hand column differs, so
-                     that is where the control is.
-                     Quick: nothing is installed, and what there is to show is the
-                     sentence itself -- the same crop as "Then ask it" below and as
-                     the home page, naming npx so the assistant fetches the latest
-                     version each time. For good: the two commands, as before.
-                     These tabs are not part of .dials: they change this column
-                     and the sentence of the last step, nothing else. -->
+                <!-- TWO WAYS, AND EVERYTHING THAT DIFFERS IS UNDER THE TABS.
+                     The sentence describing each way stood on the left, both at
+                     once, beside a control that shows one -- reported. Each now
+                     sits under its own block and changes with the tab, and a
+                     label over the tabs says there is a choice to make, which two
+                     pills alone did not.
+                     THIS STEP NAMES THE COMPONENT, NOT THE SITE. Quick showed the
+                     whole sentence to the assistant, site included, which is the
+                     last step's job -- and in secure mode the key comes in
+                     between. So Quick shows what the assistant runs; the sentence
+                     with the site stays in "Then ask it", naming npx when this tab
+                     is on. These tabs are not part of .dials. -->
                 <div>
+                    <p class="sub-lead mw-lead">Two ways, pick one:</p>
                     <div class="tabs mw-tabs" role="radiogroup" aria-label="How to install it">
                         <label><input type="radio" name="mcpway" id="mw-quick" checked> <span>Quick</span></label>
                         <label><input type="radio" name="mcpway" id="mw-good"> <span>For good</span></label>
                     </div>
-                    <div class="frame term mw-quick">
-                        <button class="copy" type="button" data-copy="ask-quick" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-                        <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
-                        <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-quick">use npx annotepage-mcp to fix what the reviewers flagged on staging.example.com</span><span class="cur"></span></div>
+                    <div class="mw-quick">
+                        <div class="snip">
+                                <button class="copy" type="button" data-copy="snip-npx" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-npx"><code><span class="tg">npx</span> <span class="op">-y -p</span> annotepage-mcp <span class="at">annotepage</span> open</code></pre>
+                        </div>
+                        <p class="say mw-note">Nothing to install. Say <b>npx</b> when you
+                        ask: your assistant runs this with the latest version, and
+                        there is nothing to update.</p>
                     </div>
-                    <div class="snip mw-good">
+                    <div class="mw-good">
+                    <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
 <span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
                             </div>
+                        <p class="say mw-note">Installed once and plugged in: its tools
+                        are there in every conversation, and it tells you when a newer
+                        version is out.</p>
+                    </div>
                 </div>
             </li>
 
