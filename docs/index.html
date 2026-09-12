@@ -617,9 +617,12 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    renumber the ones after it -- it would read 01, 03. */
 .install-steps { counter-reset: step; }
 .install-steps > li { counter-increment: step; }
-/* The step after the "somebody annotates" marker stands as far from it as the
-   marker stands from the step before -- how-to-install-it.html's own rule. */
-.use-steps > li.between + li { margin-top: clamp(1.4rem, 3.6vw, 3.2rem); }
+/* THE "SOMEBODY ANNOTATES" MARKER, CLOSE TO BOTH STEPS. base.css gives it a
+   margin of its own on top of the grid's gap, which on the usage page separates
+   long steps; here the two steps are short and the marker read as floating
+   between two chapters -- reported. The gap alone, above and below. */
+.install-steps > li.between,
+.install-steps > li.between + li { margin-top: 0; }
 .install-steps .cap .n::before { content: counter(step, decimal-leading-zero); }
 
 .use-steps .frame { min-height: 8.5rem; }
@@ -1719,7 +1722,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 <template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.17"
+        data-version="2026.9.18"
         defer></script></template>
 <script>
 (function () {
