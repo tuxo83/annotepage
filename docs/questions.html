@@ -646,6 +646,26 @@ code {
             nothing: the stylesheet goes in as a constructed sheet, which is not
             an inline sheet in the policy&rsquo;s sense.</p>
             </article>
+            <article class="qa" data-tags="The tag on your page|Your site">
+                <h3 class="qa-q" id="language">What language does it speak?</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Your site</span></p>
+                <p class="qa-a">English, until you say otherwise &mdash; and a complete French
+            set ships with it. Nothing is guessed from the reader&rsquo;s browser: a
+            reviewer and the colleague reading over their shoulder would get two
+            different panels, and neither could tell the other what to click.</p>
+                <p class="qa-a">One attribute switches it, pointing at a file served from the
+            same CDN as the client. There is nothing to copy into your repository:</p>
+<pre class="qa-code">data-labels=<b>"https://cdn.jsdelivr.net/npm/annotepage-client@2/labels/fr.js"</b></pre>
+                <p class="qa-a">Any other language is a file of your own, in the same shape.
+            A missing label falls back on English, so a half-finished translation
+            is usable from the first line. Labels your page sets before the tag
+            are kept over the file.</p>
+                <p class="qa-a"><b>The WordPress plugin is the exception, and it needs no
+            attribute</b>: its settings screen follows the language of the site,
+            with a complete French translation. What a reviewer reads on the page
+            is still the panel above, and still switches with
+            <code>data-labels</code>.</p>
+            </article>
         </div>
 
     </div>
@@ -806,7 +826,7 @@ code {
 <template id="annotepage-tool"><script src="/annotepage-client-2.28.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.14"
+        data-version="2026.9.15"
         defer></script></template>
 <script>
 (function () {
