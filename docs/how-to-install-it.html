@@ -721,6 +721,12 @@ body:has(#fw-laravel:checked) .fw-laravel { display: block; }
 body:has(#fw-symfony:checked) .fw-symfony { display: block; }
 body:has(#fw-wp:checked)     .fw-wp     { display: block; }
 
+/* The assistant chapter's two ways, drawn by the same control. Hidden by the
+   tab, never by the mode dial: .if-open stays on its own rule. */
+.mw-quick, .mw-good { display: none; }
+body:has(#mw-quick:checked) .mw-quick,
+body:has(#mw-good:checked)  .mw-good  { display: block; }
+
 /* == THE LOOP, IN FOUR BOXES ==============================================
 
    FIRST ON THIS PAGE, and it was built on another one. Its audience is not
@@ -2259,16 +2265,38 @@ return array(
             <li>
                 <div>
                     <p class="cap"><span class="n"></span> Install it</p>
-                    <p class="say">
+                    <!-- TWO WAYS, AND THE HOME PAGE SHOWS THE FIRST ONE.
+                         Quick: nothing is installed. The reader names npx in the
+                         sentence of the last step, and the assistant fetches the
+                         latest version each time it needs it, so there is never
+                         anything to update. For good: the server is plugged into
+                         the assistant, whose tools are then there in every
+                         conversation, and it is updated like any global package.
+                         These tabs are not part of .dials: they change no
+                         block but this step and the sentence of the last one. -->
+                    <div class="tabs" role="radiogroup" aria-label="How to install it">
+                        <label><input type="radio" name="mcpway" id="mw-quick" checked> <span>Quick</span></label>
+                        <label><input type="radio" name="mcpway" id="mw-good"> <span>For good</span></label>
+                    </div>
+                    <p class="say mw-quick">
+                        Nothing to install. Say <b>npx</b> in the sentence you give
+                        your assistant: it fetches the latest version each time,
+                        and there is nothing to update.
+                    </p>
+                    <p class="say mw-good">
                         One command to install it, one to plug it into your
-                        assistant.
+                        assistant. Its tools are then there in every conversation.
                     </p>
                     <p class="say if-open">
                         The key is on the page, so that is all there is.
                     </p>
                 </div>
                 <div>
-                    <div class="snip">
+                    <div class="snip mw-quick">
+                                <button class="copy" type="button" data-copy="snip-npx" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-npx"><code><span class="tg">npx</span> <span class="op">-y -p</span> annotepage-mcp <span class="at">annotepage</span> open</code></pre>
+                            </div>
+                    <div class="snip mw-good">
                                 <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
 <span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
@@ -2929,9 +2957,14 @@ return array(
         cronCode.appendChild(piece('st',
             "'" + api + "?action=update&token=<the secret>'"));
 
-        askCode.textContent =
-            'connect to ' + site
-            + ' with annotepage and fix what the reviewers flagged';
+        /* THE SENTENCE FOLLOWS THE TAB OF STEP 01. Quick names npx, because
+           nothing is installed and the assistant has to be told how to fetch
+           it; for good, the tools are already plugged in and the name is
+           enough. */
+        var quick = document.getElementById('mw-quick');
+        askCode.textContent = (!quick || quick.checked)
+            ? 'use npx annotepage-mcp to fix what the reviewers flagged on ' + site
+            : 'connect to ' + site + ' with annotepage and fix what the reviewers flagged';
 
         /* THE COMMAND, FROM THE SAME ANSWERS AS EVERY OTHER BLOCK. One option
            per dial and the address field, in the installer's own vocabulary --
@@ -3000,6 +3033,10 @@ return array(
     var dials = document.querySelectorAll('.dials input[type="radio"]');
     for (var i = 0; i < dials.length; i++) {
         dials[i].addEventListener('change', paint);
+    }
+    var ways = document.querySelectorAll('input[name="mcpway"]');
+    for (var j = 0; j < ways.length; j++) {
+        ways[j].addEventListener('change', paint);
     }
     /* input and not change: the blocks follow the typing, so the reader sees
        their own address arrive rather than having to leave the field to find

@@ -617,6 +617,9 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
    renumber the ones after it -- it would read 01, 03. */
 .install-steps { counter-reset: step; }
 .install-steps > li { counter-increment: step; }
+/* The step after the "somebody annotates" marker stands as far from it as the
+   marker stands from the step before -- how-to-install-it.html's own rule. */
+.use-steps > li.between + li { margin-top: clamp(1.4rem, 3.6vw, 3.2rem); }
 .install-steps .cap .n::before { content: counter(step, decimal-leading-zero); }
 
 .use-steps .frame { min-height: 8.5rem; }
@@ -1325,6 +1328,20 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 </div>
             </li>
 
+            <!-- WHAT HAS TO HAPPEN BETWEEN THE TWO, AND IT IS NOT A STEP. The
+                 marker how-to-install-it.html puts on the same rail, from
+                 base.css, glyph for glyph: asking an assistant to fix what the
+                 reviewers flagged, with nothing flagged, returns an empty
+                 export and reads as a broken install. -->
+            <li class="between">
+                <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true" focusable="false">
+                    <path d="M20.5 14.4a2.6 2.6 0 0 1-2.6 2.6H9.4L4.5 20.6V6.6A2.6 2.6 0 0 1 7.1 4h10.8a2.6 2.6 0 0 1 2.6 2.6z"/>
+                    <path d="M8.8 10.4h7.4"/>
+                </svg>
+                Somebody annotates the page.
+            </li>
 
             <!-- AND THE SECOND IS THE ASKING, WHICH NOW INCLUDES THE INSTALLING.
 
@@ -1334,9 +1351,12 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                  the key is in the page, and an assistant reads it there on its
                  own -- the refusal it meets without a configuration tells it
                  where to look. Measured on seven assistants, every one of them
-                 got through. So the reader asks once, naming the package, and the
-                 assistant installs what it needs and keeps the key in a file.
-                 Plugging it in for good is on how-to-install-it.html.
+                 got through. So the reader asks once, naming the package and npx:
+                 nothing installed, always the latest version, nothing to update.
+                 `npx annotepage-mcp` starts the MCP SERVER, not the command
+                 line, and the server says so when no assistant is plugged into
+                 it -- that is what turns this short sentence into the right
+                 command. Plugging it in for good is on how-to-install-it.html.
 
                  It is the tool's own dark ground in both themes, like the
                  terminal it is a crop of. -->
@@ -1344,7 +1364,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <div>
                     <p class="cap"><span class="n"></span> You ask your assistant</p>
                     <p class="say">One sentence, with the address of your site. It
-                        installs what it needs and reads the key off your page.</p>
+                        fetches what it needs and reads the key off your page.</p>
                 </div>
                 <!-- NOT aria-hidden, unlike the terminal it is a crop of two
                      chapters up: that one illustrates, this one holds a line the
@@ -1355,7 +1375,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <div class="frame term">
                     <button class="copy" type="button" data-copy="ask-line" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
                     <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
-                    <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-line">install annotepage-mcp and fix what the reviewers flagged on staging.example.com</span><span class="cur"></span></div>
+                    <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-line">use npx annotepage-mcp to fix what the reviewers flagged on staging.example.com</span><span class="cur"></span></div>
                 </div>
             </li>
         </ol>
