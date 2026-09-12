@@ -868,6 +868,15 @@ three numbers, equal to its own, or **older** than its own — carries on in
 silence. Older matters: a self-hosted server announces whatever it was
 installed with, and it must never be able to push a visitor's client backwards.
 
+Every response may also carry the HTTP header **`X-Annotepage-Mcp-Version`**,
+the version of `annotepage-mcp` the server believes to be current, in the same
+`x.y.z` shape. It is a header rather than a field because the assistants' tool
+reads the text export, which two producers must write identically (§5.3), and
+this is a fact about releases, not about notes. The same rules apply, word for
+word: it announces and never gates, and a reader that finds it absent,
+malformed, equal to its own or older carries on in silence. A newer one is said
+once, to whoever runs the tool.
+
 **`add`** — `application/x-www-form-urlencoded`. We do not move to JSON: an
 urlencoded body is a "simple request" in the CORS sense and does not trigger a
 preflight, which spares the relay a whole `OPTIONS` machinery.

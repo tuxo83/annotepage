@@ -29,6 +29,7 @@ import { dirname, join } from 'node:path';
 import { loadConfiguration, absentConfiguration, ConfigError } from './src/config.mjs';
 import { buildTools } from './src/mcp-tools.mjs';
 import { serve, log } from './src/mcp-protocol.mjs';
+import { watchVersion } from './src/api.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -76,8 +77,23 @@ const start = async () => {
         + 'their own "api" and "key" will work');
     log('projects', [...configuration.projects.keys()].join(', '));
 
-    serve({ name: 'annotepage', version: version() },
-          buildTools(configuration));
+    /* A NEWER RELEASE IS SAID IN THE TOOL'S OWN ANSWER. stderr is where a
+       server writes for humans, and inside an assistant nobody reads it; the
+       text of a result is what the assistant reads. Once, on the next result
+       after the server announced it. */
+    let pending = '';
+    watchVersion(version(), (notice) => { pending = notice; });
+    const tools = buildTools(configuration).map((tool) => Object.assign({}, tool, {
+        call: async (args) => {
+            const text = await tool.call(args);
+            if (!pending) return text;
+            const said = pending;
+            pending = '';
+            return text + '\n\n' + said + '\n';
+        },
+    }));
+
+    serve({ name: 'annotepage', version: version() }, tools);
 };
 
 start().catch((e) => {

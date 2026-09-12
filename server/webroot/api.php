@@ -245,6 +245,14 @@ function ap_common_headers()
     foreach (ap_cors_headers() as $line) {
         header($line);
     }
+    // What an assistant's copy of annotepage-mcp compares itself with. A HEADER
+    // and not a line of the export: the export is a document two producers
+    // must write identically (FORMAT.md section 5.3), and this is a fact about
+    // the release, not about the notes.
+    $mcp = ap_mcp_version();
+    if ($mcp !== 'unknown') {
+        header('X-Annotepage-Mcp-Version: ' . $mcp);
+    }
 }
 
 function ap_respond_json(array $payload)
@@ -309,6 +317,34 @@ function ap_client_version()
             $read = trim((string) file_get_contents($path));
             // The same shape the client validates before building a URL from
             // it: three numbers. A file saying anything else says nothing.
+            if (preg_match('/^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/', $read)) {
+                $version = $read;
+                break;
+            }
+        }
+    }
+    return $version;
+}
+
+/**
+ * The annotepage-mcp version this server release knows about, or 'unknown'.
+ *
+ * The same rules as ap_client_version(), for the other reader. It exists
+ * because an assistant runs whatever copy is on its machine: `npx
+ * annotepage-mcp` picks a copy installed months ago over the published one
+ * without a word, and that copy cannot learn otherwise. IT ANNOUNCES, IT NEVER
+ * GATES.
+ */
+function ap_mcp_version()
+{
+    static $version = null;
+    if ($version !== null) {
+        return $version;
+    }
+    $version = 'unknown';
+    foreach (array(__DIR__ . '/MCP_VERSION', __DIR__ . '/../MCP_VERSION') as $path) {
+        if (is_readable($path)) {
+            $read = trim((string) file_get_contents($path));
             if (preg_match('/^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/', $read)) {
                 $version = $read;
                 break;

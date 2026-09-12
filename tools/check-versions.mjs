@@ -85,4 +85,17 @@ if (announced !== released) {
     console.log(`announced client: ${announced}, which is the released one`);
 }
 
+/* AND WHAT IT TELLS THE ASSISTANTS' TOOL, by the same reasoning: an
+   X-Annotepage-Mcp-Version header that lies is silence again, and a copy of
+   annotepage-mcp months old keeps answering without a word. */
+const announcedMcp = readFileSync('server/webroot/MCP_VERSION', 'utf8').trim();
+if (announcedMcp !== versions['mcp package']) {
+    console.error(`server/webroot/MCP_VERSION announces ${announcedMcp}, `
+        + `the released mcp is ${versions['mcp package']}.`);
+    console.error('  tools/release.mjs writes it when the mcp is released.');
+    bad++;
+} else {
+    console.log(`announced mcp: ${announcedMcp}, which is the released one`);
+}
+
 process.exit(bad ? 1 : 0);

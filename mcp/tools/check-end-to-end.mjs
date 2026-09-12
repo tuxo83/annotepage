@@ -55,8 +55,12 @@ const buildServer = (state) => createServer((request, response) => {
     const url = new URL(request.url, 'http://127.0.0.1');
     const action = url.searchParams.get('action');
 
+    /* The release the fake server announces to annotepage-mcp, when a check
+       sets one. Absent otherwise, which is every self-hosted server that
+       predates the header. */
+    const announce = state.mcpVersion ? { 'X-Annotepage-Mcp-Version': state.mcpVersion } : {};
     const text = (code, body) => {
-        response.writeHead(code, { 'Content-Type': 'text/plain; charset=utf-8' });
+        response.writeHead(code, Object.assign({ 'Content-Type': 'text/plain; charset=utf-8' }, announce));
         response.end(body);
     };
     const json = (object) => {
@@ -217,6 +221,27 @@ await check('cli: "annotepage text" returns a FILLED export', async () => {
     contains(out, 'mode encrypted', 'the note says it was encrypted');
     truthy(out.indexOf('payload ap2.') === -1,
         'the envelope is not copied next to its own plaintext');
+});
+
+await check('cli: a server announcing a newer annotepage-mcp is said once, on stderr', async () => {
+    state.mcpVersion = '99.0.0';
+    try {
+        const newer = await cli('open');
+        truthy(newer.code === 0, 'exit code ' + newer.code);
+        contains(newer.errors, 'annotepage-mcp 99.0.0 is published', 'the notice');
+        truthy(newer.out.indexOf('99.0.0') === -1, 'and not on stdout, which stays the export');
+        truthy(newer.errors.split('99.0.0 is published').length === 2, 'said once, not per request');
+
+        state.mcpVersion = '0.0.1';
+        const older = await cli('open');
+        truthy(older.errors.indexOf('is published') === -1, 'an older announcement is silence');
+
+        state.mcpVersion = 'latest';
+        const garbage = await cli('open');
+        truthy(garbage.errors.indexOf('is published') === -1, 'so is a malformed one');
+    } finally {
+        delete state.mcpVersion;
+    }
 });
 
 await check('cli: "raw" returns what the server sends, without decrypting', async () => {
@@ -460,6 +485,19 @@ await check('mcp: started with nobody speaking MCP, the server names the command
     ]);
     truthy(!spoken.errors.includes('MCP SERVER. It waits'),
         'and an assistant that did speak MCP is not told it did not');
+});
+
+/* THE SAME NOTICE, WHERE AN ASSISTANT READS: in the tool's answer. */
+await check('mcp: a server announcing a newer annotepage-mcp is said in the tool result', async () => {
+    state.mcpVersion = '99.0.0';
+    try {
+        const { text, isError } = await bareCall('annotepage_open_notes', HERE);
+        truthy(!isError, 'the call worked\n' + text);
+        contains(text, 'annotepage-mcp 99.0.0 is published', 'the notice is in the answer');
+        contains(text, 'npm install -g annotepage-mcp@latest', 'with the way to update');
+    } finally {
+        delete state.mcpVersion;
+    }
 });
 
 /* THE COUNT IS ASSERTED, NOT THE NAMES, and that is on purpose: a tool added

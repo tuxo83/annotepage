@@ -35,6 +35,46 @@ const address = (api, parameters) => {
     return url.toString();
 };
 
+/* WHETHER THIS COPY IS BEHIND, AS THE SERVER SEES IT (FORMAT.md, the
+   X-Annotepage-Mcp-Version header). `npx annotepage-mcp` runs a copy installed
+   on the machine in preference to the published one, without checking, so a
+   copy months old answers and nobody knows. The server knows the release it
+   ships with; this compares.
+   It announces and never gates: absent, malformed, equal or older is silence,
+   and a newer one is reported ONCE per process, through whatever the entry
+   point registered -- stderr for the command line, the tool's text for MCP. */
+const VERSION_SHAPE = /^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$/;
+const versionWatch = { own: null, report: null, said: false };
+
+export const watchVersion = (own, report) => {
+    versionWatch.own = own;
+    versionWatch.report = report;
+};
+
+export const isNewerVersion = (announced, own) => {
+    if (typeof announced !== 'string' || typeof own !== 'string') return false;
+    const a = announced.trim().match(VERSION_SHAPE);
+    const b = own.trim().match(VERSION_SHAPE);
+    if (!a || !b) return false;
+    for (let i = 1; i <= 3; i += 1) {
+        if (Number(a[i]) !== Number(b[i])) return Number(a[i]) > Number(b[i]);
+    }
+    return false;
+};
+
+export const newerVersionNotice = (announced, own) =>
+    'annotepage-mcp ' + announced + ' is published, and this copy is ' + own + '.\n'
+    + 'Update it: npm install -g annotepage-mcp@latest\n'
+    + 'or run the latest without installing: npx -y -p annotepage-mcp@latest annotepage';
+
+const noticeVersion = (response) => {
+    if (versionWatch.said || !versionWatch.report) return;
+    const announced = response.headers.get('x-annotepage-mcp-version');
+    if (!isNewerVersion(announced, versionWatch.own)) return;
+    versionWatch.said = true;
+    versionWatch.report(newerVersionNotice(announced.trim(), versionWatch.own));
+};
+
 const headers = (project, extra) => {
     const all = Object.assign({
         /* The agent names the tool and its version, and never names the
@@ -64,6 +104,7 @@ const request = async (project, url, options) => {
             + (e && e.message ? e.message : String(e)), 0);
     }
 
+    noticeVersion(response);
     const type = String(response.headers.get('content-type') || '');
     const body = await response.text();
 

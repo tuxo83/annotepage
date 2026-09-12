@@ -54,6 +54,15 @@ manifest.version = version;
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`  ${manifestPath}  ${previous} -> ${version}`);
 
+/* WHAT THE SERVER TELLS THE ASSISTANTS' TOOL, the X-Annotepage-Mcp-Version
+   header. Written with the release for the reason CLIENT_VERSION is: a number
+   nobody writes stays behind, and a copy that hears an older one says nothing.
+   A pre-release is not announced -- the header's shape is three numbers. */
+if (pkg === 'mcp' && /^\d+\.\d+\.\d+$/.test(version)) {
+    writeFileSync('server/webroot/MCP_VERSION', version + '\n');
+    console.log('  server/webroot/MCP_VERSION');
+}
+
 if (pkg === 'client') {
     /* Read BEFORE rebuilding: afterwards the file describes the new bundle, and
        comparing it would be comparing the new digest with itself. */

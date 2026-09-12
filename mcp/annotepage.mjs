@@ -36,7 +36,7 @@ import {
     reply, markResolved, reopen, setTitle, UsageError,
 } from './src/notes.mjs';
 import { writeExport } from './src/text-export.mjs';
-import { readDiagnostic, readRawExport, ApiError } from './src/api.mjs';
+import { readDiagnostic, readRawExport, ApiError, watchVersion } from './src/api.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -129,6 +129,8 @@ const filter = (state, project, notes) =>
     }, notes, state.footer);
 
 const main = async () => {
+    /* On stderr, so that standard output stays the export (FORMAT.md 5.3). */
+    watchVersion(version(), (notice) => { process.stderr.write(notice + '\n'); });
     const { options, positional } = parse(process.argv.slice(2));
     const command = positional[0];
 
