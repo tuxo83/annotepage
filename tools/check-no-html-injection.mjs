@@ -24,13 +24,32 @@ const files = execSync('git ls-files --cached --others --exclude-standard', { en
     .split('\n').filter(Boolean)
     .filter(f => SHIPPED.test(f) && /\.(js|mjs|php)$/.test(f));
 
+/* A comment that names the banned call to explain why it is banned is not a
+   violation -- and this file is full of them.
+
+   BLOCK COMMENTS ARE BLANKED WHOLE, not line by line. Line by line was the
+   first version and it had a hole in the middle of its own rule: it stripped a
+   comment that opened and closed on one line, and a continuation line starting
+   with `*`, but NOT the opening line of a multi-line comment. So
+
+       /* textContent and never innerHTML: ...
+          ... /*
+
+   was reported as a markup-parsing assignment, in a file whose whole point was
+   that it does not do that. A guard that fires on the sentence explaining it is
+   a guard somebody eventually silences by rewording the sentence -- which
+   changes nothing about the code and teaches everyone the wrong lesson.
+
+   Blanked rather than removed: every newline is kept, so the line numbers
+   reported below are still the file's own. */
+const blankComments = (text) => text
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+
 let hits = 0;
 for (const file of files) {
-    const lines = readFileSync(file, 'utf8').split('\n');
+    const lines = blankComments(readFileSync(file, 'utf8')).split('\n');
     lines.forEach((line, i) => {
-        /* A comment that names the banned call to explain why it is banned is
-           not a violation -- and this file is full of them. */
-        const code = line.replace(/\/\/.*$|\/\*.*?\*\/|^\s*\*.*$|#.*$/g, '');
+        const code = line.replace(/\/\/.*$|^\s*\*.*$|#.*$/g, '');
         if (BANNED.test(code)) {
             console.error(`${file}:${i + 1}  ${line.trim().slice(0, 90)}`);
             hits++;
