@@ -716,6 +716,15 @@ export 2026-08-31T09:14:22+00:00
 notes 128
 ```
 
+`notes` counts ENTRIES — every note and every reply. A `threads <n>` line says
+how many notes those entries belong to, and it exists because the other number
+is read as an answer to a question it does not answer: a thread with two
+replies prints `notes 3`, and a reader concludes three remarks. Measured on
+seven assistants given a site to review: one nearly reported three open
+remarks where there was one. Both lines are written, because `notes` cannot be
+changed — a reader of format 1 counts on it — and because a producer that
+emitted only the new one would leave that reader with nothing.
+
 `encryption` is `yes`, `no` or `mixed`. A `retention <n> days` line appears when
 the server expires threads by age; it is absent when nothing expires, and an
 older reader ignores a key it does not know. It is there because a reader has

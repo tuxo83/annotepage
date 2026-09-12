@@ -49,7 +49,7 @@ import { FORMAT, safeValue, indent, isoDate, normalisedLines } from './format.mj
 /* -- The keys, by the place where they can appear ------------------------ */
 
 const HEADER_KEYS = ['tool', 'format', 'version', 'project', 'encryption',
-                     'export', 'notes'];
+                     'export', 'notes', 'threads'];
 
 /* The footer of the export. These two keys are NEVER note fields, even when
    they follow a note: without that exception, the count of skipped lines
@@ -363,7 +363,17 @@ export const writeExport = (header, notes, footer) => {
     out += keyLine('', 'project', header.project);
     out += keyLine('', 'encryption', header.encryption);
     out += 'export ' + isoDate() + '\n';
+    /* TWO COUNTS, BECAUSE ONE OF THEM IS READ AS AN ANSWER IT DOES NOT GIVE.
+       `notes` counts entries, replies included -- a thread with two replies
+       prints `notes 3`, and whoever asked "how many remarks" reads three.
+       Measured: of seven assistants handed a site to review, one nearly
+       reported three open remarks where there was one, and caught it only by
+       recounting the export by hand.
+       `notes` is not changed: FORMAT.md 5.2 adds header lines and never alters
+       one, and a format 1 reader counts on it. So the missing number is added
+       beside it rather than substituted for it. */
     out += 'notes ' + notes.reduce((n, m) => n + 1 + m.replies.length, 0) + '\n';
+    out += 'threads ' + notes.length + '\n';
     out += '\n';
 
     if (notes.length === 0) {

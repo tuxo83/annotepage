@@ -743,6 +743,26 @@ class ApStore
     }
 
     /**
+     * The same count, restricted to the notes a reply hangs from.
+     *
+     * WHY A SECOND QUERY RATHER THAN COUNTING THE WALK. all() streams, and the
+     * header line is written before the first row goes out; counting during
+     * the walk would print a number nobody can know yet. It belongs beside
+     * count() and modeBreakdown(), called before the walk opens.
+     *
+     * @return int notes whose reply_to is null, replies excluded
+     */
+    public function countThreads($project)
+    {
+        $this->ensureSchema();
+        $req = $this->pdo()->prepare(
+            'SELECT COUNT(*) FROM "' . $this->table . '" WHERE "project" = ? '
+            . 'AND "reply_to" IS NULL');
+        $req->execute(array((string) $project));
+        return (int) $req->fetchColumn();
+    }
+
+    /**
      * How many plain notes and how many encrypted ones, for the `encryption`
      * line of the export header. An installation that changed its mind gives
      * `mixed`, and that is said rather than hidden.

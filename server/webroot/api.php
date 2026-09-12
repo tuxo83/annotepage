@@ -1228,15 +1228,19 @@ switch ($action) {
 
     case 'text':
         ap_apply_rate_limit($config, $store, $id, 'export');
-        // The two counting queries are issued BEFORE all(): the streamed walk
+        // The counting queries are issued BEFORE all(): the streamed walk
         // occupies the connection, and an unreachable database must come out as
-        // a 503, not in the middle of an export already started.
+        // a 503, not in the middle of an export already started. countThreads()
+        // joined them for that reason and no other -- it cannot be computed
+        // during the walk, since the header is written before the first row.
         $total = $store->count($id);
+        $threads = $store->countThreads($id);
         $breakdown = $store->modeBreakdown($id);
         $notes = $store->all($id);
         ap_begin_text();
         ap_write_text_export(ap_version(), $id, $breakdown, $total, $notes,
-            isset($config['max_note_age_days']) ? (int) $config['max_note_age_days'] : 0);
+            isset($config['max_note_age_days']) ? (int) $config['max_note_age_days'] : 0,
+            $threads);
         break;
 
 }

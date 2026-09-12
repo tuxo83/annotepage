@@ -109,8 +109,14 @@ if (!defined('AP_INTERNAL')) {
  *                               file has no configuration in scope, and an
  *                               undefined variable read through empty() would
  *                               have silently printed nothing, forever.
+ * @param int         $threads   notes a reply hangs from, replies excluded --
+ *                               the number a reader means by "how many
+ *                               remarks". Counted by the caller, like $total:
+ *                               $notes streams, so counting it here would need
+ *                               the walk to be over before the header it
+ *                               belongs to is written.
  */
-function ap_write_text_export($version, $project, array $breakdown, $total, $notes, $retention = 0)
+function ap_write_text_export($version, $project, array $breakdown, $total, $notes, $retention = 0, $threads = 0)
 {
     echo "tool annotepage\n";
     echo "format " . AP_FORMAT . "\n";
@@ -130,7 +136,19 @@ function ap_write_text_export($version, $project, array $breakdown, $total, $not
     if ((int) $retention > 0) {
         echo "retention " . ((int) $retention) . " days\n";
     }
+    // TWO COUNTS, AND THE SECOND IS THE ONE A READER WANTED. "notes" counts
+    // entries, replies included: a thread with two replies prints "notes 3",
+    // and whoever asked how many remarks there are reads three. FORMAT.md 5.2
+    // forbids changing a header line, so the missing number is added beside it.
+    // The two producers of this format must agree line for line (5.3): the MCP
+    // writes the same pair, from mcp/src/text-export.mjs.
+    //
+    // IT ARRIVES AS A PARAMETER, and that is not a detail: $notes is a
+    // Traversable that streams, count() on it is meaningless, and no second
+    // query may run while the walk is open. The caller counts before opening
+    // it, like $total and $breakdown.
     echo "notes " . $total . "\n";
+    echo "threads " . (int) $threads . "\n";
     echo "\n";
 
     if ($total === 0) {
