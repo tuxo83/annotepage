@@ -664,7 +664,68 @@ ap_check( 'a stored value is printed into the page unescaped, which is a script 
 ap_check( 'the screen does not show the tag it writes',
 	false !== strpos( $screen, 'cdn.jsdelivr.net/npm/annotepage-client@2' ) );
 
-/* -- 9. The derivation PHP does, for the screen to show ------------------ */
+/* -- 9. What counts as a server address ---------------------------------
+ *
+ * BOTH DIRECTIONS, and the accepting one matters more. A validator that only
+ * proves it refuses the malformed address can be tightened, on some later
+ * pass, into one that refuses every self-hosted install as well -- and that
+ * failure is silent, on an intranet, where nobody is watching a screen. So
+ * each shape a real install legitimately uses is named here, one by one, and
+ * narrowing the rule now has to break a test with the address written in it.
+ * ---------------------------------------------------------------------- */
+
+$legitimate = array(
+	'https://api.annotepage.com/api.php',
+	'http://localhost',
+	'http://localhost/api.php',
+	'https://127.0.0.1:8443/api.php',
+	'https://intranet/api.php',                    /* an internal host, no dot */
+	'https://[::1]:8443/api.php',                  /* IPv6, in brackets */
+	'https://[2001:db8::1]/api.php',
+	'http://intranet:8080/annotepage/api.php',      /* with a port, and nested */
+	'https://example.com:8080/notes/api.php?v=2',
+	'https://user:pass@example.com/api.php',
+	'https://example.com',
+	'https://example.com/',
+	'https://example.com/a%20b/api.php',
+);
+foreach ( $legitimate as $address ) {
+	ap_check( 'a legitimate server address is refused, which breaks a real '
+		. 'self-hosted install and says nothing: ' . $address,
+		annotepage_is_server( $address ) );
+}
+
+$malformed = array(
+	/* THE ONE THIS SECTION EXISTS FOR. A paste that landed inside the address
+	   already in the field: parse_url() finds a scheme and a host in it, and a
+	   check that asks no more than that says yes. */
+	'https://api.annotephttps://api.annotepage.com/api.php',
+	'javascript:alert(1)',
+	'ftp://example.com/api.php',
+	'/api.php',
+	'api.annotepage.com/api.php',
+	'https://',
+	'https:///api.php',
+	'',
+);
+foreach ( $malformed as $address ) {
+	ap_check( 'a malformed server address is accepted: '
+		. ( '' === $address ? '(empty)' : $address ),
+		! annotepage_is_server( $address ) );
+}
+
+/* And the whole way through, not merely the judge on its own: a tag is never
+   written for an address the judge refuses. */
+ap_reset();
+annotepage_activate();
+update_option( ANNOTEPAGE_OPTION, array_merge( annotepage_settings(), array(
+	'server' => 'https://api.annotephttps://api.annotepage.com/api.php',
+) ), true );
+ap_as( 1 );
+ap_check( 'a server address nobody could have meant still reaches the page',
+	'' === ap_footer(), ap_footer() );
+
+/* -- 10. The derivation PHP does, for the screen to show ----------------- */
 
 $vector = 'UHoSPQTpSizB8GmgSaXlzoGHvxjA9_ZtgfXau7VHGts';
 ap_check( 'the project id PHP derives is not 22 base64url characters',

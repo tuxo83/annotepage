@@ -206,19 +206,69 @@ function annotepage_is_audience( $value ) {
 	return in_array( $value, array( 'admins', 'signed-in', 'chosen', 'everyone' ), true );
 }
 
-/* http/https only. Not tidiness: this string is written into an attribute the
-   browser resolves, so a `javascript:` in it would be a script the site runs on
-   every page. esc_url() would already drop it; refusing it at the door means
-   the stored value is never the dangerous one in the first place. */
+/* http/https only, and the address has to survive a round trip.
+ *
+ * Not tidiness: this string is written into an attribute the browser resolves,
+ * so a `javascript:` in it would be a script the site runs on every page.
+ * esc_url() would already drop it; refusing it at the door means the stored
+ * value is never the dangerous one in the first place.
+ *
+ * AND A SCHEME PLUS A HOST IS NOT ENOUGH. parse_url() answers about any string
+ * it can make some sense of. Given
+ * `https://api.annotephttps://api.annotepage.com/api.php` -- a paste that
+ * landed inside the address already in the field, which is one mis-aimed click
+ * away -- it reports the host `api.annotephttps` and the path
+ * `//api.annotepage.com/api.php`, and a check that stops at "is there a host"
+ * says yes to it. The site then writes that address into every page it serves
+ * and the notes go nowhere, with nothing said, which is this plugin's worst
+ * failure shape.
+ *
+ * So the parts are put back together and compared with what arrived. Where
+ * parse_url() had to guess, the two differ: the guess above cannot place the
+ * second colon and drops it. Where the address is a real one they are
+ * identical, character for character.
+ *
+ * THE HALF THAT MATTERS IS THE ACCEPTING HALF. A stricter rule -- a dot in the
+ * host, a known suffix, a regexp somebody thought looked reasonable -- would
+ * refuse real self-hosted installs on somebody's intranet, silently, and that
+ * is far worse than the typo it would catch. `http://localhost`, an internal
+ * host with no dot, a port, an IPv6 literal in brackets, credentials and a
+ * percent-encoded path all round-trip exactly, and run.php names every one of
+ * them so that the next hand here cannot narrow this by accident. */
 function annotepage_is_server( $value ) {
 	if ( ! is_string( $value ) || '' === $value ) {
 		return false;
 	}
-	$scheme = strtolower( (string) wp_parse_url( $value, PHP_URL_SCHEME ) );
+	$parts = wp_parse_url( $value );
+	if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+		return false;
+	}
+	$scheme = strtolower( (string) $parts['scheme'] );
 	if ( 'http' !== $scheme && 'https' !== $scheme ) {
 		return false;
 	}
-	return '' !== (string) wp_parse_url( $value, PHP_URL_HOST );
+
+	$rebuilt = $parts['scheme'] . '://';
+	if ( isset( $parts['user'] ) && '' !== $parts['user'] ) {
+		$rebuilt .= $parts['user'];
+		if ( isset( $parts['pass'] ) && '' !== $parts['pass'] ) {
+			$rebuilt .= ':' . $parts['pass'];
+		}
+		$rebuilt .= '@';
+	}
+	$rebuilt .= $parts['host'];
+	if ( isset( $parts['port'] ) ) {
+		$rebuilt .= ':' . $parts['port'];
+	}
+	$rebuilt .= isset( $parts['path'] ) ? $parts['path'] : '';
+	if ( isset( $parts['query'] ) ) {
+		$rebuilt .= '?' . $parts['query'];
+	}
+	if ( isset( $parts['fragment'] ) ) {
+		$rebuilt .= '#' . $parts['fragment'];
+	}
+
+	return $rebuilt === $value;
 }
 
 /* base64url with no padding, which is the alphabet every other component of
