@@ -426,7 +426,9 @@ export const inlineProject = async (api, key, origin) => {
             + (String(key).length === KEY_LENGTH
                 ? ', the right count, but not all of them from that alphabet' : '')
             + '.\n'
-            + 'Copy the "data-key" attribute of the annotepage tag as it stands. '
+            + 'Copy it as it stands, from the "data-key" attribute of the '
+            + 'annotepage tag or from the "key" of a window.annotepageConfig '
+            + 'object in the page. '
             + 'Nothing was sent: a key that is almost right derives a wrong project '
             + 'id, and the error would come back as an unknown project.');
     }
@@ -517,9 +519,10 @@ export const projectForCall = async (configuration, args) => {
             + '"origin" describes a project, it does not name one: it is the site '
             + 'the notes are about, announced to the server so that a relay accepts '
             + 'a write (FORMAT.md section 6.2). Alone it points at nothing.\n'
-            + 'Either add "api" and "key", both on the annotepage tag of the page '
-            + '(data-server, data-key), or drop "origin" and let the configuration '
-            + 'file answer.');
+            + 'Either add "api" and "key" — both on the annotepage tag of the page '
+            + '(data-server, data-key), or in a window.annotepageConfig object '
+            + 'declared before it (server, key) — or drop "origin" and let the '
+            + 'configuration file answer.');
     }
 
     if (key === '') {
@@ -530,8 +533,9 @@ export const projectForCall = async (configuration, args) => {
             + 'from. There is no falling back to the configuration file for the '
             + 'missing half — an address paired with somebody else\'s key reads '
             + 'another project than the one you meant.\n'
-            + 'Both are on the annotepage tag at the end of the annotated page: '
-            + 'data-server and data-key.');
+            + 'Both are in the annotated page: on the annotepage tag at the end of '
+            + 'it (data-server, data-key), or in a window.annotepageConfig object '
+            + 'declared before that tag (server, key).');
     }
     if (api === '') {
         throw new ConfigError(
@@ -540,8 +544,9 @@ export const projectForCall = async (configuration, args) => {
             + 'the project id, "api" says which server holds them — and that one is '
             + 'derived from nothing. There is no falling back to the configuration '
             + 'file for the missing half.\n'
-            + 'Both are on the annotepage tag at the end of the annotated page: '
-            + 'data-server and data-key.');
+            + 'Both are in the annotated page: on the annotepage tag at the end of '
+            + 'it (data-server, data-key), or in a window.annotepageConfig object '
+            + 'declared before that tag (server, key).');
     }
 
     return inlineProject(api, key, origin);

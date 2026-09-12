@@ -103,9 +103,10 @@ developer can also withdraw the tag for a single request through the
 3. **Settings &rarr; annotepage** when you want to widen the audience, point at
    your own server, or share a key with another environment.
 
-To check the tag landed, open the console on your site and ask for
-`document.querySelector('script[data-key]')` &mdash; or `[data-project]` in
-secure mode.
+To check it landed, open the console on your site and ask for
+`window.annotepageConfig`. This plugin declares the settings there **and** on
+the tag, so `document.querySelector('script[data-key]')` answers too &mdash; or
+`[data-project]` in secure mode.
 
 == Frequently Asked Questions ==
 

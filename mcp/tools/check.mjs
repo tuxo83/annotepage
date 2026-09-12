@@ -492,8 +492,17 @@ await check('call: api + key build a project whose id is DERIVED', async () => {
 await check('call: half a project is a named refusal, never a fallback', async () => {
     await refused('api alone', { api: 'https://example.com/api.php' },
         '"api" without "key"', 'no falling back to the configuration file');
+    /* BOTH SOURCES, and this expectation was widened rather than relaxed. It
+       asked for the exact words "data-server and data-key", which stopped
+       being the whole answer the day the client accepted a
+       window.annotepageConfig object: a page served through a script queue,
+       or one whose scripts are concatenated, carries only that. A refusal
+       naming the tag alone sends an assistant looking for an attribute that
+       is not there -- and then asking a human for a key sitting in the page
+       it just fetched. So the refusal must now name BOTH, which is one more
+       thing to satisfy, not one less. */
     await refused('key alone', { key: KEY_TEXT },
-        '"key" without "api"', 'data-server and data-key');
+        '"key" without "api"', 'data-server', 'annotepageConfig');
 });
 
 await check('call: a key and a project name together, no winner picked', async () => {
