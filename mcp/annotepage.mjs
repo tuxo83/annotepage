@@ -221,6 +221,14 @@ const main = async () => {
                 notes = notes.filter((n) => !n.title);
             }
             process.stdout.write(filter(state, project, notes));
+            /* THE COUNT A READER REPEATS, ON STDERR. A small model that met
+               "notes 3" reported three remarks where there was one remark and
+               two replies. Standard output stays an export word for word
+               (FORMAT.md section 5.3); this sentence is beside it, not in it. */
+            const replies = notes.reduce((n, x) => n + (x.replies ? x.replies.length : 0), 0);
+            process.stderr.write(notes.length + ' open remark' + (notes.length === 1 ? '' : 's')
+                + ' to fix, ' + replies + ' repl' + (replies === 1 ? 'y' : 'ies')
+                + ' in their threads. A reply is not a remark.\n');
             return 0;
         }
 
