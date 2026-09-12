@@ -75,6 +75,34 @@ attached, which is the part worth keeping.
 - **Shipping `src/` in the client tarball.** Only `dist/`, `labels/` and the
   readme. The sources are on GitHub and the build is reproducible from there;
   shipping them tripled the tarball for nothing.
+- **An MCP endpoint on the notes server, so an assistant installs nothing.**
+  Refused, and the protocol is not what refuses it. The notes are sealed in the
+  browser and the server stores envelopes it cannot open, so an endpoint there
+  can return a readable remark only if the key reaches the server — which
+  FORMAT.md 1.1 forbids in one sentence with no exception, and which the site
+  states as a fact its reader has no way of checking. Each way round it fails
+  somewhere else. Returning the envelopes and leaving the decryption to the
+  assistant adds nothing that exists: `?action=text` already emits them under
+  `payload`, `resolution-payload` and `title-payload`, so the endpoint would be
+  a second vocabulary over one `curl`, and the work it hands back — HKDF-SHA-256,
+  then AES-256-GCM against the AAD of 3.2 — is not work a model performs; it
+  needs an interpreter, which MCP does not define and not every assistant has.
+  Taking the key per request, in a header, decrypting in PHP and persisting
+  nothing puts both halves on the one machine built to hold only one: whoever
+  operates the relay reads that header by serving the request, and so does
+  anything terminating TLS in front of it. The door cannot even be opened for
+  the keys that are already public (1.5): nothing in a stored row tells a public
+  project from a confidential one, so the server cannot tell a key it may safely
+  be handed from one it must never see. Plain mode is the only case with no
+  secret to move, and `ap_field_mode` refuses it on a relay in code — which is
+  where "active on every install" would have to mean something — while on a
+  server hosting one site's own notes the whole export is already one `curl`
+  away. What is NOT the obstacle, since it is the part everybody expects to be:
+  the transport fits. Streamable HTTP lets a server answer a POST with
+  `application/json`, assign no session and answer 405 to the GET, so nothing
+  here needs a connection held open on a shared host. It dies on the
+  encryption, not on the plumbing — and the address itself would need a rewrite
+  the served root deliberately does not carry.
 
 ---
 
