@@ -447,6 +447,21 @@ const bareCall = async (name, args) => {
     return { text: result.content[0].text, isError: result.isError === true, errors };
 };
 
+/* "npx annotepage-mcp" RUN FROM A SHELL. The home page names the package, and
+   the package's own name is the server: an assistant that runs it gets no MCP
+   conversation and must be told which command it meant. */
+await check('mcp: started with nobody speaking MCP, the server names the command line', async () => {
+    const { errors } = await run('mcp-server.mjs', [], '',
+        { cwd: nowhere, env: bareEnvironment });
+    contains(errors, 'npx -y -p annotepage-mcp annotepage open',
+        'the command that reads the notes is named');
+    const spoken = await bareDialogue([
+        { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } },
+    ]);
+    truthy(!spoken.errors.includes('MCP SERVER. It waits'),
+        'and an assistant that did speak MCP is not told it did not');
+});
+
 /* THE COUNT IS ASSERTED, NOT THE NAMES, and that is on purpose: a tool added
    without being thought about would slip past a list of names nobody rereads,
    where a number has to be edited by whoever adds one. Nine since the title:

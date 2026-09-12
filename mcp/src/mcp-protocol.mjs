@@ -41,6 +41,18 @@ const CODES = {
     internal: -32603,
 };
 
+/* Said when nobody speaks MCP to this process. Written for whoever reads a
+   terminal, and above all for an assistant that ran it from its shell. */
+export const NOT_A_CONVERSATION = '\n'
+    + 'This is the annotepage MCP SERVER. It waits for an assistant to speak MCP\n'
+    + 'to it on standard input, and none did.\n\n'
+    + 'To read the notes from a terminal, the command is "annotepage", in the\n'
+    + 'same package:\n'
+    + '  npx -y -p annotepage-mcp annotepage open\n'
+    + '  npx -y -p annotepage-mcp annotepage --help\n\n'
+    + 'To plug the server into your assistant for good, for instance:\n'
+    + '  claude mcp add annotepage -- npx -y annotepage-mcp\n\n';
+
 export const log = (...pieces) => {
     process.stderr.write('[annotepage-mcp] ' + pieces.join(' ') + '\n');
 };
@@ -142,6 +154,20 @@ export const serve = (identity, tools) => {
 
     const reader = createInterface({ input: process.stdin });
 
+    /* WHOEVER STARTED THIS WITHOUT AN ASSISTANT ON THE OTHER END. The home
+       page tells a reader to ask for "npx annotepage-mcp", and that name is
+       the SERVER: run from a terminal, by a person or by an assistant using its
+       shell, it printed two lines of configuration and then either waited
+       forever or exited with nothing said. Measured: an assistant did exactly
+       that and had to find the right command by itself. So when no MCP message
+       ever arrived, the server says what it is and names the command line --
+       on stderr, where it cannot break a conversation that did happen. */
+    let heard = false;
+    const notAConversation = () => {
+        process.stderr.write(NOT_A_CONVERSATION);
+    };
+    if (process.stdin.isTTY) notAConversation();
+
     /* Messages are handled ONE AFTER THE OTHER, never in parallel. Two
        simultaneous writes on the same project would produce two notes where
        the assistant wanted one, and nothing is ever erased in this tool. The
@@ -160,6 +186,7 @@ export const serve = (identity, tools) => {
                    error: { code: CODES.parse, message: 'Invalid JSON.' } });
             return;
         }
+        heard = true;
         queue = queue.then(() => handle(message)).catch((e) => {
             log('internal failure:', (e && e.stack) || String(e));
             fail(message.id, CODES.internal, (e && e.message) || String(e));
@@ -172,6 +199,7 @@ export const serve = (identity, tools) => {
            in flight would be abandoned halfway, and the caller would not know
            whether the note was saved. That is exactly the doubt we refuse
            everywhere else in this tool. */
+        if (!heard && !process.stdin.isTTY) notAConversation();
         queue.then(() => process.exit(0), () => process.exit(1));
     });
 };
