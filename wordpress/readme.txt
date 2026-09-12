@@ -75,28 +75,18 @@ text.
 
 == External services ==
 
-This plugin relies on two external services. Its own PHP contacts neither of
-them: both are reached by the reader's browser, only on pages where the tag is
-written, and only for the people the audience includes.
+This plugin's PHP contacts nothing. Two services are reached by the reader's
+browser instead, and only on pages where the tag is written.
 
-**cdn.jsdelivr.net**, which serves the annotation tool itself. The tag this
-plugin writes loads
-`https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js`, so on
-every page load that carries the tag, the browser sends jsDelivr what any
-request for a file carries: the reader's IP address, their user agent, and the
-address of the file asked for. No note, no page path and no key is sent there.
-Terms of use: https://www.jsdelivr.com/terms
-Privacy policy: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
+**cdn.jsdelivr.net** serves the tool itself, so each such page load sends it
+the reader's IP address, user agent and the file asked for &mdash; never a
+note, a path or a key. Terms: https://www.jsdelivr.com/terms
 
-**The notes server** &mdash; `https://api.annotepage.com/api.php`, the shared
-relay filled in at activation, or whichever address you set on the settings
-screen. It receives every note a reviewer writes and every request that reads
-notes back, at the moment they are written and read. The notes are encrypted in
-the browser before they leave it, so the server sees counts, times, sizes, IP
-addresses and your domain &mdash; never your paths and never your text. Setting
-the address to a copy of `api.php` you host yourself replaces this service with
-your own server.
-What the shared relay sees: https://annotepage.com/questions.html#data
+**The notes server** (`https://api.annotepage.com/api.php` by default, or your
+own install) receives the notes as they are written and read, encrypted in the
+browser first: it sees counts, times, sizes, IP addresses and your domain,
+never your paths and never your text.
+https://annotepage.com/questions.html#data
 
 == Installation ==
 
