@@ -13,11 +13,45 @@ tag loads, byte for byte — and `labels/fr.json`.
 **[The install page](https://annotepage.com/how-to-install-it.html) builds the
 tag**, with your address, your key and the digest for the version you take.
 
-## It has to stay a classic script tag
+## The tag has to stay a classic script tag
 
 The tool reads its own attributes through `document.currentScript`, which is
-`null` inside a module. Loaded as a module it stops, silently, with one line in
-the console. No `type="module"`, no bundler, no import.
+`null` inside a module — and just as null once a “combine JS” option, an asset
+pipeline or a bundler has concatenated this file with others. There is then no
+tag to read: the client writes one line in the console and stands down, having
+drawn nothing and sent nothing.
+
+## Declaring the settings without a tag
+
+For those pages, the same settings go in one object, declared **before** the
+client is loaded:
+
+```html
+<script>
+  window.annotepageConfig = {
+    server: 'https://example.com/annotepage/api.php',
+    key: '<43 characters>'
+  };
+</script>
+```
+
+The names are the ones in the table below, without `data-`. Three differences,
+each of them deliberate:
+
+- **`server` is required here.** On a tag, a client served by the site itself
+  falls back on `../api.php` *relative to its own file*; with no tag there is
+  no file address to deduce one from, and an address guessed wrong sends the
+  remarks nowhere at all. Missing, it is refused and said.
+- **`setup` is a value**, `true` or `false`, where the attribute is presence.
+- **`domains`** takes an array as well as the comma-separated string.
+
+A page may carry both. They must then say the same thing: every setting the
+object writes has to be written on the tag, with the same value. Anything else
+is refused and named — nothing sent, nothing decrypted, no winner picked, for
+the same reason a tag whose key and id disagree is refused. The tag is the
+standard way and stays the one the install page hands out;
+[the question this answers](https://annotepage.com/questions.html#config) is on
+the site.
 
 ## The attributes
 

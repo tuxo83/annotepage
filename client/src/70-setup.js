@@ -93,6 +93,29 @@ const copyBlock = (parent, label, value) => {
     return area;
 };
 
+/* THE SAME FACTS, IN THE SHAPE THE PAGE ALREADY USES. A copy configured by
+   window.annotepageConfig (00-preamble) has no tag to copy: its address, its
+   integrity and its crossorigin belong to whatever concatenated this file, and
+   handing out a tag it did not ask for would tell the installer to undo the
+   build they deliberately have. What is handed over is the object, which is
+   the part they do own.
+
+   The key is NOT in it, exactly as it is not in the tag this screen hands out:
+   the setup screen creates a confidential project, and the key goes into the
+   block above, to be put away. */
+const configToPaste = (id) => {
+    const lines = [];
+    if (DECLARED_SERVER) lines.push("        server: '" + DECLARED_SERVER + "'");
+    lines.push("        project: '" + id + "'");
+    if (MODE === 'plain') lines.push("        mode: 'plain'");
+    if (PATH_PREFIX) lines.push("        path: '" + PATH_PREFIX + "'");
+    return '<script>\n'
+        + '    window.annotepageConfig = {\n'
+        + lines.join(',\n') + '\n'
+        + '    };\n'
+        + '</' + 'script>';
+};
+
 /** The exact tag to paste, with the SRI digest ACTUALLY being served. */
 const tagToPaste = (id) => {
     let t = '<script src="' + script.src + '"';
@@ -223,7 +246,12 @@ const openSetupScreen = () => {
 
             copyBlock(screen.body, T('setup.key'), fresh);
             copyBlock(screen.body, T('setup.project'), derived.id);
-            copyBlock(screen.body, T('setup.tag'), tagToPaste(derived.id));
+            // Whichever way THIS copy was configured is the way the next
+            // pages will be: handing out the other one would be handing out
+            // an installation the reader has just been shown does not apply.
+            copyBlock(screen.body,
+                script ? T('setup.tag') : T('setup.config'),
+                script ? tagToPaste(derived.id) : configToPaste(derived.id));
             copyBlock(screen.body, T('setup.server'), serverConfig(derived.id));
 
             /* Only on a local machine, and only here. Not a runtime badge: a
@@ -261,10 +289,15 @@ const openSetupScreen = () => {
 
    There is no field to correct here, and that is the difference with the
    key screen: the mistake is in the page's source, not in this browser. So
-   the screen names what has to change in the tag, and stops. */
+   the screen names what has to change, and stops.
 
-const openTagScreen = (detail) => {
-    const screen = blockingScreen(T('tag.title'), false);
+   THE TITLE IS A PARAMETER because the mistake is not always in a tag: a page
+   can declare the same settings in window.annotepageConfig (00-preamble), and
+   telling somebody their tag is unusable when they have none sends them
+   looking for a tag to fix. */
+
+const openTagScreen = (detail, title) => {
+    const screen = blockingScreen(title || T('tag.title'), false);
     const block = create('div', 'ap-error');
     block.setAttribute('role', 'alert');
     block.appendChild(create('p', 'ap-error-detail', detail));

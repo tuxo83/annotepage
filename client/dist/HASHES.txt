@@ -1,4 +1,5 @@
-2.27.0  sha384-kp77NrEp+RsMez3vGrG2I3dsjKhwBPVc1QEag4JhJo5tE+JUZMhEpGIgoneJaROi  252719 bytes
+2.28.0  sha384-aiEeBEhxLgIP0cyZB6FNFRVqATgROwtxEtAmOU3amaBhO06B5IE13Hms8U+dORXp  269981 bytes
+2.27.0  sha384-aftW4rcvAamPZXxmbvollL8hu9of9Nd17h5XeQY1tjbUf2FEg3a+eAGAw0PQcQ0q  269794 bytes
 2.26.0  sha384-XepZjJvyM/pXAvgnn+lWKNTpUXZwkix544N2eWFHS5XlkU76LqbFdVdywqkqXu/G  252719 bytes
 2.25.0  sha384-GW0jyeWtRgUL3QIicNPDJBsvohYliZqUoEDfoCEf+3SEpMnXkq/BrvDoNwsVfFvE  252719 bytes
 2.24.0  sha384-G9KDMFzwMb9ctAA0bvWFqwpl6Nz8dvY7AgP19gNnZ9fNKp2iX9gparnUN5AsJ1lL  250835 bytes

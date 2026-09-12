@@ -434,6 +434,38 @@ ns.defaultLabels = {
         + 'from it -- so remove data-project, or correct whichever of the two '
         + 'is wrong.',
 
+    /* -- A configuration that cannot be used, wherever it was written --
+       The settings can also be declared in window.annotepageConfig, for the
+       pages where a tag cannot carry them -- concatenated scripts, a module,
+       an asset pipeline (00-preamble). These five say what is wrong with one,
+       and they never name a tag: whoever reads them may not have one. */
+    'tag.title_config': 'This annotepage configuration cannot be used',
+    'tag.two_sources':
+        'This page declares annotepage twice -- on the tag and in '
+        + 'window.annotepageConfig -- and the two disagree about "{name}". '
+        + 'Nothing was sent and nothing was decrypted, and the tool does not '
+        + 'pick a winner: whichever it took, somebody would have configured '
+        + 'the tool and never known it was ignored. Correct one of the two, or '
+        + 'remove it.',
+    'tag.config_no_server':
+        'The annotepage configuration on this page (window.annotepageConfig) '
+        + 'names no server address, and there is no tag to deduce one from. '
+        + 'Nothing was sent: an address guessed wrong would send the remarks '
+        + 'nowhere at all. Add server: "https://.../api.php" to it.',
+    'tag.config_setting':
+        'The annotepage configuration on this page (window.annotepageConfig) '
+        + 'carries "{name}", which is not a setting of this tool. Nothing was '
+        + 'read from it -- a setting whose name is wrong is a setting nobody '
+        + 'set. The names are the ones written on the tag, without data-.',
+    'tag.config_value':
+        'The setting "{name}" of the annotepage configuration on this page '
+        + '(window.annotepageConfig) has to be written as text, between '
+        + 'quotes. Nothing was read from it.',
+    'tag.config_shape':
+        'window.annotepageConfig on this page is not an object. It is written '
+        + 'window.annotepageConfig = { server: "...", key: "..." }, before the '
+        + 'client is loaded. Nothing was read from it.',
+
     /* -- Setup --------------------------------------------------------- */
     'setup.title': 'Install annotepage on this site',
     'setup.generate': 'Generate a key and create the project',
@@ -446,6 +478,8 @@ ns.defaultLabels = {
     'setup.key': 'The project key -- keep it',
     'setup.project': 'The project id -- public, it goes into the page',
     'setup.tag': 'The tag to paste at the end of <body>, on the pages to annotate',
+    'setup.config': 'The configuration to declare before the client is loaded, '
+        + 'on the pages to annotate',
     'setup.server': 'To declare in the server configuration',
     'setup.copy': 'Copy',
     'setup.copied': 'Copied',

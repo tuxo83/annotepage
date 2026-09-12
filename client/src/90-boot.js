@@ -143,7 +143,13 @@ function startWithSalt(text, derived) {
                  would add the dependency they deliberately removed. We say
                  it in the panel and we load nothing. */
             const newer = first.ok ? announcedVersion(first.data) : null;
-            const cdn = newer ? cdnServing(script.src) : null;
+            /* SCRIPT_SRC is empty when this copy was configured by the page
+               rather than by a tag (00-preamble): there is then no address to
+               recognise, cdnServing says no, and we fall to the branch below
+               -- which is right. Whatever concatenated this file chose where
+               it comes from, and replacing ourselves from a CDN would undo
+               that choice behind their back. */
+            const cdn = newer ? cdnServing(SCRIPT_SRC) : null;
             if (cdn && handOverTo(cdn, newer, () => { proceed(first); })) return null;
             if (newer) upgradeAvailable = newer;
 
@@ -222,7 +228,22 @@ const start = () => {
     // startup like the name, not at every draw.
     side = readSide();
 
-    // Outside the project's scope: silence. So the tag can live in a
+    /* THE CONFIGURATION ITSELF IS BROKEN, and that comes before everything
+       else -- including the scope, which is one of the settings in dispute.
+       00-preamble adopted nothing, so there is no project, no key and no
+       address to act on; what there is, is a page whose source says two
+       things at once, or says one thing wrongly. It gets said out loud, on
+       the page that carries it, for the same reason a tag with a malformed
+       key does: somebody wrote that declaration on purpose, and a tool that
+       quietly does not appear is the failure nobody finds. The console
+       already has the same sentence in English (00-preamble). */
+    if (CONFIG_FAILURE) {
+        showScreen(() => openTagScreen(
+            T(CONFIG_FAILURE.label, CONFIG_FAILURE.values), T('tag.title_config')));
+        return;
+    }
+
+    // Outside the project's scope: silence. So the declaration can live in a
     // template shared by the whole site.
     if (!inScope()) return;
 

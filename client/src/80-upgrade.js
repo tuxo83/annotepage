@@ -145,7 +145,12 @@ let handingOver = false;
  */
 const handOverTo = (cdn, version, onFailure) => {
     const url = officialUrl(cdn, version);
-    if (!url || handingOver) return false;
+    /* No tag, nothing to hand over: the replacement copy reads the data-
+       attributes of this one, and a copy configured by window.annotepageConfig
+       has none. The caller cannot get here -- cdnServing('') says no -- and it
+       is written anyway, because what this function does when `script` is null
+       is dereference it. */
+    if (!url || !script || handingOver) return false;
     handingOver = true;
 
     // BEFORE the new copy builds anything: its element and its listeners go

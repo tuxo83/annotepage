@@ -143,31 +143,33 @@ a key the relay can compute, and with it the project id, and with both every
 row it stores — without even loading the page. That is plain mode sold as
 encrypted, and it is worse than plain mode, which is at least honest.
 
-### 1.5 Where the key comes from: the tag, or the browser
+### 1.5 Where the key comes from: the page, or the browser
 
 The key reaches the client one of two ways, and **which one is used is the
-mode**. It is carried by the tag, and by nothing else — there is no stored
-row, no column and no flag anywhere in this format that records it.
+mode**. It is carried by the page — on the tag, or in the object the client
+reads when a tag cannot carry it (`window.annotepageConfig`, see the client's
+readme) — and by nothing else: there is no stored row, no column and no flag
+anywhere in this format that records it.
 
-| On the tag | What it means |
+| Declared on the page | What it means |
 | --- | --- |
-| `data-key` | the 43 characters of the key itself. The project is **public**: whoever can load the page holds the key. The client derives the project id from it (§1.3, label `id`), asks for nothing, and writes nothing to `localStorage`. |
-| `data-project` | the 22 characters of the id alone. The project is **confidential**: the key is asked for once per browser and per origin (§1.1), and until it is there the client fetches nothing and decrypts nothing. |
+| `data-key`, or `key` | the 43 characters of the key itself. The project is **public**: whoever can load the page holds the key. The client derives the project id from it (§1.3, label `id`), asks for nothing, and writes nothing to `localStorage`. |
+| `data-project`, or `project` | the 22 characters of the id alone. The project is **confidential**: the key is asked for once per browser and per origin (§1.1), and until it is there the client fetches nothing and decrypts nothing. |
 
 **The id is redundant in the public form and is dropped from it.** `derive()`
 already produces it from the key, so writing both would write the same fact
 twice in a tag people copy by hand — where the two can disagree, silently, in
 a project whose notes nobody can read.
 
-A tag that carries **both** is therefore not a third mode: the client derives
+A page that declares **both** is therefore not a third mode: the client derives
 the id from the key and compares it with the declared one. Equal, it proceeds;
 different, it **refuses**, exactly as a wrongly pasted key is refused (§1.2)
 — nothing sent, nothing decrypted — and it does not pick a winner. One of the
 two is a typo, and guessing buries it.
 
-A `data-key` that is not 43 base64url characters is refused the same way, and
-**said**: somebody wrote that attribute on purpose, and a tag that quietly
-does nothing is the failure nobody finds.
+A key that is not 43 base64url characters is refused the same way, and
+**said**: somebody wrote that declaration on purpose, and a page where the tool
+quietly does nothing is the failure nobody finds.
 
 **This is not the `mode` of §3.4.** The two words name two different things and
 they do not interact: a note written on a public key is an ordinary

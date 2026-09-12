@@ -382,44 +382,11 @@ code {
             number of rows, which a public relay sets to 6000 &mdash; about
             2000 remarks, since a discussed thread is three rows &mdash; and a
             server carrying one team&rsquo;s own notes leaves off.</p>
-                <p class="qa-a">Those two numbers were both measured, on a simulated
-            project: an assistant&rsquo;s loop &mdash; read, reply, resolve
-            &mdash; costs three exports per remark, so the old limit of 20
-            refused it in the middle of its seventh remark on the first day;
-            and six reviewers over three months write about 3600 rows, so the
-            old cap of 2000 stopped them in week two, with nobody able to
-            reply.</p>
-                <p class="qa-a">Reading a page is <b>not counted unless you ask for
-            it</b> &mdash; measured: five browsers opening the same annotated
-            page make five requests and spend nothing. Counting them costs a
-            database write every time somebody opens a page, which is why
-            <code>rate_reads_per_ip</code> is 0 and why 0 means the counter is
-            never touched at all. It is there for a server open to strangers
-            with nothing in front of it that can cap requests: set far above a
-            person &mdash; 600 in five minutes is two a second &mdash; it
-            bounds a loop asking for the same page&rsquo;s notes for ever, and
-            no reviewer will meet it. The export limit is spent by an
-            <b>assistant</b>, whose loop &mdash; read, reply, resolve &mdash;
-            costs about three per remark.</p>
-                <p class="qa-a"><b>On a server carrying your own site&rsquo;s notes, two of
-            them are switched off</b> when the installer writes your
-            configuration: everybody who can write is already behind the same
-            door as the site under review, so a ceiling on how fast your own
-            team may annotate protects nobody from anything. What stays on
-            there is the write count per address, which is not aimed at anybody
-            &mdash; it catches a client stuck in a loop. On a public relay they
-            all stay on: there, an export is bandwidth a stranger can ask for.</p>
                 <p class="qa-a">You do not have to find them afterwards: <b>the installer
             has a field for every one</b>, folded under &ldquo;change anything
             else&rdquo;, with the number that applies if you leave it empty
             shown in the field &mdash; and the same on the command line, where
-            <code>--help</code> lists each one with its default. What you set
-            is written as a live line with the sentence that explains it; what
-            you leave is written as a comment with the number already in it, so
-            the file names every limit either way. Behind a proxy, set
-            <code>client_ip_header</code> too &mdash; without it every visitor
-            arrives as one address, and the per-IP limits count them as one
-            person.</p>
+            <code>--help</code> lists each one with its default.</p>
             </article>
 
                         <article class="qa" data-tags="Key|Privacy">
@@ -627,10 +594,38 @@ code {
             <article class="qa" data-tags="The tag on your page|Nothing appears">
                 <h3 class="qa-q">Can I load it as a module?</h3>
                 <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
-                <p class="qa-a">No, and it fails quietly. The client reads
+                <p class="qa-a">No. The client reads
             <code>document.currentScript</code> to find its own settings, and a
-            <code>type="module"</code> script does not have one: nothing appears,
-            and nothing is logged.</p>
+            <code>type="module"</code> script does not have one: nothing appears
+            on the page. It is no longer silent about it &mdash; one line goes to
+            the console &mdash; and the settings can be
+            <a href="#config">declared on the page instead</a>.</p>
+            </article>
+            <article class="qa" data-tags="The tag on your page|Nothing appears">
+                <h3 class="qa-q" id="config">My build combines the scripts, and nothing appears</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
+                <p class="qa-a">The client reads its settings off its own tag, through
+            <code>document.currentScript</code> &mdash; which is <code>null</code> for a
+            file concatenated with others by a &ldquo;combine JS&rdquo; option or an asset
+            pipeline, inlined, or loaded as a module. There is then no tag to read, so the
+            client stands down having drawn nothing and sent nothing, and writes one line
+            in the console saying why.</p>
+                <p class="qa-a">The same settings can be declared on the page instead, in
+            one object, before the client is loaded:</p>
+<pre class="qa-code">&lt;script&gt;
+  window.annotepageConfig = {
+    server: 'https://example.com/annotepage/api.php',
+    key: '&lt;43 characters&gt;'
+  };
+&lt;/script&gt;</pre>
+                <p class="qa-a">The names are the attributes without <code>data-</code>, and
+            <code>server</code> is <b>required</b> there: a tag served by your own site falls
+            back on <code>../api.php</code> beside its own file, and with no tag there is no
+            file to count from &mdash; an address guessed wrong would send the remarks
+            nowhere at all, so it is refused instead. A page may carry both a tag and the
+            object, and they must then say the same thing: anything else is refused, naming
+            the setting they disagree about. The tag stays the standard way, and the
+            <a href="how-to-install-it.html#page">install page</a> writes it for you.</p>
             </article>
             <article class="qa" data-tags="The tag on your page|Nothing appears">
                 <h3 class="qa-q" id="locked">What if I pin the script with a wrong <code>integrity</code> digest?</h3>
@@ -704,9 +699,11 @@ code {
     if (!cartes.length) return;
 
     /* A FILTER CAN BE LINKED TO. The install page sends a reader here for one
-       kind of question -- the ones where nothing appears and nothing is logged
-       -- and landing them on thirteen cards to find three is the trip they were
-       trying to avoid. `?tag=when-nothing-appears` presses that chip on
+       kind of question -- the ones where nothing appears on the page -- and
+       landing them on every card there is to find those few is the trip they
+       were trying to avoid. (Counted here once, "thirteen cards to find
+       three": a count written into a comment beside a growing list goes stale
+       on the next card, and this one had.) `?tag=when-nothing-appears` presses that chip on
        arrival; an unknown or absent tag presses nothing, which is the page as
        it was. The slug is the group's own name, lowercased, so there is no
        second list of names to keep in step. */
@@ -806,10 +803,10 @@ code {
      attribute by attribute into a live <script>, which is what makes it run:
      the same file, the same key, the same data-version, and
      tools/check-sri.mjs still reads them where they have always been. -->
-<template id="annotepage-tool"><script src="/annotepage-client-2.27.0.js"
+<template id="annotepage-tool"><script src="/annotepage-client-2.28.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.13"
+        data-version="2026.9.14"
         defer></script></template>
 <script>
 (function () {

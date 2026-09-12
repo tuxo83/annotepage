@@ -1,7 +1,7 @@
 /* ============================================================================
    annotepage -- the annotation layer, browser side.
 
-   Package version : 2.27.0
+   Package version : 2.28.0
    Format version  : 2   (see FORMAT.md)
    Licence : MIT
 
@@ -16,44 +16,248 @@
     /* Injected by the build: they come from package.json and from
        src/styles.css, so that no value is written in two places and can
        therefore diverge. */
-    const TOOL_VERSION = "2.27.0";
+    const TOOL_VERSION = "2.28.0";
     const FORMAT = 2;
     const STYLES = "/* ============================================================================\n   styles.css -- THE STYLES OF THE TOOL, AND OF NO OTHER ELEMENT.\n\n   This sheet is INLINED into the served file by the build, then put into the\n   tool's shadow root -- as a constructed sheet when the browser can do it, in\n   a <style> otherwise. It was loaded by a <link> in the original tool; the\n   move to a CDN under SRI brought it inside the file, so that there is only\n   one digest to keep up to date. The containment itself has not changed, and\n   is still twofold:\n\n     - from the tool towards the site: no rule from here can reach an element\n       of the host site, the browser sees to that. That is what makes the\n       claim \"the layer touches nothing\" checkable rather than promised;\n     - from the site towards the tool: no rule of the site can reach an\n       element here. A redesign of the site's stylesheet therefore cannot\n       distort the tool, nor the other way round.\n\n   The \"ap-\" prefix on every class is the third safeguard: the day somebody\n   loads these styles WITHOUT a shadow root -- by mistake, or to debug --\n   nothing would answer a selector of the site.\n\n   NO RULE TARGETS html, body, * OR ANY SELECTOR OF THE SITE. That is the one\n   absolute prohibition of this file.\n\n   COLOURS: the tool has its OWN palette, defined on the shadow root. It\n   reads neither the site's variables nor its theme attribute: it has no\n   reason to know how the site names its colours, and it must stay readable\n   on a light site as on a dark one. The switch follows the system\n   preference, the only information the tool has without asking anyone.\n   ============================================================================ */\n\n\n:host {\n    --ap-bg: #ffffff;\n    --ap-bg-soft: #f4f6f8;\n    --ap-bg-raised: #e9edf2;\n    --ap-text: #1a1d21;\n    --ap-text-soft: #5b6570;\n    --ap-border: #d5dbe2;\n    --ap-accent: #2f6fed;\n    --ap-accent-dark: #1d55c8;\n    --ap-accent-text: #ffffff;\n    --ap-accent-veil: rgba(47, 111, 237, 0.14);\n    --ap-alert-bg: #fdeceb;\n    --ap-alert-border: #e3a9a4;\n    --ap-alert-text: #8a1f16;\n    /* THE TWO STATES A REMARK CAN BE IN ONCE IT IS ANSWERED, as tokens rather\n       than as literals. They were literals, written once inside the card's\n       state mark -- which meant the dark theme drew them at the LIGHT theme's\n       ink: measured, 2.42:1 for \"resolved\" and 2.02:1 against the veil they\n       sit on, where WCAG 1.4.3 asks 4.5. Below they are 4.68 and 5.23 in the\n       light theme, 6.43 and 6.64 in the dark one, on the same composite.\n\n       `pending` is the state that must never be mistaken for done: resolved,\n       but not deployed -- the defect is still on the reader's screen. `fill`\n       is the same colour asked to carry --ap-accent-text on top of it, for the\n       badge on the page: 5.93:1 in light, 10.14:1 in dark. */\n    --ap-done-ink: #0f7a52;\n    --ap-done-veil: rgba(16, 185, 129, 0.14);\n    --ap-pending-ink: #8a5a00;\n    --ap-pending-veil: rgba(245, 158, 11, 0.16);\n    --ap-pending-fill: #8a5a00;\n    --ap-shadow: 0 6px 24px rgba(16, 24, 40, 0.18);\n    --ap-radius: 10px;\n    --ap-font: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\",\n                  Arial, sans-serif;\n}\n\n@media (prefers-color-scheme: dark) {\n    :host {\n        --ap-bg: #1d2126;\n        --ap-bg-soft: #262b32;\n        --ap-bg-raised: #323942;\n        --ap-text: #e9ecf0;\n        --ap-text-soft: #a4adb8;\n        --ap-border: #3a424c;\n        --ap-accent: #6d9bff;\n        --ap-accent-dark: #8fb4ff;\n        --ap-accent-text: #10151c;\n        --ap-accent-veil: rgba(109, 155, 255, 0.18);\n        --ap-alert-bg: #3a1f1c;\n        --ap-alert-border: #7c3a33;\n        --ap-alert-text: #ffb9b1;\n        --ap-done-ink: #56d3a0;\n        --ap-done-veil: rgba(16, 185, 129, 0.18);\n        --ap-pending-ink: #f0b757;\n        --ap-pending-veil: rgba(245, 158, 11, 0.16);\n        --ap-pending-fill: #f0b757;\n        --ap-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);\n    }\n}\n\n/* ----------------------------------------------------------------------------\n   The layer.\n\n   It covers the viewport and receives NO click: that is what lets the page\n   behave exactly as usual as long as the tool is not in annotation mode.\n   Each widget re-enables clicks for itself alone.\n   ---------------------------------------------------------------------------- */\n\n.ap-layer {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    font-family: var(--ap-font);\n    font-size: 14px;\n    line-height: 1.45;\n    color: var(--ap-text);\n    text-align: left;\n    -webkit-font-smoothing: antialiased;\n}\n\n.ap-layer button,\n.ap-layer input,\n.ap-layer textarea {\n    font-family: inherit;\n    font-size: inherit;\n    line-height: inherit;\n    color: inherit;\n    margin: 0;\n    box-sizing: border-box;\n}\n\n/* ----------------------------------------------------------------------------\n   The button: the only thing visible when the tool is at rest.\n   ---------------------------------------------------------------------------- */\n\n.ap-button {\n    position: fixed;\n    right: 16px;\n    bottom: 16px;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 9px 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: 999px;\n    background: var(--ap-bg);\n    color: var(--ap-text);\n    box-shadow: var(--ap-shadow);\n    cursor: pointer;\n    pointer-events: auto;\n    opacity: 0.92;\n    transition: opacity 0.15s ease, transform 0.15s ease;\n}\n\n.ap-button:hover,\n.ap-button:focus-visible {\n    opacity: 1;\n    transform: translateY(-1px);\n}\n\n.ap-button:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n.ap-button[aria-pressed=\"true\"] {\n    background: var(--ap-accent);\n    border-color: var(--ap-accent);\n    color: var(--ap-accent-text);\n    opacity: 1;\n}\n\n.ap-button-dot {\n    display: inline-block;\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    background: var(--ap-accent);\n    flex: none;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-dot {\n    background: var(--ap-accent-text);\n}\n\n.ap-button-count {\n    padding: 1px 7px;\n    border-radius: 999px;\n    background: var(--ap-bg-raised);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-count {\n    background: rgba(255, 255, 255, 0.22);\n    color: var(--ap-accent-text);\n}\n\n/* ----------------------------------------------------------------------------\n   The pointing highlight.\n\n   It is DRAWN HERE, from the coordinates of the element being pointed at.\n   Nothing is put on the element itself: no class, no attribute, no style. So\n   the site cannot move by a single pixel because of the pointing.\n   ---------------------------------------------------------------------------- */\n\n.ap-highlight {\n    position: fixed;\n    border: 2px solid var(--ap-accent);\n    border-radius: 3px;\n    background: var(--ap-accent-veil);\n    pointer-events: none;\n    display: none;\n}\n\n.ap-highlight-label {\n    position: fixed;\n    max-width: 320px;\n    padding: 4px 8px;\n    border-radius: 6px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    pointer-events: none;\n    display: none;\n    box-shadow: var(--ap-shadow);\n}\n\n/* ----------------------------------------------------------------------------\n   The markers: \"there are already notes here\".\n   ---------------------------------------------------------------------------- */\n\n.ap-marker {\n    position: fixed;\n    min-width: 22px;\n    height: 22px;\n    padding: 0 6px;\n    border: 2px solid var(--ap-bg);\n    border-radius: 999px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    font-weight: 700;\n    line-height: 18px;\n    text-align: center;\n    cursor: pointer;\n    pointer-events: auto;\n    box-shadow: var(--ap-shadow);\n}\n\n/* THE STATE, IN THE BADGE ITSELF. The rule above is the OPEN state -- work to\n   do -- and it stays the tool's accent, because that is what a badge on a page\n   has always meant here. The other two are read against it:\n\n     pending  filled amber. Resolved, not deployed: the defect is still on the\n              screen the reader is looking at, and it is the one state worth\n              catching an eye that was not looking for it.\n     done     hollow, in the soft ink. History: there, countable, and not\n              asking for anything.\n\n   THE COLOUR IS NEVER ALONE. The count is written in the badge and the state\n   is spelled out in its accessible name -- a badge that said \"still to fix\"\n   by hue only would say nothing at all to a good part of its readers. */\n.ap-marker-pending {\n    background: var(--ap-pending-fill);\n}\n.ap-marker-done {\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-weight: 600;\n    /* The 2px border is the halo against the page and cannot be spent on the\n       outline, so the outline is drawn inside. */\n    box-shadow: var(--ap-shadow), inset 0 0 0 1px var(--ap-border);\n}\n\n.ap-marker:focus-visible {\n    outline: 2px solid var(--ap-accent-dark);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The panel.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel {\n    position: fixed;\n    top: 12px;\n    right: 12px;\n    bottom: 72px;\n    width: 360px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n    overflow: hidden;\n}\n\n.ap-panel.ap-open {\n    display: flex;\n}\n\n/* The other side. Two positions, right and left, and no third one: in\n   annotation mode the layer takes every click, so every pixel of panel is a\n   pixel of page that can no longer be pointed at. A floating panel would\n   only move that loss around.\n\n   \"bottom\" IS NOT REDECLARED, on purpose: the panel keeps the same 72 px of\n   clearance above the floating button either way, and that clearance is the\n   same on both sides because the button moves WITH it.\n\n   AND THE BUTTON MOVES WITH IT, which was decided the other way first. The\n   argument for leaving it was that it is the tool's only visible trace at\n   rest, so an anchor that moved would stop being one. The owner's answer,\n   and it is the better one: \"move left\" is asked of the TOOL, not of half of\n   it. A panel on one edge and the control that opens it on the other makes\n   the eye cross the whole window for one gesture, and somebody who set the\n   side set it for the tool.\n\n   TWO THINGS THIS RULE DEPENDS ON, both fragile:\n     - it is written with ONE class, so it weighs exactly what \".ap-panel\"\n       weighs;\n     - it is written BEFORE the narrow block below.\n   Reverse either and it wins under 560 px, where the panel is a bottom band\n   spanning the width -- and a panel pinned to the left there is the full-\n   height panel whose defect at 375 px is described in that block. */\n.ap-left {\n    right: auto;\n    left: 12px;\n}\n/* The button follows, and it is put on the LAYER and not on the panel: the\n   button is not inside the panel, so the side has to be readable from a\n   common ancestor. Same offset mirrored, same bottom -- only the edge\n   changes. */\n.ap-layer.ap-left-side .ap-button {\n    right: auto;\n    left: 16px;\n}\n\n.ap-panel-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n}\n\n.ap-panel-title {\n    font-size: 15px;\n    font-weight: 600;\n    flex: 1 1 auto;\n}\n\n/* -- what the whole project holds ---------------------------------------\n   THE FIRST LINE OF THE FOOTER, on its own row. The footer is a flex row of\n   short things -- a name, two buttons -- so this takes the whole width and the\n   rest wraps under it. No ground and no border of its own: it is IN the footer,\n   not beside it. */\n/* The retention line, when there is one. `:empty` rather than a class the\n   script has to add and remove: the element is always there, and CSS decides\n   whether it takes any room -- so a server that deletes nothing costs the\n   panel exactly nothing. */\n.ap-panel-keeps { margin-top: 6px; color: var(--ap-text-soft); }\n.ap-panel-keeps:empty { display: none; }\n\n.ap-panel-footer { flex-wrap: wrap; }\n\n/* WHO YOU ARE SIGNING AS, ON A LINE OF ITS OWN. `flex-basis: 100%` is the same\n   device the block above uses, and for the same reason: the footer is one\n   wrapping row and everything in it was being strung end to end. */\n.ap-foot-who {\n    flex-basis: 100%;\n    display: flex; align-items: baseline; gap: 8px;\n}\n\n/* -- the list of remarks -------------------------------------------------\n   A ROW, AND EVERY ROW IS A BUTTON. Not a card with a link in it: the whole\n   line is the target, which is what a list of things to open should be, and it\n   is reachable with a keyboard for free.\n\n   THE EXCERPT TAKES THE ROOM AND FOLDS TO ONE LINE. What a remark is about can\n   be a paragraph; what a list can show is a line. The author keeps a fixed\n   place at the end so the eye can run down it. */\n.ap-row {\n    display: flex; align-items: baseline; gap: 8px;\n    width: 100%; margin: 0 0 4px; padding: 8px 10px;\n    border: 1px solid var(--ap-border); border-radius: 8px;\n    background: var(--ap-bg); color: var(--ap-text);\n    font: inherit; text-align: left; cursor: pointer;\n    transition: border-color .15s ease, background-color .15s ease;\n}\n.ap-row:hover { background: var(--ap-bg-soft); border-color: var(--ap-accent); }\n.ap-row:focus-visible { outline: 2px solid var(--ap-accent); outline-offset: 2px; }\n.ap-row-about {\n    flex: 1; min-width: 0;\n    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n}\n.ap-row-who { flex: none; font-size: 12px; color: var(--ap-text-soft); }\n/* THE STATE, AS A DOT. Three of them, and the middle one is the one that must\n   not read as done: resolved but not deployed is a defect still on screen. The\n   accessible name spells all three out -- a colour is not a fact for\n   everybody. */\n.ap-row-dot {\n    flex: none; width: 8px; height: 8px; border-radius: 999px;\n    background: var(--ap-accent); align-self: center;\n}\n.ap-row-pending .ap-row-dot { background: var(--ap-text-soft); }\n.ap-row-done .ap-row-dot { background: transparent; border: 1px solid var(--ap-border); }\n.ap-row-done .ap-row-about { color: var(--ap-text-soft); }\n@media (prefers-reduced-motion: reduce) { .ap-row { transition: none; } }\n\n/* -- a window that is not the panel --------------------------------------\n   IT FLOATS OVER THE PAGE, and that is the point: the panel is a band down one\n   edge, and what goes in here is not about the page beside it. Fixed rather\n   than absolute -- the reader scrolls the page under it, and a window that\n   scrolled away with the article would have to be chased.\n\n   ABOVE THE PANEL AND BELOW NOTHING. It is opened from the panel's footer, so\n   it must cover it; the tool's own layer already sits above the site.\n\n   WIDTH: it is read, not filled in. 26rem is a paragraph, and min() keeps it\n   inside a phone without a media query. */\n.ap-pop {\n    position: fixed; z-index: 3;\n    /* THE LAYER IS `pointer-events: none` so the site underneath keeps working,\n       and every piece that must be reachable turns it back on. Without this\n       line the window is a picture: no click on its buttons, and no drag on its\n       bar -- which is exactly how it behaved when first measured. */\n    pointer-events: auto;\n    width: min(26rem, calc(100vw - 24px));\n    max-height: calc(100vh - 24px);\n    display: flex; flex-direction: column;\n    border: 1px solid var(--ap-border); border-radius: 12px;\n    background: var(--ap-bg); color: var(--ap-text);\n    box-shadow: 0 18px 48px rgba(0, 0, 0, .22);\n    overflow: hidden;\n}\n/* THE HANDLE. `touch-action: none` is what makes a finger drag the window\n   instead of scrolling the page under it -- without it the browser claims the\n   gesture before the first pointermove arrives. */\n.ap-pop-bar {\n    display: flex; align-items: center; gap: 8px;\n    padding: 8px 12px;\n    border-bottom: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n    cursor: grab; touch-action: none; user-select: none;\n}\n.ap-pop-moving .ap-pop-bar { cursor: grabbing; }\n.ap-pop-title { flex: 1; font-size: 13px; font-weight: 650; }\n/* `min-height: 0` is what makes the scroll happen INSIDE the window rather\n   than the window growing past its own height: a flex item does not shrink\n   below its content without it, and the end of a long remark would be behind\n   the bottom edge with nothing to scroll. */\n.ap-pop-body { flex: 1 1 auto; min-height: 0; padding: 12px; overflow: auto; }\n/* The one line that says why the page stayed where it was. Drawn as the panel\n   draws its own help text, not as an alert: nothing has gone wrong. */\n.ap-why {\n    margin: 0 0 10px; padding: 8px 10px;\n    border-radius: 8px; background: var(--ap-bg-soft);\n    color: var(--ap-text-soft); font-size: 12.5px;\n}\n/* THE CORNER, AND IT IS DRAWN RATHER THAN LEFT TO THE BROWSER. `resize: both`\n   would have done this in one line and does nothing under a finger on iOS; the\n   window is moved with pointer events for exactly that reason, and it is\n   resized with them too. Two hairlines, the shape everybody already reads as a\n   grip, in the same ink as the borders around it. */\n.ap-pop-grip {\n    position: absolute; right: 0; bottom: 0;\n    width: 18px; height: 18px;\n    cursor: nwse-resize; touch-action: none;\n    background:\n        linear-gradient(135deg, transparent 42%, var(--ap-border) 42%,\n                        var(--ap-border) 54%, transparent 54%),\n        linear-gradient(135deg, transparent 66%, var(--ap-border) 66%,\n                        var(--ap-border) 78%, transparent 78%);\n}\n.ap-pop-sizing { user-select: none; }\n.ap-pop-sizing .ap-pop-grip { cursor: nwse-resize; }\n/* Inside a window, the block is the window: no second frame around it. */\n.ap-pop-body .ap-config { margin: 0; padding: 0; border: 0; background: none; }\n.ap-pop-body .ap-forget { margin: 0; }\n.ap-pop-body .ap-panel-stats { margin: 0; }\n.ap-pop-body .ap-stats { margin: 0; }\n/* A WINDOW HAS ROOM, SO THE FILE GETS IT. In the panel this field was two or\n   four lines because the column had nothing to spare; here it can show the\n   whole thing without being scrolled. */\n.ap-pop-body .ap-code { min-height: 9.5em; }\n\n/* -- the file the assistant needs ---------------------------------------\n   Drawn like the other block the panel opens in its body -- a title, a\n   sentence, the thing itself, two buttons -- so nothing here is a new shape to\n   learn. The last line is the warning, and it is a line and not a dialog: the\n   reviewer asked for this file. */\n.ap-config {\n    margin: 10px 0 0; padding: 12px;\n    border: 1px solid var(--ap-border); border-radius: 10px;\n    background: var(--ap-bg-soft);\n}\n/* The warning is a line at the tool's own soft ink, not in an alert colour:\n   the reviewer asked for this file, they are not being warned off it. There is\n   no --ap-warn token and this does not invent one. */\n.ap-config .ap-warn { margin-top: 10px; }\n.ap-panel-stats {\n    flex-basis: 100%;\n    display: flex; flex-wrap: wrap; gap: 4px 18px;\n    margin-bottom: 4px;\n}\n.ap-stat { display: inline-flex; align-items: baseline; gap: 5px; }\n/* The row says what it counts, once, and the three figures follow it. Without\n   it, \"3 / 2 / 1\" beside a panel about one page reads as being about that\n   page. */\n.ap-stat-label {\n    flex-basis: 100%; margin-bottom: 2px;\n    font-size: 11px; font-weight: 650; letter-spacing: .02em;\n    text-transform: uppercase; color: var(--ap-text-soft);\n}\n.ap-stat-n { font-size: 15px; font-weight: 650; color: var(--ap-text); }\n.ap-stat-w { font-size: 12px; color: var(--ap-text-soft); }\n/* TWO BLOCKS, THIS SITE THEN THE WHOLE SERVER, and the second is absent on\n   nearly every server. Each block is a label, the figures it holds, and -- when\n   age takes anything here -- a second row for what it took. */\n.ap-stats { display: flex; flex-direction: column; gap: 16px; }\n.ap-stats-block { display: flex; flex-direction: column; gap: 4px; }\n.ap-stats .ap-panel-stats { margin-bottom: 0; }\n/* WHAT WAS REMOVED READS AS A FOOTNOTE TO THE ROW ABOVE, not as a second set of\n   figures competing with it: same shapes, one step quieter, and indented under\n   the count it belongs to. */\n.ap-stat-gone { padding-left: 10px; border-left: 2px solid var(--ap-border); }\n.ap-stat-gone .ap-stat-n { font-size: 13px; font-weight: 600; color: var(--ap-text-soft); }\n.ap-stat-since {\n    font-size: 11px; font-weight: 650; letter-spacing: .02em;\n    text-transform: uppercase; color: var(--ap-text-soft); align-self: baseline;\n}\n/* The date of the last sweep is context for the figures beside it, not another\n   figure: soft ink, smaller, and it wraps under them rather than stretching\n   the row. */\n.ap-stat-when { font-size: 12px; color: var(--ap-text-soft); align-self: baseline; }\n.ap-panel-instructions {\n    padding: 10px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    color: var(--ap-text-soft);\n    font-size: 13px;\n}\n\n.ap-panel-body {\n    flex: 1 1 auto;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 14px 14px;\n}\n\n.ap-panel-footer {\n    padding: 8px 14px;\n    border-top: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n\n.ap-section-title {\n    margin: 14px 0 6px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-weight: 600;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n\n.ap-section-help {\n    margin: 0 0 8px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-empty {\n    margin: 16px 0;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   THE MODE BADGE: one word, drawn in both modes, at the top of every draw.\n\n   It replaced a paragraph that only the public mode ever drew. Two things\n   were wrong with that: secure mode said nothing, so the panel never told a\n   reviewer which of the two they were in; and a paragraph pinned to the top\n   for ever is skipped after the second reading, while a single word is not.\n\n   IT IS NOT A BUTTON AND MUST NOT LOOK LIKE ONE. No shadow, no pressed\n   state, cursor stays default: there is nothing to press. What it does have\n   is a focus ring, because it takes focus -- the description below has to be\n   reachable without a pointer, and that is the only reason it is focusable.\n   ---------------------------------------------------------------------------- */\n\n.ap-mode {\n    /* The frame the description is positioned against. It spans the width of\n       the panel body, so a description pinned to its two edges cannot spill\n       sideways out of a body that scrolls -- and a scrolling body clips both\n       axes, not just the one it scrolls. */\n    position: relative;\n    margin: 4px 0 10px;\n}\n\n.ap-mode-chip {\n    display: inline-block;\n    padding: 2px 9px 3px;\n    border: 1px solid var(--ap-border);\n    border-radius: 999px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 11px;\n    font-weight: 600;\n    letter-spacing: 0.05em;\n    text-transform: uppercase;\n    cursor: default;\n}\n\n/* The public badge is the one that carries a consequence, so it is the one\n   that is coloured -- in the tool's own accent, not in the alert colours: a\n   public key is a choice somebody made on purpose, not an incident. Secure\n   keeps the quiet frame: it is the case where nothing is being said. */\n/* The same ring as every other focusable thing in the panel. It is the only\n   visual proof, for somebody arriving by Tab, that this word is where their\n   focus went. */\n.ap-mode-chip:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* Plain wears the same coat as public, and for the same reason: both are a\n   choice somebody made on purpose, and both carry a consequence for whoever\n   is about to write. Neither is an incident, so neither takes an alert\n   colour. They cannot both be true at once. */\n.ap-mode-public .ap-mode-chip,\n.ap-mode-plain .ap-mode-chip {\n    border-color: var(--ap-accent);\n    background: var(--ap-accent-veil);\n    color: var(--ap-accent-dark);\n}\n\n/* The description. Hidden by DEFAULT and shown on demand, and hidden in a way\n   that leaves it readable to a screen reader: it is the badge's\n   aria-describedby target, and an accessible description is computed from the\n   referenced element whether or not it is painted. It is taken out of the\n   layout entirely (absolute) so that showing it moves not one pixel of the\n   list underneath -- a tooltip that pushes the notes down is a tooltip that\n   makes people lose their place. */\n.ap-mode-tip {\n    position: absolute;\n    z-index: 2;\n    top: calc(100% + 6px);\n    left: 0;\n    right: 0;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg-raised);\n    color: var(--ap-text);\n    box-shadow: var(--ap-shadow);\n    font-size: 12px;\n    font-weight: 400;\n    letter-spacing: normal;\n    text-transform: none;\n    line-height: 1.45;\n    opacity: 0;\n    visibility: hidden;\n    transform: translateY(-3px);\n    transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s linear 0.12s;\n    pointer-events: none;\n}\n\n/* BOTH, and the keyboard one is not the afterthought: :focus-visible is what\n   makes the sentence reachable by somebody who never touches a pointer. */\n.ap-mode-chip:hover ~ .ap-mode-tip,\n.ap-mode-chip:focus-visible ~ .ap-mode-tip {\n    opacity: 1;\n    visibility: visible;\n    transform: none;\n    transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s;\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-mode-tip {\n        transform: none;\n        transition: none;\n    }\n    .ap-mode-chip:hover ~ .ap-mode-tip,\n    .ap-mode-chip:focus-visible ~ .ap-mode-tip {\n        transition: none;\n    }\n}\n\n/* The \"a newer client exists\" line and the \"this server speaks another\n   format\" line are the same object on screen: a standing statement about what\n   one is looking at, above the notes and above the failures. One rule, so\n   they cannot drift apart -- and the second one joins it rather than\n   inventing a colour, precisely because a protocol disagreement is a fact\n   about the project, not an incident.\n\n   Deliberately NOT the alert colours: neither is a failure, and an alarm that\n   never goes away stops being read. */\n.ap-upgrade,\n.ap-format {\n    margin: 0 0 10px;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    line-height: 1.45;\n}\n\n/* ----------------------------------------------------------------------------\n   A note, and its replies.\n   ---------------------------------------------------------------------------- */\n\n.ap-note {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n}\n\n.ap-note.ap-orphan {\n    background: var(--ap-bg-soft);\n}\n\n\n.ap-note-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-note-author {\n    font-weight: 600;\n}\n\n.ap-note-date {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-note-target {\n    margin: 4px 0 0;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-text {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-actions {\n    margin-top: 8px;\n    display: flex;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-replies {\n    margin: 8px 0 0;\n    padding-left: 10px;\n    border-left: 2px solid var(--ap-border);\n}\n\n.ap-reply {\n    margin: 8px 0 0;\n}\n\n/* ----------------------------------------------------------------------------\n   The form, anchored near the element pointed at.\n   ---------------------------------------------------------------------------- */\n\n.ap-form {\n    position: fixed;\n    width: 340px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    gap: 8px;\n    padding: 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n}\n\n.ap-form.ap-open {\n    display: flex;\n}\n\n.ap-form-title {\n    font-size: 15px;\n    font-weight: 600;\n}\n\n.ap-form-target {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-label {\n    display: block;\n    margin-bottom: 3px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--ap-text-soft);\n}\n\n.ap-help {\n    margin: 3px 0 0;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n.ap-field,\n.ap-area {\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n}\n\n.ap-field:focus,\n.ap-area:focus {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n.ap-area {\n    min-height: 92px;\n    resize: vertical;\n}\n\n.ap-actions {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-counter {\n    margin-left: auto;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   Buttons.\n   ---------------------------------------------------------------------------- */\n\n.ap-primary,\n.ap-secondary,\n.ap-link {\n    border-radius: 8px;\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.ap-primary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-accent);\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-weight: 600;\n}\n\n.ap-primary:hover {\n    background: var(--ap-accent-dark);\n    border-color: var(--ap-accent-dark);\n}\n\n.ap-secondary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-border);\n    background: var(--ap-bg);\n    color: var(--ap-text);\n}\n\n.ap-secondary:hover {\n    background: var(--ap-bg-raised);\n}\n\n.ap-link {\n    padding: 2px 4px;\n    border: 0;\n    background: none;\n    color: var(--ap-accent);\n    text-decoration: underline;\n    font-size: 13px;\n}\n\n.ap-primary:disabled,\n.ap-secondary:disabled,\n.ap-link:disabled {\n    opacity: 0.6;\n    cursor: default;\n}\n\n.ap-primary:focus-visible,\n.ap-secondary:focus-visible,\n.ap-link:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The failures.\n\n   They are RED, at the top of the block concerned, and carry the message the\n   server returned as it stands: that is how a non-technical team learns that\n   its remark is not saved, instead of believing it is.\n   ---------------------------------------------------------------------------- */\n\n.ap-error {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-alert-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-alert-bg);\n    color: var(--ap-alert-text);\n}\n\n.ap-error-title {\n    font-weight: 700;\n    margin-bottom: 4px;\n}\n\n.ap-error-detail {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    font-size: 13px;\n}\n\n.ap-error .ap-link {\n    color: var(--ap-alert-text);\n}\n\n/* ----------------------------------------------------------------------------\n   Narrow: the panel takes the full width, and so does the form.\n   ---------------------------------------------------------------------------- */\n\n/* ----------------------------------------------------------------------------\n   Narrow.\n\n   DEFECT OBSERVED at 375 px wide: a panel taking the full height covers the\n   whole page, and no element can be pointed at any more -- every click lands\n   on the panel. So it becomes a bottom band, which leaves the top half of\n   the viewport free; one scrolls the page there to bring the wanted element\n   into view. The form, for its part, hides the panel while typing (see\n   notes.js): on a screen that size, writing and reading the list at the same\n   time does not hold.\n   ---------------------------------------------------------------------------- */\n\n/* On a narrow screen the panel becomes a bottom band and the form takes the\n   full width.\n\n   THE WIDTH CEILING IS KEPT, and it comes from a measured defect: \"left: 8;\n   right: 8\" sizes the element against its CONTAINING BLOCK, which the host\n   site's horizontal overflow can make wider than the visible window.\n   Measured, in mobile emulation at 390 px: the site overflows to 407 px\n   (with the tool and without it), and the panel came out 391 px wide\n   starting at 8, that is 9 px off screen. \"100vw\" is the window, not the\n   containing block: the ceiling therefore does nothing when the site does\n   not overflow, and pulls the width back when it does. */\n@media (max-width: 560px) {\n    .ap-panel {\n        top: auto;\n        right: 8px;\n        left: 8px;\n        bottom: 66px;\n        height: 52vh;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n\n    /* A band spanning the width has no side, so the choice is inert here and\n       the button says so by not being there. Offering a control that visibly\n       does nothing is worse than offering none. The stored side is untouched:\n       it is waiting for the wide screen it was chosen on. */\n    .ap-side-toggle {\n        display: none;\n    }\n\n    .ap-form {\n        left: 8px;\n        right: 8px;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-button {\n        transition: none;\n    }\n}\n\n/* The failure shows without opening the panel: the button's dot changes\n   colour. A team that does not click must be able to see that something is\n   wrong. */\n.ap-button.ap-failed .ap-button-dot {\n    background: var(--ap-alert-text);\n}\n\n.ap-button.ap-failed {\n    border-color: var(--ap-alert-border);\n}\n\n/* Signature reminder, in the note form.\n   The name was shown at the foot of the panel only: invisible at the moment\n   one writes. A user reported not knowing which name they were writing\n   under. */\n.ap-form-signature {\n    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;\n    margin: 0 0 .6rem; font-size: .85rem; opacity: .8;\n}\n\n/* Resolution state, said on the card.\n   Two cases NOT to be confused: resolved and online, resolved but not\n   deployed yet. The second keeps the defect on the reviewer's screen; hiding\n   it or announcing it as fixed would cost them their trust in the tool. */\n.ap-state-mark {\n    display: inline-block; margin: 0 0 .5rem;\n    padding: .15rem .55rem; border-radius: 4px;\n    font-size: .75rem; font-weight: 600; letter-spacing: .02em;\n}\n.ap-note.ap-resolved { opacity: .72; }\n.ap-note.ap-resolved .ap-state-mark {\n    color: var(--ap-done-ink); background: var(--ap-done-veil);\n}\n.ap-note.ap-resolved-pending .ap-state-mark {\n    color: var(--ap-pending-ink); background: var(--ap-pending-veil);\n}\n/* The \"it is fixed\" / \"reopen\" block, opened under the card. Same shape as\n   the reply block: it is the same gesture, one answers a remark. */\n.ap-resolve,\n.ap-reply-form {\n    margin-top: .6rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-border);\n}\n\n/* The question asked before the key is dropped, at the foot of the list.\n   Framed like the resolution block -- it is the same shape of gesture, one\n   answers before something changes -- and set apart from the notes above it,\n   because it is not about a note. */\n.ap-forget {\n    margin-top: 1rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-border);\n}\n\n.ap-forget .ap-actions {\n    margin-top: .5rem;\n}\n\n.ap-history-toggle {\n    display: block; width: 100%; margin: 1rem 0 .25rem;\n    padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;\n    background: none; color: inherit; font: inherit; opacity: .7; cursor: pointer;\n}\n.ap-history-toggle:hover { opacity: 1; }\n\n\n/* ----------------------------------------------------------------------------\n   Setup and pasting the salt.\n\n   These are the only screens where something is copied by hand. Everything\n   there is SELECTABLE and monospaced: a 43-character salt copied wrong\n   cannot be recovered, and nothing helps less than a font that confuses I, l\n   and 1.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel-wide {\n    width: 560px;\n}\n\n.ap-copy {\n    display: flex;\n    align-items: flex-start;\n    gap: 8px;\n    margin: 0 0 12px;\n}\n\n.ap-code {\n    flex: 1 1 auto;\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\",\n                 monospace;\n    font-size: 12.5px;\n    line-height: 1.5;\n    resize: vertical;\n    white-space: pre;\n    overflow-x: auto;\n}\n\n.ap-code:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n@media (max-width: 560px) {\n    .ap-panel-wide {\n        width: auto;\n    }\n\n    .ap-copy {\n        flex-direction: column;\n    }\n}\n";
 
     /* ==== 00-preamble.js ==== */
 
     /* -- 0. Where am I, which project, and therefore where is the API --------
-       Nothing below is guessed. Everything is DECLARED on the tag, because a
-       client served by a CDN can no longer deduce anything from its own
-       address: that address says nothing about the site under review. */
+       Nothing below is guessed. Everything is DECLARED, because a client served
+       by a CDN can no longer deduce anything from its own address: that address
+       says nothing about the site under review.
 
-    const script = document.currentScript;
-    if (!script || !script.src) {
-        /* Loaded some other way than <script src>: we do not guess an API
-           address, we stay out. Careful, this also covers type="module" --
-           document.currentScript is null there. The tag must stay a classic
-           tag, and the README says so. */
+       TWO SOURCES CAN CARRY THAT DECLARATION, and the tag is the standard one:
+
+         the tag    <script src="..." data-server="..." data-key="...">, read
+                    through document.currentScript. Everything in this repository
+                    that hands out a configuration hands out a tag.
+
+         the page   window.annotepageConfig = { server: '...', key: '...' },
+                    declared before the client is loaded.
+
+       WHY THE SECOND ONE EXISTS. document.currentScript is null whenever this
+       file was not loaded by a classic <script src>: a "combine JS" option, an
+       asset pipeline that concatenates, a bundler, type="module". Until this
+       existed the client returned here and did nothing, WITH NOTHING SAID
+       ANYWHERE -- which from the outside cannot be told apart from a tool nobody
+       installed. That silence is the defect being fixed here.
+
+       The rule of silence itself is kept, because it is a principle and not the
+       bug: this client never throws inside a host page, never draws anything it
+       was not asked for, and never writes over somebody else's console. What it
+       does now is say ONE line, ONCE, when neither source is usable -- the one
+       case where saying nothing leaves nobody anything to look at.
+
+       THE NAME. window.annotepage IS ALREADY TAKEN: annotepage.com uses it for
+       the console command that switches its own copy on and off. window.Annotepage
+       is the label namespace (15-labels). annotepageConfig is neither of those.
+
+       WHICH SOURCE WINS, AND WHY IT IS NEVER A MERGE. One of the two configures
+       this copy WHOLE. Merging them setting by setting would produce a
+       configuration that exists nowhere in one piece -- nobody reading the page
+       could say what the tool is doing -- and it is exactly how a forgotten
+       object silently changes the project of a tag somebody has just corrected.
+       So:
+
+         a tag, no object    the tag configures. This is every page that works
+                             today, unchanged, down to the ../api.php fallback.
+         an object, no tag   the object configures, and `server` is then required
+                             (see THE SERVER ADDRESS).
+         both                the tag configures, and the object MUST SAY THE SAME
+                             THING: every setting it writes has to be written on
+                             the tag, with the same value. Anything else is
+                             refused and named. Two declarations that disagree are
+                             two people who each believe they configured the tool,
+                             and picking a winner buries one of them in a project
+                             whose notes nobody will ever read -- the same reason
+                             a tag carrying a key and a mismatched id is refused
+                             rather than resolved (FORMAT.md section 1.5).
+         neither             we stay out, and we say so once in the console. */
+
+    /* THE SETTINGS, AND THE WHOLE LIST OF THEM. `data-` plus the name on a tag,
+       the name alone in the object. Documented in the client's README, and
+       client/tools/check.mjs refuses a list that has drifted from it.
+
+       An unknown name is refused IN THE OBJECT ONLY, and the asymmetry is the
+       point: a data- attribute is shared space -- the site's own scripts write
+       there, annotepage.com marks its live tag with data-annotepage-on -- while
+       window.annotepageConfig is ours alone, so a name we do not know there is a
+       typo, and a typo that is ignored is a setting somebody believes they set. */
+    const SETTINGS = ['server', 'project', 'key', 'setup', 'mode', 'path',
+        'domains', 'version', 'environment', 'labels'];
+
+    /* Not "written": 60-ui already holds a local of that name, and a helper of the
+       whole file shadowed inside one function is a reader's trap for nothing. */
+    const declaredIn = (map, name) => Object.prototype.hasOwnProperty.call(map, name);
+
+    /* WHAT THIS COPY STANDS DOWN FOR.
+
+       The sentence goes to the console in English, for whoever has the developer
+       tools open; the same fact is said on screen, in the page's language, by the
+       screen 90-boot opens -- so the label is NAMED here and resolved there,
+       because 15-labels has not been evaluated yet at this point in the file.
+
+       Never an exception, in either half: a client that throws inside somebody
+       else's page has broken that page, whatever it was right about. */
+    let CONFIG_FAILURE = null;
+
+    const complain = (sentence) => {
+        try {
+            if (window.console && window.console.warn) {
+                window.console.warn('annotepage: ' + sentence);
+            }
+        } catch (e) { /* a console that refuses to be called is not our business */ }
+    };
+
+    const refuse = (label, values, sentence) => {
+        // The FIRST cause, not the tenth: one broken setting usually makes the
+        // next three look broken too, and a screen listing four problems sends
+        // somebody fixing the three that were only consequences.
+        if (CONFIG_FAILURE) return;
+        CONFIG_FAILURE = { label: label, values: values };
+        complain(sentence);
+    };
+
+    /* -- The two sources, read separately ----------------------------------- */
+
+    /* A tag with no src carries no attributes worth reading either, and it is the
+       same non-answer as no tag at all: an inline <script> that happens to be
+       running is not where this client's settings live. */
+    const script = (document.currentScript && document.currentScript.src)
+        ? document.currentScript : null;
+    const SCRIPT_SRC = script ? script.src : '';
+
+    const declaredConfig = window.annotepageConfig;
+    const HAS_CONFIG = declaredConfig !== undefined && declaredConfig !== null;
+    if (HAS_CONFIG && (typeof declaredConfig !== 'object' || Array.isArray(declaredConfig))) {
+        refuse('tag.config_shape', null,
+            'window.annotepageConfig is not an object, so nothing could be read from '
+            + 'it. It is written { server: "...", project: "..." }.');
+    }
+
+    const isTextList = (value) => {
+        if (!Array.isArray(value)) return false;
+        for (let i = 0; i < value.length; i += 1) {
+            if (typeof value[i] !== 'string') return false;
+        }
+        return true;
+    };
+
+    /* What each source declares, as text, and whether it declares it AT ALL -- an
+       empty data-key is not the same fact as no data-key (see THE KEY below). */
+    const fromTag = {};
+    const data = (script && script.dataset) || {};
+    for (let i = 0; i < SETTINGS.length; i += 1) {
+        const name = SETTINGS[i];
+        if (declaredIn(data, name)) fromTag[name] = String(data[name]).trim();
+    }
+    /* An attribute is PRESENCE and never a value: <script data-setup> has none to
+       read. A property is a value, and `setup: false` reads as "no" to anybody
+       who writes JavaScript. Both end up as the same two words so that the two
+       sources can be compared at all. */
+    if (declaredIn(data, 'setup')) fromTag.setup = 'yes';
+
+    const fromPage = {};
+    if (HAS_CONFIG && !CONFIG_FAILURE) {
+        const names = Object.keys(declaredConfig);
+        for (let i = 0; i < names.length; i += 1) {
+            const name = names[i];
+            const value = declaredConfig[name];
+            if (SETTINGS.indexOf(name) === -1) {
+                refuse('tag.config_setting', { name: name },
+                    'window.annotepageConfig carries "' + name + '", which is not a '
+                    + 'setting of this client. Nothing was read from it.');
+            } else if (name === 'setup') {
+                fromPage.setup = value ? 'yes' : 'no';
+            } else if (typeof value === 'string') {
+                fromPage[name] = value.trim();
+            } else if (name === 'domains' && isTextList(value)) {
+                /* The tag has one string and commas, because an attribute cannot
+                   hold a list. An object can, and an array is what anybody writing
+                   one writes. Both are read; nothing else is. */
+                fromPage.domains = value.join(',');
+            } else {
+                refuse('tag.config_value', { name: name },
+                    '"' + name + '" in window.annotepageConfig has to be text between '
+                    + 'quotes. Nothing was read from it.');
+            }
+        }
+    }
+
+    /* -- And the one that configures this copy ------------------------------- */
+
+    let config = {};
+    if (script) {
+        config = fromTag;
+        const names = Object.keys(fromPage);
+        for (let i = 0; i < names.length; i += 1) {
+            const name = names[i];
+            /* `setup: false` beside a tag with no data-setup states the same fact
+               -- no setup screen -- so it is not a disagreement. It is the only
+               case where silence on one side equals a value on the other. */
+            if (name === 'setup' && fromPage.setup === 'no' && !declaredIn(fromTag, 'setup')) continue;
+            if (declaredIn(fromTag, name) && fromTag[name] === fromPage[name]) continue;
+            refuse('tag.two_sources', { name: name },
+                'the tag on this page and window.annotepageConfig disagree about "'
+                + name + '". Nothing was adopted from either: correct one of the two.');
+        }
+    } else if (HAS_CONFIG) {
+        config = fromPage;
+        /* WITHOUT A TAG THE ADDRESS IS NOT DEDUCED, IT IS REQUIRED -- and this is
+           where that has to be said, before anything is adopted. The old
+           "../api.php" deduction is relative to THE FILE, and the tag's src is
+           what made it possible; the document's own address says nothing, since
+           this file may have been concatenated into a bundle that lives anywhere
+           on the site. A remark that leaves for an address nobody chose is worse
+           than a remark that was never written: the reviewer watched it go. */
+        if (!fromPage.server) {
+            refuse('tag.config_no_server', null,
+                'window.annotepageConfig declares no "server", and without a tag there '
+                + 'is no file address to deduce one from. Nothing was sent. Add '
+                + 'server: "https://.../api.php" to it.');
+        }
+    } else {
+        /* NEITHER SOURCE. The one case where this file used to return in complete
+           silence, and the one nobody could diagnose: a page where the tool was
+           never installed and a page where a concatenation ate the tag look
+           identical from the outside. One line, once -- this file is evaluated
+           once per copy loaded -- and no exception. */
+        complain('this page carries no <script> tag this client can read its settings '
+            + 'from, and no window.annotepageConfig. document.currentScript is null '
+            + 'when the file is concatenated with others, inlined, or loaded as a '
+            + 'module. Nothing was drawn and nothing was sent. See '
+            + 'https://annotepage.com/questions.html#config');
         return;
     }
 
-    const data = script.dataset || {};
-    const read = (name) => String((data[name] === undefined ? '' : data[name])).trim();
+    /* A refusal adopts NOTHING. Half a configuration would start the tool on
+       whichever half happened to be readable, which is the guess this whole file
+       exists to avoid. 90-boot shows the reason instead. */
+    if (CONFIG_FAILURE) config = {};
 
-    /* The server address.
+    const read = (name) => (declaredIn(config, name) ? config[name] : '');
 
-       Self-hosted, the client is served by the site itself and the old
-       "../api.php" deduction is still enough: it worked for the whole life of
-       format 1, we are not removing it.
+    /* THE SERVER ADDRESS.
 
-       As soon as the client goes to a CDN it becomes wrong -- the API is not at
-       the CDN -- and it has to be declared. We do not try to recover: an API
-       address guessed wrong would send the remarks nowhere. */
+       Self-hosted WITH A TAG, the old "../api.php" deduction is still enough: it
+       worked for the whole life of format 1, we are not removing it. As soon as
+       the client goes to a CDN it becomes wrong -- the API is not at the CDN --
+       and it has to be declared. Without a tag it is required outright, which is
+       settled above, where the object is adopted.
+
+       A REFUSED CONFIGURATION BUILDS NO ADDRESS AT ALL, and the fallback is
+       inside the guard for that reason: a tag served by the site would otherwise
+       still produce ../api.php while the rest of the settings were being thrown
+       away, which is the half-configured start this file exists to prevent. */
     const DECLARED_SERVER = read('server');
     let API = '';
-    if (DECLARED_SERVER) {
-        API = new URL(DECLARED_SERVER, document.baseURI).href;
-    } else if (new URL(script.src).origin === location.origin) {
-        API = new URL('../api.php', script.src).href;
+    if (!CONFIG_FAILURE) {
+        if (DECLARED_SERVER) {
+            API = new URL(DECLARED_SERVER, document.baseURI).href;
+        } else if (script && new URL(SCRIPT_SRC).origin === location.origin) {
+            API = new URL('../api.php', SCRIPT_SRC).href;
+        }
     }
 
     /* The project id, generated at setup (see 70-setup). 22 base64url
@@ -62,24 +266,26 @@
        and a page that never shows a single note. */
     const DECLARED_PROJECT = read('project');
     const PROJECT_WELL_FORMED = /^[A-Za-z0-9_-]{22}$/.test(DECLARED_PROJECT);
-    /* NOT a const: with data-key the id is DERIVED rather than declared, and
+    /* NOT a const: with a declared key the id is DERIVED rather than declared, and
        90-boot writes it here once derive() has produced it. There is one PROJECT
        in this scope and everything downstream reads it -- two would have
        diverged. */
     let PROJECT = PROJECT_WELL_FORMED ? DECLARED_PROJECT : '';
 
-    /* THE KEY, WRITTEN IN THE TAG -- and that attribute IS the mode.
+    /* THE KEY, WRITTEN IN THE PAGE -- and that setting IS the mode. It reads the
+       same in both sources, because it is the same fact: `data-key` on the tag,
+       `key` in the object.
 
-       data-key    the key itself: the project is PUBLIC. Whoever can load the
+       key         the key itself: the project is PUBLIC. Whoever can load the
                    page can read the notes and write them. Nothing is asked for,
                    nothing is stored, and no id is declared: derive() already
                    produces it from the key (HKDF label "id"), so writing both
-                   would be writing the same fact twice in a tag people copy by
-                   hand -- where the two can disagree.
-       data-project  the id alone: confidential. The key is asked for once per
+                   would be writing the same fact twice in something people copy
+                   by hand -- where the two can disagree.
+       project     the id alone: confidential. The key is asked for once per
                    browser, and until it is there nothing is fetched and nothing
                    is decrypted. That is the behaviour of every version so far.
-       data-setup  neither, temporarily.
+       setup       neither, temporarily.
 
        THE KEY IS NOT DERIVED FROM THE DOMAIN, and it never will be. The browser
        hands the relay an Origin header on every request (FORMAT.md section 6.2),
@@ -91,13 +297,13 @@
 
        The SHAPE is not checked here: keyFromText() in 20-crypto is the single
        judge of what a key looks like, and it lives in the section that owns the
-       format. What is recorded here is whether the attribute was WRITTEN at all
-       -- an empty data-key is a tag somebody meant to fill in, and it gets said
-       rather than ignored. */
+       format. What is recorded here is whether the key was WRITTEN at all -- an
+       empty one is something somebody meant to fill in, and it gets said rather
+       than ignored. */
     const DECLARED_KEY = read('key');
-    const KEY_DECLARED = Object.prototype.hasOwnProperty.call(data, 'key');
+    const KEY_DECLARED = declaredIn(config, 'key');
 
-    /* True once the key in the tag has been checked and adopted. It is what the
+    /* True once the key in the page has been checked and adopted. It is what the
        interface says out loud, at every draw: see PUBLIC_KEY in 60-ui. */
     let PUBLIC_KEY = false;
 
@@ -114,28 +320,28 @@
 
        The path prefix is checked HERE, before anything else, and this is the
        only place where it can be: the server does not see paths (blind index,
-       FORMAT.md section 4). So it is TIDINESS -- the tag can stay at the foot of
-       every page of the site without the online documentation collecting the
-       staging notes -- and NOT a security boundary: whoever has the project id
+       FORMAT.md section 4). So it is TIDINESS -- the declaration can stay at the
+       foot of every page of the site without the online documentation collecting
+       the staging notes -- and NOT a security boundary: whoever has the project id
        and the key writes wherever they like. */
     const PATH_PREFIX = read('path');
 
     /* The project origins. The real lock is the server's (FORMAT.md section
        6.2); this one only avoids talking to a server that is going to say no,
-       for instance when the tag was copied onto another site along with the
-       rest of a template. It protects nothing: a hand-made client does not read
-       it. */
+       for instance when the declaration was copied onto another site along with
+       the rest of a template. It protects nothing: a hand-made client does not
+       read it. */
     const DOMAINS = read('domains').split(',').map((d) => d.trim()).filter(Boolean);
 
-    /* Setup screen. It opens ONLY when asked for by an attribute: without it, a
-       tag with no project does strictly nothing, like a directory copied there
-       by mistake. That is the rule of silence, applied to setup. */
-    const SETUP_REQUESTED = Object.prototype.hasOwnProperty.call(data, 'setup');
+    /* Setup screen. It opens ONLY when asked for: without it, a page with no
+       project does strictly nothing, like a directory copied there by mistake.
+       That is the rule of silence, applied to setup. */
+    const SETUP_REQUESTED = read('setup') === 'yes';
 
     /* Note-taking context, DECLARED by the host site, never guessed. A
        standalone tool cannot know how the site names its version; the site
-       does. Without these attributes the fields stay empty: an invented version
-       would send someone hunting for a defect in a build that never existed.
+       does. Without these the fields stay empty: an invented version would send
+       someone hunting for a defect in a build that never existed.
 
        The viewport size is read AT SEND TIME and not here: the person may have
        resized, or flipped their phone, between the page load and the remark.
@@ -754,6 +960,38 @@
             + 'from it -- so remove data-project, or correct whichever of the two '
             + 'is wrong.',
 
+        /* -- A configuration that cannot be used, wherever it was written --
+           The settings can also be declared in window.annotepageConfig, for the
+           pages where a tag cannot carry them -- concatenated scripts, a module,
+           an asset pipeline (00-preamble). These five say what is wrong with one,
+           and they never name a tag: whoever reads them may not have one. */
+        'tag.title_config': 'This annotepage configuration cannot be used',
+        'tag.two_sources':
+            'This page declares annotepage twice -- on the tag and in '
+            + 'window.annotepageConfig -- and the two disagree about "{name}". '
+            + 'Nothing was sent and nothing was decrypted, and the tool does not '
+            + 'pick a winner: whichever it took, somebody would have configured '
+            + 'the tool and never known it was ignored. Correct one of the two, or '
+            + 'remove it.',
+        'tag.config_no_server':
+            'The annotepage configuration on this page (window.annotepageConfig) '
+            + 'names no server address, and there is no tag to deduce one from. '
+            + 'Nothing was sent: an address guessed wrong would send the remarks '
+            + 'nowhere at all. Add server: "https://.../api.php" to it.',
+        'tag.config_setting':
+            'The annotepage configuration on this page (window.annotepageConfig) '
+            + 'carries "{name}", which is not a setting of this tool. Nothing was '
+            + 'read from it -- a setting whose name is wrong is a setting nobody '
+            + 'set. The names are the ones written on the tag, without data-.',
+        'tag.config_value':
+            'The setting "{name}" of the annotepage configuration on this page '
+            + '(window.annotepageConfig) has to be written as text, between '
+            + 'quotes. Nothing was read from it.',
+        'tag.config_shape':
+            'window.annotepageConfig on this page is not an object. It is written '
+            + 'window.annotepageConfig = { server: "...", key: "..." }, before the '
+            + 'client is loaded. Nothing was read from it.',
+
         /* -- Setup --------------------------------------------------------- */
         'setup.title': 'Install annotepage on this site',
         'setup.generate': 'Generate a key and create the project',
@@ -766,6 +1004,8 @@
         'setup.key': 'The project key -- keep it',
         'setup.project': 'The project id -- public, it goes into the page',
         'setup.tag': 'The tag to paste at the end of <body>, on the pages to annotate',
+        'setup.config': 'The configuration to declare before the client is loaded, '
+            + 'on the pages to annotate',
         'setup.server': 'To declare in the server configuration',
         'setup.copy': 'Copy',
         'setup.copied': 'Copied',
@@ -3787,6 +4027,29 @@
         return area;
     };
 
+    /* THE SAME FACTS, IN THE SHAPE THE PAGE ALREADY USES. A copy configured by
+       window.annotepageConfig (00-preamble) has no tag to copy: its address, its
+       integrity and its crossorigin belong to whatever concatenated this file, and
+       handing out a tag it did not ask for would tell the installer to undo the
+       build they deliberately have. What is handed over is the object, which is
+       the part they do own.
+
+       The key is NOT in it, exactly as it is not in the tag this screen hands out:
+       the setup screen creates a confidential project, and the key goes into the
+       block above, to be put away. */
+    const configToPaste = (id) => {
+        const lines = [];
+        if (DECLARED_SERVER) lines.push("        server: '" + DECLARED_SERVER + "'");
+        lines.push("        project: '" + id + "'");
+        if (MODE === 'plain') lines.push("        mode: 'plain'");
+        if (PATH_PREFIX) lines.push("        path: '" + PATH_PREFIX + "'");
+        return '<script>\n'
+            + '    window.annotepageConfig = {\n'
+            + lines.join(',\n') + '\n'
+            + '    };\n'
+            + '</' + 'script>';
+    };
+
     /** The exact tag to paste, with the SRI digest ACTUALLY being served. */
     const tagToPaste = (id) => {
         let t = '<script src="' + script.src + '"';
@@ -3917,7 +4180,12 @@
 
                 copyBlock(screen.body, T('setup.key'), fresh);
                 copyBlock(screen.body, T('setup.project'), derived.id);
-                copyBlock(screen.body, T('setup.tag'), tagToPaste(derived.id));
+                // Whichever way THIS copy was configured is the way the next
+                // pages will be: handing out the other one would be handing out
+                // an installation the reader has just been shown does not apply.
+                copyBlock(screen.body,
+                    script ? T('setup.tag') : T('setup.config'),
+                    script ? tagToPaste(derived.id) : configToPaste(derived.id));
                 copyBlock(screen.body, T('setup.server'), serverConfig(derived.id));
 
                 /* Only on a local machine, and only here. Not a runtime badge: a
@@ -3955,10 +4223,15 @@
 
        There is no field to correct here, and that is the difference with the
        key screen: the mistake is in the page's source, not in this browser. So
-       the screen names what has to change in the tag, and stops. */
+       the screen names what has to change, and stops.
 
-    const openTagScreen = (detail) => {
-        const screen = blockingScreen(T('tag.title'), false);
+       THE TITLE IS A PARAMETER because the mistake is not always in a tag: a page
+       can declare the same settings in window.annotepageConfig (00-preamble), and
+       telling somebody their tag is unusable when they have none sends them
+       looking for a tag to fix. */
+
+    const openTagScreen = (detail, title) => {
+        const screen = blockingScreen(title || T('tag.title'), false);
         const block = create('div', 'ap-error');
         block.setAttribute('role', 'alert');
         block.appendChild(create('p', 'ap-error-detail', detail));
@@ -4121,7 +4394,12 @@
      */
     const handOverTo = (cdn, version, onFailure) => {
         const url = officialUrl(cdn, version);
-        if (!url || handingOver) return false;
+        /* No tag, nothing to hand over: the replacement copy reads the data-
+           attributes of this one, and a copy configured by window.annotepageConfig
+           has none. The caller cannot get here -- cdnServing('') says no -- and it
+           is written anyway, because what this function does when `script` is null
+           is dereference it. */
+        if (!url || !script || handingOver) return false;
         handingOver = true;
 
         // BEFORE the new copy builds anything: its element and its listeners go
@@ -4292,7 +4570,13 @@
                      would add the dependency they deliberately removed. We say
                      it in the panel and we load nothing. */
                 const newer = first.ok ? announcedVersion(first.data) : null;
-                const cdn = newer ? cdnServing(script.src) : null;
+                /* SCRIPT_SRC is empty when this copy was configured by the page
+                   rather than by a tag (00-preamble): there is then no address to
+                   recognise, cdnServing says no, and we fall to the branch below
+                   -- which is right. Whatever concatenated this file chose where
+                   it comes from, and replacing ourselves from a CDN would undo
+                   that choice behind their back. */
+                const cdn = newer ? cdnServing(SCRIPT_SRC) : null;
                 if (cdn && handOverTo(cdn, newer, () => { proceed(first); })) return null;
                 if (newer) upgradeAvailable = newer;
 
@@ -4371,7 +4655,22 @@
         // startup like the name, not at every draw.
         side = readSide();
 
-        // Outside the project's scope: silence. So the tag can live in a
+        /* THE CONFIGURATION ITSELF IS BROKEN, and that comes before everything
+           else -- including the scope, which is one of the settings in dispute.
+           00-preamble adopted nothing, so there is no project, no key and no
+           address to act on; what there is, is a page whose source says two
+           things at once, or says one thing wrongly. It gets said out loud, on
+           the page that carries it, for the same reason a tag with a malformed
+           key does: somebody wrote that declaration on purpose, and a tool that
+           quietly does not appear is the failure nobody finds. The console
+           already has the same sentence in English (00-preamble). */
+        if (CONFIG_FAILURE) {
+            showScreen(() => openTagScreen(
+                T(CONFIG_FAILURE.label, CONFIG_FAILURE.values), T('tag.title_config')));
+            return;
+        }
+
+        // Outside the project's scope: silence. So the declaration can live in a
         // template shared by the whole site.
         if (!inScope()) return;
 
