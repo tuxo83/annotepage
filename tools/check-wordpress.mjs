@@ -167,6 +167,58 @@ if (derived) {
         derived[2] === theirs);
 }
 
+/* -- 7. The zip the site hands out IS this plugin ------------------------ */
+
+/* The site's menu offers the plugin as a zip, because the directory has not
+   accepted it yet. A zip in docs/ is a COPY, and a copy is a thing that goes
+   stale in silence: the plugin gets a fix, the page keeps offering last week's
+   archive, and the person who downloads it has no way of knowing. Exactly the
+   failure docs/annotepage-client-<version>.js has a guard for.
+ *
+ * COMPARED BY CONTENT, NOT BY BYTES, and that is not a weaker check -- it is
+ * the only correct one. A zip records a modification time per entry, so
+ * rebuilding it from identical sources produces a different file. Comparing
+ * archives would fail on a correct repository, which is the guard that gets
+ * switched off.
+ *
+ * The list of entries is checked too. `tests/` is a stubbed WordPress and
+ * `README.md` is for whoever reads the code here: neither has any business on
+ * somebody's server, and this is the only place that would notice them
+ * shipping. */
+{
+    const zips = readdirSync('docs').filter((f) => /^annotepage-wordpress-.+\.zip$/.test(f));
+    check('docs/ serves no plugin zip, and the site links to one', zips.length === 1,
+        zips.join(', ') || '(none)');
+
+    if (zips.length === 1) {
+        const served = `docs/${zips[0]}`;
+        check(`${zips[0]} does not name the declared version ${version} -- the site `
+            + 'would hand out a version nobody decided to release',
+            zips[0] === `annotepage-wordpress-${version}.zip`);
+
+        const listed = spawnSync('unzip', ['-Z1', served], { encoding: 'utf8' });
+        check(`${served} could not be read (is unzip installed?)`, listed.status === 0,
+            listed.stderr);
+
+        const entries = (listed.stdout || '').split('\n')
+            .filter((n) => n && !n.endsWith('/'));
+        const wanted = ['annotepage/annotepage.php', 'annotepage/admin.js',
+                        'annotepage/readme.txt'];
+
+        check(`${served} holds ${entries.join(', ')} -- the published plugin is `
+            + wanted.join(', '), entries.slice().sort().join() === wanted.slice().sort().join());
+
+        for (const entry of entries) {
+            const source = 'wordpress/' + entry.replace(/^annotepage\//, '');
+            if (!existsSync(source)) continue;
+            const inside = spawnSync('unzip', ['-p', served, entry], { encoding: 'buffer' });
+            check(`${entry} inside ${zips[0]} differs from ${source}. The site is `
+                + 'handing out a plugin that is not this one: rebuild the zip.',
+                inside.status === 0 && Buffer.compare(inside.stdout, readFileSync(source)) === 0);
+        }
+    }
+}
+
 /* -- Verdict ------------------------------------------------------------- */
 
 if (failures.length) {
@@ -176,5 +228,6 @@ if (failures.length) {
 console.log('wordpress: header and readme.txt agree on version, PHP and WordPress; '
     + 'every announced screenshot exists; the plugin and its admin script reach no '
     + 'network; no client code ships with it and the CDN range still floats; the '
-    + 'default relay is the documented one; the plugin runs against a stubbed '
-    + 'WordPress and the id its PHP derives is the one the mcp derives');
+    + 'default relay is the documented one; the zip the site hands out holds exactly '
+    + 'the three published files and their current content; the plugin runs against a '
+    + 'stubbed WordPress and the id its PHP derives is the one the mcp derives');
