@@ -2254,8 +2254,14 @@ return array(
 
              THE KEY STEP ONLY EXISTS IN SECURE MODE. In open mode the key is in
              the tag the assistant can read, so there is nothing to hand over,
-             and the chapter is the marker and one numbered step. The numbers
-             are counted rather than written.
+             and the chapter is one numbered step. The numbers are counted
+             rather than written.
+
+             NO "SOMEBODY ANNOTATES THE PAGE" MARKER HERE ANY MORE. It stood
+             before the last step because asking with nothing flagged returned
+             an empty export that read as a broken install; the tool now says
+             "0 open remarks to fix" in words. The home page keeps it, where it
+             tells the sequence rather than guarding against a misreading.
 
              THE LINE SAYING SO SITS UNDER THE SENTENCE IT EXPLAINS. It opened
              the chapter first, and read oddly there -- reported: "nothing to
@@ -2347,55 +2353,6 @@ return array(
                          The variables stay in the MCP for whoever runs it from
                          a script; they are not a way to install it. -->
                 </div>
-            </li>
-
-            <!-- WHAT HAS TO HAPPEN BEFORE THE LAST STEP MEANS ANYTHING, and
-                 it is not a step: nobody installing this does it, and there is
-                 nothing to show -- somebody annotating a page looks like
-                 whatever their page looks like. Asking an assistant to fix what
-                 the reviewers flagged, with nothing flagged, returns an empty
-                 export and reads as a broken install.
-
-                 The marker how-to-use-it.html puts between two steps, on the
-                 steps' own rail, taking no number: its rules moved into
-                 base.css to get here rather than being copied. Same size, same
-                 weight, same distance above and below -- and NOT the same
-                 glyph, which is what was reported and was right.
-
-                 IT CARRIED THE DEPLOY ARROW, because it was copied from the
-                 marker on the usage page, where the sentence is "You deploy the
-                 fix." and an arrow rising off a line is exactly that. Here the
-                 sentence is "somebody annotates the page", and an upload arrow
-                 says nothing about it -- it is the wrong word, in a place with
-                 room for one word.
-
-                 WHAT IT DRAWS: A REMARK, WITH SOMETHING WRITTEN IN IT. Two
-                 strokes, and they were chosen by looking rather than by
-                 reasoning -- six candidates rendered at the size this is
-                 actually drawn, 1.15em, and compared. The first try was the
-                 page this tool badges, a rectangle with the round marker on its
-                 corner: at seventeen pixels the disc merges with the corner and
-                 the whole thing reads as a FOLDER. A pencil says "edit", which
-                 is what the reader does afterwards, not what happens here. The
-                 bubble is the one that needs no learning, and the line inside
-                 it is what makes it a remark somebody wrote rather than a
-                 conversation.
-
-                 AND THE COORDINATES ARE OURS, which is the whole licence
-                 question, as for the arrow on the other page. The idea of a
-                 speech bubble belongs to nobody; a `d` copied out of an icon
-                 set carries that set's licence with it -- MIT and ISC want
-                 their notice kept, Font Awesome Free's SVGs are CC BY and want
-                 visible attribution. Nothing is copied here, so this repository
-                 owes nobody a notice. -->
-            <li class="between">
-                <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"
-                     aria-hidden="true" focusable="false">
-                    <path d="M20.5 14.4a2.6 2.6 0 0 1-2.6 2.6H9.4L4.5 20.6V6.6A2.6 2.6 0 0 1 7.1 4h10.8a2.6 2.6 0 0 1 2.6 2.6z"/>
-                    <path d="M8.8 10.4h7.4"/>
-                </svg>
-                Somebody annotates the page.
             </li>
 
             <!-- AND WHAT PLUGGED IN IS FOR, WHICH IS THE LANDING PAGE'S OWN
@@ -3130,7 +3087,7 @@ return array(
 <template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.24"
+        data-version="2026.9.25"
         defer></script></template>
 <script>
 (function () {
