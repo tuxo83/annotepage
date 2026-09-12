@@ -671,42 +671,19 @@ claude mcp add annotepage -- annotepage-mcp</pre>
             <article class="qa" data-tags="The tag on your page|Your site">
                 <h3 class="qa-q" id="language">What language does it speak?</h3>
                 <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Your site</span></p>
-                <p class="qa-a"><b>Write your notes in any language you like</b> &mdash; the
-            tool never reads them, it encrypts them. Only the tool&rsquo;s own
-            buttons and messages are a question, and they ship in <b>English and
+                <p class="qa-a"><b>Notes: any language.</b> The tool encrypts them and
+            never reads them. Its own buttons and messages ship in <b>English and
             French</b>.</p>
-                <p class="qa-a"><b>The panel follows the page.</b> A page that declares
-            <code>&lt;html lang="fr"&gt;</code> gets the French panel on its own,
-            with nothing to add: the set ships beside the client and is loaded
-            from the same CDN, at the same version your tag pinned.
-            <code>fr-CA</code> is French too &mdash; the region says which
-            French, and there is one. Every other language stays English
-            <b>and fetches nothing</b>: going to look for a file this package has
-            never published would put a 404 in the console of every page of your
-            site.</p>
-                <p class="qa-a">One attribute overrules that &mdash; it is how you force a
-            language, change a single word, or ship one nobody else has:</p>
+                <p class="qa-a"><b>The panel follows the page.</b> A page declaring
+            <code>&lt;html lang="fr"&gt;</code> (or <code>fr-CA</code>) gets it in
+            French with nothing to add, and a French WordPress already declares it.
+            Any other language stays English. The browser&rsquo;s language is
+            ignored on purpose: two people looking at one page see the same
+            panel.</p>
+                <p class="qa-a">To force a language, change a word or add your own, point
+            the tag at a label file. It always wins, and a copy of the client you
+            host yourself needs it; a label it lacks falls back on English:</p>
 <pre class="qa-code">data-labels=<b>"https://cdn.jsdelivr.net/npm/annotepage-client@2/labels/fr.js"</b></pre>
-                <p class="qa-a">A declared file always wins over the page&rsquo;s language, and
-            it is also what a site serving its own copy of the client needs: the
-            set is deduced only from a CDN address, where this package&rsquo;s own
-            layout says the file is there. Next to a copy you host yourself, we
-            would be guessing at a neighbour that is yours to arrange.</p>
-                <p class="qa-a"><b>Nothing is guessed from the browser</b>, and that is
-            deliberate: a reviewer and the colleague reading over their shoulder
-            share the page but not the browser, and two different panels in front
-            of one screen leave neither able to tell the other what to click. The
-            page says one thing to both of them, which is why it &mdash; and only
-            it &mdash; is followed. Dates have always worked this way: a French
-            page shows &ldquo;20 ao&ucirc;t&rdquo; and not &ldquo;Aug 20&rdquo;.</p>
-                <p class="qa-a">Any other language is a file of your own, in the same shape.
-            A missing label falls back on English, so a half-finished translation
-            is usable from the first line.</p>
-                <p class="qa-a"><b>The WordPress plugin needs no attribute either</b>: its
-            settings screen follows the language of the site, and a French
-            WordPress declares <code>lang="fr-FR"</code> on the page &mdash; so
-            the panel a reviewer reads follows it in the same movement.
-            <code>data-labels</code> still overrules both.</p>
             </article>
         </div>
 
