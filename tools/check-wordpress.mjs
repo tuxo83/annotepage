@@ -384,6 +384,29 @@ if (derived) {
 
     if (zips.length === 1) {
         const served = `docs/${zips[0]}`;
+        /* AND EVERY PAGE THAT OFFERS IT POINTS AT THAT NAME. The file carries
+           the version in its own name, so the day the plugin is released again
+           the file is renamed and four hand-written links in docs/ go on naming
+           a file that no longer exists -- a download that answers 404, on the
+           four pages of the site, with nothing anywhere saying so. The zip is
+           checked against the declared version just below; this checks that the
+           links were dragged along with it. */
+        const OFFERED = ['docs/index.html', 'docs/how-to-use-it.html',
+                         'docs/how-to-install-it.html', 'docs/questions.html'];
+        for (const page of OFFERED) {
+            const text = read(page);
+            const named = [...text.matchAll(/annotepage-wordpress-[\d.]+\.zip/g)]
+                .map((m) => m[0]);
+            check(`${page} offers no plugin zip at all -- it is one of the pages `
+                + 'whose Source menu hands it out', named.length > 0);
+            for (const link of new Set(named)) {
+                check(`${page} links to ${link} and the file served is ${zips[0]}. `
+                    + 'That link answers 404: the zip carries its version in its name, '
+                    + 'so a release renames it and every page naming the old one has '
+                    + 'to follow.', link === zips[0], link);
+            }
+        }
+
         check(`${zips[0]} does not name the declared version ${version} -- the site `
             + 'would hand out a version nobody decided to release',
             zips[0] === `annotepage-wordpress-${version}.zip`);
