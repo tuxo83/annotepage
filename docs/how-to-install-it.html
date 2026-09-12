@@ -2293,14 +2293,21 @@ return array(
                         <label><input type="radio" name="mcpway" id="mw-quick" checked> <span>Quick</span></label>
                         <label><input type="radio" name="mcpway" id="mw-good"> <span>For good</span></label>
                     </div>
+                    <!-- A REQUEST FROM THE HUMAN, NOT A COMMAND (note 352). In the
+                         quick way nobody types a command: the reader tells the
+                         assistant which tool to use, so what is shown is that
+                         sentence, in the same terminal crop as the last step and
+                         the home page. It names the tool and not the site (note
+                         347): the site belongs to "Then ask it". -->
                     <div class="mw-quick">
-                        <div class="snip">
-                                <button class="copy" type="button" data-copy="snip-npx" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-npx"><code><span class="tg">npx</span> <span class="op">-y -p</span> annotepage-mcp <span class="at">annotepage</span> open</code></pre>
+                        <div class="frame term">
+                            <button class="copy" type="button" data-copy="ask-quick" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+                            <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
+                            <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-quick">use npx annotepage-mcp to read the review notes</span><span class="cur"></span></div>
                         </div>
-                        <p class="say mw-note">Nothing to install. Say <b>npx</b> when you
-                        ask: your assistant runs this with the latest version, and
-                        there is nothing to update.</p>
+                        <p class="say mw-note">Nothing to install. Because you say
+                        <b>npx</b>, your assistant fetches the latest version each
+                        time, and there is nothing to update.</p>
                     </div>
                     <div class="mw-good">
                     <div class="snip">
@@ -2973,11 +2980,6 @@ return array(
            it; for good, the tools are already plugged in and the name is
            enough. */
         var quick = document.getElementById('mw-quick');
-        var askQuick = document.getElementById('ask-quick');
-        if (askQuick) {
-            askQuick.textContent =
-                'use npx annotepage-mcp to fix what the reviewers flagged on ' + site;
-        }
         askCode.textContent = (!quick || quick.checked)
             ? 'use npx annotepage-mcp to fix what the reviewers flagged on ' + site
             : 'connect to ' + site + ' with annotepage and fix what the reviewers flagged';
@@ -3186,7 +3188,7 @@ return array(
 <template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.19"
+        data-version="2026.9.20"
         defer></script></template>
 <script>
 (function () {
