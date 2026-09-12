@@ -445,14 +445,42 @@ function annotepage_switched_off( $user ) {
  * The whole front-end decision, in one place.
  */
 function annotepage_should_print() {
-	if ( '' === annotepage_tag_markup() ) {
-		return false;
-	}
 	$user = wp_get_current_user();
-	if ( annotepage_switched_off( $user ) ) {
-		return false;
+
+	if ( '' === annotepage_tag_markup() ) {
+		$decision = false;
+	} elseif ( annotepage_switched_off( $user ) ) {
+		$decision = false;
+	} else {
+		$decision = annotepage_audience_allows( $user );
 	}
-	return annotepage_audience_allows( $user );
+
+	/**
+	 * THE ONE HOOK, AND IT EXISTS FOR CONSENT.
+	 *
+	 * The tag loads a third-party script, and in public mode it writes the key
+	 * into the page. A site running a consent manager has to be able to
+	 * withdraw it for a visitor who has not agreed -- for THIS request, before
+	 * anything is written, without deactivating the plugin and without an
+	 * administrator changing a setting that would change it for everybody.
+	 * Nothing on the settings screen can express "only when this reader has
+	 * agreed", because that answer is not a stored value: it is computed per
+	 * request by code that is not ours.
+	 *
+	 * It is applied to the FINAL decision, never to an input of it, so that
+	 * turning it off always works -- whatever the audience, the mode and the
+	 * per-person switch have just concluded, this has the last word.
+	 *
+	 * It can also turn it ON for somebody the audience leaves out. That is
+	 * deliberate and it is not a hole: a filter is the site's own PHP, written
+	 * by whoever runs the site, and code that says so has taken that on
+	 * explicitly. It is not reachable from a screen, a URL or a form, so it
+	 * hands nothing to a visitor who merely asks.
+	 *
+	 * @param bool    $decision Whether the tag is about to be written.
+	 * @param WP_User $user     Who it would be written for.
+	 */
+	return (bool) apply_filters( 'annotepage_should_print', $decision, $user );
 }
 
 /* ---------------------------------------------------------------------------

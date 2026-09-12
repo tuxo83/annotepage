@@ -68,6 +68,21 @@ function add_action( $hook, $fn, $priority = 10, $args = 1 ) {
 function add_filter( $hook, $fn, $priority = 10, $args = 1 ) {
 	$GLOBALS['ap_actions'][ $hook ][] = $fn;
 }
+/* A REAL ONE. A stub that returned its own argument would let every assertion
+   about a filter pass while the plugin called nothing at all -- which is the
+   one thing those assertions exist to catch. So the registered callbacks are
+   actually run, in order, each one handed what the last one returned, with the
+   extra arguments the caller passed. */
+function apply_filters( $hook, $value ) {
+	$extra = array_slice( func_get_args(), 2 );
+	if ( empty( $GLOBALS['ap_actions'][ $hook ] ) ) {
+		return $value;
+	}
+	foreach ( $GLOBALS['ap_actions'][ $hook ] as $fn ) {
+		$value = call_user_func_array( $fn, array_merge( array( $value ), $extra ) );
+	}
+	return $value;
+}
 function register_activation_hook( $file, $fn ) {
 	$GLOBALS['ap_actions']['activate'][] = $fn;
 }
@@ -725,7 +740,55 @@ ap_as( 1 );
 ap_check( 'a server address nobody could have meant still reaches the page',
 	'' === ap_footer(), ap_footer() );
 
-/* -- 10. The derivation PHP does, for the screen to show ----------------- */
+/* -- 10. The filter a consent manager reaches for ------------------------
+ *
+ * The tag loads a third-party script and, in public mode, writes a key into
+ * the page. A consent platform has to be able to withdraw it for a reader who
+ * has not agreed, per request, without deactivating the plugin. What is proved
+ * here is that the filter is wired to the DECISION -- that turning it off
+ * really does empty the footer -- and that the plugin hands the callback what
+ * it says it hands it.
+ * ---------------------------------------------------------------------- */
+
+function ap_filter_off( $decision, $user ) {
+	$GLOBALS['ap_filter_saw'] = array( $decision, $user );
+	return false;
+}
+function ap_filter_on( $decision, $user ) {
+	return true;
+}
+
+ap_reset();
+annotepage_activate();
+ap_as( 1 );
+ap_check( 'there is no tag to withdraw here, so nothing below would prove anything',
+	'' !== ap_footer() );
+
+$GLOBALS['ap_filter_saw'] = null;
+add_filter( 'annotepage_should_print', 'ap_filter_off' );
+ap_check( 'a filter answering false left the tag in the page, so a consent '
+	. 'manager cannot withdraw it', '' === ap_footer(), ap_footer() );
+ap_check( 'the filter was never called at all', is_array( $GLOBALS['ap_filter_saw'] ) );
+ap_check( 'the filter was handed something other than the decision it is '
+	. 'meant to overrule',
+	true === $GLOBALS['ap_filter_saw'][0] );
+ap_check( 'the filter was not told who the tag would have been written for',
+	( $GLOBALS['ap_filter_saw'][1] instanceof WP_User )
+	&& 1 === (int) $GLOBALS['ap_filter_saw'][1]->ID );
+unset( $GLOBALS['ap_actions']['annotepage_should_print'] );
+ap_check( 'removing the filter did not bring the tag back', '' !== ap_footer() );
+
+/* The other direction, and it is deliberate: a filter is the site's own PHP.
+   Code that turns it on for somebody the audience leaves out has said so. */
+ap_as( 3 );
+ap_check( 'a subscriber the audience excludes already has the tag', '' === ap_footer() );
+add_filter( 'annotepage_should_print', 'ap_filter_on' );
+ap_check( 'a filter answering true could not turn it on for somebody the '
+	. 'audience leaves out', '' !== ap_footer() );
+unset( $GLOBALS['ap_actions']['annotepage_should_print'] );
+ap_as( 1 );
+
+/* -- 11. The derivation PHP does, for the screen to show ----------------- */
 
 $vector = 'UHoSPQTpSizB8GmgSaXlzoGHvxjA9_ZtgfXau7VHGts';
 ap_check( 'the project id PHP derives is not 22 base64url characters',
