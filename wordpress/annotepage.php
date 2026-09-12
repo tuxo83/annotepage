@@ -10,6 +10,8 @@
  * Author URI:        https://github.com/tuxo83
  * License:           MIT
  * License URI:       https://opensource.org/licenses/MIT
+ * Text Domain:       annotepage
+ * Domain Path:       /languages
  *
  * ---------------------------------------------------------------------------
  * IT WORKS ON ACTIVATION, WITH NOTHING TYPED. That is the first decision and
@@ -102,10 +104,40 @@
  * it. The key is drawn by this server at activation, or in the browser by
  * admin.js -- and in secure mode it never reaches PHP at all.
  *
- * The strings are English, with no translation layer, because CONVENTIONS.md
- * section 1 makes that the law for everything this project ships. The strings
- * a visitor reads are the CLIENT's, and those translate through `data-labels`,
- * which is a file belonging to the site.
+ * THE STRINGS ARE WRAPPED, AND A FRENCH SET SHIPS IN languages/.
+ *
+ * CONVENTIONS.md section 1 puts everything this project publishes in English
+ * and makes the strings somebody READS the one exception it permits. wp-admin
+ * is exactly that: an administrator who runs WordPress in French reads this
+ * screen in French, or reads half of it in English.
+ *
+ * TWO THINGS WERE MEASURED HERE rather than assumed, against WordPress 7.1 on
+ * PHP 8.3, because both are commonly stated the wrong way round:
+ *
+ *   - WHAT ACTUALLY LOADS A .mo THAT SHIPS INSIDE THE PLUGIN, which is not the
+ *     automatic loading everybody remembers. WordPress 4.6's is for the files
+ *     translate.wordpress.org installs under wp-content/languages/, and it
+ *     never looks in here. What looks in here is load_plugin_textdomain() --
+ *     and on WordPress 7.1 core calls it FOR us, out of the Domain Path header,
+ *     in _get_plugin_data_markup_translate(). Measured three ways, with the
+ *     site in French: header and no call, the screen is French; call and no
+ *     header, French; NEITHER, and it is English on the front end and in
+ *     wp-admin both -- the path then falls back to the plugin's root, where no
+ *     .mo is. So both stay. The header is what works on 7.1; the call is what
+ *     does not depend on one version's admin helper having been loaded, and
+ *     this plugin still declares `Requires at least: 5.2`, where that was not
+ *     measured.
+ *   - CALLING __() BEFORE `init` IS A NOTICE since WordPress 6.7 -- one that
+ *     names this plugin in the site's debug log. Every string here is produced
+ *     by a function hooked to wp_footer, admin_notices, admin_bar_menu,
+ *     admin_menu or admin_post_*, all of which run after init, and the load
+ *     below is on init itself. Measured with WP_DEBUG on -- front end, the
+ *     plugins screen, the settings screen, the dashboard -- the log stayed
+ *     empty, and the backtrace shows the translation being loaded just in time
+ *     from inside admin_bar_menu, which is exactly where it should be.
+ *
+ * What a VISITOR reads is still not here. Those strings belong to the client
+ * and translate through `data-labels`, a file belonging to the site.
  * ---------------------------------------------------------------------------
  */
 
@@ -159,6 +191,23 @@ define( 'ANNOTEPAGE_VERSION', '1.0.0' );
 
 /* The per-person off switch, in user meta. Absent means on. */
 define( 'ANNOTEPAGE_USER_OFF', 'annotepage_off' );
+
+/**
+ * THE TRANSLATIONS. Measured, and argued in the header: without this call a
+ * .mo sitting in this plugin's own languages/ directory is never found, on any
+ * WordPress -- the automatic loading everybody remembers is for the files
+ * translate.wordpress.org installs somewhere else entirely.
+ *
+ * ON `init`, AND THE DOMAIN IS A LITERAL. Later than plugins_loaded on purpose:
+ * WordPress 6.7 turns a translation loaded before init into a notice in the
+ * site's log, and nothing here produces a string earlier. The literal is for
+ * the tooling -- wordpress.org's scanner and tools/check-wordpress.mjs both
+ * read this file as text, and a constant would hide the domain from both.
+ */
+function annotepage_load_translations() {
+	load_plugin_textdomain( 'annotepage', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+}
+add_action( 'init', 'annotepage_load_translations' );
 
 /**
  * The stored answers, with every key present and every value of its own type.
@@ -601,31 +650,41 @@ function annotepage_audience_words( $settings = null ) {
 	$s = ( null === $settings ) ? annotepage_settings() : $settings;
 	switch ( $s['audience'] ) {
 		case 'everyone':
-			return 'everyone, visitors included';
+			return __( 'everyone, visitors included', 'annotepage' );
 		case 'signed-in':
-			return 'everybody signed in to this site';
+			return __( 'everybody signed in to this site', 'annotepage' );
 		case 'chosen':
 			$bits = array();
 			if ( ! empty( $s['roles'] ) ) {
-				$bits[] = count( $s['roles'] ) . ' role' . ( 1 === count( $s['roles'] ) ? '' : 's' );
+				/* translators: %d is how many WordPress roles are chosen. */
+				$bits[] = sprintf( _n( '%d role', '%d roles', count( $s['roles'] ), 'annotepage' ), count( $s['roles'] ) );
 			}
 			if ( ! empty( $s['people'] ) ) {
-				$bits[] = count( $s['people'] ) . ' named ' . ( 1 === count( $s['people'] ) ? 'person' : 'people' );
+				/* translators: %d is how many people are named one by one. */
+				$bits[] = sprintf( _n( '%d named person', '%d named people', count( $s['people'] ), 'annotepage' ), count( $s['people'] ) );
 			}
-			return empty( $bits ) ? 'nobody yet -- no role and no person chosen' : implode( ' and ', $bits );
+			if ( empty( $bits ) ) {
+				return __( 'nobody yet -- no role and no person chosen', 'annotepage' );
+			}
+			if ( 2 === count( $bits ) ) {
+				/* translators: 1: a count of roles, 2: a count of named people. Joins them into one phrase. */
+				return sprintf( __( '%1$s and %2$s', 'annotepage' ), $bits[0], $bits[1] );
+			}
+			return $bits[0];
 	}
-	return 'administrators';
+	return __( 'administrators', 'annotepage' );
 }
 
 function annotepage_state_line( $settings = null ) {
 	$s = ( null === $settings ) ? annotepage_settings() : $settings;
 	if ( '' === annotepage_tag_markup() ) {
 		if ( '' === $s['server'] ) {
-			return 'Nothing is written: there is no server address.';
+			return __( 'Nothing is written: there is no server address.', 'annotepage' );
 		}
-		return 'Nothing is written: this mode has no credential to put in the page.';
+		return __( 'Nothing is written: this mode has no credential to put in the page.', 'annotepage' );
 	}
-	return 'Written on every page, for ' . annotepage_audience_words( $s ) . '.';
+	/* translators: %s is who the tag is written for, e.g. "administrators". */
+	return sprintf( __( 'Written on every page, for %s.', 'annotepage' ), annotepage_audience_words( $s ) );
 }
 
 /* ---------------------------------------------------------------------------
@@ -662,7 +721,8 @@ function annotepage_admin_bar( $bar ) {
 
 	$bar->add_node( array(
 		'id'    => 'annotepage',
-		'title' => 'annotepage' . ( $here ? '' : ' (off)' ),
+		/* translators: %s is the plugin's own name, which is a name and is not translated. */
+		'title' => $here ? 'annotepage' : sprintf( __( '%s (off)', 'annotepage' ), 'annotepage' ),
 		'href'  => $admin ? admin_url( 'options-general.php?page=' . ANNOTEPAGE_PAGE ) : false,
 		'meta'  => array( 'title' => annotepage_state_line( $s ) ),
 	) );
@@ -678,7 +738,7 @@ function annotepage_admin_bar( $bar ) {
 		$bar->add_node( array(
 			'id'     => 'annotepage-switch',
 			'parent' => 'annotepage',
-			'title'  => $off ? 'Turn it back on for me' : 'Turn it off for me',
+			'title'  => $off ? __( 'Turn it back on for me', 'annotepage' ) : __( 'Turn it off for me', 'annotepage' ),
 			'href'   => wp_nonce_url(
 				add_query_arg(
 					array(
@@ -696,7 +756,7 @@ function annotepage_admin_bar( $bar ) {
 		$bar->add_node( array(
 			'id'     => 'annotepage-settings',
 			'parent' => 'annotepage',
-			'title'  => 'Settings',
+			'title'  => __( 'Settings', 'annotepage' ),
 			'href'   => admin_url( 'options-general.php?page=' . ANNOTEPAGE_PAGE ),
 		) );
 	}
@@ -718,7 +778,7 @@ function annotepage_current_url() {
 function annotepage_switch() {
 	$user = wp_get_current_user();
 	if ( ! $user->exists() ) {
-		wp_die( 'This switch is remembered per person, so it needs an account.', '', array( 'response' => 403 ) );
+		wp_die( esc_html__( 'This switch is remembered per person, so it needs an account.', 'annotepage' ), '', array( 'response' => 403 ) );
 	}
 	check_admin_referer( 'annotepage_switch' );
 
@@ -765,27 +825,42 @@ function annotepage_greeting() {
 	?>
 	<div class="notice notice-<?php echo $loud ? 'warning' : 'success'; ?>">
 		<p>
-			<strong>annotepage is on.</strong>
+			<strong><?php esc_html_e( 'annotepage is on.', 'annotepage' ); ?></strong>
 			<?php echo esc_html( annotepage_state_line( $s ) ); ?>
-			Open any page of the site and the button is at the bottom right.
+			<?php esc_html_e( 'Open any page of the site and the button is at the bottom right.', 'annotepage' ); ?>
 		</p>
 		<p>
-			It drew a key and pointed at
-			<code><?php echo esc_html( $s['server'] ); ?></code> so that there was
-			nothing to fill in first. The notes are encrypted in the browser before
-			they leave it, and that server cannot read one.
+			<?php
+			printf(
+				/* translators: %s is the address of the notes server, shown inside a code element. */
+				esc_html__( 'It drew a key and pointed at %s so that there was nothing to fill in first. The notes are encrypted in the browser before they leave it, and that server cannot read one.', 'annotepage' ),
+				'<code>' . esc_html( $s['server'] ) . '</code>'
+			);
+			?>
 			<?php if ( $loud ) : ?>
-				<strong>The key is in the page and the page is public:</strong>
-				anybody who opens it can read these notes and write them.
+				<?php
+				printf(
+					/* translators: 1: an opening strong tag, 2: the closing one. */
+					esc_html__( '%1$sThe key is in the page and the page is public:%2$s anybody who opens it can read these notes and write them.', 'annotepage' ),
+					'<strong>',
+					'</strong>'
+				);
+				?>
 			<?php else : ?>
-				The key is in the page, so whoever is shown the tool can read the
-				notes <em>and write them</em> &mdash; which is why it starts with
-				<?php echo esc_html( annotepage_audience_words( $s ) ); ?>.
+				<?php
+				printf(
+					/* translators: 1: an opening em tag, 2: the closing one, 3: who the tool is shown to, e.g. "administrators". */
+					esc_html__( 'The key is in the page, so whoever is shown the tool can read the notes %1$sand write them%2$s &mdash; which is why it starts with %3$s.', 'annotepage' ),
+					'<em>',
+					'</em>',
+					esc_html( annotepage_audience_words( $s ) )
+				);
+				?>
 			<?php endif; ?>
 		</p>
 		<p>
-			<a href="<?php echo esc_url( $settings ); ?>" class="button button-primary">Settings</a>
-			<a href="<?php echo esc_url( $dismiss ); ?>" class="button">Dismiss</a>
+			<a href="<?php echo esc_url( $settings ); ?>" class="button button-primary"><?php esc_html_e( 'Settings', 'annotepage' ); ?></a>
+			<a href="<?php echo esc_url( $dismiss ); ?>" class="button"><?php esc_html_e( 'Dismiss', 'annotepage' ); ?></a>
 		</p>
 	</div>
 	<?php
@@ -811,7 +886,8 @@ add_action( 'admin_init', 'annotepage_dismiss' );
 function annotepage_row_links( $links ) {
 	array_unshift(
 		$links,
-		'<a href="' . esc_url( admin_url( 'options-general.php?page=' . ANNOTEPAGE_PAGE ) ) . '">Settings</a>'
+		'<a href="' . esc_url( admin_url( 'options-general.php?page=' . ANNOTEPAGE_PAGE ) ) . '">'
+			. esc_html__( 'Settings', 'annotepage' ) . '</a>'
 	);
 	return $links;
 }
@@ -1010,7 +1086,7 @@ function annotepage_people_from_text( $typed, &$unknown ) {
  */
 function annotepage_save() {
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( 'You are not allowed to change these settings.', '', array( 'response' => 403 ) );
+		wp_die( esc_html__( 'You are not allowed to change these settings.', 'annotepage' ), '', array( 'response' => 403 ) );
 	}
 	check_admin_referer( 'annotepage_save' );
 
@@ -1131,12 +1207,12 @@ add_action( 'admin_post_annotepage_save', 'annotepage_save' );
    a URL, so nothing that arrived in a URL is ever printed. */
 function annotepage_notice_text( $key ) {
 	$all = array(
-		'saved'       => 'Saved. The tag below is what this site now carries.',
-		'incomplete'  => 'Saved, and the tag is NOT being written: it needs a server address and a key.',
-		'wide-open'   => 'Saved. The key is now in a page every visitor can open, so every visitor can read these notes and write them.',
-		'bad-server'  => 'Nothing was saved: the server address must be a full http:// or https:// URL.',
-		'bad-key'     => 'Nothing was saved: a key is 43 characters. Paste one, or use the button to draw one.',
-		'bad-project' => 'Nothing was saved: a project id is 22 characters. Paste one, or draw a key and let it derive.',
+		'saved'       => __( 'Saved. The tag below is what this site now carries.', 'annotepage' ),
+		'incomplete'  => __( 'Saved, and the tag is NOT being written: it needs a server address and a key.', 'annotepage' ),
+		'wide-open'   => __( 'Saved. The key is now in a page every visitor can open, so every visitor can read these notes and write them.', 'annotepage' ),
+		'bad-server'  => __( 'Nothing was saved: the server address must be a full http:// or https:// URL.', 'annotepage' ),
+		'bad-key'     => __( 'Nothing was saved: a key is 43 characters. Paste one, or use the button to draw one.', 'annotepage' ),
+		'bad-project' => __( 'Nothing was saved: a project id is 22 characters. Paste one, or draw a key and let it derive.', 'annotepage' ),
 	);
 	return isset( $all[ $key ] ) ? $all[ $key ] : '';
 }
@@ -1178,9 +1254,13 @@ function annotepage_render() {
 				<?php endif; ?>
 				<?php if ( ! empty( $unknown ) ) : ?>
 					<p>
-						This site has no account for
-						<code><?php echo esc_html( implode( ', ', $unknown ) ); ?></code>,
-						so nobody was added for that name.
+						<?php
+						printf(
+							/* translators: %s is the list of names that matched no account, inside a code element. */
+							esc_html__( 'This site has no account for %s, so nobody was added for that name.', 'annotepage' ),
+							'<code>' . esc_html( implode( ', ', $unknown ) ) . '</code>'
+						);
+						?>
 					</p>
 				<?php endif; ?>
 			</div>
@@ -1188,36 +1268,47 @@ function annotepage_render() {
 
 		<p>
 			<strong><?php echo esc_html( annotepage_state_line( $s ) ); ?></strong>
-			This screen writes one script tag at the foot of the page. It installs
-			nothing else: the tool itself is served from a CDN and updates on its
-			own.
+			<?php esc_html_e( 'This screen writes one script tag at the foot of the page. It installs nothing else: the tool itself is served from a CDN and updates on its own.', 'annotepage' ); ?>
 		</p>
 
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ap-form">
 			<input type="hidden" name="action" value="annotepage_save">
 			<?php wp_nonce_field( 'annotepage_save' ); ?>
 
-			<h2>Who sees it</h2>
+			<h2><?php esc_html_e( 'Who sees it', 'annotepage' ); ?></h2>
 			<table class="form-table" role="presentation">
 				<tr>
-					<th scope="row">Shown to</th>
+					<th scope="row"><?php esc_html_e( 'Shown to', 'annotepage' ); ?></th>
 					<td>
 						<fieldset id="ap-audience">
 							<label style="display:block;margin-bottom:6px;">
 								<input type="radio" name="ap_audience" value="admins"
 									<?php checked( 'admins', $s['audience'] ); ?>>
-								<strong>Administrators</strong> &mdash; where a fresh
-								install starts.
+								<?php
+								printf(
+									/* translators: 1: an opening strong tag, 2: the closing one. */
+									esc_html__( '%1$sAdministrators%2$s &mdash; where a fresh install starts.', 'annotepage' ),
+									'<strong>',
+									'</strong>'
+								);
+								?>
 							</label>
 							<label style="display:block;margin-bottom:6px;">
 								<input type="radio" name="ap_audience" value="signed-in"
 									<?php checked( 'signed-in', $s['audience'] ); ?>>
-								<strong>Everybody signed in</strong> to this site.
+								<?php
+								printf(
+									/* translators: 1: an opening strong tag, 2: the closing one. */
+									esc_html__( '%1$sEverybody signed in%2$s to this site.', 'annotepage' ),
+									'<strong>',
+									'</strong>'
+								);
+								?>
 							</label>
 							<label style="display:block;margin-bottom:6px;">
 								<input type="radio" name="ap_audience" value="chosen" id="ap-audience-chosen"
 									<?php checked( 'chosen', $s['audience'] ); ?>>
-								<strong>These roles, and these people.</strong>
+								<strong><?php esc_html_e( 'These roles, and these people.', 'annotepage' ); ?></strong>
 							</label>
 
 							<div id="ap-chosen" style="margin:0 0 10px 24px;">
@@ -1232,23 +1323,18 @@ function annotepage_render() {
 									<?php endforeach; ?>
 								</p>
 								<p style="margin:4px 0;">
-									<label for="ap-people">And these people, by username or email, one per line or separated by commas:</label><br>
+									<label for="ap-people"><?php esc_html_e( 'And these people, by username or email, one per line or separated by commas:', 'annotepage' ); ?></label><br>
 									<textarea name="ap_people" id="ap-people" rows="2" class="large-text code"
-										placeholder="jo, sam@example.com"><?php echo esc_textarea( implode( ', ', annotepage_people_logins( $s['people'] ) ) ); ?></textarea>
+										placeholder="<?php echo esc_attr__( 'jo, sam@example.com', 'annotepage' ); ?>"><?php echo esc_textarea( implode( ', ', annotepage_people_logins( $s['people'] ) ) ); ?></textarea>
 								</p>
 							</div>
 
 							<label style="display:block;">
 								<input type="radio" name="ap_audience" value="everyone" id="ap-audience-everyone"
 									<?php checked( 'everyone', $s['audience'] ); ?>>
-								<strong>Everyone, visitors included.</strong>
+								<strong><?php esc_html_e( 'Everyone, visitors included.', 'annotepage' ); ?></strong>
 								<span class="description" style="display:block;margin-left:24px;">
-									On a public page in public mode this hands the key to
-									anybody who opens it, and the key is write access:
-									they can read every note and add their own. It is a
-									real answer on a site behind a login, a VPN or an IP
-									allowlist &mdash; and on a site that is genuinely open,
-									secure mode below is the pairing that survives it.
+									<?php esc_html_e( 'On a public page in public mode this hands the key to anybody who opens it, and the key is write access: they can read every note and add their own. It is a real answer on a site behind a login, a VPN or an IP allowlist &mdash; and on a site that is genuinely open, secure mode below is the pairing that survives it.', 'annotepage' ); ?>
 								</span>
 							</label>
 						</fieldset>
@@ -1256,86 +1342,112 @@ function annotepage_render() {
 						<div id="ap-wide" class="notice notice-warning inline"
 							style="margin:12px 0 0;padding:8px 12px;<?php echo $loud ? '' : 'display:none;'; ?>">
 							<p style="margin:0.4em 0;">
-								<strong>Everyone, with the key in the page.</strong>
-								Every visitor to this site can read these notes and write
-								them, and somebody who copies the tag out of your page
-								source can write into them from anywhere. Sound behind a
-								login or a VPN. Worth a second thought on a public site.
+								<?php
+								printf(
+									/* translators: 1: an opening strong tag, 2: the closing one. */
+									esc_html__( '%1$sEveryone, with the key in the page.%2$s Every visitor to this site can read these notes and write them, and somebody who copies the tag out of your page source can write into them from anywhere. Sound behind a login or a VPN. Worth a second thought on a public site.', 'annotepage' ),
+									'<strong>',
+									'</strong>'
+								);
+								?>
 							</p>
 						</div>
 					</td>
 				</tr>
 			</table>
 
-			<h2>Where the notes go</h2>
+			<h2><?php esc_html_e( 'Where the notes go', 'annotepage' ); ?></h2>
 			<table class="form-table" role="presentation">
 				<tr>
-					<th scope="row"><label for="ap-server">Server address</label></th>
+					<th scope="row"><label for="ap-server"><?php esc_html_e( 'Server address', 'annotepage' ); ?></label></th>
 					<td>
 						<input name="ap_server" id="ap-server" type="url" class="regular-text code"
 							value="<?php echo esc_attr( $s['server'] ); ?>"
 							placeholder="<?php echo esc_attr( ANNOTEPAGE_DEFAULT_SERVER ); ?>">
 						<p class="description">
-							The address of <code>api.php</code> &mdash; the shared
-							relay, filled in at activation, or your own install. The
-							client is served from a CDN and cannot guess it.
+							<?php
+							printf(
+								/* translators: %s is the file name api.php, inside a code element. */
+								esc_html__( 'The address of %s &mdash; the shared relay, filled in at activation, or your own install. The client is served from a CDN and cannot guess it.', 'annotepage' ),
+								'<code>api.php</code>'
+							);
+							?>
 						</p>
 					</td>
 				</tr>
 
 				<tr>
-					<th scope="row"><label for="ap-version">Version</label></th>
+					<th scope="row"><label for="ap-version"><?php esc_html_e( 'Version', 'annotepage' ); ?></label></th>
 					<td>
 						<input name="ap_version" id="ap-version" type="text" class="regular-text code"
 							value="<?php echo esc_attr( $s['version'] ); ?>"
 							placeholder="2026.9.5">
 						<p class="description">
-							Optional, and left empty it is not written at all. It
-							is what lets a resolved note say &ldquo;fixed and
-							online&rdquo; rather than &ldquo;fixed, not deployed
-							yet&rdquo; &mdash; the second stays on the
-							reviewer&rsquo;s screen, because the defect still is.
-							Whatever your site calls its version; nothing here
-							invents one.
+							<?php esc_html_e( 'Optional, and left empty it is not written at all. It is what lets a resolved note say &ldquo;fixed and online&rdquo; rather than &ldquo;fixed, not deployed yet&rdquo; &mdash; the second stays on the reviewer&rsquo;s screen, because the defect still is. Whatever your site calls its version; nothing here invents one.', 'annotepage' ); ?>
 						</p>
 					</td>
 				</tr>
 			</table>
 
-			<h2>The key</h2>
+			<h2><?php esc_html_e( 'The key', 'annotepage' ); ?></h2>
 			<p class="description" style="max-width:46em;">
-				The key <em>is</em> the project: the same key on two sites is one set
-				of notes, and a different key is a different set. Draw one, or paste
-				the one another environment already uses &mdash; dev, staging and
-				production sharing a key share the notes of the same path, because a
-				page is found by its path and not by its domain.
+				<?php
+				printf(
+					/* translators: 1: an opening em tag, 2: the closing one. */
+					esc_html__( 'The key %1$sis%2$s the project: the same key on two sites is one set of notes, and a different key is a different set. Draw one, or paste the one another environment already uses &mdash; dev, staging and production sharing a key share the notes of the same path, because a page is found by its path and not by its domain.', 'annotepage' ),
+					'<em>',
+					'</em>'
+				);
+				?>
 			</p>
 
 			<table class="form-table" role="presentation">
 				<tr>
-					<th scope="row">Mode</th>
+					<th scope="row"><?php esc_html_e( 'Mode', 'annotepage' ); ?></th>
 					<td>
 						<fieldset>
 							<label style="display:block;margin-bottom:8px;">
 								<input type="radio" name="ap_mode" value="open" id="ap-mode-open"
 									<?php checked( 'open', $s['mode'] ); ?>>
-								<strong>The key is in the page.</strong> Nobody is asked
-								for anything.
+								<?php
+								printf(
+									/* translators: 1: an opening strong tag, 2: the closing one. */
+									esc_html__( '%1$sThe key is in the page.%2$s Nobody is asked for anything.', 'annotepage' ),
+									'<strong>',
+									'</strong>'
+								);
+								?>
 								<span class="description" style="display:block;margin-left:24px;">
-									Whoever is shown the tool can read these notes
-									<strong>and write them</strong>; there is no
-									reader-only role.
+									<?php
+									printf(
+										/* translators: 1: an opening strong tag, 2: the closing one. */
+										esc_html__( 'Whoever is shown the tool can read these notes %1$sand write them%2$s; there is no reader-only role.', 'annotepage' ),
+										'<strong>',
+										'</strong>'
+									);
+									?>
 								</span>
 							</label>
 							<label style="display:block;">
 								<input type="radio" name="ap_mode" value="secure" id="ap-mode-secure"
 									<?php checked( 'secure', $s['mode'] ); ?>>
-								<strong>Only the project id is in the page.</strong> Each
-								reviewer pastes the key once, in their own browser.
+								<?php
+								printf(
+									/* translators: 1: an opening strong tag, 2: the closing one. */
+									esc_html__( '%1$sOnly the project id is in the page.%2$s Each reviewer pastes the key once, in their own browser.', 'annotepage' ),
+									'<strong>',
+									'</strong>'
+								);
+								?>
 								<span class="description" style="display:block;margin-left:24px;">
-									WordPress does not store it and the server never
-									receives it. <strong>Lose it and the notes are
-									gone</strong>: there is no recovery and no rotation.
+									<?php
+									printf(
+										/* translators: 1: an opening strong tag, 2: the closing one. */
+										esc_html__( 'WordPress does not store it and the server never receives it. %1$sLose it and the notes are gone%2$s: there is no recovery and no rotation.', 'annotepage' ),
+										'<strong>',
+										'</strong>'
+									);
+									?>
 								</span>
 							</label>
 						</fieldset>
@@ -1343,50 +1455,67 @@ function annotepage_render() {
 				</tr>
 
 				<tr>
-					<th scope="row"><label for="ap-key">Key</label></th>
+					<th scope="row"><label for="ap-key"><?php esc_html_e( 'Key', 'annotepage' ); ?></label></th>
 					<td>
 						<input name="ap_key" id="ap-key" type="text" class="large-text code"
 							autocomplete="off" spellcheck="false"
 							value="<?php echo esc_attr( $s['key'] ); ?>"
-							placeholder="43 characters, or empty">
+							placeholder="<?php echo esc_attr__( '43 characters, or empty', 'annotepage' ); ?>">
 						<p>
 							<button type="button" class="button" id="ap-generate">
-								<?php echo $has ? 'Draw a new key' : 'Draw a key'; ?>
+								<?php echo esc_html( $has ? __( 'Draw a new key', 'annotepage' ) : __( 'Draw a key', 'annotepage' ) ); ?>
 							</button>
 							<span id="ap-state" class="description" style="margin-left:8px;">
 								<?php
 								if ( 'secure' === $s['mode'] && '' !== $s['project'] ) {
-									echo 'Project <code>' . esc_html( $s['project'] ) . '</code>. The key is not stored here.';
+									printf(
+										/* translators: %s is the project id, inside a code element. */
+										esc_html__( 'Project %s. The key is not stored here.', 'annotepage' ),
+										'<code>' . esc_html( $s['project'] ) . '</code>'
+									);
 								} elseif ( '' !== $id ) {
-									echo 'Project <code>' . esc_html( $id ) . '</code>.';
+									printf(
+										/* translators: %s is the project id, inside a code element. */
+										esc_html__( 'Project %s.', 'annotepage' ),
+										'<code>' . esc_html( $id ) . '</code>'
+									);
 								} else {
-									echo 'None yet.';
+									esc_html_e( 'None yet.', 'annotepage' );
 								}
 								?>
 							</span>
 						</p>
 						<p class="description">
-							Drawn in <em>this</em> browser, by the same computation the
-							install page and the tool itself run. Nothing is sent
-							anywhere to obtain it. A new key is a new project:
-							<strong>the notes written under the old one stay where they
-							are</strong> &mdash; nothing is deleted &mdash; and this
-							site stops showing them.
+							<?php
+							printf(
+								/* translators: 1: an opening em tag, 2: the closing one, 3: an opening strong tag, 4: the closing one. */
+								esc_html__( 'Drawn in %1$sthis%2$s browser, by the same computation the install page and the tool itself run. Nothing is sent anywhere to obtain it. A new key is a new project: %3$sthe notes written under the old one stay where they are%4$s &mdash; nothing is deleted &mdash; and this site stops showing them.', 'annotepage' ),
+								'<em>',
+								'</em>',
+								'<strong>',
+								'</strong>'
+							);
+							?>
 						</p>
 
 						<div id="ap-once" style="display:none;">
 							<div class="notice notice-warning inline" style="margin:12px 0 0;padding:8px 12px;">
 								<p style="margin:0.4em 0;">
-									<strong>Copy this now.</strong> In this mode it is not
-									sent to WordPress and not stored anywhere. This is the
-									only time it will be shown.
+									<?php
+									printf(
+										/* translators: 1: an opening strong tag, 2: the closing one. */
+										esc_html__( '%1$sCopy this now.%2$s In this mode it is not sent to WordPress and not stored anywhere. This is the only time it will be shown.', 'annotepage' ),
+										'<strong>',
+										'</strong>'
+									);
+									?>
 								</p>
 								<p style="margin:0.4em 0;">
 									<code id="ap-once-key" style="user-select:all;"></code>
 								</p>
 								<p style="margin:0.4em 0;">
 									<label>
-										<input type="checkbox" id="ap-kept"> I have copied it
+										<input type="checkbox" id="ap-kept"> <?php esc_html_e( 'I have copied it', 'annotepage' ); ?>
 									</label>
 								</p>
 							</div>
@@ -1395,37 +1524,38 @@ function annotepage_render() {
 				</tr>
 
 				<tr id="ap-project-row">
-					<th scope="row"><label for="ap-project">Project id</label></th>
+					<th scope="row"><label for="ap-project"><?php esc_html_e( 'Project id', 'annotepage' ); ?></label></th>
 					<td>
 						<input name="ap_project" id="ap-project" type="text" class="regular-text code"
 							autocomplete="off" spellcheck="false"
 							value="<?php echo esc_attr( $s['project'] ); ?>"
-							placeholder="22 characters">
+							placeholder="<?php echo esc_attr__( '22 characters', 'annotepage' ); ?>">
 						<p class="description">
-							What goes in the page when the key does not. It is derived
-							from the key, so pasting a key above fills it in &mdash; and
-							pasting an id here alone points this site at a project whose
-							key its reviewers already hold.
+							<?php esc_html_e( 'What goes in the page when the key does not. It is derived from the key, so pasting a key above fills it in &mdash; and pasting an id here alone points this site at a project whose key its reviewers already hold.', 'annotepage' ); ?>
 						</p>
 					</td>
 				</tr>
 			</table>
 
-			<?php submit_button( 'Save', 'primary', 'submit', true, array( 'id' => 'ap-save' ) ); ?>
+			<?php submit_button( __( 'Save', 'annotepage' ), 'primary', 'submit', true, array( 'id' => 'ap-save' ) ); ?>
 		</form>
 
-		<h2>The tag on your pages</h2>
+		<h2><?php esc_html_e( 'The tag on your pages', 'annotepage' ); ?></h2>
 		<?php if ( '' !== $markup ) : ?>
 			<p class="description">
-				Written by this plugin at the end of <code>&lt;body&gt;</code>, for
-				<?php echo esc_html( annotepage_audience_words( $s ) ); ?>. There is
-				nothing to paste.
+				<?php
+				printf(
+					/* translators: 1: the word body inside a code element, 2: who the tag is written for, e.g. "administrators". */
+					esc_html__( 'Written by this plugin at the end of %1$s, for %2$s. There is nothing to paste.', 'annotepage' ),
+					'<code>&lt;body&gt;</code>',
+					esc_html( annotepage_audience_words( $s ) )
+				);
+				?>
 			</p>
 			<pre class="code" style="overflow:auto;padding:12px;background:#f6f7f7;border:1px solid #dcdcde;"><code><?php echo esc_html( $markup ); ?></code></pre>
 		<?php else : ?>
 			<p>
-				Nothing is written yet. The tag needs a server address, and a key or a
-				project id.
+				<?php esc_html_e( 'Nothing is written yet. The tag needs a server address, and a key or a project id.', 'annotepage' ); ?>
 			</p>
 		<?php endif; ?>
 	</div>

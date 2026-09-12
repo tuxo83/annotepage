@@ -89,6 +89,35 @@ The six attributes that get no field -- `data-setup`, `data-mode`, `data-path`,
 `annotepage.php`, above the settings screen. A setting nobody will touch is a
 setting too many.
 
+## The screen translates, and the French set is whole
+
+`Text Domain: annotepage` — the slug, which is wordpress.org's rule and not a
+choice — and every string an administrator reads goes through `__()` in that
+domain. What a *visitor* reads is still the client's, and translates through
+`data-labels`.
+
+`languages/fr_FR.json` is the source, one line per string. The `.pot` a
+translator is handed and the `.mo` WordPress reads are **generated** from it and
+from the PHP by `tools/build-wordpress-languages.mjs` — in Node, with no
+dependency, because neither `xgettext` nor `msgfmt` is something this repository
+is allowed to need. Change a string, run it again. It is the same arrangement as
+`client/labels/fr.json`: one readable source, one generated file, and a check
+that they agree.
+
+`tools/check-wordpress.mjs` refuses five things: a displayed string that reaches
+the page without passing through a translation call, a call in some other
+domain, a generated file that is not what its source makes, a French set that
+covers less than every string, and a sentence copied across from the English
+word for word — which no count of covered strings can tell from a translation.
+**100% is the rule and not a target** — a half-translated screen looks like a
+decision somebody made, and nothing anywhere raises an error. `tests/run.php` reads the shipped `.mo` for itself and
+renders the whole screen in both languages, so a string that is present and
+still does not arrive is a failure too.
+
+Two things about *loading* a translation were measured against WordPress 7.1
+rather than assumed, and are written down in the plugin header beside the code
+that answers them.
+
 ## The derivation is checked, not asserted
 
 `tools/check-landing-derivation.mjs` extracts the derivation block from

@@ -113,14 +113,19 @@ function delete_transient( $name ) {
 function wp_parse_url( $url, $component = -1 ) {
 	return parse_url( $url, $component );
 }
+/* NOT DOUBLE-ENCODED, which is WordPress's own behaviour and not a shortcut:
+   esc_html( 'a &mdash; b' ) comes back with the entity intact -- measured
+   against WordPress 7.1. The screen's sentences carry &mdash;, &ldquo; and
+   &rsquo;, and a stub that encoded the ampersand would show them as literal
+   text here while the real WordPress printed a dash. */
 function esc_html( $t ) {
-	return htmlspecialchars( (string) $t, ENT_QUOTES, 'UTF-8' );
+	return htmlspecialchars( (string) $t, ENT_QUOTES, 'UTF-8', false );
 }
 function esc_attr( $t ) {
-	return htmlspecialchars( (string) $t, ENT_QUOTES, 'UTF-8' );
+	return htmlspecialchars( (string) $t, ENT_QUOTES, 'UTF-8', false );
 }
 function esc_textarea( $t ) {
-	return htmlspecialchars( (string) $t, ENT_QUOTES, 'UTF-8' );
+	return htmlspecialchars( (string) $t, ENT_QUOTES, 'UTF-8', false );
 }
 /* WordPress drops a URL whose scheme is not allowed, and returns ''. The whole
    point of the plugin's `typed` versus `server` distinction depends on that
@@ -148,6 +153,107 @@ function sanitize_textarea_field( $t ) {
 }
 function sanitize_key( $t ) {
 	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $t ) );
+}
+
+/* -------------------------------------------------------------------------
+ * TRANSLATION, IMPLEMENTED AND NOT STUBBED.
+ *
+ * A __() that returned its argument would let every assertion in this file pass
+ * against a plugin that had lost its text domain, or that shipped a .mo with a
+ * hole in it -- which is the whole of what there is to catch here. So the .mo
+ * this plugin ships is read, by the format's own rules, and the lookup honours
+ * the domain: a string asked for under another one comes back untranslated,
+ * exactly as WordPress leaves it.
+ * ---------------------------------------------------------------------- */
+
+$GLOBALS['ap_l10n']   = array();
+$GLOBALS['ap_locale'] = 'fr_FR';
+$GLOBALS['ap_asked']  = array();
+
+/* The binary format: a magic number that also says which way round the integers
+   are, a count, and two tables of (length, offset) into one run of bytes --
+   originals, then translations. A plural entry is a single original holding
+   "singular\0plural", and its translation holds the forms the same way. */
+function ap_read_mo( $path ) {
+	$raw = (string) file_get_contents( $path );
+	if ( strlen( $raw ) < 28 ) {
+		return array();
+	}
+	$magic = unpack( 'V', substr( $raw, 0, 4 ) )[1];
+	if ( 0x950412de !== $magic ) {
+		return array();
+	}
+	$head = unpack( 'Vrevision/Vcount/Voriginals/Vtranslations', substr( $raw, 4, 16 ) );
+	$out  = array();
+	for ( $i = 0; $i < $head['count']; $i++ ) {
+		$o = unpack( 'Vlength/Voffset', substr( $raw, $head['originals'] + $i * 8, 8 ) );
+		$t = unpack( 'Vlength/Voffset', substr( $raw, $head['translations'] + $i * 8, 8 ) );
+		$out[ substr( $raw, $o['offset'], $o['length'] ) ] = substr( $raw, $t['offset'], $t['length'] );
+	}
+	return $out;
+}
+
+/* WordPress joins the third argument onto WP_PLUGIN_DIR. There is no plugin
+   directory here, so it is joined onto the plugin's own -- and what was ASKED
+   FOR is kept, because the thing worth proving is that the plugin asks for the
+   directory its .mo is really in, which is what Domain Path also declares. */
+function load_plugin_textdomain( $domain, $deprecated = false, $rel = false ) {
+	$GLOBALS['ap_asked'][ $domain ] = $rel;
+	$path = dirname( __DIR__ ) . '/' . basename( (string) $rel ) . '/'
+		. $domain . '-' . $GLOBALS['ap_locale'] . '.mo';
+	if ( ! is_file( $path ) ) {
+		return false;
+	}
+	$GLOBALS['ap_l10n'][ $domain ] = ap_read_mo( $path );
+	return true;
+}
+
+/* Which plural form, according to the file rather than to a guess. No
+   evaluator: a rule that could run an arbitrary expression out of a .mo is a
+   worse thing to own than an untested plural, so the two rules this repository
+   ships are recognised and anything else falls back to English's. */
+function ap_plural_index( $domain, $number ) {
+	$header = isset( $GLOBALS['ap_l10n'][ $domain ][''] ) ? $GLOBALS['ap_l10n'][ $domain ][''] : '';
+	if ( preg_match( '/plural=([^;\r\n]+)/', $header, $m ) ) {
+		$rule = trim( $m[1] );
+		if ( 'n > 1' === $rule ) {
+			return $number > 1 ? 1 : 0;
+		}
+	}
+	return 1 === (int) $number ? 0 : 1;
+}
+
+function translate( $text, $domain = 'default' ) {
+	return isset( $GLOBALS['ap_l10n'][ $domain ][ $text ] )
+		? $GLOBALS['ap_l10n'][ $domain ][ $text ]
+		: $text;
+}
+function __( $text, $domain = 'default' ) {
+	return translate( $text, $domain );
+}
+function _e( $text, $domain = 'default' ) {
+	echo translate( $text, $domain );
+}
+function esc_html__( $text, $domain = 'default' ) {
+	return esc_html( translate( $text, $domain ) );
+}
+function esc_html_e( $text, $domain = 'default' ) {
+	echo esc_html( translate( $text, $domain ) );
+}
+function esc_attr__( $text, $domain = 'default' ) {
+	return esc_attr( translate( $text, $domain ) );
+}
+function esc_attr_e( $text, $domain = 'default' ) {
+	echo esc_attr( translate( $text, $domain ) );
+}
+function _n( $single, $plural, $number, $domain = 'default' ) {
+	$key = $single . "\0" . $plural;
+	if ( ! isset( $GLOBALS['ap_l10n'][ $domain ][ $key ] ) ) {
+		return 1 === (int) $number ? $single : $plural;
+	}
+	$forms = explode( "\0", $GLOBALS['ap_l10n'][ $domain ][ $key ] );
+	$index = ap_plural_index( $domain, $number );
+	return isset( $forms[ $index ] ) ? $forms[ $index ] : $forms[0];
 }
 
 class Ap_Roles {
@@ -801,6 +907,102 @@ ap_check( 'a key of the wrong shape derived something anyway',
    implementation: two implementations of one derivation, and the comparison is
    the only thing that keeps them equal. */
 echo 'DERIVED ' . $vector . ' ' . annotepage_project_from_key( $vector ) . "\n";
+
+/* -- 12. The strings, and the French that ships beside them --------------
+ *
+ * WHAT THIS PROVES THAT READING THE FILES CANNOT: that the plugin's own call
+ * finds the plugin's own .mo, that the text domain is honoured, and that a
+ * screen rendered with French loaded has no English left standing in it.
+ *
+ * The last one is the reason this section exists. A translation with holes is
+ * worse than no translation at all: the screen comes out half in one language
+ * and half in the other, it looks deliberate, and nothing anywhere raises an
+ * error. tools/check-wordpress.mjs refuses a missing string; this refuses a
+ * string that is present and does not arrive.
+ * ---------------------------------------------------------------------- */
+
+$french = json_decode( (string) file_get_contents( dirname( __DIR__ ) . '/languages/fr_FR.json' ), true );
+ap_check( 'languages/fr_FR.json could not be read, so nothing below proves anything',
+	is_array( $french ) && count( $french ) > 0 );
+
+ap_check( 'the translations are not loaded on init, which is where WordPress 6.7 '
+	. 'and later require a plugin to load them',
+	isset( $GLOBALS['ap_actions']['init'] )
+	&& in_array( 'annotepage_load_translations', $GLOBALS['ap_actions']['init'], true ),
+	implode( ', ', isset( $GLOBALS['ap_actions']['init'] ) ? $GLOBALS['ap_actions']['init'] : array() ) );
+
+$GLOBALS['ap_l10n'] = array();
+ap_check( 'a string came back translated before anything had been loaded',
+	'Settings' === __( 'Settings', 'annotepage' ) );
+
+annotepage_load_translations();
+
+ap_check( 'the plugin asks for a languages directory other than the one Domain '
+	. 'Path declares, so WordPress would look where the .mo is not',
+	'annotepage/languages' === $GLOBALS['ap_asked']['annotepage'],
+	isset( $GLOBALS['ap_asked']['annotepage'] ) ? (string) $GLOBALS['ap_asked']['annotepage'] : '(never asked)' );
+ap_check( 'the shipped .mo was not found, or holds nothing',
+	isset( $GLOBALS['ap_l10n']['annotepage'] )
+	&& count( $GLOBALS['ap_l10n']['annotepage'] ) > 1,
+	isset( $GLOBALS['ap_l10n']['annotepage'] ) ? count( $GLOBALS['ap_l10n']['annotepage'] ) . ' entries' : '(not loaded)' );
+ap_check( 'the .mo does not hand back what fr_FR.json says it holds',
+	$french['Settings'] === __( 'Settings', 'annotepage' ), __( 'Settings', 'annotepage' ) );
+ap_check( 'a string asked for under another domain came back translated anyway, '
+	. 'so the text domain decides nothing',
+	'Settings' === __( 'Settings', 'not-annotepage' ) );
+
+/* French keeps the singular for zero -- "0 role", not "0 roles" -- which is the
+   one thing a two-form language is free to disagree with English about, and the
+   reason the .mo carries its own plural rule instead of inheriting the .pot's. */
+ap_check( 'the plural forms are not the ones the French rule asks for',
+	$french['%d role'][0] === _n( '%d role', '%d roles', 1, 'annotepage' )
+	&& $french['%d role'][1] === _n( '%d role', '%d roles', 2, 'annotepage' )
+	&& $french['%d role'][0] === _n( '%d role', '%d roles', 0, 'annotepage' ),
+	_n( '%d role', '%d roles', 0, 'annotepage' ) . ' / ' . _n( '%d role', '%d roles', 2, 'annotepage' ) );
+
+/* Everything an administrator reads, in one string: the settings screen, the
+   greeting, and every title in the admin bar. */
+function ap_everything_read() {
+	$bar = new Ap_Bar();
+	ob_start();
+	annotepage_render();
+	annotepage_greeting();
+	annotepage_admin_bar( $bar );
+	foreach ( $bar->nodes as $node ) {
+		echo esc_html( (string) $node['title'] );
+	}
+	return ob_get_clean();
+}
+
+ap_reset();
+annotepage_activate();
+ap_as( 1 );
+$GLOBALS['ap_screen'] = new Ap_Screen( 'plugins' );
+
+$GLOBALS['ap_l10n'] = array();
+$in_english = ap_everything_read();
+annotepage_load_translations();
+$in_french = ap_everything_read();
+
+ap_check( 'the French screen is the English one, so nothing was translated at all',
+	$in_english !== $in_french );
+
+foreach ( $french as $msgid => $translated ) {
+	/* Plurals are covered above; a word that is the same in both languages --
+	   "Version", "Mode" -- can prove nothing by staying put. */
+	if ( is_array( $translated ) || $translated === $msgid ) {
+		continue;
+	}
+	/* Only the strings that really do appear on this screen, as they appear:
+	   one carrying a placeholder never shows up as itself. */
+	$shown = esc_html( $msgid );
+	if ( false === strpos( $in_english, $shown ) ) {
+		continue;
+	}
+	ap_check( 'this string is still English on a screen that is otherwise French, '
+		. 'which is the half-and-half nobody notices: "' . $msgid . '"',
+		false === strpos( $in_french, $shown ) );
+}
 
 /* -- Verdict ------------------------------------------------------------- */
 

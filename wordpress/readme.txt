@@ -8,7 +8,7 @@ Stable tag: 1.0.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
-Annotate this site. It works the moment you activate it, for administrators only, until you say otherwise.
+Annotate a page. Your assistant answers in the thread. Activate it and it works, for administrators only, until you say otherwise.
 
 == Description ==
 
@@ -24,12 +24,14 @@ the tag and gives you one settings screen.
 that only come up here. What annotepage is, and every other way to install it,
 are on the site and are not repeated.**
 
-**Activate it and it works.** There is nothing to fill in first: activation
-draws a key, points at the shared relay &mdash; or at
-[a copy you host yourself](https://annotepage.com/how-to-install-it.html)
-&mdash; and shows the tool to administrators and nobody else. Open any page of
-your site and the button is at the bottom right. The settings screen is for the
-second day.
+**Activate it and it works.** Nothing to fill in first: activation draws a key,
+points at the shared relay &mdash; or at
+[your own server](https://annotepage.com/how-to-install-it.html) &mdash; and
+shows the tool to administrators and nobody else. Open any page of your site:
+the button is at the bottom right.
+
+The tool itself is served from a CDN on a floating version, so it updates on its
+own and this plugin never has to be released for it.
 
 There is no dashboard of notes here, no new user role, no widget, no shortcode,
 no block. The notes live in the annotation panel on the site itself, where the
@@ -40,31 +42,21 @@ element being discussed is, which is the only place they mean anything.
 A fresh install shows it to administrators. One radio button widens that to
 everybody signed in, to chosen roles and named people, or to everyone including
 visitors &mdash; and the screen says what each one costs before you choose it.
-
-Everybody it is shown to also gets an item in the toolbar, with a switch that
-turns it off **for them alone**. Nobody else's view changes, and it is not a way
-into the tool for somebody the audience leaves out.
+Everybody it is shown to also gets a toolbar item with a switch that turns it
+off **for them alone**, changing nothing for anybody else.
 
 = The key, and your other environments =
 
-The same key on two sites is one set of notes: paste the key of your staging
-site into your development site and the two share every remark, because a page
-is found by its path and not by its domain. Drawing a new key starts a new
-project instead &mdash; nothing is deleted, and the screen says so twice before
-it happens.
+The same key on two sites is one set of notes: paste your staging key into your
+development site and the two share every remark, because a page is found by its
+path and not by its domain. Drawing a new key starts a new project instead
+&mdash; nothing is deleted, and the screen says so before it happens.
 
-Whether that key travels in the page, or is asked of each reviewer once and kept
-out of it (**secure** mode), is set on the same screen and laid out on the
+Whether that key travels in the page or is asked of each reviewer once
+(**secure** mode) is set on the same screen, and laid out on the
 [install page](https://annotepage.com/how-to-install-it.html#modes). In secure
-mode, losing that key loses the notes: there is
+mode, losing it loses the notes: there is
 [no recovery](https://annotepage.com/questions.html#no-recovery).
-
-= It ships no copy of the tool =
-
-The tag points at the CDN on a floating major version, so the tool updates
-itself: no release of this plugin every time it moves, and no Update to press to
-get a fix. The cost is the `integrity` attribute, given up deliberately &mdash;
-a pinned digest is a fix that reaches nobody.
 
 == External services ==
 
@@ -121,44 +113,25 @@ secure mode.
 
 The key it drew is written into your pages, so it is only ever shown to people
 the audience includes &mdash; administrators, until you change it. Nothing was
-sent anywhere to obtain it: it is 32 random bytes from your own server. The
-notice on the plugins screen says all of this, with the way to change it.
+sent anywhere to obtain it: it is 32 random bytes from your own server, and this
+plugin makes no HTTP call of any kind. The notice on the plugins screen says so,
+with the way to change it.
 
 = Why is the tag not enqueued like every other script? =
 
 Because the tool reads `document.currentScript` to find its own settings, and a
 script queue is entitled to load a script however it likes. A concatenation
 plugin, a "combine JS" switch or an optimiser that defers it as a module all
-leave `currentScript` empty &mdash; and the tool's answer to not knowing where
-it is, is to do nothing at all, silently. You would get a page with no
-annotation layer and no error to explain it. So the tag is written as text, on
-`wp_footer`, where a queue cannot rewrite it.
-
-= Does anything phone home? =
-
-No. There is no HTTP call in this plugin's PHP, and none in its admin script.
-The only address it ever writes is the one in the settings and the CDN address
-for the tool itself.
-
-= Where are my notes? =
-
-On the site, in the annotation panel, next to the element they are about. This
-plugin does not copy them into WordPress and does not read them: it cannot, they
-are encrypted with a key the server never receives.
-
-= Can I set the path prefix, the domain list, or plain mode? =
-
-Not from here, and each omission is argued in the source. In short: the domain
-lock that matters is the server's, the path prefix is tidiness on a site that
-has one prefix, and plain mode turns off encryption and is refused by the
-shared relay anyway.
+leave `currentScript` empty &mdash; and the tool's answer to not knowing where it
+is, is to do nothing at all, silently: no annotation layer, and no error to
+explain it. So the tag is written as text, on `wp_footer`.
 
 = What happens if I delete the plugin? =
 
 The tag stops being written, and the settings row stays in the database on
-purpose. It holds your key, and a key has no recovery: deleting it on uninstall
-would turn every note ever written into ciphertext nobody can open, from a
-screen that only said "delete". Reinstalling picks up where you left off.
+purpose: it holds your key, and deleting it on uninstall would turn every note
+ever written into ciphertext nobody can open, from a screen that only said
+"delete". Reinstalling picks up where you left off.
 
 = Can I translate the panel? =
 

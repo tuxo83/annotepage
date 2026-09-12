@@ -406,6 +406,12 @@ jobs:
           # plugin's own page and does ship. assets/ goes to SVN's assets/, not
           # into the zip: that is where the directory looks for the icon, the
           # banner and the screenshots.
+          #
+          # `languages/` SHIPS, and is excluded by nothing on purpose. The .mo is
+          # read from inside the plugin directory, so a trunk without it is an
+          # English screen on a French site -- the one failure here that looks
+          # like a decision rather than a defect. tools/check-wordpress.mjs holds
+          # the same list for the zip the site hands out.
           rsync -a --delete \
             --exclude 'tests/' --exclude 'README.md' --exclude 'assets/' \
             wordpress/ svn/trunk/

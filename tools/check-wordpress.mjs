@@ -20,6 +20,7 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { keyFromText, derive } from '../mcp/src/crypto.mjs';
+import { extract, pot, mo, readMo, DOMAIN, LOCALE } from './build-wordpress-languages.mjs';
 
 const read = (p) => readFileSync(p, 'utf8');
 const failures = [];
@@ -167,7 +168,191 @@ if (derived) {
         derived[2] === theirs);
 }
 
-/* -- 7. The zip the site hands out IS this plugin ------------------------ */
+/* -- 7. Every string somebody reads is translated, and French covers them all
+ *
+ * THREE WAYS THIS BREAKS, AND NOT ONE OF THEM RAISES ANYTHING.
+ *
+ *   A string added without __() is simply English forever, on a screen that is
+ *   otherwise French. A call written with the wrong domain -- or with none --
+ *   asks WordPress for a translation in core's domain, which answers with the
+ *   original: the same silence, from a line that looks right. And a French set
+ *   with a hole in it ships a screen that is half one language and half the
+ *   other, which reads as a decision somebody made.
+ *
+ * The last one is why 100% is the rule here rather than a target. A partial
+ * translation is worse than none: an English plugin is coherent, and an
+ * English-and-French one looks like a defect in the site.
+ *
+ * The msgids come from the PHP and from nowhere else, so there is no second
+ * list to keep in step: what the code says is what the .pot offers and what the
+ * French must answer.
+ */
+{
+    const LANG = 'wordpress/languages';
+    /* Three characters that stand for what the plugin's own text can never
+       hold: the byte gettext separates a plural's halves with, and the two
+       markers this check writes over PHP blocks and over HTML tags. Built and
+       not typed, for the reason the generator gives beside its own. */
+    const NUL = String.fromCharCode(0);
+    const MARK = String.fromCharCode(1);
+    const TAG = String.fromCharCode(2);
+    const POT = `${LANG}/${DOMAIN}.pot`;
+    const MO = `${LANG}/${DOMAIN}-${LOCALE}.mo`;
+    const JSON_SOURCE = `${LANG}/${LOCALE}.json`;
+
+    const { entries, problems } = extract(plugin);
+    for (const problem of problems) {
+        check('a translation call cannot be extracted, so its string would never '
+            + 'reach a translator', false, problem);
+    }
+
+    /* -- the header wordpress.org reads -- */
+    check(`the plugin header declares Text Domain "${header('Text Domain')}" where `
+        + `wordpress.org requires the slug, "${DOMAIN}" -- a domain that is not the `
+        + 'slug is a plugin whose translations the directory never delivers',
+        header('Text Domain') === DOMAIN);
+    check(`the plugin header declares Domain Path "${header('Domain Path')}", and the `
+        + `translations it ships are in ${LANG}`, header('Domain Path') === '/languages');
+    check('the plugin never calls load_plugin_textdomain() on init. On WordPress 7.1 '
+        + 'core calls it out of Domain Path and the screen is French without it -- but '
+        + 'that is one version\'s behaviour, and this plugin declares 5.2. The header '
+        + 'argues it with what was measured',
+        /load_plugin_textdomain\(\s*'annotepage'/.test(plugin)
+        && /add_action\(\s*'init',\s*'annotepage_load_translations'\s*\)/.test(plugin));
+
+    /* -- every call in our own domain -- */
+    for (const entry of entries) {
+        check(`${entry.references[0]}: ${entry.fn}() is in domain `
+            + `${JSON.stringify(entry.domain)} and not "${DOMAIN}" -- WordPress would `
+            + 'answer from core\'s own translations, which is to say not at all',
+            entry.domain === DOMAIN, entry.msgid);
+    }
+
+    /* -- NOTHING DISPLAYED ESCAPES A TRANSLATION CALL --
+     *
+     * The plugin is read as what it is: PHP with HTML between its blocks. Each
+     * <?php ... ?> is replaced by one character, which leaves the templates as
+     * plain HTML -- and text left in an HTML text node, or in an attribute a
+     * person reads, is text no translation can ever reach.
+     *
+     * THE ONE EXCEPTION IS THE PROJECT'S OWN NAME. "annotepage" is a name; it
+     * is the same word in every language, and CONVENTIONS.md says so. Nothing
+     * else is allowed through. */
+    const pieces = plugin.split(/<\?php|\?>/);
+    const code = pieces.filter((_, i) => i % 2 === 1).join('\n');
+    const templates = pieces.filter((_, i) => i % 2 === 0).join('\n' + MARK + '\n');
+
+    const entity = /&(?:[a-z]+|#\d+);/gi;
+    const prose = (text) => {
+        const left = text.replace(entity, ' ').replace(new RegExp('[' + MARK + TAG + ']', 'g'), ' ').trim();
+        return left === DOMAIN ? '' : ((left.match(/[A-Za-z]{2,}/g) || []).length ? left : '');
+    };
+
+    for (const node of templates.replace(/<[^>]*>/g, TAG).split(TAG)) {
+        const left = prose(node);
+        check('this text is printed as it stands, so it is English on every site: '
+            + JSON.stringify(left.replace(/\s+/g, ' ').slice(0, 70)), left === '');
+    }
+
+    for (const [, attribute, value] of templates.matchAll(
+        /\b(placeholder|title|alt|aria-label)\s*=\s*"([^"]*)"/gi)) {
+        check(`the ${attribute} attribute is written in English and cannot be `
+            + 'translated: ' + JSON.stringify(value), prose(value) === '');
+    }
+
+    /* And in the PHP, a literal that reads like a sentence and is not one of the
+       strings just extracted. Markup, paths, option names and regexps are not
+       sentences: they carry a character no sentence of ours does. */
+    const said = new Set(entries.flatMap((e) => [e.msgid, e.plural]).filter(Boolean));
+    const literals = [...stripPhpComments(code).matchAll(/'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"/g)]
+        .map((m) => (m[1] === undefined ? m[2] : m[1]));
+    for (const value of literals) {
+        if (said.has(value) || !value.includes(' ') || /[<>={}$\\/]/.test(value)) continue;
+        check('this string is printed without passing through a translation call: '
+            + JSON.stringify(value), (value.match(/[A-Za-z]{2,}/g) || []).length < 2);
+    }
+
+    /* -- the two generated files ARE what their sources make -- */
+    check(`${POT} is not what the plugin's strings make -- run `
+        + 'node tools/build-wordpress-languages.mjs',
+        existsSync(POT) && read(POT) === pot(entries, version));
+
+    const french = existsSync(JSON_SOURCE) ? JSON.parse(read(JSON_SOURCE)) : {};
+
+    /* -- 100%, BOTH WAYS -- */
+    const missing = entries.filter((e) => !(e.msgid in french)).map((e) => e.msgid);
+    check(`${missing.length} string(s) reach the screen with no French, so a French `
+        + 'site gets half a screen in each language',
+        missing.length === 0, missing.map((s) => JSON.stringify(s)).join('\n'));
+
+    const extra = Object.keys(french).filter((k) => !said.has(k));
+    check(`${JSON_SOURCE} translates ${extra.length} string(s) the plugin no longer `
+        + 'says, which is how a translation rots without anybody noticing',
+        extra.length === 0, extra.map((s) => JSON.stringify(s)).join('\n'));
+
+    for (const entry of entries) {
+        const value = french[entry.msgid];
+        if (value === undefined) continue;
+
+        const plural = entry.plural !== null;
+        check(`"${entry.msgid}" is ${plural ? 'a plural' : 'a single'} string and its `
+            + `French is ${Array.isArray(value) ? 'a list' : 'one string'}`,
+            plural === Array.isArray(value));
+
+        const forms = Array.isArray(value) ? value : [value];
+        check(`"${entry.msgid}" has an empty French translation, which WordPress `
+            + 'answers by falling back to English -- silently',
+            forms.every((f) => typeof f === 'string' && f.trim() !== ''));
+
+        /* A PLACEHOLDER LOST IN TRANSLATION IS A SENTENCE WITH A HOLE IN IT, and
+           sprintf does not complain: it prints the sentence without the address,
+           the count or the name it was about.
+
+           AND A SENTENCE IDENTICAL IN BOTH LANGUAGES WAS COPIED, NOT TRANSLATED
+           -- the hole that survives a coverage count, because the key is there
+           and the value is not empty. Found by breaking this file on purpose,
+           and tests/run.php cannot see it either: a runtime comparison has to
+           let an unchanged string pass. Single words are exempt and have to be:
+           "Version" and "Mode" are the same word in French, and inventing a
+           difference would be worse than leaving one alone. */
+        const holders = (s) => (String(s).match(/%\d+\$s|%[sd]/g) || []).sort().join(' ');
+        const english = plural ? [entry.msgid, entry.plural] : [entry.msgid];
+        english.forEach((source, i) => {
+            if (forms[i] === undefined) return;
+            check(`the French for "${source}" carries ${JSON.stringify(holders(forms[i]))} `
+                + `where the English carries ${JSON.stringify(holders(source))}`,
+                holders(forms[i]) === holders(source));
+            check(`the French for "${source}" is the English, word for word. A `
+                + 'sentence copied across is not a translation, and a count of covered '
+                + 'strings cannot tell the two apart',
+                forms[i] !== source || !/\s/.test(source));
+        });
+    }
+
+    /* -- the .mo, built and then READ BACK --
+     *
+     * A writer that agrees with itself proves nothing about a file another
+     * program has to parse, so the shipped bytes are parsed here by the format's
+     * own rules and every string is looked up in what comes out. */
+    const built = mo(entries, french, version);
+    check(`${MO} is not what ${JSON_SOURCE} makes -- run `
+        + 'node tools/build-wordpress-languages.mjs',
+        existsSync(MO) && Buffer.compare(built, readFileSync(MO)) === 0);
+
+    if (existsSync(MO)) {
+        const table = readMo(readFileSync(MO));
+        for (const entry of entries) {
+            const key = entry.plural === null ? entry.msgid : entry.msgid + NUL + entry.plural;
+            check(`reading ${MO} back finds no translation for "${entry.msgid}"`,
+                typeof table[key] === 'string' && table[key] !== '');
+        }
+        check(`${MO} does not declare the plural rule French uses -- with English's, `
+            + '"0 role" comes out "0 roles"', /plural=n > 1/.test(table[''] || ''));
+        check(`${MO} does not name its locale`, /Language: fr_FR/.test(table[''] || ''));
+    }
+}
+
+/* -- 8. The zip the site hands out IS this plugin ------------------------ */
 
 /* The site's menu offers the plugin as a zip, because the directory has not
    accepted it yet. A zip in docs/ is a COPY, and a copy is a thing that goes
@@ -202,8 +387,16 @@ if (derived) {
 
         const entries = (listed.stdout || '').split('\n')
             .filter((n) => n && !n.endsWith('/'));
+        /* languages/ SHIPS, AND THAT IS THE WHOLE POINT OF IT. The .mo is read
+           from inside the plugin -- see the plugin header -- so a zip without it
+           is an English plugin however complete the French is in this
+           repository. The .pot and the JSON beside it are what another language
+           is made from, and the template is where wordpress.org expects it. */
         const wanted = ['annotepage/annotepage.php', 'annotepage/admin.js',
-                        'annotepage/readme.txt'];
+                        'annotepage/readme.txt',
+                        'annotepage/languages/annotepage.pot',
+                        'annotepage/languages/annotepage-fr_FR.mo',
+                        'annotepage/languages/fr_FR.json'];
 
         check(`${served} holds ${entries.join(', ')} -- the published plugin is `
             + wanted.join(', '), entries.slice().sort().join() === wanted.slice().sort().join());
@@ -228,6 +421,9 @@ if (failures.length) {
 console.log('wordpress: header and readme.txt agree on version, PHP and WordPress; '
     + 'every announced screenshot exists; the plugin and its admin script reach no '
     + 'network; no client code ships with it and the CDN range still floats; the '
-    + 'default relay is the documented one; the zip the site hands out holds exactly '
-    + 'the three published files and their current content; the plugin runs against a '
-    + 'stubbed WordPress and the id its PHP derives is the one the mcp derives');
+    + 'default relay is the documented one; every string the screen shows passes '
+    + "through a translation call in this plugin's own domain and the French set "
+    + 'covers all of them, in a .pot and a .mo that are what their sources make; the '
+    + 'zip the site hands out holds exactly the published files, languages/ included, '
+    + 'and their current content; the plugin runs against a stubbed WordPress and the '
+    + 'id its PHP derives is the one the mcp derives');
