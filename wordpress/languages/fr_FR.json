@@ -69,5 +69,15 @@
   "Written by this plugin at the end of %1$s, for %2$s. There is nothing to paste.": "Écrite par cette extension à la fin de %1$s, pour %2$s. Il n’y a rien à coller.",
   "Nothing is written yet. The tag needs a server address, and a key or a project id.": "Rien n’est encore écrit. La balise a besoin d’une adresse de serveur, et d’une clé ou d’un identifiant de projet.",
   "The first line declares the same settings a second time, in a form that survives a plugin concatenating your scripts &mdash; WordPress prints it just above the tag.": "La première ligne déclare les mêmes réglages une seconde fois, sous une forme qui résiste à une extension qui concatène vos scripts &mdash; WordPress l’imprime juste au-dessus de la balise.",
-  "The tag is written on your pages. This WordPress is older than 5.7, so this screen cannot ask it for the exact line to show you.": "La balise est écrite sur vos pages. Ce WordPress est antérieur à 5.7 : cet écran ne peut donc pas lui demander la ligne exacte à vous montrer."
+  "The tag is written on your pages. This WordPress is older than 5.7, so this screen cannot ask it for the exact line to show you.": "La balise est écrite sur vos pages. Ce WordPress est antérieur à 5.7 : cet écran ne peut donc pas lui demander la ligne exacte à vous montrer.",
+  "No key. This site will ask each reviewer for one.": "Pas de clé. Ce site la demandera à chaque relecteur.",
+  "A key is 43 characters; this is %d.": "Une clé fait 43 caractères ; celle-ci en fait %d.",
+  "Project %s, unchanged.": "Projet %s, inchangé.",
+  "Project %s. The notes written under the previous one stay where they are, and this site stops showing them.": "Projet %s. Les notes écrites sous le précédent restent où elles sont, et ce site cesse de les afficher.",
+  "No project id yet: paste one, or paste a key above and it is derived.": "Pas encore d’identifiant de projet : collez-en un, ou collez une clé ci-dessus et il en sera déduit.",
+  "This screen must be served over https to derive the project id. Paste the id below as well.": "Cet écran doit être servi en https pour déduire l’identifiant du projet. Collez aussi l’identifiant ci-dessous.",
+  "The browser refused to derive the project id. Nothing was changed.": "Le navigateur a refusé de déduire l’identifiant du projet. Rien n’a été modifié.",
+  "Draw a new key?": "Tirer une nouvelle clé ?",
+  "A new key is a new project. The notes already written stay where they are and this site stops showing them. There is no way back.": "Une nouvelle clé, c’est un nouveau projet. Les notes déjà écrites restent où elles sont et ce site cesse de les afficher. Il n’y a pas de retour en arrière.",
+  "This screen must be served over https to draw a key.": "Cet écran doit être servi en https pour tirer une clé."
 }

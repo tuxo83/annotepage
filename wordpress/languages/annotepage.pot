@@ -10,7 +10,7 @@
 # This file is distributed under the same licence as the plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: annotepage 1.0.0\n"
+"Project-Id-Version: annotepage 1.0.1\n"
 "Report-Msgid-Bugs-To: https://github.com/tuxo83/annotepage/issues\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -114,217 +114,262 @@ msgstr ""
 msgid "Dismiss"
 msgstr ""
 
-#: annotepage.php:1231
+#: annotepage.php:1190
+msgid "No key. This site will ask each reviewer for one."
+msgstr ""
+
+#. translators: %d: how many characters the key field holds.
+#: annotepage.php:1192
+msgid "A key is 43 characters; this is %d."
+msgstr ""
+
+#. translators: %s: the project id, 22 characters.
+#: annotepage.php:1194
+msgid "Project %s, unchanged."
+msgstr ""
+
+#. translators: %s: the new project id, 22 characters.
+#: annotepage.php:1196
+msgid "Project %s. The notes written under the previous one stay where they are, and this site stops showing them."
+msgstr ""
+
+#. translators: %s: the new project id, 22 characters.
+#: annotepage.php:1197
+msgid "No project id yet: paste one, or paste a key above and it is derived."
+msgstr ""
+
+#. translators: %s: the new project id, 22 characters.
+#: annotepage.php:1198
+msgid "This screen must be served over https to derive the project id. Paste the id below as well."
+msgstr ""
+
+#: annotepage.php:1199
+msgid "The browser refused to derive the project id. Nothing was changed."
+msgstr ""
+
+#: annotepage.php:1200
+msgid "Draw a new key?"
+msgstr ""
+
+#: annotepage.php:1201
+msgid "A new key is a new project. The notes already written stay where they are and this site stops showing them. There is no way back."
+msgstr ""
+
+#: annotepage.php:1202
+msgid "This screen must be served over https to draw a key."
+msgstr ""
+
+#: annotepage.php:1266
 msgid "You are not allowed to change these settings."
 msgstr ""
 
-#: annotepage.php:1352
+#: annotepage.php:1387
 msgid "Saved. The tag below is what this site now carries."
 msgstr ""
 
-#: annotepage.php:1353
+#: annotepage.php:1388
 msgid "Saved, and the tag is NOT being written: it needs a server address and a key."
 msgstr ""
 
-#: annotepage.php:1354
+#: annotepage.php:1389
 msgid "Saved. The key is now in a page every visitor can open, so every visitor can read these notes and write them."
 msgstr ""
 
-#: annotepage.php:1355
+#: annotepage.php:1390
 msgid "Nothing was saved: the server address must be a full http:// or https:// URL."
 msgstr ""
 
-#: annotepage.php:1356
+#: annotepage.php:1391
 msgid "Nothing was saved: a key is 43 characters. Paste one, or use the button to draw one."
 msgstr ""
 
-#: annotepage.php:1357
+#: annotepage.php:1392
 msgid "Nothing was saved: a project id is 22 characters. Paste one, or draw a key and let it derive."
 msgstr ""
 
 #. translators: %s is the list of names that matched no account, inside a code element.
-#: annotepage.php:1403
+#: annotepage.php:1438
 msgid "This site has no account for %s, so nobody was added for that name."
 msgstr ""
 
-#: annotepage.php:1414
+#: annotepage.php:1449
 msgid "This screen writes one script tag at the foot of the page. It installs nothing else: the tool itself is served from a CDN and updates on its own."
 msgstr ""
 
-#: annotepage.php:1421
+#: annotepage.php:1456
 msgid "Who sees it"
 msgstr ""
 
-#: annotepage.php:1424
+#: annotepage.php:1459
 msgid "Shown to"
 msgstr ""
 
 #. translators: 1: an opening strong tag, 2: the closing one.
-#: annotepage.php:1433
+#: annotepage.php:1468
 msgid "%1$sAdministrators%2$s &mdash; where a fresh install starts."
 msgstr ""
 
 #. translators: 1: an opening strong tag, 2: the closing one.
-#: annotepage.php:1445
+#: annotepage.php:1480
 msgid "%1$sEverybody signed in%2$s to this site."
 msgstr ""
 
-#: annotepage.php:1454
+#: annotepage.php:1489
 msgid "These roles, and these people."
 msgstr ""
 
-#: annotepage.php:1469
+#: annotepage.php:1504
 msgid "And these people, by username or email, one per line or separated by commas:"
 msgstr ""
 
-#: annotepage.php:1471
+#: annotepage.php:1506
 msgid "jo, sam@example.com"
 msgstr ""
 
-#: annotepage.php:1478
+#: annotepage.php:1513
 msgid "Everyone, visitors included."
 msgstr ""
 
-#: annotepage.php:1480
+#: annotepage.php:1515
 msgid "On a public page in public mode this hands the key to anybody who opens it, and the key is write access: they can read every note and add their own. It is a real answer on a site behind a login, a VPN or an IP allowlist &mdash; and on a site that is genuinely open, secure mode below is the pairing that survives it."
 msgstr ""
 
 #. translators: 1: an opening strong tag, 2: the closing one.
-#: annotepage.php:1491
+#: annotepage.php:1526
 msgid "%1$sEveryone, with the key in the page.%2$s Every visitor to this site can read these notes and write them, and somebody who copies the tag out of your page source can write into them from anywhere. Sound behind a login or a VPN. Worth a second thought on a public site."
 msgstr ""
 
-#: annotepage.php:1502
+#: annotepage.php:1537
 msgid "Where the notes go"
 msgstr ""
 
-#: annotepage.php:1505
+#: annotepage.php:1540
 msgid "Server address"
 msgstr ""
 
 #. translators: %s is the file name api.php, inside a code element.
-#: annotepage.php:1514
+#: annotepage.php:1549
 msgid "The address of %s &mdash; the shared relay, filled in at activation, or your own install. The client is served from a CDN and cannot guess it."
 msgstr ""
 
-#: annotepage.php:1523
+#: annotepage.php:1558
 msgid "Version"
 msgstr ""
 
-#: annotepage.php:1529
+#: annotepage.php:1564
 msgid "Optional, and left empty it is not written at all. It is what lets a resolved note say &ldquo;fixed and online&rdquo; rather than &ldquo;fixed, not deployed yet&rdquo; &mdash; the second stays on the reviewer&rsquo;s screen, because the defect still is. Whatever your site calls its version; nothing here invents one."
 msgstr ""
 
-#: annotepage.php:1535
+#: annotepage.php:1570
 msgid "The key"
 msgstr ""
 
 #. translators: 1: an opening em tag, 2: the closing one.
-#: annotepage.php:1540
+#: annotepage.php:1575
 msgid "The key %1$sis%2$s the project: the same key on two sites is one set of notes, and a different key is a different set. Draw one, or paste the one another environment already uses &mdash; dev, staging and production sharing a key share the notes of the same path, because a page is found by its path and not by its domain."
 msgstr ""
 
-#: annotepage.php:1549
+#: annotepage.php:1584
 msgid "Mode"
 msgstr ""
 
 #. translators: 1: an opening strong tag, 2: the closing one.
-#: annotepage.php:1558
+#: annotepage.php:1593
 msgid "%1$sThe key is in the page.%2$s Nobody is asked for anything."
 msgstr ""
 
 #. translators: 1: an opening strong tag, 2: the closing one.
-#: annotepage.php:1567
+#: annotepage.php:1602
 msgid "Whoever is shown the tool can read these notes %1$sand write them%2$s; there is no reader-only role."
 msgstr ""
 
 #. translators: 1: an opening strong tag, 2: the closing one.
-#: annotepage.php:1580
+#: annotepage.php:1615
 msgid "%1$sOnly the project id is in the page.%2$s Each reviewer pastes the key once, in their own browser."
 msgstr ""
 
 #. translators: 1: an opening strong tag, 2: the closing one.
-#: annotepage.php:1589
+#: annotepage.php:1624
 msgid "WordPress does not store it and the server never receives it. %1$sLose it and the notes are gone%2$s: there is no recovery and no rotation."
 msgstr ""
 
-#: annotepage.php:1601
+#: annotepage.php:1636
 msgid "Key"
 msgstr ""
 
-#: annotepage.php:1606
+#: annotepage.php:1641
 msgid "43 characters, or empty"
 msgstr ""
 
-#: annotepage.php:1609
+#: annotepage.php:1644
 msgid "Draw a new key"
 msgstr ""
 
-#: annotepage.php:1609
+#: annotepage.php:1644
 msgid "Draw a key"
 msgstr ""
 
 #. translators: %s is the project id, inside a code element.
-#: annotepage.php:1616
+#: annotepage.php:1651
 msgid "Project %s. The key is not stored here."
 msgstr ""
 
 #. translators: %s is the project id, inside a code element.
-#: annotepage.php:1622
+#: annotepage.php:1657
 msgid "Project %s."
 msgstr ""
 
-#: annotepage.php:1626
+#: annotepage.php:1661
 msgid "None yet."
 msgstr ""
 
 #. translators: 1: an opening em tag, 2: the closing one, 3: an opening strong tag, 4: the closing one.
-#: annotepage.php:1635
+#: annotepage.php:1670
 msgid "Drawn in %1$sthis%2$s browser, by the same computation the install page and the tool itself run. Nothing is sent anywhere to obtain it. A new key is a new project: %3$sthe notes written under the old one stay where they are%4$s &mdash; nothing is deleted &mdash; and this site stops showing them."
 msgstr ""
 
 #. translators: 1: an opening strong tag, 2: the closing one.
-#: annotepage.php:1650
+#: annotepage.php:1685
 msgid "%1$sCopy this now.%2$s In this mode it is not sent to WordPress and not stored anywhere. This is the only time it will be shown."
 msgstr ""
 
-#: annotepage.php:1661
+#: annotepage.php:1696
 msgid "I have copied it"
 msgstr ""
 
-#: annotepage.php:1670
+#: annotepage.php:1705
 msgid "Project id"
 msgstr ""
 
-#: annotepage.php:1675
+#: annotepage.php:1710
 msgid "22 characters"
 msgstr ""
 
-#: annotepage.php:1677
+#: annotepage.php:1712
 msgid "What goes in the page when the key does not. It is derived from the key, so pasting a key above fills it in &mdash; and pasting an id here alone points this site at a project whose key its reviewers already hold."
 msgstr ""
 
-#: annotepage.php:1683
+#: annotepage.php:1718
 msgid "Save"
 msgstr ""
 
-#: annotepage.php:1686
+#: annotepage.php:1721
 msgid "The tag on your pages"
 msgstr ""
 
 #. translators: 1: the word body inside a code element, 2: who the tag is written for, e.g. "administrators".
-#: annotepage.php:1692
+#: annotepage.php:1727
 msgid "Written by this plugin at the end of %1$s, for %2$s. There is nothing to paste."
 msgstr ""
 
-#: annotepage.php:1697
+#: annotepage.php:1732
 msgid "The first line declares the same settings a second time, in a form that survives a plugin concatenating your scripts &mdash; WordPress prints it just above the tag."
 msgstr ""
 
-#: annotepage.php:1702
+#: annotepage.php:1737
 msgid "The tag is written on your pages. This WordPress is older than 5.7, so this screen cannot ask it for the exact line to show you."
 msgstr ""
 
-#: annotepage.php:1706
+#: annotepage.php:1741
 msgid "Nothing is written yet. The tag needs a server address, and a key or a project id."
 msgstr ""

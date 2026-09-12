@@ -4,7 +4,7 @@ Tags: annotation, feedback, review, staging, encryption
 Requires at least: 5.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -158,6 +158,11 @@ nothing to set. Notes themselves can be written in any language.
 2. The plugins screen straight after activation: it drew a key, pointed at the shared relay, and says so.
 
 == Changelog ==
+
+= 1.0.1 =
+* The settings screen's live messages -- under the key field, and the
+  confirmation before a new key is drawn -- are translated too. They were the
+  last English lines on a French screen.
 
 = 1.0.0 =
 * First release. Works on activation for administrators, with an audience

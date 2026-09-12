@@ -279,6 +279,39 @@ if (derived) {
             + JSON.stringify(value), (value.match(/[A-Za-z]{2,}/g) || []).length < 2);
     }
 
+    /* -- AND admin.js WRITES NO SENTENCE OF ITS OWN --
+     *
+     * Its live messages were English literals, so a French site had a French
+     * screen whose key messages and new-key confirmation stayed English -- and
+     * no rule above could see it, because every rule above reads the PHP. They
+     * now come from annotepage_admin_text(). This keeps it that way: a sentence
+     * typed into the script is refused, and every sentence the script asks for
+     * exists on the PHP side, or the screen would print "undefined". */
+    {
+        const js = read(ADMIN).replace(/\/\*[\s\S]*?\*\//g, '');
+        for (const [, value] of js.matchAll(/'((?:[^'\\]|\\.)*)'/g)) {
+            /* The directive is a string with a space in it, and not a sentence. */
+            if (value === 'use strict') continue;
+            if (!value.includes(' ') || /[<>={}$\\/]/.test(value)) continue;
+            check('admin.js writes this sentence itself, so it is English on every site -- '
+                + 'hand it over from annotepage_admin_text(): ' + JSON.stringify(value),
+                (value.match(/[A-Za-z]{2,}/g) || []).length < 2);
+        }
+        const start = plugin.indexOf('function annotepage_admin_text()');
+        const body = start === -1 ? '' : plugin.slice(start, plugin.indexOf('\n}\n', start));
+        const offered = new Set([...body.matchAll(/'(\w+)'\s*=>\s*__\(/g)].map((m) => m[1]));
+        const asked = new Set([...js.matchAll(/\bT\.(\w+)/g)].map((m) => m[1]));
+        check('annotepage_admin_text() is missing or hands admin.js no sentence', offered.size > 0);
+        for (const k of asked) {
+            check(`admin.js reads T.${k} and annotepage_admin_text() does not provide it -- `
+                + 'the screen would print "undefined"', offered.has(k));
+        }
+        for (const k of offered) {
+            check(`annotepage_admin_text() provides "${k}" and admin.js never reads it -- a `
+                + 'sentence translated for nothing', asked.has(k));
+        }
+    }
+
     /* -- the two generated files ARE what their sources make -- */
     check(`${POT} is not what the plugin's strings make -- run `
         + 'node tools/build-wordpress-languages.mjs',

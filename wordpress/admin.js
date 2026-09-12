@@ -43,12 +43,23 @@
     var chosenIn = document.getElementById('ap-chosen');
     var wide     = document.getElementById('ap-wide');
 
+    /* THE SENTENCES THIS FILE WRITES COME FROM PHP, already translated
+       (annotepage_admin_text()). None is written here: a literal would be
+       English on every site, and tools/check-wordpress.mjs refuses one. */
+    var T = window.annotepageAdminText;
+
     /* Stop rather than half-run. A generator wired to elements the screen no
        longer has would leave the button doing nothing at all, which looks
        exactly like a slow one. */
     if (!form || !keyIn || !projIn || !projRow || !button || !state || !once
         || !onceKey || !kept || !save || !open || !secure || !chosen
-        || !everyone || !chosenIn || !wide) return;
+        || !everyone || !chosenIn || !wide || !T || typeof T !== 'object') return;
+
+    /* A translated sentence with its one value put in. The value goes in as
+       text: every caller writes the result through textContent. */
+    function fill(sentence, value) {
+        return String(sentence).replace(/%[ds]/, String(value));
+    }
 
     var KEY_SHAPE  = /^[A-Za-z0-9_-]{43}$/;
     var PROJ_SHAPE = /^[A-Za-z0-9_-]{22}$/;
@@ -130,13 +141,12 @@
     function describe(id) {
         if (id === '') {
             return keyIn.value.trim() === ''
-                ? 'No key. This site will ask each reviewer for one.'
-                : 'A key is 43 characters; this is ' + keyIn.value.trim().length + '.';
+                ? T.noKey
+                : fill(T.keyLength, keyIn.value.trim().length);
         }
-        if (savedProject !== '' && id === savedProject) return 'Project ' + id + ', unchanged.';
-        if (savedKey !== '' && id === idOfSavedKey) return 'Project ' + id + ', unchanged.';
-        return 'Project ' + id + '. The notes written under the previous one stay '
-             + 'where they are, and this site stops showing them.';
+        if (savedProject !== '' && id === savedProject) return fill(T.unchanged, id);
+        if (savedKey !== '' && id === idOfSavedKey) return fill(T.unchanged, id);
+        return fill(T.moved, id);
     }
 
     var idOfSavedKey = '';
@@ -169,7 +179,7 @@
            somewhere else this line must already be the safe one. */
         if (m === 'secure') {
             state.textContent = id === ''
-                ? 'No project id yet: paste one, or paste a key above and it is derived.'
+                ? T.noProject
                 : describe(id);
         } else {
             state.textContent = describe(KEY_SHAPE.test(typed) ? id : '');
@@ -183,8 +193,7 @@
         var typed = keyIn.value.trim();
         if (!KEY_SHAPE.test(typed)) { paint(); return; }
         if (!able) {
-            state.textContent = 'This screen must be served over https to derive the '
-                + 'project id. Paste the id below as well.';
+            state.textContent = T.httpsDerive;
             return;
         }
         var bytes = bytesOfKey(typed);
@@ -194,8 +203,7 @@
             if (typed === savedKey) idOfSavedKey = id;
             paint();
         }, function () {
-            state.textContent = 'The browser refused to derive the project id. '
-                + 'Nothing was changed.';
+            state.textContent = T.refused;
         });
     }
 
@@ -205,11 +213,7 @@
            under the old one are not moved and not deleted, this site simply
            stops showing them. */
         if (keyIn.value.trim() !== '' || projIn.value.trim() !== '') {
-            var ok = window.confirm(
-                'Draw a new key?\n\n'
-                + 'A new key is a new project. The notes already written stay '
-                + 'where they are and this site stops showing them. There is no '
-                + 'way back.');
+            var ok = window.confirm(T.drawTitle + '\n\n' + T.drawBody);
             if (!ok) return;
         }
 
@@ -227,13 +231,13 @@
             paint();
         }, function () {
             button.disabled = false;
-            state.textContent = 'The browser refused to derive the project id. Nothing was changed.';
+            state.textContent = T.refused;
         });
     }
 
     if (!able) {
         button.disabled = true;
-        state.textContent = 'This screen must be served over https to draw a key.';
+        state.textContent = T.httpsDraw;
     } else {
         button.addEventListener('click', draw);
     }

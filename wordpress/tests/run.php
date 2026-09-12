@@ -1102,6 +1102,27 @@ ap_check( 'a string asked for under another domain came back translated anyway, 
 	. 'so the text domain decides nothing',
 	'Settings' === __( 'Settings', 'not-annotepage' ) );
 
+/* admin.js's live messages are translated on this side and handed over before
+   the script runs. They were English literals inside it, which no rule reading
+   the PHP could see: a French screen whose key messages stayed English. */
+$GLOBALS['ap_queue'] = array();
+annotepage_admin_assets( 'settings_page_' . ANNOTEPAGE_PAGE );
+$ap_admin_inline = isset( $GLOBALS['ap_queue']['annotepage-admin']['before'] )
+	? (string) $GLOBALS['ap_queue']['annotepage-admin']['before'] : '';
+$ap_admin_prefix = 'window.annotepageAdminText = ';
+ap_check( 'the settings screen hands admin.js no sentences, so its messages would print "undefined"',
+	0 === strpos( $ap_admin_inline, $ap_admin_prefix ), $ap_admin_inline );
+$ap_admin_text = json_decode( rtrim( substr( $ap_admin_inline, strlen( $ap_admin_prefix ) ), ';' ), true );
+ap_check( 'admin.js is handed its sentences in English on a French site',
+	is_array( $ap_admin_text )
+	&& $french['Draw a new key?'] === $ap_admin_text['drawTitle']
+	&& $french['Project %s, unchanged.'] === $ap_admin_text['unchanged'],
+	$ap_admin_inline );
+$GLOBALS['ap_queue'] = array();
+annotepage_admin_assets( 'index.php' );
+ap_check( 'admin.js and its sentences are loaded on a screen other than this plugin\'s settings',
+	! isset( $GLOBALS['ap_queue']['annotepage-admin'] ) );
+
 /* French keeps the singular for zero -- "0 role", not "0 roles" -- which is the
    one thing a two-form language is free to disagree with English about, and the
    reason the .mo carries its own plural rule instead of inheriting the .pot's. */

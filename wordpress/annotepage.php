@@ -3,7 +3,7 @@
  * Plugin Name:       annotepage
  * Plugin URI:        https://annotepage.com/how-to-install-it.html
  * Description:       Annotate a page. Your assistant answers in the thread. Activate it and it works, for administrators only, until you say otherwise.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 5.2
  * Requires PHP:      7.4
  * Author:            tuxo83
@@ -221,7 +221,7 @@ define( 'ANNOTEPAGE_GREETING', 'annotepage_greeting' );
 define( 'ANNOTEPAGE_PAGE', 'annotepage' );
 
 /* Also the cache-buster on admin.js: one string to move, not two. */
-define( 'ANNOTEPAGE_VERSION', '1.0.0' );
+define( 'ANNOTEPAGE_VERSION', '1.0.1' );
 
 /* The per-person off switch, in user meta. Absent means on. */
 define( 'ANNOTEPAGE_USER_OFF', 'annotepage_off' );
@@ -1165,8 +1165,43 @@ function annotepage_admin_assets( $hook ) {
 		ANNOTEPAGE_VERSION,
 		true
 	);
+	wp_add_inline_script(
+		'annotepage-admin',
+		'window.annotepageAdminText = ' . wp_json_encode( annotepage_admin_text() ) . ';',
+		'before'
+	);
 }
 add_action( 'admin_enqueue_scripts', 'annotepage_admin_assets' );
+
+/**
+ * THE SENTENCES admin.js WRITES, translated here and handed to it.
+ *
+ * They were English literals inside the script, so a French site got a French
+ * screen whose live messages -- the ones under the key field, and the
+ * confirmation before a new key is drawn -- stayed English. Passed from PHP
+ * they go through the same __() calls, the same .pot and the same .mo as every
+ * other string on the screen: no second translation format to ship or check.
+ *
+ * The placeholders are filled in by the script, which is the only side that
+ * knows the value.
+ */
+function annotepage_admin_text() {
+	return array(
+		'noKey'       => __( 'No key. This site will ask each reviewer for one.', 'annotepage' ),
+		/* translators: %d: how many characters the key field holds. */
+		'keyLength'   => __( 'A key is 43 characters; this is %d.', 'annotepage' ),
+		/* translators: %s: the project id, 22 characters. */
+		'unchanged'   => __( 'Project %s, unchanged.', 'annotepage' ),
+		/* translators: %s: the new project id, 22 characters. */
+		'moved'       => __( 'Project %s. The notes written under the previous one stay where they are, and this site stops showing them.', 'annotepage' ),
+		'noProject'   => __( 'No project id yet: paste one, or paste a key above and it is derived.', 'annotepage' ),
+		'httpsDerive' => __( 'This screen must be served over https to derive the project id. Paste the id below as well.', 'annotepage' ),
+		'refused'     => __( 'The browser refused to derive the project id. Nothing was changed.', 'annotepage' ),
+		'drawTitle'   => __( 'Draw a new key?', 'annotepage' ),
+		'drawBody'    => __( 'A new key is a new project. The notes already written stay where they are and this site stops showing them. There is no way back.', 'annotepage' ),
+		'httpsDraw'   => __( 'This screen must be served over https to draw a key.', 'annotepage' ),
+	);
+}
 
 /**
  * The people named in the "chosen" list, as logins, for the form to show back.
