@@ -91,16 +91,6 @@ attached, which is the part worth keeping.
 - **Shipping `src/` in the client tarball.** Only `dist/`, `labels/` and the
   readme. The sources are on GitHub and the build is reproducible from there;
   shipping them tripled the tarball for nothing.
-- **An MCP endpoint on the notes server.** Ruled out, and the protocol is not
-  what refuses it: the transport fits. The notes are sealed in the browser, so
-  an endpoint there returns a readable remark only if the key reaches the
-  server — which FORMAT.md 1.1 forbids in one sentence with no exception, and
-  which the site states as a fact its reader cannot check. Without the key it
-  hands back envelopes, and `?action=text` already does that in one `curl`.
-  What it was meant to buy is already bought: `npx -y annotepage-mcp` runs the
-  package with nothing installed and nothing to maintain, and the key stays on
-  the machine reading the notes. On a server somebody operates themselves the
-  objection goes away with the stranger; on the shared relay it does not.
 
 ---
 
