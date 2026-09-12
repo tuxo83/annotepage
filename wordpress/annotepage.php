@@ -168,8 +168,10 @@
  *     empty, and the backtrace shows the translation being loaded just in time
  *     from inside admin_bar_menu, which is exactly where it should be.
  *
- * What a VISITOR reads is still not here. Those strings belong to the client
- * and translate through `data-labels`, a file belonging to the site.
+ * What a VISITOR reads is still not here. Those strings belong to the client,
+ * which follows the page's own <html lang> -- the one WordPress writes from the
+ * site language -- and loads its French set beside itself on the CDN. A
+ * `data-labels` file on the tag would override that; this plugin sets none.
  * ---------------------------------------------------------------------------
  */
 
@@ -1107,11 +1109,12 @@ add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'annotepage_ro
  *                 place that cannot enforce it, and teach its owner that it
  *                 protects something. It does not.
  *
- *   data-labels   A URL to a label file belonging to the site. Tempting for a
- *                 non-English WordPress -- and still wrong here: the file has
- *                 to be authored and uploaded first, and whoever can do that
- *                 can add three lines to a theme. A field whose prerequisite is
- *                 harder than the field.
+ *   data-labels   A URL to a label file belonging to the site. Not needed for
+ *                 a French WordPress: with no data-labels the client follows
+ *                 the page's <html lang> on its own. A language it does not
+ *                 ship needs a file authored and uploaded first, and whoever
+ *                 can do that can add three lines to a theme. A field whose
+ *                 prerequisite is harder than the field.
  *
  *   data-environment
  *                 The tempting one, because WordPress has

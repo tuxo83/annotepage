@@ -148,9 +148,9 @@ ever written into ciphertext nobody can open, from a screen that only said
 
 = What language is it in? =
 
-This screen follows your WordPress language, and French ships complete. What a
-*visitor* reads is the tool's own text, which is a separate file belonging to
-your site &mdash; a French set ships with the tool as well.
+English and French. This screen follows your WordPress language. The notes
+panel follows the language of the page, so a French site gets it in French with
+nothing to set. Notes themselves can be written in any language.
 
 == Screenshots ==
 
