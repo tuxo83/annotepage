@@ -925,17 +925,27 @@ $french = json_decode( (string) file_get_contents( dirname( __DIR__ ) . '/langua
 ap_check( 'languages/fr_FR.json could not be read, so nothing below proves anything',
 	is_array( $french ) && count( $french ) > 0 );
 
-ap_check( 'the translations are not loaded on init, which is where WordPress 6.7 '
-	. 'and later require a plugin to load them',
-	isset( $GLOBALS['ap_actions']['init'] )
-	&& in_array( 'annotepage_load_translations', $GLOBALS['ap_actions']['init'], true ),
+/* THE PLUGIN NO LONGER LOADS THEM ITSELF, and this is what keeps it that way.
+   It did, on init, beside the Domain Path header -- and Plugin Check raised the
+   only warning this plugin had: load_plugin_textdomain() is discouraged since
+   WordPress 4.6 for anything in the directory. Measured on 7.1 with the site in
+   French, the call deleted: core loads the shipped .mo out of Domain Path on
+   its own and the screen stays French. So the ABSENCE is what is checked, and
+   everything below loads the file the way core does. */
+ap_check( 'the plugin loads its own translations on init. WordPress discourages '
+	. 'that since 4.6 for a plugin in the directory and Plugin Check warns on it; '
+	. 'the Domain Path header is what loads them now',
+	! isset( $GLOBALS['ap_actions']['init'] )
+	|| ! in_array( 'annotepage_load_translations', $GLOBALS['ap_actions']['init'], true ),
 	implode( ', ', isset( $GLOBALS['ap_actions']['init'] ) ? $GLOBALS['ap_actions']['init'] : array() ) );
 
 $GLOBALS['ap_l10n'] = array();
 ap_check( 'a string came back translated before anything had been loaded',
 	'Settings' === __( 'Settings', 'annotepage' ) );
 
-annotepage_load_translations();
+/* What core does out of the Domain Path header, done here by hand: the plugin
+   no longer asks for this itself. */
+load_plugin_textdomain( 'annotepage', false, 'annotepage/languages' );
 
 ap_check( 'the plugin asks for a languages directory other than the one Domain '
 	. 'Path declares, so WordPress would look where the .mo is not',
@@ -981,7 +991,7 @@ $GLOBALS['ap_screen'] = new Ap_Screen( 'plugins' );
 
 $GLOBALS['ap_l10n'] = array();
 $in_english = ap_everything_read();
-annotepage_load_translations();
+load_plugin_textdomain( 'annotepage', false, 'annotepage/languages' );
 $in_french = ap_everything_read();
 
 ap_check( 'the French screen is the English one, so nothing was translated at all',

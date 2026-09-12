@@ -123,10 +123,16 @@
  *     site in French: header and no call, the screen is French; call and no
  *     header, French; NEITHER, and it is English on the front end and in
  *     wp-admin both -- the path then falls back to the plugin's root, where no
- *     .mo is. So both stay. The header is what works on 7.1; the call is what
- *     does not depend on one version's admin helper having been loaded, and
- *     this plugin still declares `Requires at least: 5.2`, where that was not
- *     measured.
+ *     .mo is. So THE HEADER STAYS AND THE CALL IS GONE. Both were kept at
+ *     first, belt and braces; Plugin Check then raised the only warning this
+ *     plugin had, because WordPress has discouraged load_plugin_textdomain()
+ *     since 4.6 for anything in the directory. Removed, and measured again on
+ *     7.1 with the site in French: __('Draw a key') still answers "Tirer une
+ *     cle". What that gives up is said rather than hidden -- on a WordPress
+ *     older than this one, where the header path was not measured, a zip taken
+ *     from our own site may show this screen in English. Nothing breaks:
+ *     English is the fallback, and a plugin installed from the directory gets
+ *     its translations from translate.wordpress.org by the automatic path.
  *   - CALLING __() BEFORE `init` IS A NOTICE since WordPress 6.7 -- one that
  *     names this plugin in the site's debug log. Every string here is produced
  *     by a function hooked to wp_footer, admin_notices, admin_bar_menu,
@@ -191,23 +197,6 @@ define( 'ANNOTEPAGE_VERSION', '1.0.0' );
 
 /* The per-person off switch, in user meta. Absent means on. */
 define( 'ANNOTEPAGE_USER_OFF', 'annotepage_off' );
-
-/**
- * THE TRANSLATIONS. Measured, and argued in the header: without this call a
- * .mo sitting in this plugin's own languages/ directory is never found, on any
- * WordPress -- the automatic loading everybody remembers is for the files
- * translate.wordpress.org installs somewhere else entirely.
- *
- * ON `init`, AND THE DOMAIN IS A LITERAL. Later than plugins_loaded on purpose:
- * WordPress 6.7 turns a translation loaded before init into a notice in the
- * site's log, and nothing here produces a string earlier. The literal is for
- * the tooling -- wordpress.org's scanner and tools/check-wordpress.mjs both
- * read this file as text, and a constant would hide the domain from both.
- */
-function annotepage_load_translations() {
-	load_plugin_textdomain( 'annotepage', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-}
-add_action( 'init', 'annotepage_load_translations' );
 
 /**
  * The stored answers, with every key present and every value of its own type.

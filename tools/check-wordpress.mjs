@@ -213,12 +213,19 @@ if (derived) {
         header('Text Domain') === DOMAIN);
     check(`the plugin header declares Domain Path "${header('Domain Path')}", and the `
         + `translations it ships are in ${LANG}`, header('Domain Path') === '/languages');
-    check('the plugin never calls load_plugin_textdomain() on init. On WordPress 7.1 '
-        + 'core calls it out of Domain Path and the screen is French without it -- but '
-        + 'that is one version\'s behaviour, and this plugin declares 5.2. The header '
-        + 'argues it with what was measured',
-        /load_plugin_textdomain\(\s*'annotepage'/.test(plugin)
-        && /add_action\(\s*'init',\s*'annotepage_load_translations'\s*\)/.test(plugin));
+    /* THE CALL IS GONE, AND THIS IS WHAT KEEPS IT GONE.
+       It was here at first, alongside the Domain Path header, on the reasoning
+       that the header's behaviour had only been measured on one version. Plugin
+       Check then raised it as the single warning this plugin had: WordPress has
+       discouraged load_plugin_textdomain() since 4.6 for a plugin in the
+       directory. Measured before removing it -- WordPress 7.1, site in French,
+       call deleted -- core still loads the shipped .mo out of Domain Path and
+       __('Draw a key') answers "Tirer une cle". Putting it back to be safe
+       trades a warning a reviewer reads for a benefit nobody has measured. */
+    check('the plugin calls load_plugin_textdomain(). WordPress discourages it since '
+        + '4.6 for a plugin in the directory and Plugin Check warns on it, while the '
+        + 'Domain Path header loads the shipped .mo without it -- measured, not assumed',
+        !/load_plugin_textdomain\s*\(/.test(stripPhpComments(plugin)));
 
     /* -- every call in our own domain -- */
     for (const entry of entries) {
