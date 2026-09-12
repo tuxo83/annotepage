@@ -207,7 +207,10 @@ export const loadConfiguration = async (explicit) => {
             + 'Either declare the project in the command that plugs this server in:\n'
             + '  ANNOTEPAGE_API   the address of api.php, the one the browser uses\n'
             + '  ANNOTEPAGE_KEY   the 43 characters of the project key\n'
-            + '  ANNOTEPAGE_AUTHOR  the name replies are signed with\n'
+            + '  ANNOTEPAGE_AUTHOR  the name replies are signed with. An assistant\n'
+            + '                     signs "Assistant" unless the person it works for\n'
+            + '                     names it otherwise -- never a reviewer\'s name,\n'
+            + '                     not even the owner\'s read off the site\n'
             + '  ANNOTEPAGE_ORIGIN  the site the notes are about, facing a relay\n\n'
             + 'Or write a file. Looked for, in order:\n'
             + paths.map((c) => '  ' + c).join('\n')

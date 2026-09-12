@@ -71,6 +71,15 @@ Options:
   --config <file>   failing that: $ANNOTEPAGE_CONFIG, ./.annotepage.json,
                     ~/.config/annotepage/annotepage.json
 
+With no file at all, the environment declares the project:
+  ANNOTEPAGE_API     the address of api.php
+  ANNOTEPAGE_KEY     the 43 characters of the key. A public site carries
+                     it in its pages: data-key on the tag, or key in
+                     window.annotepageConfig
+  ANNOTEPAGE_AUTHOR  needed to write; an assistant signs "Assistant"
+  ANNOTEPAGE_ORIGIN  needed to write through a relay
+There is no --api or --key option.
+
 The configuration file carries the project KEY. It is never committed:
 whoever reads it reads every note, and there is no key rotation.
 

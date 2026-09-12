@@ -339,7 +339,10 @@ const requireWrite = (project, state) => {
             'The project "' + project.name + '" declares no "author" field.\n'
             + 'This package publishes nothing anonymous: in a thread where everybody '
             + 'signs, a voice that does not sign casts doubt on the whole thread.\n'
-            + 'Add "author": "..." to the configuration of this project.');
+            + 'Add "author": "Assistant" to the configuration of this project, or the '
+            + 'name the person you work for gave you. Never a reviewer\'s name, not '
+            + 'even the site owner\'s: the thread would show them saying what they '
+            + 'did not write.');
     }
     /* LAST, and on purpose. read_only and the missing author are settings this
        configuration chose: naming them first tells somebody about their own
