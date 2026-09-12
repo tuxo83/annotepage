@@ -1249,8 +1249,8 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
              to be laid out differently, and every reason for a page selling
              simplicity to show a countable number of steps.
 
-             Three, and the third is a warning rather than an action -- which is
-             the honest shape: two things to do, one thing not to lose. -->
+             Two: the tag on the site, the sentence to the assistant. Everything
+             else is either on the page already or done by the assistant. -->
         <!-- ONE INSTALLATION HERE, AND THE OTHER ON THE PAGE THAT EXPLAINS IT.
 
              A switch stood here for an afternoon. It worked, and it was wrong
@@ -1326,37 +1326,25 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
             </li>
 
 
-            <li>
-                <div>
-                    <p class="cap"><span class="n"></span> You plug in your assistant</p>
-                    <p class="say">
-                        Two commands, once, on your machine.
-                    </p>
-                </div>
+            <!-- AND THE SECOND IS THE ASKING, WHICH NOW INCLUDES THE INSTALLING.
 
-                <div>
-                <div class="snip">
-                    <button class="copy" type="button" data-copy="snip-mcp" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
-<pre id="snip-mcp"><code><span class="tg">npm</span> <span class="at">install</span> <span class="op">-g</span> annotepage-mcp
-<span class="tg">claude</span> <span class="at">mcp</span> <span class="at">add</span> annotepage <span class="op">--</span> annotepage-mcp</code></pre>
-                </div>
-
-                </div>
-            </li>
-            <!-- AND THE THIRD IS THE USE, borrowed from the chapter above.
-
-                 The install chapter stopped at "the assistant is plugged in",
-                 which is where a reader is left holding two commands and no
-                 idea what to type next. The chapter above already answers that
-                 with one line in a terminal; the same crop, with the site
-                 NAMED, is the shortest way to say what plugged in is for.
+                 It was two steps: "you plug in your assistant", two commands,
+                 then "you ask it to read them". In this open mode the second
+                 step had nothing left to carry. The server is the public one,
+                 the key is in the page, and an assistant reads it there on its
+                 own -- the refusal it meets without a configuration tells it
+                 where to look. Measured on seven assistants, every one of them
+                 got through. So the reader asks once, naming the package, and the
+                 assistant installs what it needs and keeps the key in a file.
+                 Plugging it in for good is on how-to-install-it.html.
 
                  It is the tool's own dark ground in both themes, like the
                  terminal it is a crop of. -->
             <li>
                 <div>
-                    <p class="cap"><span class="n"></span> You ask it to read them</p>
-                    <p class="say">One sentence, with the address of your site.</p>
+                    <p class="cap"><span class="n"></span> You ask your assistant</p>
+                    <p class="say">One sentence, with the address of your site. It
+                        installs what it needs and reads the key off your page.</p>
                 </div>
                 <!-- NOT aria-hidden, unlike the terminal it is a crop of two
                      chapters up: that one illustrates, this one holds a line the
@@ -1367,7 +1355,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
                 <div class="frame term">
                     <button class="copy" type="button" data-copy="ask-line" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
                     <p class="mt-work"><span class="g">&#x273B;</span> Pondering&hellip;</p>
-                    <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-line">connect to staging.example.com with annotepage and fix what the reviewers flagged</span><span class="cur"></span></div>
+                    <div class="mt-input"><span class="ps">&#x276F;</span> <span id="ask-line">install annotepage-mcp and fix what the reviewers flagged on staging.example.com</span><span class="cur"></span></div>
                 </div>
             </li>
         </ol>
