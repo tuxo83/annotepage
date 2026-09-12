@@ -1,0 +1,24 @@
+{
+  "name": "annotepage",
+  "version": "0.0.1",
+  "description": "Placeholder that keeps the name. The tool is annotepage-mcp (assistants) and annotepage-client (the site): see https://annotepage.com",
+  "license": "MIT",
+  "homepage": "https://annotepage.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuxo83/annotepage.git",
+    "directory": "npm-name"
+  },
+  "type": "module",
+  "bin": {
+    "annotepage": "annotepage.mjs"
+  },
+  "files": [
+    "annotepage.mjs",
+    "README.md"
+  ],
+  "dependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}
