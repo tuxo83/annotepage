@@ -1514,7 +1514,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
     if (!window.crypto || !window.crypto.subtle || !window.crypto.getRandomValues) {
         while (tagOut.firstChild) tagOut.removeChild(tagOut.firstChild);
         tagOut.appendChild(document.createTextNode(
-            'data-key="this browser gives no WebCrypto here"'));
+            'no key drawn: this browser gives no WebCrypto here'));
         return;
     }
 
