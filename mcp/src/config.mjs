@@ -189,6 +189,21 @@ export const loadConfiguration = async (explicit) => {
     if (found === null) {
         throw new ConfigError(
             'No configuration found.\n\n'
+            + 'IS THE PROJECT PUBLIC? Then its key is in the pages it annotates, and\n'
+            + 'you need nobody to hand it to you. Fetch one and look in two places:\n'
+            + "  curl -s <site> | grep -oE 'data-(server|key|project)=\"[^\"]*\"'\n"
+            + "  curl -s <site> | grep -o 'annotepageConfig[^<]*'\n"
+            + 'The tag carries data-server and data-key; a page whose scripts are\n'
+            + 'concatenated, or served by the WordPress plugin, may instead declare a\n'
+            + 'window.annotepageConfig object before it, with server and key under\n'
+            + 'their bare names. Finding no data-key does NOT mean the key is private.\n'
+            + 'A tag carrying data-project and no key is the other case: the key is\n'
+            + 'deliberately not published, and only a person can give it to you.\n'
+            + 'When the site uses the shared relay, the address is\n'
+            + 'https://api.annotepage.com/api.php -- it is what the WordPress plugin\n'
+            + 'fills in by itself.\n\n'
+            + 'TO READ, api and key are enough. author and origin are only needed to\n'
+            + 'WRITE a reply or a resolution.\n\n'
             + 'Either declare the project in the command that plugs this server in:\n'
             + '  ANNOTEPAGE_API   the address of api.php, the one the browser uses\n'
             + '  ANNOTEPAGE_KEY   the 43 characters of the project key\n'

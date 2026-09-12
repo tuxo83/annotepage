@@ -1298,6 +1298,25 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
      served on the pages carrying this, and this client holds the project key
      in the browser. The locked form is documented there for whoever wants it.
      -->
+<!-- READING THIS PAGE WITH A PROGRAM RATHER THAN AN EYE? THEN READ THIS FIRST.
+     The identifier below is a STARTING POINT, not this site's project. The
+     script at the foot of this page draws a fresh key in the visitor's browser
+     and rewrites this block with it, so that a reader obtains a project of
+     their own without installing anything first -- and a program that fetches
+     this HTML never sees that rewrite, only the placeholder.
+
+     It is a trap worth naming, because it is not an inert example: that
+     identifier answers on the shared relay, in plain mode, and the project is
+     EMPTY. Ask it for notes and you get a perfectly well-formed "notes 0",
+     which reads as "nothing to fix" on a site that has open remarks. Measured:
+     two assistants out of seven reported exactly that, in good faith.
+
+     THIS SITE'S OWN PROJECT IS PUBLIC AND ITS KEY IS IN THIS PAGE, further
+     down, inside <template id="annotepage-tool">: data-server and data-key.
+     It sits in a template because the tool is off until a reader turns it on
+     from the console -- inert markup, not a hidden one. A project whose key is
+     written in its own page is public by design (FORMAT.md section 1.5):
+     whoever can load the page can read the notes, and write them. -->
 <pre id="snip-tag"><code>&lt;<span class="tg">script</span> <span class="at">src</span>=<span class="st">"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"</span>
         <span class="at">data-server</span>=<span class="st">"https://api.annotepage.com/api.php"</span>
         <span id="tag-ident"><span class="at">data-project</span>=<span class="st">"<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"</span></span>
@@ -1683,10 +1702,16 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
      attribute by attribute into a live <script>, which is what makes it run:
      the same file, the same key, the same data-version, and
      tools/check-sri.mjs still reads them where they have always been. -->
+<!-- THIS IS THIS SITE'S REAL CONFIGURATION, and it is public on purpose: the
+     key below is what reads and writes the notes left on annotepage.com. It is
+     the example the whole site is about, kept where anyone -- or any assistant
+     -- can find it rather than described in prose.
+     The block near the top of this page is a fresh project offered to the
+     reader, not this one. -->
 <template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.16"
+        data-version="2026.9.17"
         defer></script></template>
 <script>
 (function () {
