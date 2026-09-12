@@ -75,18 +75,40 @@ text.
 
 == External services ==
 
-This plugin's PHP contacts nothing. Two services are reached by the reader's
-browser instead, and only on pages where the tag is written.
+This plugin relies on two external services, and its own PHP contacts neither
+of them: there is no HTTP call anywhere in it. Both are reached by the reader's
+browser, and only because of the one script tag this plugin writes at the foot
+of a page.
 
-**cdn.jsdelivr.net** serves the tool itself, so each such page load sends it
-the reader's IP address, user agent and the file asked for &mdash; never a
-note, a path or a key. Terms: https://www.jsdelivr.com/terms
+**cdn.jsdelivr.net**, operated by jsDelivr, serves the annotation tool itself.
+The tag loads
+`https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js`, so on
+every page load that carries the tag, the browser sends jsDelivr what any
+request for a file carries: the reader's IP address, their user agent, the
+address of the file asked for, and &mdash; as for any cross-origin script
+&mdash; your site in the `Referer` header, which current browsers reduce to the
+scheme and host and not the page path. Nothing else goes there: no note, no
+page path and no key, and the request is the same one every visitor to every
+site using that file makes.
+Terms of use: https://www.jsdelivr.com/terms
+Privacy policy: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
 
-**The notes server** (`https://api.annotepage.com/api.php` by default, or your
-own install) receives the notes as they are written and read, encrypted in the
-browser first: it sees counts, times, sizes, IP addresses and your domain,
-never your paths and never your text.
-https://annotepage.com/questions.html#data
+**The notes server**, `https://api.annotepage.com/api.php` by default &mdash;
+the shared relay filled in at activation, or whichever address you set on the
+settings screen. It receives the notes: at the moment a reviewer writes one,
+and at the moment the tool reads back the notes belonging to a page. They are
+encrypted in the browser before they leave it, so that server sees counts,
+times, sizes, IP addresses and your domain, and never your page paths and never
+the text of a note &mdash; it cannot read one. Setting the address to a copy of
+`api.php` you host yourself replaces this service with your own server.
+What the shared relay sees: https://annotepage.com/questions.html#data
+
+**When nothing is sent at all.** A fresh install writes the tag for
+administrators only, so until you widen the audience on the settings screen, no
+visitor to your site contacts either service: a page that carries no tag makes
+no request to jsDelivr and none to the notes server. A consent manager or a
+developer can also withdraw the tag for a single request through the
+`annotepage_should_print` filter, without deactivating the plugin.
 
 == Installation ==
 
