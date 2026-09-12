@@ -44,7 +44,7 @@ comes out green, saying which one is missing.
 3. **Two repository secrets**, `WPORG_USERNAME` and `WPORG_PASSWORD`.
 
 **That password is the account's own, and it is the weakest link in this
-file.** npm gave us trusted publishing, so the two packages go out with no
+file.** npm gave us trusted publishing, so the npm packages go out with no
 stored secret at all; wordpress.org has no equivalent — SVN takes the account
 password, and that account owns every plugin it publishes. Two-factor
 authentication on the website does not apply to SVN, so the secret is a standing

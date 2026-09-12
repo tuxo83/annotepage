@@ -22,7 +22,8 @@
 # already online is never republished, and every check below runs before
 # anything goes out.
 #
-# BEFORE THE FIRST AUTOMATIC RUN, on npmjs.com, for EACH of the two packages:
+# BEFORE THE FIRST AUTOMATIC RUN, on npmjs.com, for EACH package -- client,
+# mcp, and the `annotepage` placeholder:
 # Settings > Trusted publishing > GitHub Actions, with tuxo83 / annotepage /
 # publish.yml, filename exactly. Without it the OIDC exchange is refused, and
 # the refusal reads "unable to authenticate", which explains nothing.
@@ -105,6 +106,10 @@ jobs:
             directory: client
           - package: annotepage-mcp
             directory: mcp
+          # The placeholder that keeps the name `annotepage` (npm-name/README.md
+          # says why). Same rule: bump its version and push, and it goes out.
+          - package: annotepage
+            directory: npm-name
 
     name: ${{ matrix.package }}
 
