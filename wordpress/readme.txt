@@ -14,13 +14,22 @@ Annotate this site. It works the moment you activate it, for administrators only
 
 annotepage is an annotation layer for a site under review: a reviewer clicks an
 element of a page, leaves a remark on it, and the remark is encrypted in the
-browser before it goes anywhere.
+browser before it goes anywhere. This plugin is the WordPress way in: it writes
+the tag and gives you one settings screen.
+
+**The documentation is [annotepage.com](https://annotepage.com)**
+[How you use it](https://annotepage.com/how-to-use-it.html) &middot; [Every way to install it](https://annotepage.com/how-to-install-it.html) &middot; [Questions people ask](https://annotepage.com/questions.html)
+
+**This page is the plugin's own: what it adds to WordPress, and the questions
+that only come up here. What annotepage is, and every other way to install it,
+are on the site and are not repeated.**
 
 **Activate it and it works.** There is nothing to fill in first: activation
-draws a key, points at the shared relay, and shows the tool to administrators
-and nobody else. Open any page of your site and the button is at the bottom
-right. The settings screen is for the second day &mdash; who else sees it, where
-the notes go, which key.
+draws a key, points at the shared relay &mdash; or at
+[a copy you host yourself](https://annotepage.com/how-to-install-it.html)
+&mdash; and shows the tool to administrators and nobody else. Open any page of
+your site and the button is at the bottom right. The settings screen is for the
+second day.
 
 There is no dashboard of notes here, no new user role, no widget, no shortcode,
 no block. The notes live in the annotation panel on the site itself, where the
@@ -36,42 +45,26 @@ Everybody it is shown to also gets an item in the toolbar, with a switch that
 turns it off **for them alone**. Nobody else's view changes, and it is not a way
 into the tool for somebody the audience leaves out.
 
-= The key is the project =
+= The key, and your other environments =
 
-The same key on two sites is one set of notes. Paste the key of your staging
+The same key on two sites is one set of notes: paste the key of your staging
 site into your development site and the two share every remark, because a page
-is found by its path and not by its domain &mdash; which is how dev, staging and
-production end up reviewing the same list.
+is found by its path and not by its domain. Drawing a new key starts a new
+project instead &mdash; nothing is deleted, and the screen says so twice before
+it happens.
 
-Draw a new key and you have a new project: the notes written under the old one
-stay exactly where they are, nothing is deleted, and this site stops showing
-them. That is said on the screen, twice, before it happens.
-
-= Two modes =
-
-* **The key is in the page.** Nobody is asked for anything. Whoever is shown the
-  tool can read the notes *and write them*; there is no reader-only role. Sound
-  behind a login, a VPN, an IP allowlist, or with the audience left where it
-  starts.
-* **Only the project id is in the page.** Each reviewer pastes the key once, in
-  their own browser. WordPress does not store it and the server never receives
-  it. Lose that key and the notes are gone: no recovery, no rotation.
+Whether that key travels in the page, or is asked of each reviewer once and kept
+out of it (**secure** mode), is set on the same screen and laid out on the
+[install page](https://annotepage.com/how-to-install-it.html#modes). In secure
+mode, losing that key loses the notes: there is
+[no recovery](https://annotepage.com/questions.html#no-recovery).
 
 = It ships no copy of the tool =
 
-The tag it writes points at the CDN, on a floating major version. The tool
-updates itself; this plugin does not have to publish a release every time it
-does, and you do not have to press Update to get a fix. What that gives up is
-the `integrity` attribute, deliberately: a pinned digest is a fix that reaches
-nobody.
-
-= Where the notes go =
-
-To an `api.php`: the shared relay, filled in at activation, or a copy you host
-yourself (one PHP file, PHP 7.4 and `pdo_sqlite`). In both cases the notes are
-end-to-end encrypted and the server cannot read one. It sees counts, times,
-sizes, IP addresses and your domain &mdash; never your paths and never your
-text.
+The tag points at the CDN on a floating major version, so the tool updates
+itself: no release of this plugin every time it moves, and no Update to press to
+get a fix. The cost is the `integrity` attribute, given up deliberately &mdash;
+a pinned digest is a fix that reaches nobody.
 
 == External services ==
 
@@ -146,12 +139,6 @@ annotation layer and no error to explain it. So the tag is written as text, on
 No. There is no HTTP call in this plugin's PHP, and none in its admin script.
 The only address it ever writes is the one in the settings and the CDN address
 for the tool itself.
-
-= Can I use one set of notes across dev, staging and production? =
-
-Yes, and it is the reason the key can be pasted: give the three sites the same
-key and they share the notes of the same path. Give them different keys and they
-share nothing.
 
 = Where are my notes? =
 
