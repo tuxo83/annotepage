@@ -158,6 +158,9 @@ const handOverTo = (cdn, version, onFailure) => {
     // usually nothing to remove -- which is the whole point of checking
     // before the work rather than after it.
     withdraw();
+    /* AND THE DOCUMENT IS GIVEN BACK, or the newer copy would find it held
+       and stand down (00-preamble), leaving the page with no tool at all. */
+    releaseDocument(document, thisCopy);
 
     const fresh = document.createElement('script');
     const attributes = script.attributes;
@@ -168,7 +171,11 @@ const handOverTo = (cdn, version, onFailure) => {
     fresh.src = url;
     fresh.addEventListener('error', () => {
         handingOver = false;
-        onFailure();
+        /* Taken back only if still free. While the new version was being
+           fetched, a router may have executed the old tag again, and that copy
+           now holds the document: two copies booting is the defect the slot
+           exists to prevent, so this one stays down. */
+        if (claimDocument(document, thisCopy)) onFailure();
     });
     (document.head || document.documentElement).appendChild(fresh);
     return true;

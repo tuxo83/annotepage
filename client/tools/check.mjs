@@ -58,10 +58,21 @@ const code = [
        would try to bend. Everything in that file that touches the document is
        inside a function, so evaluating it here costs nothing. */
     read('80-upgrade.js'),
+    /* 85-pages.js joins them too, for its decisions: what a change of address
+       asks of a copy, who holds the document, and what listening does to the
+       site's history object. They take the window and the document as
+       parameters, so plain objects stand in for both. The slot's key is not
+       written here a second time: it is READ OUT OF THE PREAMBLE, which is the
+       one place that declares it, and a preamble that renamed it would make
+       this assembly fail rather than check a key nobody uses. */
+    (read('00-preamble.js').match(/^const INSTANCE_SLOT = .*;$/m) || ['/* no slot declared */'])[0],
+    read('85-pages.js'),
     'return { b64url, fromB64url, generateSalt, keyFromText, derive,',
     '         indexOfPath, seal, open, compact, T, pageLanguage,',
     '         versionNumbers, announcedVersion, cdnServing, officialUrl,',
-    '         shippedLabelsFor, shippedLabelsUrl, labelsFileFor };'
+    '         shippedLabelsFor, shippedLabelsUrl, labelsFileFor,',
+    '         pageStep, claimDocument, releaseDocument, listenForPages,',
+    '         INSTANCE_SLOT };'
 ].join('\n');
 
 /* The same values the build injects, and for the same reason: these sections
@@ -246,6 +257,8 @@ const main = async () => {
             currentScript: 'src' in page ? { src: page.src, dataset: page.dataset || {} } : null,
             baseURI: SITE + '/guide/index.html'
         };
+        // A document another copy already runs in (00-preamble, 85-pages).
+        if ('slot' in page) doc[Symbol.for('annotepage')] = page.slot;
         const got = new Function('window', 'document', 'location', preamble
             + '\nreturn { API: API, PROJECT: PROJECT, DECLARED_KEY: DECLARED_KEY,'
             + ' DECLARED_PROJECT: DECLARED_PROJECT, KEY_DECLARED: KEY_DECLARED,'
@@ -357,6 +370,22 @@ const main = async () => {
     check('and leaves exactly one line behind', nothing.warnings.length, 1);
     check('which names the other way of declaring them',
         (nothing.warnings[0] || '').indexOf('annotepageConfig') !== -1, true);
+
+    /* -- AND A SECOND COPY IN THE SAME DOCUMENT ------------------------
+       A router re-executing the tag, or a template carrying it twice. The
+       second copy must read nothing, say nothing, and hand the question to
+       the copy that runs -- once per execution. */
+    let rechecked = 0;
+    const held = settingsOf({ src: SITE + '/js/annotepage.js', dataset: { server: API, project: ID },
+        slot: { copy: { version: '0.0.0', recheck: () => { rechecked += 1; } }, listening: true } });
+    check('a copy finding the document held stands down before reading a setting',
+        refusal(held), 'nothing was read at all');
+    check('and says nothing in the console, which a re-execution per click would repeat',
+        held.warnings.length, 0);
+    check('and asks the running copy to look at the page again, once', rechecked, 1);
+    check('a document given back by a copy handing over boots the next one normally',
+        refusal(settingsOf({ src: SITE + '/js/annotepage.js', dataset: { server: API, project: ID },
+            slot: { copy: null, listening: true } })), 'none');
 
     /* THE SETTINGS ARE DOCUMENTED WHERE THEY ARE COPIED FROM. The package's
        readme is the table people read before writing either form; a setting
@@ -493,6 +522,132 @@ const main = async () => {
     new Function('window', shipped)(window);
     check('and the French set, once it has run, is what T() answers',
         module.T('button.open'), french['button.open']);
+
+    /* -- THE PAGE CHANGES, THE DOCUMENT DOES NOT ------------------------
+       85-pages. The browser half -- a real router, a real body swap, notes
+       from a real server -- cannot run here and is not pretended here. What
+       can is every decision that half rests on, against plain objects. */
+    process.stdout.write('\nthe page changes without a reload\n');
+
+    const step = (s) => module.pageStep(Object.assign(
+        { frozen: false, path: '/a', known: '/a', inScope: true, outOfScope: false, running: true }, s));
+    check('the same path is the same page, whatever the body did', step({}), 'none');
+    check('another path, for a running tool: its own notes', step({ path: '/b' }), 'follow');
+    check('another path during a boot or a key screen: the boot looks again when it lands',
+        step({ path: '/b', running: false }), 'wait');
+    check('leaving the declared prefix takes the tool down',
+        step({ path: '/elsewhere', inScope: false }), 'leave');
+    check('moving about outside it only remembers the path',
+        step({ path: '/elsewhere/2', inScope: false, outOfScope: true, running: false }), 'note');
+    check('coming back into it boots, as a full load would',
+        step({ path: '/b', outOfScope: true, running: false }), 'enter');
+    check('a refused configuration or a copy that handed over never moves',
+        step({ path: '/b', frozen: true }), 'none');
+
+    process.stdout.write('one copy per document\n');
+    const documentA = {};
+    const copyOne = { version: '1.0.0', recheck: () => {} };
+    const copyTwo = { version: '1.0.0', recheck: () => {} };
+    check('the first copy takes the document', module.claimDocument(documentA, copyOne), true);
+    check('a second copy does not', module.claimDocument(documentA, copyTwo), false);
+    check('and the first still holds it', documentA[module.INSTANCE_SLOT].copy === copyOne, true);
+    check('claiming again is not a conflict with oneself', module.claimDocument(documentA, copyOne), true);
+    module.releaseDocument(documentA, copyTwo);
+    check('a copy that does not hold it cannot give it back', documentA[module.INSTANCE_SLOT].copy === copyOne, true);
+    module.releaseDocument(documentA, copyOne);
+    check('the holder handing over frees it for the newer copy',
+        module.claimDocument(documentA, copyTwo), true);
+    check('the slot is the preamble\'s own key, a registered symbol',
+        module.INSTANCE_SLOT === Symbol.for('annotepage'), true);
+
+    /* A site's history object and window, reduced to what listening touches.
+       `path` stands in for location.pathname, which the real pushState
+       changes before it returns. */
+    const fakeSite = (withNavigation) => {
+        const listeners = {};
+        const history = {
+            path: '/a',
+            pushed: [],
+            pushState(state, title, url) {
+                if (url === 'refused') throw new Error('the site\'s own refusal');
+                this.pushed.push(url);
+                this.path = url;
+                return 'what the site returns';
+            },
+            replaceState(state, title, url) { this.path = url; return 'replaced'; }
+        };
+        const win = {
+            history: history,
+            addEventListener: (type, fn) => { (listeners[type] = listeners[type] || []).push(fn); },
+            fire: (type) => (listeners[type] || []).forEach((fn) => fn()),
+            listeners: listeners
+        };
+        if (withNavigation) {
+            win.navigation = { addEventListener: (type, fn) => win.addEventListener('nav:' + type, fn) };
+        }
+        return win;
+    };
+
+    const site = fakeSite(false);
+    const doc = {};
+    const seen = [];
+    const holder = { version: '1.0.0', recheck: () => seen.push(site.history.path) };
+    module.claimDocument(doc, holder);
+    const originalPush = site.history.pushState;
+    check('without the Navigation API, listening installs itself', module.listenForPages(site, doc), true);
+    check('pushState still returns what the site returns',
+        site.history.pushState({ s: 1 }, '', '/b'), 'what the site returns');
+    check('with the arguments it was given and on the object it belongs to',
+        site.history.pushed.join(','), '/b');
+    check('and the copy looks AFTER the address changed, never before', seen.join(','), '/b');
+    site.history.replaceState(null, '', '/c');
+    check('replaceState is heard the same way', seen.join(','), '/b,/c');
+    site.fire('popstate');
+    check('and so is the back button', seen.length, 3);
+
+    const wrapped = site.history.pushState;
+    check('a second copy listening installs nothing', module.listenForPages(site, doc), false);
+    check('so history is wrapped once, not once per copy', site.history.pushState === wrapped, true);
+    site.history.pushState(null, '', '/d');
+    check('and one navigation is announced once', seen.length, 4);
+    check('the wrapper is not the site\'s method: it was wrapped at all',
+        wrapped !== originalPush, true);
+
+    let refused = 'nothing thrown';
+    try { site.history.pushState(null, '', 'refused'); } catch (e) { refused = e.message; }
+    check('a URL the site\'s history refuses throws to the site, as it did',
+        refused, 'the site\'s own refusal');
+    check('and a navigation that did not happen is not followed', seen.length, 4);
+
+    holder.recheck = () => { throw new Error('a defect of ours'); };
+    let broke = 'the site\'s navigation went through';
+    try { site.history.pushState(null, '', '/e'); } catch (e) { broke = 'the site saw: ' + e.message; }
+    check('a defect in the copy never breaks the site\'s navigation', broke,
+        'the site\'s navigation went through');
+
+    const newerCopy = { version: '9.0.0', recheck: () => seen.push('newer ' + site.history.path) };
+    module.releaseDocument(doc, holder);
+    module.claimDocument(doc, newerCopy);
+    site.history.pushState(null, '', '/f');
+    check('after a handover the listeners already there speak to the newer copy',
+        seen[seen.length - 1], 'newer /f');
+    module.releaseDocument(doc, newerCopy);
+    check('and with nobody holding the document, the site navigates undisturbed',
+        site.history.pushState(null, '', '/g'), 'what the site returns');
+
+    const modern = fakeSite(true);
+    const modernDoc = {};
+    let heard = 0;
+    module.claimDocument(modernDoc, { version: '1.0.0', recheck: () => { heard += 1; } });
+    const untouched = modern.history.pushState;
+    module.listenForPages(modern, modernDoc);
+    check('with the Navigation API, history is left exactly as the site has it',
+        modern.history.pushState === untouched, true);
+    check('and the change of entry is what is listened to',
+        (modern.listeners['nav:currententrychange'] || []).length, 1);
+    modern.fire('nav:currententrychange');
+    modern.fire('popstate');
+    check('both signs reach the copy', heard, 2);
 
     process.stdout.write(failures ? '\n' + failures + ' failure(s)\n' : '\neverything conforms\n');
     process.exit(failures ? 1 : 0);

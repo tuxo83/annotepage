@@ -42,10 +42,11 @@ const blockingScreen = (title, wide) => {
         // We stand down for this page load. Nothing is remembered: on the
         // next reload the screen comes back, because the problem itself has
         // not been dealt with.
-        if (host) host.remove();
-        host = null;
-        root = null;
-        ui = null;
+        //
+        // withdraw() and not the three lines it replaces: the host is now
+        // also WATCHED (85-pages), and a list of what to take down written in
+        // two places is the list that drifts.
+        withdraw();
     });
     header.appendChild(close);
     const body = create('div', 'ap-panel-body');

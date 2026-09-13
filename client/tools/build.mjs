@@ -43,6 +43,7 @@ const SECTIONS = [
     '60-ui.js',
     '70-setup.js',
     '80-upgrade.js',
+    '85-pages.js',
     '90-boot.js'
 ];
 

@@ -31,6 +31,8 @@ const buildHost = () => {
         'pointer-events: none !important;' +
         'z-index: 2147483000 !important;';
     document.body.appendChild(host);
+    // And kept there: a router that swaps the body takes it along (85-pages).
+    watchHost();
     root = host.attachShadow({ mode: 'open' });
 
     /* The stylesheet is PUT HERE, in a <style>, and not loaded by a <link>

@@ -51,6 +51,38 @@
                          rather than resolved (FORMAT.md section 1.5).
      neither             we stay out, and we say so once in the console. */
 
+/* ONE COPY PER DOCUMENT, HOWEVER MANY TIMES THIS FILE RUNS.
+
+   A tag inside <body> is executed again by every router that swaps the body
+   and re-activates its scripts -- Turbo, htmx's hx-boost, Livewire's
+   wire:navigate, Astro's ClientRouter -- and a template can carry the tag
+   twice. Each execution used to build a tool of its own: two pills, two sets
+   of listeners on one page, one remark sent twice.
+
+   So the copy that boots first takes a slot ON THE DOCUMENT (85-pages), and
+   any later one finds it here and stands down BEFORE reading a setting,
+   drawing a pixel or writing a line in the console -- a re-execution on every
+   navigation would otherwise repeat the same warning at every click. It does
+   one thing instead: it asks the running copy to look at the page again. A
+   re-executed tag is the plainest sign there is that the body just changed.
+
+   WHY THE DOCUMENT AND A REGISTERED SYMBOL. The document is what "one per
+   document" means, and it outlives a body swap. Symbol.for gives two copies of
+   this file -- two versions, from two addresses -- the same key without it
+   being a name a site's script can overwrite by accident: window.Annotepage
+   was the obvious place, and a page is allowed to assign that object whole
+   (15-labels).
+
+   THE CONTRACT BETWEEN COPIES IS { copy: { version, recheck } }, and it is
+   read by versions that do not exist yet. Adding to it is free; renaming
+   either member breaks the copy that ships next to an older one. */
+const INSTANCE_SLOT = Symbol.for('annotepage');
+const alreadyRunning = document[INSTANCE_SLOT];
+if (alreadyRunning && alreadyRunning.copy) {
+    alreadyRunning.copy.recheck();
+    return;
+}
+
 /* THE SETTINGS, AND THE WHOLE LIST OF THEM. `data-` plus the name on a tag,
    the name alone in the object. Documented in the client's README, and
    client/tools/check.mjs refuses a list that has drifted from it.

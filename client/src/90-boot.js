@@ -7,8 +7,18 @@ const redraw = () => {
     drawMarkers();
 };
 
-const reload = () =>
-    call('list').then((r) => {
+/* A LIST BELONGS TO THE PAGE IT WAS ASKED FOR. The tool now outlives its
+   first page (85-pages), so an answer can land after the reader has moved on:
+   a slow list, or a reply sent just before Back. Applied, it would put the
+   notes of the page that left on the page that came -- the very defect being
+   fixed -- so the index is remembered at the question and compared at the
+   answer, twice, since decrypting takes a turn of its own. No index at all is
+   the gap while the next one is computed: nothing is asked then. */
+const reload = () => {
+    const index = PAGE_INDEX;
+    if (!index) return Promise.resolve(null);
+    return call('list').then((r) => {
+        if (index !== PAGE_INDEX) return null;
         if (!r.ok) {
             // The tool is already in place: we no longer keep quiet. The
             // notes already on screen stay, with the warning that they may
@@ -24,12 +34,14 @@ const reload = () =>
         expired = readExpired(r.data);
         serverWide = readServerTotals(r.data);
         return readList(r.data).then((read) => {
+            if (index !== PAGE_INDEX) return null;
             notes = read;
             currentFailure = null;
             redraw();
             return null;
         });
     });
+};
 
 /* -- 21. Startup ----------------------------------------------------------
    The order matters: we ask the API BEFORE touching the DOM. If it does not
@@ -98,6 +110,9 @@ const loadLabels = () => {
 const withdraw = () => {
     if (ui && mode) leaveMode();
     if (host) host.remove();
+    // The watch that puts the host back (85-pages) goes with it, or the next
+    // body swap would find nothing to restore and keep observing for ever.
+    unwatchHost();
     host = null;
     root = null;
     ui = null;
@@ -133,12 +148,19 @@ function startWithSalt(text, derived) {
     keyText = text;
     keys = derived;
 
-    return indexOfPath(keys.indexKey, pagePath())
+    /* The path is read HERE and not at the top of start(): a key pasted on
+       the key screen can arrive several pages after the boot began. */
+    PAGE_PATH = pagePath();
+    return indexOfPath(keys.indexKey, PAGE_PATH)
         .then((index) => {
             PAGE_INDEX = index;
             return call('list');
         })
         .then((first) => {
+            /* The reader left the declared prefix while this boot was on the
+               network: that page shows nothing, and stepAside (85-pages) has
+               already made sure of it. */
+            if (outOfScope) return null;
             if (!first.ok && !speaksAtStartup(first)) {
                 // Complete silence: no node, no pixel, no message. If a key
                 // screen was open, it goes away with the rest.
@@ -206,12 +228,9 @@ const forgetKey = () => {
     keyText = '';
     keys = null;
     PAGE_INDEX = '';
-    notes = [];
-    anchored = [];
-    orphans = [];
-    historyOpen = false;
-    currentFailure = null;
-    skipped = { newer: 0, unreadable: 0, unknown: 0 };
+    // The page's own state, from the one list of it (85-pages): a navigation
+    // drops the same things, and two copies of that list would drift.
+    forgetPage();
 
     // And the tool is back where it was before the key was pasted: the
     // screen that asks for it. openSaltScreen clears the layer it replaces.
@@ -240,6 +259,14 @@ function proceed(first) {
         currentFailure = failureFrom(first, 'error.title_read');
         redraw();
         return null;
+    }).then(() => {
+        /* THE ADDRESS MAY HAVE MOVED DURING THE BOOT: a derivation, a request
+           and a label file is long enough for a router to push a page. The
+           signs that arrived meanwhile were told to wait (pageStep), so this
+           is where they are answered -- and on a page that did not move it
+           compares two equal strings. */
+        followPage();
+        return null;
     });
 }
 
@@ -266,7 +293,12 @@ const start = () => {
 
     // Outside the project's scope: silence. So the declaration can live in a
     // template shared by the whole site.
-    if (!inScope()) return;
+    //
+    // And the reason is REMEMBERED: it is the only silence that a later
+    // navigation can lift (85-pages).
+    PAGE_PATH = pagePath();
+    outOfScope = !inScope();
+    if (outOfScope) return;
 
     if (!CRYPTO) {
         // Without a secure context nothing is possible -- but if somebody
@@ -340,6 +372,18 @@ const start = () => {
         showScreen(openSaltScreen);
     });
 };
+
+/* THIS COPY, AS OTHER COPIES SEE IT. The shape is a contract with versions
+   that do not exist yet: see 00-preamble. The claim cannot fail here -- a copy
+   that found the document held has already returned from the preamble, and
+   nothing between the two is asynchronous. */
+const thisCopy = { version: TOOL_VERSION, recheck: recheck };
+claimDocument(document, thisCopy);
+
+/* Listening starts before the boot and whatever the boot decides: a page
+   outside the declared prefix is exactly the one that needs to hear the next
+   navigation. */
+listenForPages(window, document);
 
 if (document.body) {
     start();

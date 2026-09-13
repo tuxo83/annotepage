@@ -49,6 +49,18 @@ let keyText = '';
 let keys = null;            // { id, encryptionKey, indexKey }
 let PAGE_INDEX = '';        // blind index of the current page
 
+/* WHICH PAGE THAT INDEX BELONGS TO. Read once at boot, it was the only
+   answer for the life of the document -- and a router that changes the path
+   without a reload kept the first page's notes on every later one. It is now
+   written wherever the index is computed, and compared against the address at
+   every sign of navigation (85-pages). */
+let PAGE_PATH = '';
+/* True while this copy stands down because the current path is outside the
+   declared prefix. A full load would simply have stayed silent; a copy that
+   outlives its first page has to remember WHY it is silent, because only this
+   reason goes away when the path changes. */
+let outOfScope = false;
+
 const inTool = (n) => !!(host && n && (n === host || host.contains(n)));
 
 /* -- The browser's memory ------------------------------------------------
