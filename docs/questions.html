@@ -670,6 +670,25 @@ claude mcp add annotepage -- annotepage-mcp</pre>
             nothing: the stylesheet goes in as a constructed sheet, which is not
             an inline sheet in the policy&rsquo;s sense.</p>
             </article>
+            <!-- ONE TOOL PER PAGE, AS A RULE AND NOT AN ACCIDENT. Two tags for
+                 two projects on one page would mean two buttons nobody can tell
+                 apart. Choosing which project a page runs -- and letting a
+                 person switch -- is the host site's code, not this tool's. -->
+            <article class="qa" data-tags="The tag on your page">
+                <h3 class="qa-q" id="one-per-page">Can one page carry two projects?</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span></p>
+                <p class="qa-a">No: one tool runs on a page at a time. The first tag
+            loaded wins; another one on the same page is ignored, and says so in the
+            console.</p>
+                <p class="qa-a">Several projects on one site are fine &mdash; one per
+            section, one per client &mdash; as long as each page loads only its own
+            tag. Deciding which one a page gets belongs to your site&rsquo;s own
+            code.</p>
+                <p class="qa-a"><b>A switch between projects is possible</b>, and it is
+            the site&rsquo;s to build: a small control that reloads the page with the
+            other project&rsquo;s tag. The two never run at the same time &mdash; the
+            reload is what hands the page from one to the other.</p>
+            </article>
             <article class="qa" data-tags="The tag on your page|Your site">
                 <h3 class="qa-q" id="language">What language does it speak?</h3>
                 <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Your site</span></p>

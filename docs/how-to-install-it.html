@@ -706,23 +706,34 @@ body:has(#u-self:checked)   .wiz-a .w-self {
 }
 .tabs input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-/* The answer sits on the page's own left edge, not inside a panel: a bordered
-   box would be a third axis for one line of text. */
-.fwp { margin: .9rem 0 0; font-size: .95rem; color: var(--dim); }
-/* One group shown at a time, by the tab. The CSP line belongs to every group,
-   so it is not one of them and always shows. */
-.fwp > div { display: none; }
-.fwp p { margin: 0; }
-body:has(#fw-layout:checked)  .fw-layout  { display: block; }
-body:has(#fw-html:checked)    .fw-html    { display: block; }
-body:has(#fw-builder:checked) .fw-builder { display: block; }
-body:has(#fw-wp:checked)      .fw-wp      { display: block; }
-/* A tool's name, then where the tag goes in it: one line each, the name at the
-   weight of a label so the eye can run down the column of names. */
-.fw-list { margin: .45rem 0 0; padding: 0; list-style: none; }
-.fw-list li { padding: .18rem 0; }
-.fw-list li > b:first-child { color: var(--text); margin-right: .35rem; }
-.fwp .fw-csp { margin-top: .8rem; font-size: .88rem; }
+/* WHERE THE TAG GOES: every tool's name as a small button, its family as a
+   quiet word in the same row, and one line under them for the one pointed at. */
+.where-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .35rem; margin: .6rem 0 0; }
+.where-fam { margin: 0 .1rem 0 .55rem; font-size: .72rem; color: var(--dim); }
+.where-fam:first-child { margin-left: 0; }
+.where-tools button {
+    padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--bg); color: var(--text);
+    font: inherit; font-size: .8rem; cursor: pointer;
+}
+.where-tools button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.where-tools button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Without the script every line shows, one under the other. With it, one line
+   and the hint; the height is held so the chapter below does not move. */
+.where-lines {
+    margin: .7rem 0 0; padding: .55rem .75rem;
+    border: 1px solid var(--line-soft); border-radius: 8px; background: var(--bg-soft);
+    font-size: .9rem; color: var(--dim);
+}
+.where-lines p { margin: 0; }
+.where-lines p + p { margin-top: .3rem; }
+.where-hint { display: none; }
+.where-lines.is-live { min-height: 2.9em; }
+.where-lines.is-live .where-hint { display: block; }
+.where-lines.is-live p + p { margin-top: 0; }
+.where-line b { margin-right: .35rem; color: var(--text); }
+@media (max-width: 40rem) { .where-lines.is-live { min-height: 4.6em; } }
+.fw-csp { margin: .8rem 0 0; font-size: .88rem; color: var(--dim); }
 
 
 /* == THE LOOP, IN FOUR BOXES ==============================================
@@ -2103,71 +2114,79 @@ return array(
                          it -- I have the tag, where does it go in what I use --
                          and it is a lookup, not a step, so it carries no
                          number. -->
-                    <p class="sub-lead">Where it goes, in what you use:</p>
-            <!-- FOUR GESTURES, NOT TEN NAMES. Ten framework tabs said the
-                 same thing ten times -- the layout every page passes through --
-                 and still missed Vite apps, static generators and site
-                 builders. Grouped by what the reader actually does, the list can
-                 name twenty tools without twenty controls, and each line keeps
-                 the exact file, because a file name is what they came for.
+                    <p class="sub-lead" id="where-lead">Where it goes, in what you use:</p>
+            <!-- NAMES FIRST, ONE ANSWER AT A TIME. Ten framework tabs, then four
+                 groups with a list under each: both made a large block of text
+                 for a lookup somebody does once. What they came for is their own
+                 tool's name and one file, so every name is a small button, all
+                 of them visible -- the browser's find-in-page lands on
+                 "Webflow" -- and one line answers for the tool pointed at.
+
+                 EVERY ANSWER STAYS IN THE PAGE. Without the script below, all
+                 the lines show. With it, the ones not chosen are
+                 hidden="until-found": still indexed, and a search for a file
+                 name opens its line (a `beforematch` event selects the button).
 
                  CHECKED against each tool's current docs: Nuxt's `body: true`
                  is gone (Unhead v2: tagPosition), Laravel's layout depends on
                  the starter kit, and a block theme has no footer.php. -->
-            <div class="tabs">
-                <label><input type="radio" name="fw" id="fw-layout" checked> <span>A framework</span></label>
-                <label><input type="radio" name="fw" id="fw-html"> <span>HTML or a static site</span></label>
-                <label><input type="radio" name="fw" id="fw-builder"> <span>A site builder</span></label>
-                <label><input type="radio" name="fw" id="fw-wp"> <span>WordPress</span></label>
+            <div class="where-tools" role="group" aria-labelledby="where-lead">
+                <span class="where-fam">Framework</span>
+                <button type="button" data-where="w-next">Next.js</button>
+                <button type="button" data-where="w-nuxt">Nuxt</button>
+                <button type="button" data-where="w-svelte">SvelteKit</button>
+                <button type="button" data-where="w-astro">Astro</button>
+                <button type="button" data-where="w-rails">Rails</button>
+                <button type="button" data-where="w-laravel">Laravel</button>
+                <button type="button" data-where="w-symfony">Symfony</button>
+                <button type="button" data-where="w-django">Django</button>
+                <button type="button" data-where="w-drupal">Drupal</button>
+                <span class="where-fam">Static</span>
+                <button type="button" data-where="w-html">HTML</button>
+                <button type="button" data-where="w-vite">Vite</button>
+                <button type="button" data-where="w-angular">Angular</button>
+                <button type="button" data-where="w-hugo">Hugo</button>
+                <button type="button" data-where="w-jekyll">Jekyll</button>
+                <button type="button" data-where="w-eleventy">Eleventy</button>
+                <span class="where-fam">Builder</span>
+                <button type="button" data-where="w-webflow">Webflow</button>
+                <button type="button" data-where="w-shopify">Shopify</button>
+                <button type="button" data-where="w-framer">Framer</button>
+                <button type="button" data-where="w-squarespace">Squarespace</button>
+                <button type="button" data-where="w-wix">Wix</button>
+                <button type="button" data-where="w-ghost">Ghost</button>
+                <span class="where-fam">CMS</span>
+                <button type="button" data-where="w-wp">WordPress</button>
             </div>
-
-            <div class="fwp">
-                <div class="fw-layout">
-                    <p>In the layout every page is rendered into, before
-                    <code>&lt;/body&gt;</code> &mdash; once, and every page has it:</p>
-                    <ul class="fw-list">
-                        <li><b>Next.js</b> <code>app/layout.tsx</code>, last in <code>&lt;body&gt;</code>, as a plain <code>&lt;script&gt;</code> (pages router: <code>pages/_document.tsx</code>)</li>
-                        <li><b>Nuxt</b> <code>nuxt.config.ts</code>, under <code>app.head.script</code>, with <code>tagPosition: 'bodyClose'</code></li>
-                        <li><b>SvelteKit</b> <code>src/app.html</code></li>
-                        <li><b>Astro</b> <code>src/layouts/*.astro</code>, with <code>is:inline</code></li>
-                        <li><b>Rails</b> <code>app/views/layouts/application.html.erb</code></li>
-                        <li><b>Laravel</b> <code>resources/views/layouts/app.blade.php</code> (Livewire) or <code>resources/views/app.blade.php</code> (React, Vue, Svelte)</li>
-                        <li><b>Symfony</b> <code>templates/base.html.twig</code></li>
-                        <li><b>Django</b> the base template your pages <code>{% extends %}</code></li>
-                        <li><b>Drupal</b> your theme&rsquo;s <code>html.html.twig</code></li>
-                    </ul>
-                </div>
-                <div class="fw-html">
-                    <p>Before <code>&lt;/body&gt;</code>, in the file every page comes from:</p>
-                    <ul class="fw-list">
-                        <li><b>Plain HTML</b> <b>every page</b> you want annotated, not only <code>index.html</code></li>
-                        <li><b>Vite (React, Vue), Angular</b> <code>index.html</code> at the root &mdash; never imported into the bundle</li>
-                        <li><b>Hugo</b> <code>layouts/baseof.html</code></li>
-                        <li><b>Jekyll</b> <code>_layouts/default.html</code></li>
-                        <li><b>Eleventy</b> your base layout</li>
-                    </ul>
-                </div>
-                <div class="fw-builder">
-                    <p>In the field for custom code at the end of the page:</p>
-                    <ul class="fw-list">
-                        <li><b>Webflow</b> Site settings &rarr; Custom code &rarr; Footer code</li>
-                        <li><b>Shopify</b> <code>theme.liquid</code>, before <code>&lt;/body&gt;</code>, on an unpublished copy of the theme</li>
-                        <li><b>Framer, Squarespace, Wix, Ghost</b> their code injection setting, footer</li>
-                    </ul>
-                </div>
-                <div class="fw-wp">
-                    <p>Install <a href="https://github.com/tuxo83/annotepage/tree/main/wordpress">the
-                    plugin</a>: it draws a key and works the moment you activate it,
-                    for administrators only until you widen it &mdash; and nobody
-                    outside that audience ever receives the key. By hand instead, hook
-                    the tag on <code>wp_footer</code>: a block theme has no
-                    <code>footer.php</code>.</p>
-                </div>
-                <p class="fw-csp">A Content-Security-Policy must allow
-                <code>cdn.jsdelivr.net</code> in <code>script-src</code> and your notes
-                server in <code>connect-src</code> &mdash;
-                <a href="questions.html?tag=nothing-appears">what else stops it appearing</a>.</p>
+            <div class="where-lines" aria-live="polite">
+                <p class="where-hint">Point at your tool to see where the tag goes.</p>
+                <p class="where-line" id="w-next"><b>Next.js</b> <code>app/layout.tsx</code>, last in <code>&lt;body&gt;</code>, as a plain <code>&lt;script&gt;</code> &mdash; pages router: <code>pages/_document.tsx</code></p>
+                <p class="where-line" id="w-nuxt"><b>Nuxt</b> <code>nuxt.config.ts</code>, under <code>app.head.script</code>, with <code>tagPosition: 'bodyClose'</code></p>
+                <p class="where-line" id="w-svelte"><b>SvelteKit</b> <code>src/app.html</code>, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-astro"><b>Astro</b> the layout in <code>src/layouts/</code>, before <code>&lt;/body&gt;</code>, with <code>is:inline</code></p>
+                <p class="where-line" id="w-rails"><b>Rails</b> <code>app/views/layouts/application.html.erb</code>, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-laravel"><b>Laravel</b> <code>resources/views/layouts/app.blade.php</code> with Livewire, <code>resources/views/app.blade.php</code> with React, Vue or Svelte</p>
+                <p class="where-line" id="w-symfony"><b>Symfony</b> <code>templates/base.html.twig</code>, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-django"><b>Django</b> the base template your pages <code>{% extends %}</code>, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-drupal"><b>Drupal</b> your theme&rsquo;s <code>html.html.twig</code>, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-html"><b>HTML</b> before <code>&lt;/body&gt;</code> in <b>every page</b> you want annotated, not only <code>index.html</code></p>
+                <p class="where-line" id="w-vite"><b>Vite</b> (React, Vue) <code>index.html</code> at the root &mdash; never imported into the bundle</p>
+                <p class="where-line" id="w-angular"><b>Angular</b> <code>src/index.html</code> &mdash; not in <code>angular.json</code> scripts</p>
+                <p class="where-line" id="w-hugo"><b>Hugo</b> <code>layouts/baseof.html</code>, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-jekyll"><b>Jekyll</b> <code>_layouts/default.html</code>, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-eleventy"><b>Eleventy</b> your base layout, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-webflow"><b>Webflow</b> Site settings &rarr; Custom code &rarr; Footer code</p>
+                <p class="where-line" id="w-shopify"><b>Shopify</b> <code>theme.liquid</code>, before <code>&lt;/body&gt;</code>, on an unpublished copy of the theme</p>
+                <p class="where-line" id="w-framer"><b>Framer</b> Site settings &rarr; General &rarr; Custom code, end of <code>&lt;body&gt;</code></p>
+                <p class="where-line" id="w-squarespace"><b>Squarespace</b> Settings &rarr; Code injection &rarr; Footer</p>
+                <p class="where-line" id="w-wix"><b>Wix</b> Settings &rarr; Custom code, placed at the end of the body</p>
+                <p class="where-line" id="w-ghost"><b>Ghost</b> Settings &rarr; Code injection &rarr; Site footer</p>
+                <p class="where-line" id="w-wp"><b>WordPress</b> <a href="https://github.com/tuxo83/annotepage/tree/main/wordpress">the plugin</a>: it works on activation, and only the audience you choose receives the key &mdash; by hand, hook it on <code>wp_footer</code></p>
             </div>
+            <p class="fw-csp">A Content-Security-Policy must allow
+            <code>cdn.jsdelivr.net</code> in <code>script-src</code> and your notes
+            server in <code>connect-src</code> &mdash;
+            <a href="questions.html?tag=nothing-appears">what else stops it appearing</a>.</p>
                 </div>
             </li>
 
@@ -3071,6 +3090,44 @@ return array(
 
 <!-- The session in the last step, on the clock written on its own markup. The
      same file drives the usage page's; neither knows about the other. -->
+<script>
+/* WHERE THE TAG GOES, one line at a time. Pointing at a tool's name -- mouse,
+   keyboard focus or a tap -- shows its line; the others become
+   hidden="until-found", so find-in-page still reaches them and opens the one
+   it lands on. Nothing is written into the page: lines are shown and hidden,
+   never built. With no script at all, every line stays visible. */
+(function () {
+    var group = document.querySelector('.where-tools');
+    var box = document.querySelector('.where-lines');
+    if (!group || !box) return;
+    var hint = box.querySelector('.where-hint');
+    var buttons = group.querySelectorAll('button[data-where]');
+    var lines = box.querySelectorAll('.where-line');
+
+    function show(id) {
+        for (var i = 0; i < lines.length; i++) {
+            if (lines[i].id === id) lines[i].removeAttribute('hidden');
+            else lines[i].setAttribute('hidden', 'until-found');
+        }
+        for (var j = 0; j < buttons.length; j++) {
+            buttons[j].setAttribute('aria-pressed',
+                buttons[j].getAttribute('data-where') === id ? 'true' : 'false');
+        }
+        if (hint) hint.style.display = id ? 'none' : '';
+    }
+
+    box.classList.add('is-live');
+    show('');
+    for (var k = 0; k < buttons.length; k++) {
+        buttons[k].addEventListener('click', function () { show(this.getAttribute('data-where')); });
+        buttons[k].addEventListener('mouseenter', function () { show(this.getAttribute('data-where')); });
+        buttons[k].addEventListener('focus', function () { show(this.getAttribute('data-where')); });
+    }
+    for (var m = 0; m < lines.length; m++) {
+        lines[m].addEventListener('beforematch', function () { show(this.id); });
+    }
+}());
+</script>
 <script src="/replay.js" defer></script>
 
 <!-- The tool, on this page, in open mode: the site is annotated with what it
@@ -3097,7 +3154,7 @@ return array(
 <template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.28"
+        data-version="2026.9.29"
         defer></script></template>
 <script>
 (function () {
