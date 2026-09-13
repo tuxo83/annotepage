@@ -689,6 +689,25 @@ claude mcp add annotepage -- annotepage-mcp</pre>
             other project&rsquo;s tag. The two never run at the same time &mdash; the
             reload is what hands the page from one to the other.</p>
             </article>
+            <!-- A PARTICULAR USE, SO A CARD AND NOT A LINE ON THE INSTALL PAGE.
+                 Most sites want the whole page open to remarks; the few that do
+                 not look for it here. The attribute is client/README.md's
+                 data-zone row; this says what a reviewer sees. -->
+            <article class="qa" data-tags="The tag on your page">
+                <h3 class="qa-q" id="zone">Can reviewers annotate only part of a page?</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span></p>
+                <p class="qa-a">Yes. Add <code>data-zone</code> to the tag with a CSS
+            selector, or several separated by commas &mdash; the article, not the
+            header, the menu or the footer:</p>
+<pre class="qa-code">data-zone=<b>"article"</b>
+data-zone=<b>".post-content, .comments"</b></pre>
+                <p class="qa-a">In annotation mode those areas are outlined, and a click
+            anywhere else writes nothing and says why. Notes already written outside
+            stay visible. If the selector matches nothing, nothing can be annotated
+            &mdash; the tool never falls back to the whole page.</p>
+                <p class="qa-a">It guides reviewers; it is not a security boundary. The
+            restriction lives in the browser, where anyone determined can lift it.</p>
+            </article>
             <article class="qa" data-tags="The tag on your page|Your site">
                 <h3 class="qa-q" id="language">What language does it speak?</h3>
                 <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Your site</span></p>
