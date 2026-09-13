@@ -31,6 +31,13 @@ attached, which is the part worth keeping.
 - **Key rotation.** There is none. A leaked key means a fresh project and the
   notes already written abandoned. It is the sharpest edge in the tool, and no
   shape for it survives the fact that old notes are sealed under the old key.
+  **Whatever the shape, the key never reaches a server or a relay**: end-to-end
+  is the one property this tool does not trade. A rotation would have to be done
+  by something that already holds both keys -- a browser, or the assistant's
+  MCP -- opening each note locally and sending only the new ciphertext. The
+  trick that makes that honest (who else still holds the old key, what happens
+  to a reply written mid-rotation) is still to be found; until it is, no
+  rotation.
 - **A browser extension.** Worth doing and it is a second product, not a
   shortcut: it would annotate a site with nothing installed on it, and it
   would need its own store listing, its own permissions and its own update
@@ -40,8 +47,13 @@ attached, which is the part worth keeping.
   it landed on the last line of the lost-key warning, and the page reserves the
   corner for it — a patch on one page for a defect in the product, which should
   not cover text on anybody's site.
-- **Plugins beyond WordPress.** WordPress ships. The others wait for somebody
-  asking.
+- **Plugins beyond WordPress.** WordPress ships. The next two worth building,
+  once the client follows client-side navigation: a Drupal module (the tag from
+  a hook, the audience from a role permission, the WordPress plugin's shape) and
+  a Shopify theme app extension (the merchant never edits the theme, and the
+  setting survives a theme update). Everything else -- Webflow, Wix, Squarespace,
+  Framer, Ghost, React or Vue components -- is a code field or a layout line,
+  and a package would only wrap the tag.
 - **The server inside the WordPress plugin.** An avenue, not a plan, and low
   priority on purpose. Today the plugin writes a tag and the notes go to an
   `api.php` somewhere else; a plugin that carried the server too would be a
@@ -76,6 +88,14 @@ attached, which is the part worth keeping.
   English one, never an empty screen.
 
 ## Ruled out, with the reason
+
+- **A relay on the operator's own site that holds the key.** Studied: the
+  browser would send plaintext to the site's server, which would seal and
+  forward. It would allow revoking one person by their account, and it ends
+  end-to-end encryption towards the host -- every other plugin on that server
+  could read the key and the notes. That is the property this tool does not
+  trade. What it answered is already there in the simpler form: the WordPress
+  plugin writes the tag, and so the key, only for the audience chosen.
 
 - **Wildcards in the origin list.** `origins` is a list and a project may
   declare as many as it likes; a pattern is refused because a pattern is read
