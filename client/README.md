@@ -63,6 +63,7 @@ the site.
 | `data-setup` | opens the setup screen, which creates the project and shows the key once. Remove it afterwards |
 | `data-mode` | `encrypted` (default) or `plain` |
 | `data-path` | path prefix: which pages belong to the project. `/fr/` does not annotate `/en/`. One tool runs per page: several projects on one site means each page loads only its own tag |
+| `data-zone` | a CSS selector list, `.article, main .content`: in annotation mode a remark can only be written on an element inside one of the matching elements, which are outlined, and a click elsewhere says so. Notes already written outside stay listed. A selector that does not parse, or matches nothing on the page, leaves nothing to annotate and says so in the console. It is guidance for reviewers, not a security boundary: the server never sees an element, and a hand-made client writes wherever it likes |
 | `data-domains` | origins of the project, separated by commas |
 | `data-version` | the version really being served, as the site names it |
 | `data-environment` | the name of the environment, written into the note as it stands |

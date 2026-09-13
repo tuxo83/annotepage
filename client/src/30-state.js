@@ -178,3 +178,105 @@ const inScope = () => {
     if (PATH_PREFIX && pagePath().indexOf(PATH_PREFIX) !== 0) return false;
     return true;
 };
+
+/* -- The zone ------------------------------------------------------------
+   Where on the page a remark can be WRITTEN (data-zone). Reading is never
+   restricted: a note anchored outside the zone is still listed and badged,
+   because a remark written before the zone was declared is still a remark.
+
+   Everything below takes what it judges as parameters -- the element, the
+   selector, the browser's own verdict on a selector -- so that
+   client/tools/check.mjs runs it against plain objects. */
+
+/**
+ * The items of a selector list, split on the commas that separate them.
+ *
+ * NOT text.split(','): a comma inside :is(a, b), inside [title="a,b"] or
+ * after a backslash belongs to one item. What an item is still left to the
+ * browser -- this only has to find where one ends, so that the console can
+ * name the item that is wrong instead of repeating a whole list back.
+ */
+const selectorItems = (text) => {
+    const items = [];
+    let depth = 0;
+    let quote = '';
+    let from = 0;
+    for (let i = 0; i < text.length; i += 1) {
+        const c = text[i];
+        if (c === '\\') {
+            i += 1;
+        } else if (quote) {
+            if (c === quote) quote = '';
+        } else if (c === '"' || c === '\'') {
+            quote = c;
+        } else if (c === '(' || c === '[') {
+            depth += 1;
+        } else if ((c === ')' || c === ']') && depth > 0) {
+            depth -= 1;
+        } else if (c === ',' && depth === 0) {
+            items.push(text.slice(from, i).trim());
+            from = i + 1;
+        }
+    }
+    items.push(text.slice(from).trim());
+    return items;
+};
+
+/**
+ * The declared zone, judged once: { declared, valid, selector, broken }.
+ *
+ * `compiles` is the browser asked about one selector. It is the only judge
+ * of CSS here -- a second grammar written in this file would be a second one
+ * to keep in step with every browser.
+ *
+ * AN EMPTY ITEM IS BROKEN TOO: ".a," and ", .b" are refused by every browser,
+ * and so is an empty attribute. `broken` is what the console line names.
+ *
+ * AND INVALID NEVER MEANS "EVERYWHERE". A selector that does not parse
+ * restricts to nothing at all: falling back on the whole page would open
+ * every part the site meant to close, with nothing on screen to say so.
+ */
+const zoneFrom = (declared, text, compiles) => {
+    if (!declared) return { declared: false, valid: true, selector: '', broken: '' };
+    const selector = String(text).trim();
+    const items = selectorItems(selector);
+    for (let i = 0; i < items.length; i += 1) {
+        if (items[i] === '' || !compiles(items[i])) {
+            return { declared: true, valid: false, selector: selector, broken: items[i] };
+        }
+    }
+    /* The whole list as well: the items passing one by one is what the
+       split believes, and the list is what will actually be matched. */
+    if (!compiles(selector)) return { declared: true, valid: false, selector: selector, broken: selector };
+    return { declared: true, valid: true, selector: selector, broken: '' };
+};
+
+/** The zone element holding `el` -- `el` itself when it matches -- or null.
+    Walked by hand rather than with closest(), so that the walk is the code
+    under test and not a stand-in for it. */
+const zoneHolding = (el, selector) => {
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+        if (n.matches(selector)) return n;
+    }
+    return null;
+};
+
+/** 'anywhere' (no zone declared), 'inside', 'outside', or 'nowhere' (a
+    selector that is not one). Asked at every pick, never cached: the zone
+    may have been rendered, or replaced, since the last one. */
+const pickVerdict = (zone, el) => {
+    if (!zone.declared) return 'anywhere';
+    if (!zone.valid) return 'nowhere';
+    return zoneHolding(el, zone.selector) ? 'inside' : 'outside';
+};
+
+/** Of the elements matching the zone, those no other match contains. A
+    nested zone adds no room to write, and outlining it too would draw a
+    frame inside a frame for every paragraph of `.article, .article p`. */
+const outermostZones = (elements, selector) => {
+    const outer = [];
+    for (let i = 0; i < elements.length; i += 1) {
+        if (!zoneHolding(elements[i].parentElement, selector)) outer.push(elements[i]);
+    }
+    return outer;
+};

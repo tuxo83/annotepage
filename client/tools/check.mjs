@@ -56,6 +56,10 @@ const code = [
        words on the screen. */
     read('15-labels.js'),
     read('20-crypto.js'),
+    /* 30-state.js for the zone (data-zone): which selector is one, and which
+       element sits inside which. Its storage and its scope touch the window
+       only inside functions, which are not called here. */
+    read('30-state.js'),
     /* 80-upgrade.js joins them for the same reason: its decisions -- is that
        announced version newer, does it even look like a version, which
        address do we build from it, which label set ships beside this file --
@@ -78,7 +82,8 @@ const code = [
     '         shippedLabelsFor, shippedLabelsUrl, labelsFileFor,',
     '         pageStep, claimDocument, releaseDocument, listenForPages,',
     '         bootIsStale, reattachAllowed, REATTACH_LIMIT, CONTESTED_WITHIN,',
-    '         INSTANCE_SLOT };'
+    '         INSTANCE_SLOT, selectorItems, zoneFrom, zoneHolding, pickVerdict,',
+    '         outermostZones };'
 ].join('\n');
 
 /* The same values the build injects, and for the same reason: these sections
@@ -269,7 +274,8 @@ const main = async () => {
             + '\nreturn { API: API, PROJECT: PROJECT, DECLARED_KEY: DECLARED_KEY,'
             + ' DECLARED_PROJECT: DECLARED_PROJECT, KEY_DECLARED: KEY_DECLARED,'
             + ' SETUP_REQUESTED: SETUP_REQUESTED, MODE: MODE, PATH_PREFIX: PATH_PREFIX,'
-            + ' DOMAINS: DOMAINS.join("|"), FAILURE: CONFIG_FAILURE, IDENTITY: COPY_IDENTITY };'
+            + ' DOMAINS: DOMAINS.join("|"), FAILURE: CONFIG_FAILURE, IDENTITY: COPY_IDENTITY,'
+            + ' ZONE_DECLARED: ZONE_DECLARED, ZONE_SELECTOR: ZONE_SELECTOR };'
         )(win, doc, { origin: SITE });
         return { got: got, warnings: warnings };
     };
@@ -524,11 +530,122 @@ const main = async () => {
     const listed = quoted.map((q) => q.slice(1, -1));
     const readme = readFileSync(join(HERE, '..', 'README.md'), 'utf8');
     const documented = [...readme.matchAll(/^\|\s*`data-([a-z]+)`\s*\|/gm)].map((m) => m[1]);
-    check('the client reads ten settings', listed.length, 10);
+    check('the client reads eleven settings', listed.length, 11);
     check('and the readme documents those, and only those',
         listed.filter((s) => !documented.includes(s))
-            .concat(documented.filter((s) => !listed.includes(s))).join(', ') || 'the same ten',
-        'the same ten');
+            .concat(documented.filter((s) => !listed.includes(s))).join(', ') || 'the same eleven',
+        'the same eleven');
+
+    /* -- THE ZONE (data-zone) ----------------------------------------------
+       Where a remark can be WRITTEN, never where one is read. What runs here
+       is every decision the pick rests on; the browser half -- a real
+       selector engine, real clicks, a zone rendered after a navigation -- is
+       proved in a browser, and not pretended here.
+
+       `compiles` stands in for the browser's parser: it refuses an item
+       ending on a combinator, an unbalanced parenthesis and a "!", which is
+       enough to prove what is done WITH a refusal. Whether a given string is
+       CSS is the browser's to say, and nothing here second-guesses it. */
+    process.stdout.write('\nthe zone a remark can be written in\n');
+
+    check('the tag\'s data-zone is read, trimmed',
+        (() => {
+            const r = settingsOf(configured({ server: API, project: ID, zone: '  .article, main .content ' }));
+            return r.got.ZONE_DECLARED + ' ' + r.got.ZONE_SELECTOR;
+        })(), 'true .article, main .content');
+    check('and zone in the object the same way',
+        settingsOf({ global: { server: API, project: ID, zone: 'article' } }).got.ZONE_SELECTOR, 'article');
+    check('an empty data-zone is still a zone somebody declared',
+        settingsOf(configured({ server: API, project: ID, zone: '' })).got.ZONE_DECLARED, true);
+    check('no data-zone is no zone', settingsOf(configured({ server: API, project: ID })).got.ZONE_DECLARED, false);
+    check('a zone in the object that is not text is refused, by name',
+        refusal(settingsOf({ global: { server: API, project: ID, zone: ['article'] } })), 'tag.config_value:zone');
+    check('a tag and an object that disagree about the zone are refused like any other setting',
+        refusal(settingsOf({ src: TAG, dataset: { server: API, project: ID, zone: 'article' },
+            global: { server: API, project: ID, zone: 'main' } })), 'tag.two_sources:zone');
+
+    check('the zone is part of what makes a configuration: the tag',
+        identityOf(configured({ server: API, project: ID, zone: 'article' }))
+            === identityOf(configured({ server: API, project: ID })) ? 'the same identity' : 'two identities',
+        'two identities');
+    check('another zone on the same page is another configuration, said once',
+        warningsBeside(configured({ server: API, project: ID, zone: 'article' }),
+            configured({ server: API, project: ID, zone: 'main' })), 1);
+    check('the same zone executed again by a router is the same configuration',
+        warningsBeside(configured({ server: API, project: ID, zone: 'article' }),
+            configured({ server: API, project: ID, zone: ' article ' })), 0);
+    check('and in the object',
+        warningsBeside({ global: { server: API, project: ID, zone: 'article' } },
+            { global: { server: API, project: ID, zone: 'main' } }), 1);
+    /* One setting more is one member more in every identity, so the format
+       moved. A copy of the release before, still holding the document when
+       the CDN serves this one mid-visit, must read as unknown -- not as a
+       second tool. */
+    check('a running copy of the identity format before zone existed: the tag stands down in silence',
+        settingsOf(Object.assign({ slot: { copy: { version: '2.30.0',
+            identity: '["annotepage/identity/1","' + TAG + '",[],null]', recheck: () => {} },
+            listening: true } }, configured({ server: API, project: ID }))).warnings.length, 0);
+
+    const compiles = (s) => s !== '' && !/[>+~]\s*$/.test(s) && s.indexOf('!') === -1
+        && s.split('(').length === s.split(')').length;
+    check('a selector list is split on the commas between its items',
+        module.selectorItems('.article, main .content').join(' | '), '.article | main .content');
+    check('and not on a comma inside :is(), inside an attribute value, or escaped',
+        module.selectorItems(':is(h1, h2) > a,[title="a,b"], .x\\,y').join(' | '),
+        ':is(h1, h2) > a | [title="a,b"] | .x\\,y');
+    check('an empty item is an item', module.selectorItems('.a,').join(' | '), '.a | ');
+
+    const judged = (declared, text, judge) => {
+        const z = module.zoneFrom(declared, text, judge || compiles);
+        return (z.valid ? 'valid' : 'invalid') + ' ' + JSON.stringify(z.selector)
+            + (z.valid ? '' : ' broken ' + JSON.stringify(z.broken));
+    };
+    check('no zone declared restricts nothing', module.zoneFrom(false, '', compiles).declared + ' '
+        + module.zoneFrom(false, '', compiles).valid, 'false true');
+    check('a valid list is kept as written, trimmed',
+        judged(true, '  .article, main .content  '), 'valid ".article, main .content"');
+    check('an empty zone is invalid, never the whole page', judged(true, '   '), 'invalid "" broken ""');
+    check('a trailing comma is invalid', judged(true, '.article,'), 'invalid ".article," broken ""');
+    check('the item the browser refuses is the one named',
+        judged(true, '.article, main >'), 'invalid ".article, main >" broken "main >"');
+    check('an unclosed :is( is refused whole, not split into two items that pass',
+        judged(true, ':is(h1, h2'), 'invalid ":is(h1, h2" broken ":is(h1, h2"');
+    check('a list whose items pass one by one is still asked about as a whole',
+        judged(true, '.a, .b', (s) => s.indexOf(',') === -1), 'invalid ".a, .b" broken ".a, .b"');
+
+    /* A page, as the walk sees it: parents and a matcher. Classes and tag
+       names are all the fake matcher reads. */
+    const node = (tag, classes, parent) => ({ nodeType: 1, tag: tag, classes: classes || [],
+        parentElement: parent || null,
+        matches(selector) {
+            return selector.split(',').map((s) => s.trim()).some((s) => s === this.tag
+                || (s[0] === '.' && this.classes.indexOf(s.slice(1)) !== -1));
+        } });
+    const html = node('html');
+    const body = node('body', [], html);
+    const header = node('header', [], body);
+    const link = node('a', [], node('nav', [], header));
+    const article = node('article', ['article'], body);
+    const em = node('em', [], node('p', [], article));
+    const aside = node('aside', ['article'], article);
+    const span = node('span', [], aside);
+    const footerText = node('p', [], node('footer', [], body));
+    const ARTICLE = module.zoneFrom(true, '.article', compiles);
+
+    check('the zone element itself is inside', module.zoneHolding(article, '.article') === article, true);
+    check('and so is anything it contains', module.pickVerdict(ARTICLE, em), 'inside');
+    check('a link in the header is outside', module.pickVerdict(ARTICLE, link), 'outside');
+    check('the walk stops at the top of the document', module.zoneHolding(html, '.article'), null);
+    check('in a nested zone, the nearest zone holds it', module.zoneHolding(span, '.article') === aside, true);
+    check('and it is inside', module.pickVerdict(ARTICLE, span), 'inside');
+    check('only the outermost zones are outlined',
+        module.outermostZones([article, aside], '.article').map((e) => e.tag).join(','), 'article');
+    check('a list of two selectors opens both',
+        module.pickVerdict(module.zoneFrom(true, '.article, footer', compiles), footerText), 'inside');
+    check('no zone: the header can be annotated as it always could', module.pickVerdict(
+        module.zoneFrom(false, '', compiles), link), 'anywhere');
+    check('an invalid zone opens nothing, not even the zone it meant',
+        module.pickVerdict(module.zoneFrom(true, 'article >', compiles), em), 'nowhere');
 
     /* -- THE SHIPPED TRANSLATION COVERS THE SHIPPED LABELS ---------------
        A missing label falls back on English, which is the right behaviour and

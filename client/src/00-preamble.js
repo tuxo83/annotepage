@@ -122,7 +122,7 @@ const INSTANCE_SLOT = Symbol.for('annotepage');
    window.annotepageConfig is ours alone, so a name we do not know there is a
    typo, and a typo that is ignored is a setting somebody believes they set. */
 const SETTINGS = ['server', 'project', 'key', 'setup', 'mode', 'path',
-    'domains', 'version', 'environment', 'labels'];
+    'domains', 'version', 'environment', 'labels', 'zone'];
 
 /* Not "written": 60-ui already holds a local of that name, and a helper of the
    whole file shadowed inside one function is a reader's trap for nothing. */
@@ -206,7 +206,12 @@ const data = (script && script.dataset) || {};
 
 /* Identities this copy writes start with this. One that does not was written
    by a copy that predates it or reads configurations another way. */
-const IDENTITY_FORMAT = 'annotepage/identity/1';
+/* 2 SINCE `zone` JOINED THE SETTINGS. The identity lists every setting in
+   order, so one more setting is one more member in every identity -- the same
+   configuration written another way. Left at 1, a copy of the release before
+   still holding the document would read this one's identity as a different
+   configuration and warn about a second tool, on a page carrying one tag. */
+const IDENTITY_FORMAT = 'annotepage/identity/2';
 const readableIdentity = (value) =>
     typeof value === 'string' && value.indexOf('["' + IDENTITY_FORMAT + '",') === 0;
 const REFUSED_KEPT = 8;
@@ -539,6 +544,21 @@ const PATH_PREFIX = read('path');
    the rest of a template. It protects nothing: a hand-made client does not
    read it. */
 const DOMAINS = read('domains').split(',').map((d) => d.trim()).filter(Boolean);
+
+/* The zone: which PARTS of a page a remark can be written on, as a CSS
+   selector list. The scope above says which pages; this says where on them.
+
+   Only READ here, the way the key is: whether the selector is one, and what it
+   matches, is judged by 30-state and 60-ui -- the second at every pick, since
+   a framework can render the zone after the boot, or swap it at a navigation.
+   DECLARED is kept apart from the text for the same reason as the key's: an
+   empty data-zone is somebody who meant to write one, and it restricts to
+   nothing rather than to everything.
+
+   Guidance for reviewers, NOT a boundary: the server never sees an element,
+   and a hand-made client writes wherever it likes. */
+const ZONE_DECLARED = declaredIn(config, 'zone');
+const ZONE_SELECTOR = read('zone');
 
 /* Setup screen. It opens ONLY when asked for: without it, a page with no
    project does strictly nothing, like a directory copied there by mistake.

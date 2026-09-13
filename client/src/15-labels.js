@@ -96,6 +96,16 @@ ns.defaultLabels = {
         'This server keeps a thread for {n} days after its last message, then '
         + 'removes it. Nobody chooses which.',
     'panel.escape': 'Press Escape to stop.',
+    /* -- The zone the site opened to remarks (data-zone) -----------------
+       Said where the reviewer acts: the instruction names the frames, and a
+       click outside them says why nothing opened. Two refusals, because they
+       are not the same news -- one sends the reader to a frame on screen, the
+       other has no frame to send them to, and saying "the outlined areas"
+       over a page with none would be a sentence nobody can obey. */
+    'panel.instructions_zone':
+        'Click an element inside the outlined areas to write a remark about it.',
+    'zone.outside': 'Remarks go in the outlined areas of this page.',
+    'zone.none': 'No part of this page is open to remarks.',
     'panel.empty': 'Nobody has written a note on this page yet.',
     'panel.section_page': 'On this page',
     /* -- The list, and what opens from it --------------------------------

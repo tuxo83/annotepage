@@ -94,11 +94,20 @@ const buildUi = () => {
     button.addEventListener('click', () => toggleMode());
     layer.appendChild(button);
 
+    /* -- the zones a remark can be written in (data-zone) --
+       Before the highlight, so that the outline of the element being pointed
+       at is drawn over the frame of the zone that holds it. */
+    const zones = create('div', 'ap-zones');
+    layer.appendChild(zones);
+    const zoneNotice = create('div', 'ap-zone-notice');
+    zoneNotice.setAttribute('role', 'status');
+
     /* -- pointing highlight -- */
     const highlight = create('div', 'ap-highlight');
     const label = create('div', 'ap-highlight-label');
     layer.appendChild(highlight);
     layer.appendChild(label);
+    layer.appendChild(zoneNotice);
 
     /* -- markers -- */
     const markers = create('div', 'ap-markers');
@@ -126,7 +135,13 @@ const buildUi = () => {
     header.appendChild(sideToggle);
     header.appendChild(close);
     const instructions = create('div', 'ap-panel-instructions');
-    instructions.appendChild(create('div', null, T('panel.instructions')));
+    /* With a zone, the sentence says where to click: frames on the page with
+       nothing explaining them read as the site's own decoration. And the zone
+       is judged HERE, once the tool exists on this page, so that a selector
+       that does not parse is said in the console at load -- not on the day a
+       reviewer first tries to click. */
+    instructions.appendChild(create('div', null,
+        T(judgeZone().declared ? 'panel.instructions_zone' : 'panel.instructions')));
     instructions.appendChild(create('div', null, T('panel.escape')));
     /* HOW LONG THIS SERVER KEEPS A THREAD, AND ONLY WHERE IT KEEPS ONE FOR A
        WHILE. "Nothing is ever deleted" is what this tool promises and what it
@@ -166,7 +181,9 @@ const buildUi = () => {
         body: body,
         keeps: keeps,
         footer: footer,
-        form: form
+        form: form,
+        zones: zones,
+        zoneNotice: zoneNotice
     };
 
     applySide();
@@ -356,6 +373,8 @@ const groupState = (notes) => {
     asks while pointing at the element itself. What they want is the remark,
     and the window is where a remark is read. */
 const drawMarkers = () => {
+    // The zones move with the page exactly when the badges do.
+    drawZones();
     empty(ui.markers);
     if (!mode) return;
     for (let i = 0; i < anchored.length; i += 1) {
@@ -415,9 +434,136 @@ const refreshPositions = () => {
         // are in the document now, not on the ones that were.
         reanchor();
         drawMarkers();
-        if (hovered && document.contains(hovered)) showHighlight(hovered);
+        /* A zone the page has since taken away puts the aim out. Without a
+           zone pickable() is always true, and this is the line it replaced. */
+        if (hovered && document.contains(hovered)) {
+            if (pickable(hovered)) showHighlight(hovered);
+            else hideHighlight();
+        }
         if (target && document.contains(target)) positionForm(target);
     });
+};
+
+/* -- 14 bis. The zone, on the page ----------------------------------------
+   The pure half -- what a selector is, which element holds which -- is in
+   30-state. This half asks the document, and it asks AT EVERY PICK AND EVERY
+   FRAME: a framework renders the zone after the boot, replaces it at a
+   client-side navigation (85-pages), or never renders it on some pages. A
+   list of zone elements kept from the boot would be a list of detached nodes
+   by the second page. */
+
+/* The browser's own parser, asked about one selector. A fragment and not the
+   document: nothing is searched, and nothing the page holds can make the
+   answer slow. */
+const selectorCompiles = (selector) => {
+    try {
+        document.createDocumentFragment().querySelector(selector);
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
+/* Which setting to name in the console: the reader has one or the other. */
+const zoneSource = () => (script ? 'data-zone' : 'zone in window.annotepageConfig');
+
+let zoneJudged = null;
+let zoneMissingSaid = false;
+let zoneNoticeTimer = null;
+
+/* Judged ONCE: a selector that does not parse will not start parsing, and the
+   line that says so is said once for the copy. */
+const judgeZone = () => {
+    if (zoneJudged) return zoneJudged;
+    zoneJudged = zoneFrom(ZONE_DECLARED, ZONE_SELECTOR, selectorCompiles);
+    if (zoneJudged.declared && !zoneJudged.valid) {
+        complain('the zone ' + JSON.stringify(zoneJudged.selector) + ' (' + zoneSource()
+            + ') is not a valid CSS selector list: ' + JSON.stringify(zoneJudged.broken)
+            + ' does not parse. No remark can be written on this page until it is '
+            + 'corrected; the notes already written are still shown.');
+    }
+    return zoneJudged;
+};
+
+const pickable = (el) => {
+    const verdict = pickVerdict(judgeZone(), el);
+    return verdict === 'anywhere' || verdict === 'inside';
+};
+
+/* The zone elements on the page NOW, and ours excluded: `*` or `body > *`
+   would otherwise match the host, and frame the whole viewport. */
+const zoneElements = () => {
+    const zone = judgeZone();
+    if (!zone.declared || !zone.valid) return [];
+    const found = document.querySelectorAll(zone.selector);
+    const kept = [];
+    for (let i = 0; i < found.length; i += 1) {
+        if (!inTool(found[i])) kept.push(found[i]);
+    }
+    return kept;
+};
+
+/* A selector that parses and matches nothing is said too, once for the copy:
+   it is the typo (.artcle) that otherwise looks like a tool refusing every
+   click for no reason. Asked when the mode opens and when a pick is refused,
+   never at every frame, so a zone rendered a moment later is not reported
+   missing at the moment it arrives. */
+const zoneMissing = () => {
+    const zone = judgeZone();
+    if (!zone.declared || !zone.valid || zoneElements().length) return false;
+    if (!zoneMissingSaid) {
+        zoneMissingSaid = true;
+        complain('the zone ' + JSON.stringify(zone.selector) + ' (' + zoneSource()
+            + ') matches nothing on this page, so no remark can be written here. '
+            + 'The notes already written are still shown.');
+    }
+    return true;
+};
+
+/* CAPPED, because a selector is the site's to write and `p` matches hundreds:
+   a frame per paragraph, redrawn at every frame of a scroll, is the tool
+   making the page slow in order to decorate it. Document order puts an
+   ancestor before what it contains, so the frames dropped are the last ones
+   down the page -- and picking inside them still works. */
+const ZONES_DRAWN = 64;
+
+const drawZones = () => {
+    empty(ui.zones);
+    if (!mode) return;
+    const zone = judgeZone();
+    if (!zone.declared || !zone.valid) return;
+    const outer = outermostZones(zoneElements(), zone.selector);
+    for (let i = 0, drawn = 0; i < outer.length && drawn < ZONES_DRAWN; i += 1) {
+        const r = outer[i].getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (r.bottom < 0 || r.top > window.innerHeight) continue;
+        const frame = create('div', 'ap-zone');
+        place(frame, r, 4);
+        ui.zones.appendChild(frame);
+        drawn += 1;
+    }
+};
+
+/* WHY NOTHING OPENED, next to the hand that clicked. A click outside the zone
+   that did nothing at all would be read as a broken tool; a form refused in
+   the panel, a whole band away, would not be read at all. It goes by itself:
+   it answers one click, and the next click is the reader's. */
+const sayOutsideZone = (event, label) => {
+    const notice = ui.zoneNotice;
+    notice.textContent = T(label);
+    notice.style.display = 'block';
+    const x = typeof event.clientX === 'number' ? event.clientX : window.innerWidth / 2;
+    const y = typeof event.clientY === 'number' ? event.clientY : window.innerHeight / 2;
+    notice.style.left = Math.max(8, Math.min(x + 12, window.innerWidth - notice.offsetWidth - 8)) + 'px';
+    notice.style.top = Math.max(8, Math.min(y + 16, window.innerHeight - notice.offsetHeight - 8)) + 'px';
+    if (zoneNoticeTimer) window.clearTimeout(zoneNoticeTimer);
+    zoneNoticeTimer = window.setTimeout(hideZoneNotice, 2600);
+};
+
+const hideZoneNotice = () => {
+    if (zoneNoticeTimer) window.clearTimeout(zoneNoticeTimer);
+    zoneNoticeTimer = null;
+    if (ui) ui.zoneNotice.style.display = 'none';
 };
 
 /* -- 15. The panel ------------------------------------------------------- */
@@ -962,7 +1108,7 @@ const closePop = () => {
        the window was up, so nothing has moved `hovered`; without this line the
        outline stays off until the pointer crosses another element, which on a
        hand that has not moved is never. */
-    if (mode && hovered && document.contains(hovered)) showHighlight(hovered);
+    if (mode && hovered && document.contains(hovered) && pickable(hovered)) showHighlight(hovered);
 };
 
 const openPop = (title, fill) => {
@@ -1726,6 +1872,13 @@ const onHover = (event) => {
     const el = event.target;
     if (!el || el.nodeType !== 1 || inTool(el)) return;
     if (el === document.body || el === document.documentElement) return;
+    /* Outside the zone the aim goes out: an outline there offers a remark
+       the click is going to refuse. */
+    if (!pickable(el)) {
+        hovered = null;
+        hideHighlight();
+        return;
+    }
     hovered = el;
     showHighlight(el);
 };
@@ -1753,7 +1906,7 @@ const onClick = (event) => {
            back UNDER THE HAND rather than on the element it was left on three
            scrolls ago. */
         if (el && el.nodeType === 1 && el !== document.body
-            && el !== document.documentElement) hovered = el;
+            && el !== document.documentElement) hovered = pickable(el) ? el : null;
         closePop();
         return;
     }
@@ -1770,6 +1923,15 @@ const onClick = (event) => {
     }
     if (!el || el.nodeType !== 1) return;
     if (el === document.body || el === document.documentElement) return;
+    /* OUTSIDE THE ZONE, NOTHING IS CREATED, and a form already open stays as
+       it is: it is about an element inside. The click was still captured
+       above, so a link out there does not carry the reader away either. */
+    if (!pickable(el)) {
+        const nowhere = pickVerdict(judgeZone(), el) === 'nowhere' || zoneMissing();
+        sayOutsideZone(event, nowhere ? 'zone.none' : 'zone.outside');
+        return;
+    }
+    hideZoneNotice();
     openForm(el);
 };
 
@@ -1828,6 +1990,7 @@ const enterMode = () => {
         observer.observe(document.body, { childList: true, subtree: true });
     }
     domDirty = false;
+    zoneMissing();
 
     // The markers for what we ALREADY know, straight away; the server is
     // asked next and will correct if there is anything new. Waiting for the
@@ -1846,6 +2009,8 @@ const leaveMode = () => {
     hideHighlight();
     hovered = null;
     empty(ui.markers);
+    empty(ui.zones);
+    hideZoneNotice();
 
     document.removeEventListener('pointerover', onHover, true);
     document.removeEventListener('pointerdown', onClick, true);

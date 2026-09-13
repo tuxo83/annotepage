@@ -222,6 +222,38 @@
 }
 
 /* ----------------------------------------------------------------------------
+   The zones a remark can be written in (data-zone), while annotation mode is on.
+
+   DISCREET ON PURPOSE: a dashed line and no fill. The page under review is
+   what the reviewer is reading, and a veil over every open area would tint
+   the very colours they may be writing about. Drawn from coordinates, like
+   the highlight: nothing is put on the site's element.
+   ---------------------------------------------------------------------------- */
+
+.ap-zone {
+    position: fixed;
+    border: 1px dashed var(--ap-accent);
+    border-radius: 4px;
+    opacity: 0.6;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+.ap-zone-notice {
+    position: fixed;
+    max-width: 280px;
+    padding: 6px 10px;
+    border: 1px solid var(--ap-border);
+    border-radius: 6px;
+    background: var(--ap-bg);
+    color: var(--ap-text);
+    font-size: 13px;
+    box-shadow: var(--ap-shadow);
+    pointer-events: none;
+    display: none;
+}
+
+/* ----------------------------------------------------------------------------
    The markers: "there are already notes here".
    ---------------------------------------------------------------------------- */
 
