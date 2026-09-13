@@ -1,7 +1,7 @@
 /* ============================================================================
    annotepage -- the annotation layer, browser side.
 
-   Package version : 2.29.0
+   Package version : 2.30.0
    Format version  : 2   (see FORMAT.md)
    Licence : MIT
 
@@ -16,7 +16,7 @@
     /* Injected by the build: they come from package.json and from
        src/styles.css, so that no value is written in two places and can
        therefore diverge. */
-    const TOOL_VERSION = "2.29.0";
+    const TOOL_VERSION = "2.30.0";
     const FORMAT = 2;
     const STYLES = "/* ============================================================================\n   styles.css -- THE STYLES OF THE TOOL, AND OF NO OTHER ELEMENT.\n\n   This sheet is INLINED into the served file by the build, then put into the\n   tool's shadow root -- as a constructed sheet when the browser can do it, in\n   a <style> otherwise. It was loaded by a <link> in the original tool; the\n   move to a CDN under SRI brought it inside the file, so that there is only\n   one digest to keep up to date. The containment itself has not changed, and\n   is still twofold:\n\n     - from the tool towards the site: no rule from here can reach an element\n       of the host site, the browser sees to that. That is what makes the\n       claim \"the layer touches nothing\" checkable rather than promised;\n     - from the site towards the tool: no rule of the site can reach an\n       element here. A redesign of the site's stylesheet therefore cannot\n       distort the tool, nor the other way round.\n\n   The \"ap-\" prefix on every class is the third safeguard: the day somebody\n   loads these styles WITHOUT a shadow root -- by mistake, or to debug --\n   nothing would answer a selector of the site.\n\n   NO RULE TARGETS html, body, * OR ANY SELECTOR OF THE SITE. That is the one\n   absolute prohibition of this file.\n\n   COLOURS: the tool has its OWN palette, defined on the shadow root. It\n   reads neither the site's variables nor its theme attribute: it has no\n   reason to know how the site names its colours, and it must stay readable\n   on a light site as on a dark one. The switch follows the system\n   preference, the only information the tool has without asking anyone.\n   ============================================================================ */\n\n\n:host {\n    --ap-bg: #ffffff;\n    --ap-bg-soft: #f4f6f8;\n    --ap-bg-raised: #e9edf2;\n    --ap-text: #1a1d21;\n    --ap-text-soft: #5b6570;\n    --ap-border: #d5dbe2;\n    --ap-accent: #2f6fed;\n    --ap-accent-dark: #1d55c8;\n    --ap-accent-text: #ffffff;\n    --ap-accent-veil: rgba(47, 111, 237, 0.14);\n    --ap-alert-bg: #fdeceb;\n    --ap-alert-border: #e3a9a4;\n    --ap-alert-text: #8a1f16;\n    /* THE TWO STATES A REMARK CAN BE IN ONCE IT IS ANSWERED, as tokens rather\n       than as literals. They were literals, written once inside the card's\n       state mark -- which meant the dark theme drew them at the LIGHT theme's\n       ink: measured, 2.42:1 for \"resolved\" and 2.02:1 against the veil they\n       sit on, where WCAG 1.4.3 asks 4.5. Below they are 4.68 and 5.23 in the\n       light theme, 6.43 and 6.64 in the dark one, on the same composite.\n\n       `pending` is the state that must never be mistaken for done: resolved,\n       but not deployed -- the defect is still on the reader's screen. `fill`\n       is the same colour asked to carry --ap-accent-text on top of it, for the\n       badge on the page: 5.93:1 in light, 10.14:1 in dark. */\n    --ap-done-ink: #0f7a52;\n    --ap-done-veil: rgba(16, 185, 129, 0.14);\n    --ap-pending-ink: #8a5a00;\n    --ap-pending-veil: rgba(245, 158, 11, 0.16);\n    --ap-pending-fill: #8a5a00;\n    --ap-shadow: 0 6px 24px rgba(16, 24, 40, 0.18);\n    --ap-radius: 10px;\n    --ap-font: system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\",\n                  Arial, sans-serif;\n}\n\n@media (prefers-color-scheme: dark) {\n    :host {\n        --ap-bg: #1d2126;\n        --ap-bg-soft: #262b32;\n        --ap-bg-raised: #323942;\n        --ap-text: #e9ecf0;\n        --ap-text-soft: #a4adb8;\n        --ap-border: #3a424c;\n        --ap-accent: #6d9bff;\n        --ap-accent-dark: #8fb4ff;\n        --ap-accent-text: #10151c;\n        --ap-accent-veil: rgba(109, 155, 255, 0.18);\n        --ap-alert-bg: #3a1f1c;\n        --ap-alert-border: #7c3a33;\n        --ap-alert-text: #ffb9b1;\n        --ap-done-ink: #56d3a0;\n        --ap-done-veil: rgba(16, 185, 129, 0.18);\n        --ap-pending-ink: #f0b757;\n        --ap-pending-veil: rgba(245, 158, 11, 0.16);\n        --ap-pending-fill: #f0b757;\n        --ap-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);\n    }\n}\n\n/* ----------------------------------------------------------------------------\n   The layer.\n\n   It covers the viewport and receives NO click: that is what lets the page\n   behave exactly as usual as long as the tool is not in annotation mode.\n   Each widget re-enables clicks for itself alone.\n   ---------------------------------------------------------------------------- */\n\n.ap-layer {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    font-family: var(--ap-font);\n    font-size: 14px;\n    line-height: 1.45;\n    color: var(--ap-text);\n    text-align: left;\n    -webkit-font-smoothing: antialiased;\n}\n\n.ap-layer button,\n.ap-layer input,\n.ap-layer textarea {\n    font-family: inherit;\n    font-size: inherit;\n    line-height: inherit;\n    color: inherit;\n    margin: 0;\n    box-sizing: border-box;\n}\n\n/* ----------------------------------------------------------------------------\n   The button: the only thing visible when the tool is at rest.\n   ---------------------------------------------------------------------------- */\n\n.ap-button {\n    position: fixed;\n    right: 16px;\n    bottom: 16px;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 9px 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: 999px;\n    background: var(--ap-bg);\n    color: var(--ap-text);\n    box-shadow: var(--ap-shadow);\n    cursor: pointer;\n    pointer-events: auto;\n    opacity: 0.92;\n    transition: opacity 0.15s ease, transform 0.15s ease;\n}\n\n.ap-button:hover,\n.ap-button:focus-visible {\n    opacity: 1;\n    transform: translateY(-1px);\n}\n\n.ap-button:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n.ap-button[aria-pressed=\"true\"] {\n    background: var(--ap-accent);\n    border-color: var(--ap-accent);\n    color: var(--ap-accent-text);\n    opacity: 1;\n}\n\n.ap-button-dot {\n    display: inline-block;\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    background: var(--ap-accent);\n    flex: none;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-dot {\n    background: var(--ap-accent-text);\n}\n\n.ap-button-count {\n    padding: 1px 7px;\n    border-radius: 999px;\n    background: var(--ap-bg-raised);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-button[aria-pressed=\"true\"] .ap-button-count {\n    background: rgba(255, 255, 255, 0.22);\n    color: var(--ap-accent-text);\n}\n\n/* ----------------------------------------------------------------------------\n   The pointing highlight.\n\n   It is DRAWN HERE, from the coordinates of the element being pointed at.\n   Nothing is put on the element itself: no class, no attribute, no style. So\n   the site cannot move by a single pixel because of the pointing.\n   ---------------------------------------------------------------------------- */\n\n.ap-highlight {\n    position: fixed;\n    border: 2px solid var(--ap-accent);\n    border-radius: 3px;\n    background: var(--ap-accent-veil);\n    pointer-events: none;\n    display: none;\n}\n\n.ap-highlight-label {\n    position: fixed;\n    max-width: 320px;\n    padding: 4px 8px;\n    border-radius: 6px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    pointer-events: none;\n    display: none;\n    box-shadow: var(--ap-shadow);\n}\n\n/* ----------------------------------------------------------------------------\n   The markers: \"there are already notes here\".\n   ---------------------------------------------------------------------------- */\n\n.ap-marker {\n    position: fixed;\n    min-width: 22px;\n    height: 22px;\n    padding: 0 6px;\n    border: 2px solid var(--ap-bg);\n    border-radius: 999px;\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-size: 12px;\n    font-weight: 700;\n    line-height: 18px;\n    text-align: center;\n    cursor: pointer;\n    pointer-events: auto;\n    box-shadow: var(--ap-shadow);\n}\n\n/* THE STATE, IN THE BADGE ITSELF. The rule above is the OPEN state -- work to\n   do -- and it stays the tool's accent, because that is what a badge on a page\n   has always meant here. The other two are read against it:\n\n     pending  filled amber. Resolved, not deployed: the defect is still on the\n              screen the reader is looking at, and it is the one state worth\n              catching an eye that was not looking for it.\n     done     hollow, in the soft ink. History: there, countable, and not\n              asking for anything.\n\n   THE COLOUR IS NEVER ALONE. The count is written in the badge and the state\n   is spelled out in its accessible name -- a badge that said \"still to fix\"\n   by hue only would say nothing at all to a good part of its readers. */\n.ap-marker-pending {\n    background: var(--ap-pending-fill);\n}\n.ap-marker-done {\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-weight: 600;\n    /* The 2px border is the halo against the page and cannot be spent on the\n       outline, so the outline is drawn inside. */\n    box-shadow: var(--ap-shadow), inset 0 0 0 1px var(--ap-border);\n}\n\n.ap-marker:focus-visible {\n    outline: 2px solid var(--ap-accent-dark);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The panel.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel {\n    position: fixed;\n    top: 12px;\n    right: 12px;\n    bottom: 72px;\n    width: 360px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n    overflow: hidden;\n}\n\n.ap-panel.ap-open {\n    display: flex;\n}\n\n/* The other side. Two positions, right and left, and no third one: in\n   annotation mode the layer takes every click, so every pixel of panel is a\n   pixel of page that can no longer be pointed at. A floating panel would\n   only move that loss around.\n\n   \"bottom\" IS NOT REDECLARED, on purpose: the panel keeps the same 72 px of\n   clearance above the floating button either way, and that clearance is the\n   same on both sides because the button moves WITH it.\n\n   AND THE BUTTON MOVES WITH IT, which was decided the other way first. The\n   argument for leaving it was that it is the tool's only visible trace at\n   rest, so an anchor that moved would stop being one. The owner's answer,\n   and it is the better one: \"move left\" is asked of the TOOL, not of half of\n   it. A panel on one edge and the control that opens it on the other makes\n   the eye cross the whole window for one gesture, and somebody who set the\n   side set it for the tool.\n\n   TWO THINGS THIS RULE DEPENDS ON, both fragile:\n     - it is written with ONE class, so it weighs exactly what \".ap-panel\"\n       weighs;\n     - it is written BEFORE the narrow block below.\n   Reverse either and it wins under 560 px, where the panel is a bottom band\n   spanning the width -- and a panel pinned to the left there is the full-\n   height panel whose defect at 375 px is described in that block. */\n.ap-left {\n    right: auto;\n    left: 12px;\n}\n/* The button follows, and it is put on the LAYER and not on the panel: the\n   button is not inside the panel, so the side has to be readable from a\n   common ancestor. Same offset mirrored, same bottom -- only the edge\n   changes. */\n.ap-layer.ap-left-side .ap-button {\n    right: auto;\n    left: 16px;\n}\n\n.ap-panel-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n}\n\n.ap-panel-title {\n    font-size: 15px;\n    font-weight: 600;\n    flex: 1 1 auto;\n}\n\n/* -- what the whole project holds ---------------------------------------\n   THE FIRST LINE OF THE FOOTER, on its own row. The footer is a flex row of\n   short things -- a name, two buttons -- so this takes the whole width and the\n   rest wraps under it. No ground and no border of its own: it is IN the footer,\n   not beside it. */\n/* The retention line, when there is one. `:empty` rather than a class the\n   script has to add and remove: the element is always there, and CSS decides\n   whether it takes any room -- so a server that deletes nothing costs the\n   panel exactly nothing. */\n.ap-panel-keeps { margin-top: 6px; color: var(--ap-text-soft); }\n.ap-panel-keeps:empty { display: none; }\n\n.ap-panel-footer { flex-wrap: wrap; }\n\n/* WHO YOU ARE SIGNING AS, ON A LINE OF ITS OWN. `flex-basis: 100%` is the same\n   device the block above uses, and for the same reason: the footer is one\n   wrapping row and everything in it was being strung end to end. */\n.ap-foot-who {\n    flex-basis: 100%;\n    display: flex; align-items: baseline; gap: 8px;\n}\n\n/* -- the list of remarks -------------------------------------------------\n   A ROW, AND EVERY ROW IS A BUTTON. Not a card with a link in it: the whole\n   line is the target, which is what a list of things to open should be, and it\n   is reachable with a keyboard for free.\n\n   THE EXCERPT TAKES THE ROOM AND FOLDS TO ONE LINE. What a remark is about can\n   be a paragraph; what a list can show is a line. The author keeps a fixed\n   place at the end so the eye can run down it. */\n.ap-row {\n    display: flex; align-items: baseline; gap: 8px;\n    width: 100%; margin: 0 0 4px; padding: 8px 10px;\n    border: 1px solid var(--ap-border); border-radius: 8px;\n    background: var(--ap-bg); color: var(--ap-text);\n    font: inherit; text-align: left; cursor: pointer;\n    transition: border-color .15s ease, background-color .15s ease;\n}\n.ap-row:hover { background: var(--ap-bg-soft); border-color: var(--ap-accent); }\n.ap-row:focus-visible { outline: 2px solid var(--ap-accent); outline-offset: 2px; }\n.ap-row-about {\n    flex: 1; min-width: 0;\n    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n}\n.ap-row-who { flex: none; font-size: 12px; color: var(--ap-text-soft); }\n/* THE STATE, AS A DOT. Three of them, and the middle one is the one that must\n   not read as done: resolved but not deployed is a defect still on screen. The\n   accessible name spells all three out -- a colour is not a fact for\n   everybody. */\n.ap-row-dot {\n    flex: none; width: 8px; height: 8px; border-radius: 999px;\n    background: var(--ap-accent); align-self: center;\n}\n.ap-row-pending .ap-row-dot { background: var(--ap-text-soft); }\n.ap-row-done .ap-row-dot { background: transparent; border: 1px solid var(--ap-border); }\n.ap-row-done .ap-row-about { color: var(--ap-text-soft); }\n@media (prefers-reduced-motion: reduce) { .ap-row { transition: none; } }\n\n/* -- a window that is not the panel --------------------------------------\n   IT FLOATS OVER THE PAGE, and that is the point: the panel is a band down one\n   edge, and what goes in here is not about the page beside it. Fixed rather\n   than absolute -- the reader scrolls the page under it, and a window that\n   scrolled away with the article would have to be chased.\n\n   ABOVE THE PANEL AND BELOW NOTHING. It is opened from the panel's footer, so\n   it must cover it; the tool's own layer already sits above the site.\n\n   WIDTH: it is read, not filled in. 26rem is a paragraph, and min() keeps it\n   inside a phone without a media query. */\n.ap-pop {\n    position: fixed; z-index: 3;\n    /* THE LAYER IS `pointer-events: none` so the site underneath keeps working,\n       and every piece that must be reachable turns it back on. Without this\n       line the window is a picture: no click on its buttons, and no drag on its\n       bar -- which is exactly how it behaved when first measured. */\n    pointer-events: auto;\n    width: min(26rem, calc(100vw - 24px));\n    max-height: calc(100vh - 24px);\n    display: flex; flex-direction: column;\n    border: 1px solid var(--ap-border); border-radius: 12px;\n    background: var(--ap-bg); color: var(--ap-text);\n    box-shadow: 0 18px 48px rgba(0, 0, 0, .22);\n    overflow: hidden;\n}\n/* THE HANDLE. `touch-action: none` is what makes a finger drag the window\n   instead of scrolling the page under it -- without it the browser claims the\n   gesture before the first pointermove arrives. */\n.ap-pop-bar {\n    display: flex; align-items: center; gap: 8px;\n    padding: 8px 12px;\n    border-bottom: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n    cursor: grab; touch-action: none; user-select: none;\n}\n.ap-pop-moving .ap-pop-bar { cursor: grabbing; }\n.ap-pop-title { flex: 1; font-size: 13px; font-weight: 650; }\n/* `min-height: 0` is what makes the scroll happen INSIDE the window rather\n   than the window growing past its own height: a flex item does not shrink\n   below its content without it, and the end of a long remark would be behind\n   the bottom edge with nothing to scroll. */\n.ap-pop-body { flex: 1 1 auto; min-height: 0; padding: 12px; overflow: auto; }\n/* The one line that says why the page stayed where it was. Drawn as the panel\n   draws its own help text, not as an alert: nothing has gone wrong. */\n.ap-why {\n    margin: 0 0 10px; padding: 8px 10px;\n    border-radius: 8px; background: var(--ap-bg-soft);\n    color: var(--ap-text-soft); font-size: 12.5px;\n}\n/* THE CORNER, AND IT IS DRAWN RATHER THAN LEFT TO THE BROWSER. `resize: both`\n   would have done this in one line and does nothing under a finger on iOS; the\n   window is moved with pointer events for exactly that reason, and it is\n   resized with them too. Two hairlines, the shape everybody already reads as a\n   grip, in the same ink as the borders around it. */\n.ap-pop-grip {\n    position: absolute; right: 0; bottom: 0;\n    width: 18px; height: 18px;\n    cursor: nwse-resize; touch-action: none;\n    background:\n        linear-gradient(135deg, transparent 42%, var(--ap-border) 42%,\n                        var(--ap-border) 54%, transparent 54%),\n        linear-gradient(135deg, transparent 66%, var(--ap-border) 66%,\n                        var(--ap-border) 78%, transparent 78%);\n}\n.ap-pop-sizing { user-select: none; }\n.ap-pop-sizing .ap-pop-grip { cursor: nwse-resize; }\n/* Inside a window, the block is the window: no second frame around it. */\n.ap-pop-body .ap-config { margin: 0; padding: 0; border: 0; background: none; }\n.ap-pop-body .ap-forget { margin: 0; }\n.ap-pop-body .ap-panel-stats { margin: 0; }\n.ap-pop-body .ap-stats { margin: 0; }\n/* A WINDOW HAS ROOM, SO THE FILE GETS IT. In the panel this field was two or\n   four lines because the column had nothing to spare; here it can show the\n   whole thing without being scrolled. */\n.ap-pop-body .ap-code { min-height: 9.5em; }\n\n/* -- the file the assistant needs ---------------------------------------\n   Drawn like the other block the panel opens in its body -- a title, a\n   sentence, the thing itself, two buttons -- so nothing here is a new shape to\n   learn. The last line is the warning, and it is a line and not a dialog: the\n   reviewer asked for this file. */\n.ap-config {\n    margin: 10px 0 0; padding: 12px;\n    border: 1px solid var(--ap-border); border-radius: 10px;\n    background: var(--ap-bg-soft);\n}\n/* The warning is a line at the tool's own soft ink, not in an alert colour:\n   the reviewer asked for this file, they are not being warned off it. There is\n   no --ap-warn token and this does not invent one. */\n.ap-config .ap-warn { margin-top: 10px; }\n.ap-panel-stats {\n    flex-basis: 100%;\n    display: flex; flex-wrap: wrap; gap: 4px 18px;\n    margin-bottom: 4px;\n}\n.ap-stat { display: inline-flex; align-items: baseline; gap: 5px; }\n/* The row says what it counts, once, and the three figures follow it. Without\n   it, \"3 / 2 / 1\" beside a panel about one page reads as being about that\n   page. */\n.ap-stat-label {\n    flex-basis: 100%; margin-bottom: 2px;\n    font-size: 11px; font-weight: 650; letter-spacing: .02em;\n    text-transform: uppercase; color: var(--ap-text-soft);\n}\n.ap-stat-n { font-size: 15px; font-weight: 650; color: var(--ap-text); }\n.ap-stat-w { font-size: 12px; color: var(--ap-text-soft); }\n/* TWO BLOCKS, THIS SITE THEN THE WHOLE SERVER, and the second is absent on\n   nearly every server. Each block is a label, the figures it holds, and -- when\n   age takes anything here -- a second row for what it took. */\n.ap-stats { display: flex; flex-direction: column; gap: 16px; }\n.ap-stats-block { display: flex; flex-direction: column; gap: 4px; }\n.ap-stats .ap-panel-stats { margin-bottom: 0; }\n/* WHAT WAS REMOVED READS AS A FOOTNOTE TO THE ROW ABOVE, not as a second set of\n   figures competing with it: same shapes, one step quieter, and indented under\n   the count it belongs to. */\n.ap-stat-gone { padding-left: 10px; border-left: 2px solid var(--ap-border); }\n.ap-stat-gone .ap-stat-n { font-size: 13px; font-weight: 600; color: var(--ap-text-soft); }\n.ap-stat-since {\n    font-size: 11px; font-weight: 650; letter-spacing: .02em;\n    text-transform: uppercase; color: var(--ap-text-soft); align-self: baseline;\n}\n/* The date of the last sweep is context for the figures beside it, not another\n   figure: soft ink, smaller, and it wraps under them rather than stretching\n   the row. */\n.ap-stat-when { font-size: 12px; color: var(--ap-text-soft); align-self: baseline; }\n.ap-panel-instructions {\n    padding: 10px 14px;\n    border-bottom: 1px solid var(--ap-border);\n    color: var(--ap-text-soft);\n    font-size: 13px;\n}\n\n.ap-panel-body {\n    flex: 1 1 auto;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 14px 14px;\n}\n\n.ap-panel-footer {\n    padding: 8px 14px;\n    border-top: 1px solid var(--ap-border);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n\n.ap-section-title {\n    margin: 14px 0 6px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-weight: 600;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n\n.ap-section-help {\n    margin: 0 0 8px;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-empty {\n    margin: 16px 0;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   THE MODE BADGE: one word, drawn in both modes, at the top of every draw.\n\n   It replaced a paragraph that only the public mode ever drew. Two things\n   were wrong with that: secure mode said nothing, so the panel never told a\n   reviewer which of the two they were in; and a paragraph pinned to the top\n   for ever is skipped after the second reading, while a single word is not.\n\n   IT IS NOT A BUTTON AND MUST NOT LOOK LIKE ONE. No shadow, no pressed\n   state, cursor stays default: there is nothing to press. What it does have\n   is a focus ring, because it takes focus -- the description below has to be\n   reachable without a pointer, and that is the only reason it is focusable.\n   ---------------------------------------------------------------------------- */\n\n.ap-mode {\n    /* The frame the description is positioned against. It spans the width of\n       the panel body, so a description pinned to its two edges cannot spill\n       sideways out of a body that scrolls -- and a scrolling body clips both\n       axes, not just the one it scrolls. */\n    position: relative;\n    margin: 4px 0 10px;\n}\n\n.ap-mode-chip {\n    display: inline-block;\n    padding: 2px 9px 3px;\n    border: 1px solid var(--ap-border);\n    border-radius: 999px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 11px;\n    font-weight: 600;\n    letter-spacing: 0.05em;\n    text-transform: uppercase;\n    cursor: default;\n}\n\n/* The public badge is the one that carries a consequence, so it is the one\n   that is coloured -- in the tool's own accent, not in the alert colours: a\n   public key is a choice somebody made on purpose, not an incident. Secure\n   keeps the quiet frame: it is the case where nothing is being said. */\n/* The same ring as every other focusable thing in the panel. It is the only\n   visual proof, for somebody arriving by Tab, that this word is where their\n   focus went. */\n.ap-mode-chip:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* Plain wears the same coat as public, and for the same reason: both are a\n   choice somebody made on purpose, and both carry a consequence for whoever\n   is about to write. Neither is an incident, so neither takes an alert\n   colour. They cannot both be true at once. */\n.ap-mode-public .ap-mode-chip,\n.ap-mode-plain .ap-mode-chip {\n    border-color: var(--ap-accent);\n    background: var(--ap-accent-veil);\n    color: var(--ap-accent-dark);\n}\n\n/* The description. Hidden by DEFAULT and shown on demand, and hidden in a way\n   that leaves it readable to a screen reader: it is the badge's\n   aria-describedby target, and an accessible description is computed from the\n   referenced element whether or not it is painted. It is taken out of the\n   layout entirely (absolute) so that showing it moves not one pixel of the\n   list underneath -- a tooltip that pushes the notes down is a tooltip that\n   makes people lose their place. */\n.ap-mode-tip {\n    position: absolute;\n    z-index: 2;\n    top: calc(100% + 6px);\n    left: 0;\n    right: 0;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg-raised);\n    color: var(--ap-text);\n    box-shadow: var(--ap-shadow);\n    font-size: 12px;\n    font-weight: 400;\n    letter-spacing: normal;\n    text-transform: none;\n    line-height: 1.45;\n    opacity: 0;\n    visibility: hidden;\n    transform: translateY(-3px);\n    transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s linear 0.12s;\n    pointer-events: none;\n}\n\n/* BOTH, and the keyboard one is not the afterthought: :focus-visible is what\n   makes the sentence reachable by somebody who never touches a pointer. */\n.ap-mode-chip:hover ~ .ap-mode-tip,\n.ap-mode-chip:focus-visible ~ .ap-mode-tip {\n    opacity: 1;\n    visibility: visible;\n    transform: none;\n    transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s;\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-mode-tip {\n        transform: none;\n        transition: none;\n    }\n    .ap-mode-chip:hover ~ .ap-mode-tip,\n    .ap-mode-chip:focus-visible ~ .ap-mode-tip {\n        transition: none;\n    }\n}\n\n/* The \"a newer client exists\" line and the \"this server speaks another\n   format\" line are the same object on screen: a standing statement about what\n   one is looking at, above the notes and above the failures. One rule, so\n   they cannot drift apart -- and the second one joins it rather than\n   inventing a colour, precisely because a protocol disagreement is a fact\n   about the project, not an incident.\n\n   Deliberately NOT the alert colours: neither is a failure, and an alarm that\n   never goes away stops being read. */\n.ap-upgrade,\n.ap-format {\n    margin: 0 0 10px;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg-soft);\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    line-height: 1.45;\n}\n\n/* ----------------------------------------------------------------------------\n   A note, and its replies.\n   ---------------------------------------------------------------------------- */\n\n.ap-note {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n}\n\n.ap-note.ap-orphan {\n    background: var(--ap-bg-soft);\n}\n\n\n.ap-note-header {\n    display: flex;\n    align-items: baseline;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-note-author {\n    font-weight: 600;\n}\n\n.ap-note-date {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n}\n\n.ap-note-target {\n    margin: 4px 0 0;\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-text {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n}\n\n.ap-note-actions {\n    margin-top: 8px;\n    display: flex;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-replies {\n    margin: 8px 0 0;\n    padding-left: 10px;\n    border-left: 2px solid var(--ap-border);\n}\n\n.ap-reply {\n    margin: 8px 0 0;\n}\n\n/* ----------------------------------------------------------------------------\n   The form, anchored near the element pointed at.\n   ---------------------------------------------------------------------------- */\n\n.ap-form {\n    position: fixed;\n    width: 340px;\n    max-width: calc(100vw - 24px);\n    display: none;\n    flex-direction: column;\n    gap: 8px;\n    padding: 14px;\n    border: 1px solid var(--ap-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-bg);\n    box-shadow: var(--ap-shadow);\n    pointer-events: auto;\n}\n\n.ap-form.ap-open {\n    display: flex;\n}\n\n.ap-form-title {\n    font-size: 15px;\n    font-weight: 600;\n}\n\n.ap-form-target {\n    color: var(--ap-text-soft);\n    font-size: 12px;\n    font-style: italic;\n    overflow-wrap: anywhere;\n}\n\n.ap-label {\n    display: block;\n    margin-bottom: 3px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--ap-text-soft);\n}\n\n.ap-help {\n    margin: 3px 0 0;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n.ap-field,\n.ap-area {\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n}\n\n.ap-field:focus,\n.ap-area:focus {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n.ap-area {\n    min-height: 92px;\n    resize: vertical;\n}\n\n.ap-actions {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    flex-wrap: wrap;\n}\n\n.ap-counter {\n    margin-left: auto;\n    font-size: 12px;\n    color: var(--ap-text-soft);\n}\n\n/* ----------------------------------------------------------------------------\n   Buttons.\n   ---------------------------------------------------------------------------- */\n\n.ap-primary,\n.ap-secondary,\n.ap-link {\n    border-radius: 8px;\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.ap-primary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-accent);\n    background: var(--ap-accent);\n    color: var(--ap-accent-text);\n    font-weight: 600;\n}\n\n.ap-primary:hover {\n    background: var(--ap-accent-dark);\n    border-color: var(--ap-accent-dark);\n}\n\n.ap-secondary {\n    padding: 8px 14px;\n    border: 1px solid var(--ap-border);\n    background: var(--ap-bg);\n    color: var(--ap-text);\n}\n\n.ap-secondary:hover {\n    background: var(--ap-bg-raised);\n}\n\n.ap-link {\n    padding: 2px 4px;\n    border: 0;\n    background: none;\n    color: var(--ap-accent);\n    text-decoration: underline;\n    font-size: 13px;\n}\n\n.ap-primary:disabled,\n.ap-secondary:disabled,\n.ap-link:disabled {\n    opacity: 0.6;\n    cursor: default;\n}\n\n.ap-primary:focus-visible,\n.ap-secondary:focus-visible,\n.ap-link:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 2px;\n}\n\n/* ----------------------------------------------------------------------------\n   The failures.\n\n   They are RED, at the top of the block concerned, and carry the message the\n   server returned as it stands: that is how a non-technical team learns that\n   its remark is not saved, instead of believing it is.\n   ---------------------------------------------------------------------------- */\n\n.ap-error {\n    margin: 8px 0;\n    padding: 10px 12px;\n    border: 1px solid var(--ap-alert-border);\n    border-radius: var(--ap-radius);\n    background: var(--ap-alert-bg);\n    color: var(--ap-alert-text);\n}\n\n.ap-error-title {\n    font-weight: 700;\n    margin-bottom: 4px;\n}\n\n.ap-error-detail {\n    margin: 6px 0 0;\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    font-size: 13px;\n}\n\n.ap-error .ap-link {\n    color: var(--ap-alert-text);\n}\n\n/* ----------------------------------------------------------------------------\n   Narrow: the panel takes the full width, and so does the form.\n   ---------------------------------------------------------------------------- */\n\n/* ----------------------------------------------------------------------------\n   Narrow.\n\n   DEFECT OBSERVED at 375 px wide: a panel taking the full height covers the\n   whole page, and no element can be pointed at any more -- every click lands\n   on the panel. So it becomes a bottom band, which leaves the top half of\n   the viewport free; one scrolls the page there to bring the wanted element\n   into view. The form, for its part, hides the panel while typing (see\n   notes.js): on a screen that size, writing and reading the list at the same\n   time does not hold.\n   ---------------------------------------------------------------------------- */\n\n/* On a narrow screen the panel becomes a bottom band and the form takes the\n   full width.\n\n   THE WIDTH CEILING IS KEPT, and it comes from a measured defect: \"left: 8;\n   right: 8\" sizes the element against its CONTAINING BLOCK, which the host\n   site's horizontal overflow can make wider than the visible window.\n   Measured, in mobile emulation at 390 px: the site overflows to 407 px\n   (with the tool and without it), and the panel came out 391 px wide\n   starting at 8, that is 9 px off screen. \"100vw\" is the window, not the\n   containing block: the ceiling therefore does nothing when the site does\n   not overflow, and pulls the width back when it does. */\n@media (max-width: 560px) {\n    .ap-panel {\n        top: auto;\n        right: 8px;\n        left: 8px;\n        bottom: 66px;\n        height: 52vh;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n\n    /* A band spanning the width has no side, so the choice is inert here and\n       the button says so by not being there. Offering a control that visibly\n       does nothing is worse than offering none. The stored side is untouched:\n       it is waiting for the wide screen it was chosen on. */\n    .ap-side-toggle {\n        display: none;\n    }\n\n    .ap-form {\n        left: 8px;\n        right: 8px;\n        width: auto;\n        max-width: calc(100vw - 16px);\n    }\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .ap-button {\n        transition: none;\n    }\n}\n\n/* The failure shows without opening the panel: the button's dot changes\n   colour. A team that does not click must be able to see that something is\n   wrong. */\n.ap-button.ap-failed .ap-button-dot {\n    background: var(--ap-alert-text);\n}\n\n.ap-button.ap-failed {\n    border-color: var(--ap-alert-border);\n}\n\n/* Signature reminder, in the note form.\n   The name was shown at the foot of the panel only: invisible at the moment\n   one writes. A user reported not knowing which name they were writing\n   under. */\n.ap-form-signature {\n    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;\n    margin: 0 0 .6rem; font-size: .85rem; opacity: .8;\n}\n\n/* Resolution state, said on the card.\n   Two cases NOT to be confused: resolved and online, resolved but not\n   deployed yet. The second keeps the defect on the reviewer's screen; hiding\n   it or announcing it as fixed would cost them their trust in the tool. */\n.ap-state-mark {\n    display: inline-block; margin: 0 0 .5rem;\n    padding: .15rem .55rem; border-radius: 4px;\n    font-size: .75rem; font-weight: 600; letter-spacing: .02em;\n}\n.ap-note.ap-resolved { opacity: .72; }\n.ap-note.ap-resolved .ap-state-mark {\n    color: var(--ap-done-ink); background: var(--ap-done-veil);\n}\n.ap-note.ap-resolved-pending .ap-state-mark {\n    color: var(--ap-pending-ink); background: var(--ap-pending-veil);\n}\n/* The \"it is fixed\" / \"reopen\" block, opened under the card. Same shape as\n   the reply block: it is the same gesture, one answers a remark. */\n.ap-resolve,\n.ap-reply-form {\n    margin-top: .6rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-border);\n}\n\n/* The question asked before the key is dropped, at the foot of the list.\n   Framed like the resolution block -- it is the same shape of gesture, one\n   answers before something changes -- and set apart from the notes above it,\n   because it is not about a note. */\n.ap-forget {\n    margin-top: 1rem;\n    padding-top: .6rem;\n    border-top: 1px solid var(--ap-border);\n}\n\n.ap-forget .ap-actions {\n    margin-top: .5rem;\n}\n\n.ap-history-toggle {\n    display: block; width: 100%; margin: 1rem 0 .25rem;\n    padding: .5rem .75rem; border: 1px dashed currentColor; border-radius: 6px;\n    background: none; color: inherit; font: inherit; opacity: .7; cursor: pointer;\n}\n.ap-history-toggle:hover { opacity: 1; }\n\n\n/* ----------------------------------------------------------------------------\n   Setup and pasting the salt.\n\n   These are the only screens where something is copied by hand. Everything\n   there is SELECTABLE and monospaced: a 43-character salt copied wrong\n   cannot be recovered, and nothing helps less than a font that confuses I, l\n   and 1.\n   ---------------------------------------------------------------------------- */\n\n.ap-panel-wide {\n    width: 560px;\n}\n\n.ap-copy {\n    display: flex;\n    align-items: flex-start;\n    gap: 8px;\n    margin: 0 0 12px;\n}\n\n.ap-code {\n    flex: 1 1 auto;\n    width: 100%;\n    padding: 8px 10px;\n    border: 1px solid var(--ap-border);\n    border-radius: 8px;\n    background: var(--ap-bg-soft);\n    color: var(--ap-text);\n    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\",\n                 monospace;\n    font-size: 12.5px;\n    line-height: 1.5;\n    resize: vertical;\n    white-space: pre;\n    overflow-x: auto;\n}\n\n.ap-code:focus-visible {\n    outline: 2px solid var(--ap-accent);\n    outline-offset: 1px;\n}\n\n@media (max-width: 560px) {\n    .ap-panel-wide {\n        width: auto;\n    }\n\n    .ap-copy {\n        flex-direction: column;\n    }\n}\n";
 
@@ -75,6 +75,67 @@
                              rather than resolved (FORMAT.md section 1.5).
          neither             we stay out, and we say so once in the console. */
 
+    /* ONE TOOL PER PAGE, HOWEVER MANY TIMES THIS FILE RUNS.
+
+       A tag inside <body> is executed again by every router that swaps the body
+       and re-activates its scripts -- Turbo, htmx's hx-boost, Livewire's
+       wire:navigate, Astro's ClientRouter -- and a template can carry the tag
+       twice. Each execution used to build a tool of its own: two pills, two sets
+       of listeners on one page, one remark sent twice.
+
+       So the copy that boots first takes a slot ON THE DOCUMENT (85-pages), and
+       keeps it for the life of the document. Any later copy finds it (below, once
+       the tag and the object have been read, and before a single setting is
+       judged) and does not start. Which of two things it says depends on what it
+       carries:
+
+         THE SAME CONFIGURATION -- same src, same settings on the tag, same
+         object. That is a router executing the tag again, at every click, and it
+         stands down in silence: a line per navigation would bury the console. It
+         asks the running copy to look at the page again instead, since a
+         re-executed tag is the plainest sign there is that the body just changed.
+
+         ANOTHER CONFIGURATION -- another project, key, prefix, server or file. It
+         stands down too, and says so ONCE for the document, however many
+         different configurations follow it. One tool
+         runs per page BY RULE: two projects on one site are two tags on two sets
+         of pages, never two tags on one. The rule was nearly the other one --
+         every configuration boots, each holds its own slot -- and it was set
+         aside because two tools on a page share one body, one click, one history
+         wrapper, and a reviewer who cannot tell which pill files where. What
+         cannot be allowed is the silence: a second tag that quietly never starts
+         is a project somebody believes is running.
+
+         AN IDENTITY THIS COPY CANNOT READ -- a running copy that predates
+         identities, or one that writes them another way -- is neither. Nothing
+         can be said about it that is true, so nothing is said: a false "another
+         configuration" is exactly what a CDN serving a newer release in the
+         middle of a visit would print, on a page carrying one tag.
+
+       NO TAKEOVER, EVEN WHEN THE OWNER IS OUT OF ITS data-path. Handing the
+       document to whichever copy's prefix matches would make "which tool is on
+       this page" depend on the order of navigations, and the owner coming back
+       into its prefix would have to take it back. The first copy owns the
+       document; the only release is the upgrade hand-over (80-upgrade).
+
+       WHY THE DOCUMENT AND A REGISTERED SYMBOL. The document is what "one per
+       page" means, and it outlives a body swap. Symbol.for gives two copies of
+       this file -- two versions, from two addresses -- the same key without it
+       being a name a site's script can overwrite by accident: window.Annotepage
+       was the obvious place, and a page is allowed to assign that object whole
+       (15-labels).
+
+       THE CONTRACT BETWEEN COPIES IS
+         { copy: { version, identity, recheck }, handedOver: [identity],
+           refused: [identity] }
+       and it is read by versions that do not exist yet. Adding to it is free;
+       renaming a member breaks the copy that ships next to an older one.
+       `refused` is non-empty once the warning has been said for the document --
+       that is the whole of "once" -- and it keeps at most REFUSED_KEPT entries:
+       a trace for whoever inspects the slot, not a list that grows at every
+       navigation. */
+    const INSTANCE_SLOT = Symbol.for('annotepage');
+
     /* THE SETTINGS, AND THE WHOLE LIST OF THEM. `data-` plus the name on a tag,
        the name alone in the object. Documented in the client's README, and
        client/tools/check.mjs refuses a list that has drifted from it.
@@ -129,12 +190,50 @@
     const SCRIPT_SRC = script ? script.src : '';
 
     const declaredConfig = window.annotepageConfig;
-    const HAS_CONFIG = declaredConfig !== undefined && declaredConfig !== null;
-    if (HAS_CONFIG && (typeof declaredConfig !== 'object' || Array.isArray(declaredConfig))) {
-        refuse('tag.config_shape', null,
-            'window.annotepageConfig is not an object, so nothing could be read from '
-            + 'it. It is written { server: "...", project: "..." }.');
-    }
+
+    /* -- Is this document already somebody's? ---------------------------------
+       Read HERE: after the two sources are in hand, and before anything below can
+       write to the console about them. A refused configuration executed again by
+       a router must not repeat its warning at every click either.
+
+       WHAT A CONFIGURATION IS, for this comparison: the file, every setting the
+       tag carries, and the object. Read before adoption -- the adopted form is
+       only known after the judging this has to come before -- but NOT as
+       written: two spellings of one declaration are one configuration, or a
+       router executing the tag again is told it brought a second tool. So the
+       object's keys are ordered, a value is trimmed, a list of origins is
+       trimmed and ordered item by item, and `setup: false` is the absence it
+       means (see WHICH SOURCE WINS).
+
+       THE FILE IS ITS ADDRESS WITHOUT THE QUERY STRING. A query on a script's
+       address is how a CMS defeats caches -- WordPress writes ?ver=, often with
+       the time in it -- so it changes at every deploy, or at every request, and
+       never names another project. Ignoring it can only ever merge two tags
+       whose settings are already identical, and running one tool for those is
+       the rule anyway. The path stays: another file is another configuration.
+
+       NOT PART OF IT, EITHER:
+         an attribute that is not a setting -- annotepage.com toggles
+           data-annotepage-on on its live tag -- or a page flipping its own
+           switch would be told it carries two tools;
+         data-version, which is a label for the notes and not a project. A body
+           swapped after a deploy brings build-2 in the same tag. That tag stands
+           down like any re-executed one, and THE RUNNING COPY KEEPS THE VERSION
+           IT READ AT BOOT until the page is reloaded: notes written meanwhile
+           are filed under the build the document was loaded with.
+
+       AND IT NEVER THROWS. The object is the page's, and it may hold anything: a
+       BigInt that JSON.stringify refuses, an object with no prototype that
+       String() cannot convert, a getter that throws, a loop. Each of those gets
+       a text of its own, so that two such objects are still told apart. */
+    const data = (script && script.dataset) || {};
+
+    /* Identities this copy writes start with this. One that does not was written
+       by a copy that predates it or reads configurations another way. */
+    const IDENTITY_FORMAT = 'annotepage/identity/1';
+    const readableIdentity = (value) =>
+        typeof value === 'string' && value.indexOf('["' + IDENTITY_FORMAT + '",') === 0;
+    const REFUSED_KEPT = 8;
 
     const isTextList = (value) => {
         if (!Array.isArray(value)) return false;
@@ -144,10 +243,142 @@
         return true;
     };
 
+    /* Any value, as text. `seen` is the path from the top, so a loop is named
+       rather than followed; the depth is bounded for an object nobody writes by
+       hand. */
+    const textOfValue = (value, seen) => {
+        const kind = typeof value;
+        if (kind === 'string') return JSON.stringify(value);
+        if (kind === 'bigint') return String(value) + 'n';
+        if (kind === 'number' || kind === 'boolean' || kind === 'undefined' || value === null) {
+            return String(value);
+        }
+        if (kind !== 'object') return '<' + kind + '>';
+        if (seen.indexOf(value) !== -1) return '<loop>';
+        if (seen.length >= 8) return '<deep>';
+        seen.push(value);
+        let text;
+        try {
+            const parts = [];
+            if (Array.isArray(value)) {
+                for (let i = 0; i < value.length; i += 1) parts.push(memberText(value, i, seen));
+                text = '[' + parts.join(',') + ']';
+            } else {
+                const names = Object.keys(value).sort();
+                for (let i = 0; i < names.length; i += 1) {
+                    parts.push(JSON.stringify(names[i]) + ':' + memberText(value, names[i], seen));
+                }
+                text = '{' + parts.join(',') + '}';
+            }
+        } catch (e) {
+            text = '<unreadable>';
+        }
+        seen.pop();
+        return text;
+    };
+    function memberText(object, name, seen) {
+        try {
+            return textOfValue(object[name], seen);
+        } catch (e) {
+            return '<throws>';
+        }
+    }
+
+    /* One setting, as the comparison sees it. null is "not declared". */
+    const settingText = (name, value) => {
+        if (name === 'setup') return value ? 'yes' : null;
+        if (name === 'domains' && (typeof value === 'string' || isTextList(value))) {
+            const items = typeof value === 'string' ? value.split(',') : value;
+            return JSON.stringify(items.map((d) => d.trim()).filter(Boolean).sort());
+        }
+        if (typeof value === 'string') return JSON.stringify(value.trim());
+        return textOfValue(value, []);
+    };
+
+    const objectText = (object) => {
+        if (object === undefined) return null;
+        if (object === null || typeof object !== 'object' || Array.isArray(object)) {
+            return textOfValue(object, []);
+        }
+        try {
+            const parts = [];
+            const names = Object.keys(object).sort();
+            for (let i = 0; i < names.length; i += 1) {
+                const name = names[i];
+                if (name === 'version') continue;
+                let text;
+                try {
+                    text = SETTINGS.indexOf(name) === -1
+                        ? textOfValue(object[name], [object]) : settingText(name, object[name]);
+                } catch (e) {
+                    text = '<throws>';
+                }
+                if (text !== null) parts.push(JSON.stringify(name) + ':' + text);
+            }
+            return '{' + parts.join(',') + '}';
+        } catch (e) {
+            return '<unreadable>';
+        }
+    };
+
+    const COPY_IDENTITY = JSON.stringify([IDENTITY_FORMAT,
+        SCRIPT_SRC.replace(/[?#].*$/, ''),
+        SETTINGS.filter((name) => name !== 'version').map((name) => (declaredIn(data, name)
+            ? settingText(name, name === 'setup' ? true : String(data[name])) : null)),
+        objectText(declaredConfig)]);
+
+    const slotFound = document[INSTANCE_SLOT];
+    const handedOverHere = (slotFound && Array.isArray(slotFound.handedOver)) ? slotFound.handedOver : [];
+    if (slotFound && (slotFound.copy || handedOverHere.indexOf(COPY_IDENTITY) !== -1)) {
+        const holder = slotFound.copy;
+        /* A COPY THAT HANDED OVER is still this configuration: the newer version
+           carries its settings under another address (80-upgrade). The old tag
+           executed again by a router is the same declaration, and neither a
+           warning nor a second hand-over is owed for it. */
+        const same = handedOverHere.indexOf(COPY_IDENTITY) !== -1
+            || !!(holder && holder.identity === COPY_IDENTITY);
+        /* UNKNOWN IS NOT DIFFERENT: a holder with no identity this copy can read,
+           or a hand-over recorded in another format -- this tag may be the very
+           one that copy was loaded by. */
+        const unknown = !same && (!holder || !readableIdentity(holder.identity)
+            || handedOverHere.some((identity) => !readableIdentity(identity)));
+        if (!same && !unknown) {
+            if (!Array.isArray(slotFound.refused)) slotFound.refused = [];
+            const refused = slotFound.refused;
+            // ONCE FOR THE DOCUMENT, not once per configuration: a template
+            // cycling through several would otherwise print a line per kind.
+            if (!refused.length) {
+                complain('this page already runs annotepage with another configuration, '
+                    + 'and one tool runs per page: this one ('
+                    + (SCRIPT_SRC || 'window.annotepageConfig') + ') was not started, '
+                    + 'and any further one on this page stands down without another line. '
+                    + 'Several projects on one site means each page loads only its own '
+                    + 'tag. See https://annotepage.com/questions.html#one-per-page');
+            }
+            if (refused.indexOf(COPY_IDENTITY) === -1 && refused.length < REFUSED_KEPT) {
+                refused.push(COPY_IDENTITY);
+            }
+        }
+        /* IN A try, because this runs inside whatever executed the tag -- a
+           router, in the middle of its navigation -- and a fault of the running
+           copy thrown from here would surface there, uncaught, at every click.
+           The next sign of navigation asks again. */
+        try {
+            if (holder) holder.recheck();
+        } catch (e) { /* the running copy's fault, not the page's */ }
+        return;
+    }
+
+    const HAS_CONFIG = declaredConfig !== undefined && declaredConfig !== null;
+    if (HAS_CONFIG && (typeof declaredConfig !== 'object' || Array.isArray(declaredConfig))) {
+        refuse('tag.config_shape', null,
+            'window.annotepageConfig is not an object, so nothing could be read from '
+            + 'it. It is written { server: "...", project: "..." }.');
+    }
+
     /* What each source declares, as text, and whether it declares it AT ALL -- an
        empty data-key is not the same fact as no data-key (see THE KEY below). */
     const fromTag = {};
-    const data = (script && script.dataset) || {};
     for (let i = 0; i < SETTINGS.length; i += 1) {
         const name = SETTINGS[i];
         if (declaredIn(data, name)) fromTag[name] = String(data[name]).trim();
@@ -1336,6 +1567,22 @@
     let keys = null;            // { id, encryptionKey, indexKey }
     let PAGE_INDEX = '';        // blind index of the current page
 
+    /* WHICH PAGE THAT INDEX BELONGS TO. Read once at boot, it was the only
+       answer for the life of the document -- and a router that changes the path
+       without a reload kept the first page's notes on every later one. It is now
+       written wherever the index is computed, and compared against the address at
+       every sign of navigation (85-pages). */
+    let PAGE_PATH = '';
+    /* True while this copy stands down because the current path is outside the
+       declared prefix. A full load would simply have stayed silent; a copy that
+       outlives its first page has to remember WHY it is silent, because only this
+       reason goes away when the path changes. */
+    let outOfScope = false;
+    /* The number of the boot under way. Raised by every start() and by leaving
+       the declared prefix, so that an answer landing for an earlier boot can tell
+       it no longer belongs to the page (bootIsStale, 85-pages). */
+    let bootRun = 0;
+
     const inTool = (n) => !!(host && n && (n === host || host.contains(n)));
 
     /* -- The browser's memory ------------------------------------------------
@@ -2128,6 +2375,8 @@
             'pointer-events: none !important;' +
             'z-index: 2147483000 !important;';
         document.body.appendChild(host);
+        // And kept there: a router that swaps the body takes it along (85-pages).
+        watchHost();
         root = host.attachShadow({ mode: 'open' });
 
         /* The stylesheet is PUT HERE, in a <style>, and not loaded by a <link>
@@ -4010,10 +4259,11 @@
             // We stand down for this page load. Nothing is remembered: on the
             // next reload the screen comes back, because the problem itself has
             // not been dealt with.
-            if (host) host.remove();
-            host = null;
-            root = null;
-            ui = null;
+            //
+            // withdraw() and not the three lines it replaces: the host is now
+            // also WATCHED (85-pages), and a list of what to take down written in
+            // two places is the list that drifts.
+            withdraw();
         });
         header.appendChild(close);
         const body = create('div', 'ap-panel-body');
@@ -4441,6 +4691,11 @@
         // usually nothing to remove -- which is the whole point of checking
         // before the work rather than after it.
         withdraw();
+        /* AND THE DOCUMENT IS GIVEN BACK, or the newer copy would find it held
+           and stand down (00-preamble), leaving the page with no tool at all. It
+           is the one release there is, and it records this copy's configuration,
+           so that the old tag executed again stays silent (85-pages). */
+        releaseDocument(document, thisCopy);
 
         const fresh = document.createElement('script');
         const attributes = script.attributes;
@@ -4451,7 +4706,12 @@
         fresh.src = url;
         fresh.addEventListener('error', () => {
             handingOver = false;
-            onFailure();
+            /* Taken back only if still free. While the new version was being
+               fetched, a tag with another configuration may have booted and taken
+               the document: two tools on one page is what the slot exists to
+               prevent, so this one stays down. The old tag executed again cannot
+               be that copy: it stands down on the record releaseDocument left. */
+            if (claimDocument(document, thisCopy)) onFailure();
         });
         (document.head || document.documentElement).appendChild(fresh);
         return true;
@@ -4531,6 +4791,422 @@
     const labelsFileFor = (declared, src, language) =>
         declared || shippedLabelsUrl(src, language);
 
+    /* ==== 85-pages.js ==== */
+
+    /* -- 19 ter. The page changes, the document does not --------------------
+       Everything in this client was written for one page per document: the path
+       was read at boot, the host element was appended to the body once, and
+       nothing looked again. Two families of sites break that, in two different
+       ways, and both are common enough to be the default of whole frameworks:
+
+         THE ADDRESS CHANGES, THE BODY STAYS -- Next.js, Nuxt, Vue Router,
+         SvelteKit, Inertia. history.pushState, replaceState, the back button. The
+         tool stayed, with the first page's notes, on every page after it.
+
+         THE BODY IS REPLACED -- Turbo, Astro's ClientRouter, htmx's hx-boost,
+         Livewire's wire:navigate. The host element went away with the old body,
+         and a tag sitting inside the body was executed again and built a second
+         tool.
+
+       WHAT COUNTS AS ANOTHER PAGE IS THE PATH, AND ONLY THE PATH: it is what the
+       page index is computed from (20-crypto), so it is the only change that can
+       move a note. A body swapped under the same address is the same page -- the
+       anchoring already degrades an element that is gone into an orphan, and
+       takes it back when it returns (50-anchors). A query string or a fragment
+       that changes is the same page too, for the same reason.
+
+       NOTHING HERE TOUCHES THE DERIVATION. pagePath() and indexOfPath() are
+       called exactly as the boot calls them; what changed is how often. */
+
+    /* -- The slot on the document -------------------------------------------
+       Declared in 00-preamble, which is the first reader of it: a second copy has
+       to find it before doing anything at all. Written here, by the copy that
+       stays. Everything below takes the document and the window as parameters so
+       that client/tools/check.mjs can hand it plain objects. */
+
+    const slotOf = (doc) => {
+        if (!doc[INSTANCE_SLOT]) doc[INSTANCE_SLOT] = { copy: null, listening: false };
+        return doc[INSTANCE_SLOT];
+    };
+
+    /** Takes the document for `copy`. False when another copy already holds it. */
+    const claimDocument = (doc, copy) => {
+        const slot = slotOf(doc);
+        if (slot.copy && slot.copy !== copy) return false;
+        slot.copy = copy;
+        return true;
+    };
+
+    /* Given back ONLY by a copy handing over to a newer version (80-upgrade). A
+       copy that went silent keeps the slot, and that is deliberate: silent is
+       still this document's answer, and a re-executed tag that booted again would
+       ask the same server the same question at every navigation. So does a copy
+       standing down outside its data-path: see NO TAKEOVER in 00-preamble.
+
+       AND WHAT IT WAS CONFIGURED WITH IS REMEMBERED. The newer version arrives
+       under another address, so the old tag executed again by a router no longer
+       matches the copy holding the document. Without this record it would read
+       as another configuration: warned about as a second tool, or -- during the
+       fetch, with nobody holding the slot -- booting and handing over a second
+       time. */
+    const releaseDocument = (doc, copy) => {
+        const slot = slotOf(doc);
+        if (slot.copy !== copy) return;
+        slot.copy = null;
+        if (!slot.handedOver) slot.handedOver = [];
+        slot.handedOver.push(copy.identity);
+    };
+
+    /**
+     * Hears every change of address, ONCE PER DOCUMENT, and forwards it to
+     * whichever copy holds the slot at that moment.
+     *
+     * ONCE, because a copy that hands over to a newer version cannot take a
+     * wrapper back off history -- the site may have wrapped it again since -- and
+     * the newer copy wrapping on top would announce every navigation twice. The
+     * listeners installed here never belong to a copy: they read the slot when
+     * they fire.
+     *
+     * THE NAVIGATION API WHERE THERE IS ONE. `currententrychange` fires for
+     * pushState, replaceState and a traversal alike, and it costs the site
+     * nothing. history is only wrapped where that API is missing, since wrapping
+     * a method of somebody else's page is the more intrusive of the two. popstate
+     * is heard in both cases: it is free, and the path comparison makes a second
+     * announcement of the same change a no-op.
+     *
+     * @returns {boolean} whether this call installed anything
+     */
+    const listenForPages = (win, doc) => {
+        const slot = slotOf(doc);
+        if (slot.listening) return false;
+        slot.listening = true;
+
+        const tell = () => {
+            if (slot.copy) slot.copy.recheck();
+        };
+
+        win.addEventListener('popstate', tell);
+
+        const nav = win.navigation;
+        if (nav && typeof nav.addEventListener === 'function') {
+            nav.addEventListener('currententrychange', tell);
+            return true;
+        }
+
+        /* A LIMIT, SAID HERE BECAUSE THIS IS WHERE IT COMES FROM. A router that
+           kept its own reference to history.pushState before this tag loaded --
+           `const push = history.pushState.bind(history)` at module load is a
+           common way to write one -- calls that reference and never the wrapper
+           below. Its navigations are not heard through history: only through
+           popstate, a re-executed tag, a swapped body, or the Navigation API where
+           the browser has it. Nothing a script loaded later can do reaches a
+           reference taken earlier, and loading first is not this tag's to
+           decide. */
+        const history = win.history;
+        ['pushState', 'replaceState'].forEach((name) => {
+            const original = history && history[name];
+            if (typeof original !== 'function') return;
+            const wrapper = function () {
+                // The site's call first, untouched, and its exception with it: a
+                // refused URL is the site's to hear about, and a navigation that
+                // did not happen is not one to follow.
+                const result = original.apply(this, arguments);
+                /* THE ONE try IN THIS SECTION, AND IT IS NOT A HABIT. This line
+                   runs INSIDE the site's own call to pushState, in its router, in
+                   the middle of its render. Anything thrown here would break the
+                   site's navigation -- which is the one failure this tool may
+                   never cause. A listener that throws only reaches the console;
+                   this does not have that luxury. */
+                try {
+                    tell();
+                } catch (e) {
+                    /* The page moved on without us: the next sign of navigation
+                       compares the path again. */
+                }
+                return result;
+            };
+            /* A HISTORY THE SITE FROZE. Object.freeze(History.prototype) -- a
+               hardening script does it -- makes this assignment throw, since the
+               bundle is strict, and it threw before the boot had started: the
+               tool never appeared, on a page that had done nothing wrong. It is
+               not worked around with defineProperty on the instance either: a
+               site that froze its history has said it is not to be wrapped. This
+               copy boots without hearing pushState, and hears the rest. */
+            try {
+                history[name] = wrapper;
+            } catch (e) {
+                /* Refused: the site's history stays exactly as the site froze it. */
+            }
+        });
+        return true;
+    };
+
+    /**
+     * WHAT A CHANGE OF ADDRESS ASKS OF THIS COPY -- the whole decision, with no
+     * DOM in it, so it is checked rather than described.
+     *
+     *   none    nothing to do: same path, or a copy that must not move
+     *   note    out of scope and already standing down there: remember the path
+     *   leave   the path left the declared prefix: take everything down
+     *   enter   the path came back into it: boot, as a full load of it would
+     *   follow  another page for a running tool: its index, its notes
+     *   wait    another page, but the tool is not in its normal shape -- a boot
+     *           under way, a key being asked for, a silence. Nothing is recorded,
+     *           so the boot looks again when it lands (proceed, 90-boot).
+     *
+     * `frozen` is a configuration that was refused, or a copy that has handed
+     * over: neither depends on the page, and neither may act on one.
+     */
+    const pageStep = (s) => {
+        if (s.frozen) return 'none';
+        if (s.path === s.known) return 'none';
+        if (!s.inScope) return s.outOfScope ? 'note' : 'leave';
+        if (s.outOfScope) return 'enter';
+        return s.running ? 'follow' : 'wait';
+    };
+
+    /**
+     * WHETHER AN ANSWER STILL BELONGS TO THE BOOT THAT ASKED FOR IT.
+     *
+     * A boot is a derivation, a request and a label file, and the reader can
+     * leave the declared prefix and come back into it before it lands. Coming
+     * back starts a second boot (pageStep: enter) while the first is still on
+     * the network, and the first one's list, applied, is page A's notes opened
+     * with page B's index: every one of them "unreadable". So each boot carries
+     * the number it was started under (`run`, against bootRun in 30-state) and
+     * the index it asked with, and an answer that lands under another of either
+     * is dropped whole. `index` undefined is a step taken before there is one.
+     */
+    const bootIsStale = (s) => s.run !== s.current
+        || (s.index !== undefined && s.index !== s.pageIndex);
+
+    /* -- What the running copy does about it --------------------------------- */
+
+    /** Everything that belongs to ONE page and to no other. The key, the project
+        totals and the side of the panel are not in it: they belong to the
+        project and to the browser, and a navigation changes neither. */
+    const forgetPage = () => {
+        notes = [];
+        anchored = [];
+        orphans = [];
+        historyOpen = false;
+        currentFailure = null;
+        skipped = { newer: 0, unreadable: 0, unknown: 0 };
+    };
+
+    /**
+     * Another page, and the tool is running: the notes of this one, from now.
+     *
+     * THE PANEL STAYS OPEN IF IT WAS. In annotation mode every click on the page
+     * is captured, so a navigation that happens then is the back button or the
+     * site's own doing -- and a reviewer who pressed Back while reading the list
+     * wants the list of where they landed, not to have the tool closed on them.
+     *
+     * WHAT DOES NOT SURVIVE is whatever was aimed at the page that left: the
+     * window of a remark, the form half written, the outline. The element they
+     * point at is gone, and a remark sent from that form now would be filed under
+     * the NEW page's index -- a note on the wrong page, which is worse than a
+     * note not written.
+     *
+     * THE OLD NOTES GO BEFORE THE NEW ONES ARRIVE. The panel is redrawn empty at
+     * once, and PAGE_INDEX is cleared until the new one is computed: a reload
+     * started in that gap (entering the mode, a reply landing) asks for nothing
+     * rather than for the page that left, and one already in flight is discarded
+     * when it lands (reload, 90-boot).
+     */
+    const changePage = () => {
+        const path = PAGE_PATH;
+        const derived = keys;
+        closePop();
+        closeForm();
+        hideHighlight();
+        hovered = null;
+        forgetPage();
+        PAGE_INDEX = '';
+        redraw();
+        return indexOfPath(derived.indexKey, path).then((index) => {
+            // Moved again meanwhile, or the key was forgotten or replaced: the
+            // later change owns the page now.
+            if (path !== PAGE_PATH || keys !== derived) return null;
+            PAGE_INDEX = index;
+            return reload();
+        });
+    };
+
+    /** Out of the declared prefix: exactly what a full load of that page shows,
+        which is nothing. The key stays: coming back must not ask for it. */
+    const stepAside = () => {
+        // A boot still on the network belongs to the page that left (bootIsStale).
+        bootRun += 1;
+        withdraw();
+        forgetPage();
+        PAGE_INDEX = '';
+        outOfScope = true;
+    };
+
+    /** Compares the address with the page this copy is on, and acts. */
+    const followPage = () => {
+        const path = pagePath();
+        const step = pageStep({
+            frozen: !!CONFIG_FAILURE || handingOver,
+            path: path,
+            known: PAGE_PATH,
+            inScope: inScope(),
+            outOfScope: outOfScope,
+            running: !!(keys && ui)
+        });
+        if (step === 'none' || step === 'wait') return step;
+        PAGE_PATH = path;
+        if (step === 'leave') stepAside();
+        else if (step === 'enter') start();
+        else if (step === 'follow') changePage();
+        return step;
+    };
+
+    /* -- The host element, kept in the document ------------------------------
+       The host is a child of <body>, and a body that is replaced -- or emptied and
+       refilled -- takes it along. It is PUT BACK rather than moved somewhere a
+       swap cannot reach: its shadow root, its stylesheet and its listeners are
+       all intact on the detached element, so reattaching it is the whole repair,
+       and the one element the site receives stays where it always was.
+
+       WATCHED ON TWO NODES, NEITHER OF THEM IN DEPTH. <html>'s children, which is
+       where a body is swapped whole; the body's own children, which is where one
+       is emptied. childList without subtree: the callback runs for a change at
+       those two levels and for nothing else the page does, however busy. */
+
+    let hostWatch = null;
+    let watchedBody = null;
+
+    /* HOW OFTEN THE HOST IS PUT BACK, AND WHEN THAT STOPS.
+
+       A site can remove, on purpose, every child of <body> it does not know --
+       a MutationObserver of its own, a "clean the DOM" script. Each removal is a
+       mutation this copy answers by putting the host back, and each putting back
+       is a mutation the site answers by removing it. Both callbacks are
+       microtasks: the browser never gets to paint or to take a click again, and
+       the page is frozen. Unbounded, this repair is the one failure the tool may
+       never cause.
+
+       So what is COUNTED is the ping-pong itself: a host found removed less than
+       CONTESTED_WITHIN milliseconds after it was put back. REATTACH_LIMIT of
+       those IN A ROW is somebody removing the element on purpose, and the tool
+       then stops, takes everything it holds down with it, and says so once: an
+       element that vanishes with nothing said is the failure nobody finds.
+
+       NOT A NUMBER OF SWAPS PER WINDOW, which is what this was, and it switched
+       the tool off on a site doing nothing wrong. Turbo visiting a page it has
+       cached swaps the body twice -- the preview, then the response -- so five
+       quick pagination clicks, or ten presses on Back, spent a budget of ten in
+       two seconds. Those two swaps can land within a few milliseconds of each
+       other, but the next navigation waits for a person: any removal later than
+       CONTESTED_WITHIN starts the count again. A loop that removes the element
+       more slowly than that is not refused, and does not need to be: the browser
+       paints and takes clicks between two of its rounds. */
+    const REATTACH_LIMIT = 10;
+    const CONTESTED_WITHIN = 100;
+    const reattached = { at: -Infinity, contested: 0 };
+    let reattachRefusalSaid = false;
+
+    /** Records one putting back at `now` in `record`. False when REATTACH_LIMIT
+        removals in a row each came within CONTESTED_WITHIN of the putting back
+        before it. */
+    const reattachAllowed = (record, now) => {
+        record.contested = now - record.at < CONTESTED_WITHIN ? record.contested + 1 : 0;
+        if (record.contested >= REATTACH_LIMIT) return false;
+        record.at = now;
+        return true;
+    };
+
+    const watchFrame = () => {
+        hostWatch.disconnect();
+        watchedBody = document.body;
+        hostWatch.observe(document.documentElement, { childList: true });
+        if (watchedBody) hostWatch.observe(watchedBody, { childList: true });
+    };
+
+    /* A mutation is a sign the page may have changed: the same question a
+       re-executed tag or a history change asks, answered in the same place. */
+    const watchHost = () => {
+        if (hostWatch || typeof MutationObserver !== 'function') return;
+        hostWatch = new MutationObserver(() => recheck());
+        watchFrame();
+    };
+
+    const unwatchHost = () => {
+        if (hostWatch) hostWatch.disconnect();
+        hostWatch = null;
+        watchedBody = null;
+    };
+
+    const keepHostAttached = () => {
+        const body = document.body;
+        if (!body) return;
+        const swapped = !!hostWatch && watchedBody !== body;
+        if (swapped) {
+            watchFrame();
+            /* ANNOTATION MODE WATCHES THE BODY IN DEPTH (enterMode), and the one
+               it watches has just left the document: it would never raise
+               domDirty again. It moves to the body that is there, and the
+               anchoring is redone once, since every element it held is gone. */
+            if (observer) {
+                observer.disconnect();
+                observer.observe(body, { childList: true, subtree: true });
+                domDirty = true;
+            }
+        }
+        if (!host) return;
+        const detached = !host.isConnected;
+        if (!detached && !swapped) return;
+
+        /* COPIES OF THE HOST THAT ARE NOT THE HOST. Turbo keeps a snapshot of
+           every page it leaves as body.cloneNode(true), and htmx keeps its history
+           as the body's markup: both put back, on Back, a body carrying an
+           <annotepage-notes> with the inline style and without the shadow root --
+           a full-screen element with nothing in it. Removed, because it is ours;
+           and only when it has no shadow root, because one that has is a tool,
+           and not this copy's to remove. */
+        const found = document.querySelectorAll('annotepage-notes');
+        for (let i = 0; i < found.length; i += 1) {
+            if (found[i] !== host && !found[i].shadowRoot) found[i].remove();
+        }
+        if (!detached) return;
+        if (!reattachAllowed(reattached, Date.now())) {
+            /* THE BOOT UNDER WAY ENDS HERE TOO. The ping-pong runs in microtasks,
+               so it can spend the budget while a label file is still on the
+               network -- and that boot, landing, would build its interface into
+               the shadow root withdraw() has just dropped: a TypeError in the
+               site's error tracker. Raising the run makes every later turn of
+               it a stale one (bootIsStale), which is how stepAside stops a boot
+               as well. */
+            bootRun += 1;
+            withdraw();
+            if (!reattachRefusalSaid) {
+                reattachRefusalSaid = true;
+                complain('something on this page removes the element this client draws in '
+                    + '(<annotepage-notes>) each time it is put back. It was put back '
+                    + REATTACH_LIMIT + ' times in a row, each removed again within '
+                    + CONTESTED_WITHIN + ' ms, and the tool has stopped rather than freeze '
+                    + 'the page. Whatever removes unknown children of <body> has to leave '
+                    + 'that element alone.');
+            }
+            return;
+        }
+        body.appendChild(host);
+    };
+
+    /**
+     * THE ONE ANSWER to every sign that the page may have changed: a history
+     * entry, a traversal, a body swapped, a tag executed again. Each of them asks
+     * both questions, since none of them says which one it is about: Turbo swaps
+     * the body AND pushes a history entry, and a re-executed tag says nothing at
+     * all about which.
+     */
+    function recheck() {
+        keepHostAttached();
+        followPage();
+    }
+
     /* ==== 90-boot.js ==== */
 
     /* -- 20. Reading the notes ----------------------------------------------- */
@@ -4542,8 +5218,18 @@
         drawMarkers();
     };
 
-    const reload = () =>
-        call('list').then((r) => {
+    /* A LIST BELONGS TO THE PAGE IT WAS ASKED FOR. The tool now outlives its
+       first page (85-pages), so an answer can land after the reader has moved on:
+       a slow list, or a reply sent just before Back. Applied, it would put the
+       notes of the page that left on the page that came -- the very defect being
+       fixed -- so the index is remembered at the question and compared at the
+       answer, twice, since decrypting takes a turn of its own. No index at all is
+       the gap while the next one is computed: nothing is asked then. */
+    const reload = () => {
+        const index = PAGE_INDEX;
+        if (!index) return Promise.resolve(null);
+        return call('list').then((r) => {
+            if (index !== PAGE_INDEX) return null;
             if (!r.ok) {
                 // The tool is already in place: we no longer keep quiet. The
                 // notes already on screen stay, with the warning that they may
@@ -4559,12 +5245,14 @@
             expired = readExpired(r.data);
             serverWide = readServerTotals(r.data);
             return readList(r.data).then((read) => {
+                if (index !== PAGE_INDEX) return null;
                 notes = read;
                 currentFailure = null;
                 redraw();
                 return null;
             });
         });
+    };
 
     /* -- 21. Startup ----------------------------------------------------------
        The order matters: we ask the API BEFORE touching the DOM. If it does not
@@ -4633,15 +5321,28 @@
     const withdraw = () => {
         if (ui && mode) leaveMode();
         if (host) host.remove();
+        // The watch that puts the host back (85-pages) goes with it, or the next
+        // body swap would find nothing to restore and keep observing for ever.
+        unwatchHost();
         host = null;
         root = null;
         ui = null;
     };
 
-    /** A blocking screen: the host exists from now on, the labels come first. */
+    /** The one reading of bootIsStale (85-pages) this file makes, against the
+        boot and the page as they are now. */
+    const staleBoot = (run, index) => bootIsStale({
+        run: run, current: bootRun, index: index, pageIndex: PAGE_INDEX });
+
+    /** A blocking screen: the host exists from now on, the labels come first.
+        A screen whose labels land after the reader left the prefix is not opened:
+        stepAside has already taken its host down. */
     const showScreen = (open) => {
+        const run = bootRun;
         buildHost();
-        loadLabels().then(open);
+        loadLabels().then(() => {
+            if (!staleBoot(run)) open();
+        });
     };
 
     /**
@@ -4668,12 +5369,20 @@
         keyText = text;
         keys = derived;
 
-        return indexOfPath(keys.indexKey, pagePath())
-            .then((index) => {
-                PAGE_INDEX = index;
-                return call('list');
-            })
-            .then((first) => {
+        /* The path is read HERE and not at the top of start(): a key pasted on
+           the key screen can arrive several pages after the boot began. */
+        PAGE_PATH = pagePath();
+        const run = bootRun;
+        return indexOfPath(keys.indexKey, PAGE_PATH).then((index) => {
+            if (staleBoot(run)) return null;
+            PAGE_INDEX = index;
+            return call('list').then((first) => {
+                /* The reader left the declared prefix while this boot was on the
+                   network -- and may already be back in it, under a boot of its
+                   own (bootIsStale, 85-pages). Either way this answer is about a
+                   page that left, and nothing is done with it: not shown, and not
+                   a silence that would withdraw the newer boot's tool. */
+                if (staleBoot(run, index)) return null;
                 if (!first.ok && !speaksAtStartup(first)) {
                     // Complete silence: no node, no pixel, no message. If a key
                     // screen was open, it goes away with the rest.
@@ -4706,11 +5415,12 @@
                    it comes from, and replacing ourselves from a CDN would undo
                    that choice behind their back. */
                 const cdn = newer ? cdnServing(SCRIPT_SRC) : null;
-                if (cdn && handOverTo(cdn, newer, () => { proceed(first); })) return null;
+                if (cdn && handOverTo(cdn, newer, () => { proceed(first, run, index); })) return null;
                 if (newer) upgradeAvailable = newer;
 
-                return proceed(first);
+                return proceed(first, run, index);
             });
+        });
     }
 
     /**
@@ -4741,24 +5451,25 @@
         keyText = '';
         keys = null;
         PAGE_INDEX = '';
-        notes = [];
-        anchored = [];
-        orphans = [];
-        historyOpen = false;
-        currentFailure = null;
-        skipped = { newer: 0, unreadable: 0, unknown: 0 };
+        // The page's own state, from the one list of it (85-pages): a navigation
+        // drops the same things, and two copies of that list would drift.
+        forgetPage();
 
         // And the tool is back where it was before the key was pasted: the
         // screen that asks for it. openSaltScreen clears the layer it replaces.
         openSaltScreen();
     };
 
-    /** Everything the tool does once it has decided to stay. */
-    function proceed(first) {
+    /** Everything the tool does once it has decided to stay -- for the boot
+        numbered `run`, which asked with `index`. Checked at every turn it takes:
+        it is also called late, when a hand-over fails (80-upgrade). */
+    function proceed(first, run, index) {
+        if (staleBoot(run, index)) return Promise.resolve(null);
         // From here on the tool EXISTS, and will no longer keep quiet
         // about its failures.
         buildHost();
         return loadLabels().then(() => {
+            if (staleBoot(run, index)) return null;
             clearLayer();
             buildUi();
             if (first.ok) {
@@ -4767,6 +5478,7 @@
                 expired = readExpired(first.data);
                 serverWide = readServerTotals(first.data);
                 return readList(first.data).then((read) => {
+                    if (staleBoot(run, index)) return null;
                     notes = read;
                     redraw();
                     return null;
@@ -4775,10 +5487,23 @@
             currentFailure = failureFrom(first, 'error.title_read');
             redraw();
             return null;
+        }).then(() => {
+            if (staleBoot(run, index)) return null;
+            /* THE ADDRESS MAY HAVE MOVED DURING THE BOOT: a derivation, a request
+               and a label file is long enough for a router to push a page. The
+               signs that arrived meanwhile were told to wait (pageStep), so this
+               is where they are answered -- and on a page that did not move it
+               compares two equal strings. */
+            followPage();
+            return null;
         });
     }
 
     const start = () => {
+        // A boot of its own: whatever an earlier one still has on the network is
+        // dropped when it lands (bootIsStale, 85-pages).
+        bootRun += 1;
+        const run = bootRun;
         author = readAuthor();
         // Read ONCE, here, and never again: the side is asked of the storage at
         // startup like the name, not at every draw.
@@ -4801,7 +5526,12 @@
 
         // Outside the project's scope: silence. So the declaration can live in a
         // template shared by the whole site.
-        if (!inScope()) return;
+        //
+        // And the reason is REMEMBERED: it is the only silence that a later
+        // navigation can lift (85-pages).
+        PAGE_PATH = pagePath();
+        outOfScope = !inScope();
+        if (outOfScope) return;
 
         if (!CRYPTO) {
             // Without a secure context nothing is possible -- but if somebody
@@ -4828,6 +5558,7 @@
             }
 
             derive(keyBytes).then((derived) => {
+                if (staleBoot(run)) return null;
                 /* Both attributes on one tag: they have to AGREE, and the id is
                    the one thing the key can check itself against (FORMAT.md
                    1.2). Disagreement is refused exactly as a wrongly pasted key
@@ -4845,7 +5576,7 @@
             }, () => {
                 // derive() only fails when WebCrypto itself does, which is what
                 // that screen is about.
-                showScreen(openContextScreen);
+                if (!staleBoot(run)) showScreen(openContextScreen);
             });
             return;
         }
@@ -4863,6 +5594,7 @@
         }
 
         derive(bytes).then((derived) => {
+            if (staleBoot(run)) return null;
             if (derived.id !== PROJECT) {
                 // The key stored under this key does not derive this id: the
                 // tag has changed project, or the storage was tampered with. We
@@ -4872,9 +5604,23 @@
             }
             return startWithSalt(text, derived);
         }, () => {
-            showScreen(openSaltScreen);
+            if (!staleBoot(run)) showScreen(openSaltScreen);
         });
     };
+
+    /* THIS COPY, AS OTHER COPIES SEE IT. The shape is a contract with versions
+       that do not exist yet: see 00-preamble. The claim cannot fail here -- a copy
+       that found the document held has already returned from the preamble, and
+       nothing between the two is asynchronous. `identity` is what a later copy
+       compares its own configuration with, to know whether it is this one
+       executed again or a second tool it must refuse. */
+    const thisCopy = { version: TOOL_VERSION, identity: COPY_IDENTITY, recheck: recheck };
+    claimDocument(document, thisCopy);
+
+    /* Listening starts before the boot and whatever the boot decides: a page
+       outside the declared prefix is exactly the one that needs to hear the next
+       navigation. */
+    listenForPages(window, document);
 
     if (document.body) {
         start();

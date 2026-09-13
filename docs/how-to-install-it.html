@@ -2141,6 +2141,8 @@ return array(
                 <button type="button" data-where="w-symfony">Symfony</button>
                 <button type="button" data-where="w-django">Django</button>
                 <button type="button" data-where="w-drupal">Drupal</button>
+                <button type="button" data-where="w-rr7">React Router 7</button>
+                <button type="button" data-where="w-solidstart">SolidStart</button>
                 <span class="where-fam">Static</span>
                 <button type="button" data-where="w-html">HTML</button>
                 <button type="button" data-where="w-vite">Vite</button>
@@ -2159,7 +2161,7 @@ return array(
                 <button type="button" data-where="w-wp">WordPress</button>
             </div>
             <div class="where-lines" aria-live="polite">
-                <p class="where-hint">Point at your tool to see where the tag goes.</p>
+                <p class="where-hint">Point at your tool to see where the tag goes. Once, in the layout every page shares &mdash; not again in a page or a component.</p>
                 <p class="where-line" id="w-next"><b>Next.js</b> <code>app/layout.tsx</code>, last in <code>&lt;body&gt;</code>, as a plain <code>&lt;script&gt;</code> &mdash; pages router: <code>pages/_document.tsx</code></p>
                 <p class="where-line" id="w-nuxt"><b>Nuxt</b> <code>nuxt.config.ts</code>, under <code>app.head.script</code>, with <code>tagPosition: 'bodyClose'</code></p>
                 <p class="where-line" id="w-svelte"><b>SvelteKit</b> <code>src/app.html</code>, before <code>&lt;/body&gt;</code></p>
@@ -2169,6 +2171,8 @@ return array(
                 <p class="where-line" id="w-symfony"><b>Symfony</b> <code>templates/base.html.twig</code>, before <code>&lt;/body&gt;</code></p>
                 <p class="where-line" id="w-django"><b>Django</b> the base template your pages <code>{% extends %}</code>, before <code>&lt;/body&gt;</code></p>
                 <p class="where-line" id="w-drupal"><b>Drupal</b> your theme&rsquo;s <code>html.html.twig</code>, before <code>&lt;/body&gt;</code></p>
+                <p class="where-line" id="w-rr7"><b>React Router 7</b> (Remix) <code>app/root.tsx</code>, last in <code>&lt;body&gt;</code>, after <code>&lt;Scripts /&gt;</code></p>
+                <p class="where-line" id="w-solidstart"><b>SolidStart</b> <code>src/entry-server.tsx</code>, before <code>&lt;/body&gt;</code></p>
                 <p class="where-line" id="w-html"><b>HTML</b> before <code>&lt;/body&gt;</code> in <b>every page</b> you want annotated, not only <code>index.html</code></p>
                 <p class="where-line" id="w-vite"><b>Vite</b> (React, Vue) <code>index.html</code> at the root &mdash; never imported into the bundle</p>
                 <p class="where-line" id="w-angular"><b>Angular</b> <code>src/index.html</code> &mdash; not in <code>angular.json</code> scripts</p>
@@ -2657,8 +2661,8 @@ return array(
        reads the version standing beside every digest in the repository, and
        refuses either one going stale. Fetched to confirm before this was
        written: the address below answers 200 and hashes to this value. */
-    var CLIENT_VERSION = '2.29.0';
-    var CLIENT_SRI = 'sha384-2N0B7fBqiLD7kE1Jg6ObeS+5JTqFZZWud4icxW2z4qn8qPr3F8CI02LNj429GId9';
+    var CLIENT_VERSION = '2.30.0';
+    var CLIENT_SRI = 'sha384-/pIpSIUKGK7sU+9ZGx0iUTxEY56cWBp5WzJf1XrE+bbNmq1/YQCL0rwiVbgV4z8W';
 
     /* It must stop rather than half-run: a generator wired to elements the
        page no longer has would leave the placeholder sitting in the tag,
@@ -3151,10 +3155,10 @@ return array(
      attribute by attribute into a live <script>, which is what makes it run:
      the same file, the same key, the same data-version, and
      tools/check-sri.mjs still reads them where they have always been. -->
-<template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
+<template id="annotepage-tool"><script src="/annotepage-client-2.30.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.29"
+        data-version="2026.9.30"
         defer></script></template>
 <script>
 (function () {
