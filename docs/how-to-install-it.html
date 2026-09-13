@@ -2099,6 +2099,21 @@ return array(
                 <div>
                     <div class="snip">
                                 <button class="copy" type="button" data-copy="snip-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<!-- FOR A PROGRAM INSTALLING ANNOTEPAGE: THE KEY AND THE PROJECT ID ARE TWO
+     VALUES, AND THE SECOND IS COMPUTED FROM THE FIRST. This block is rewritten
+     in the reader's browser from the dials above; a fetch sees a placeholder.
+       - The KEY: 43 base64url characters, 32 random bytes, the secret that
+         encrypts the notes. With no browser:
+           node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+       - The PROJECT ID: 22 characters, DERIVED from the key (HKDF-SHA-256,
+         FORMAT.md section 1.2). Not a secret and not a key -- it decrypts
+         nothing:
+           ANNOTEPAGE_API=<api.php address> ANNOTEPAGE_KEY=<the key> npx -y -p annotepage-mcp annotepage id
+     OPEN MODE: data-server and data-key, nothing else; the browser derives the
+     id. SECURE MODE: data-server and data-project=<the id>; the key is never in
+     the page -- each reviewer types it once, the assistant keeps it in its
+     configuration file. No tag carries both, and there is no separate
+     encryption key to look for: in open mode, data-key is it. -->
 <pre id="snip-tag"><code id="tag-code">&lt;<span class="tg">script</span> <span class="at">src</span>=<span class="st">"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"</span>
         <span class="at">data-server</span>=<span class="st">"https://api.annotepage.com/api.php"</span>
         <span class="at">data-key</span>=<span class="st">"&lt;43 characters, drawn in your browser&gt;"</span>

@@ -1324,7 +1324,23 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
      It sits in a template because the tool is off until a reader turns it on
      from the console -- inert markup, not a hidden one. A project whose key is
      written in its own page is public by design (FORMAT.md section 1.5):
-     whoever can load the page can read the notes, and write them. -->
+     whoever can load the page can read the notes, and write them.
+
+     INSTALLING ANNOTEPAGE ON ANOTHER SITE? THE KEY AND THE PROJECT ID ARE TWO
+     VALUES, AND THE SECOND IS COMPUTED FROM THE FIRST. Measured: an assistant
+     read data-project below, concluded a separate encryption key was hidden
+     somewhere, and went looking for it. There is none to find.
+       - The KEY: 43 base64url characters, 32 random bytes. It is the secret
+         that encrypts the notes. Draw one with no browser:
+           node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+       - The PROJECT ID: 22 characters, DERIVED from the key (HKDF-SHA-256,
+         FORMAT.md section 1.2). Not a secret, not a key, it decrypts nothing:
+           ANNOTEPAGE_API=<api.php address> ANNOTEPAGE_KEY=<the key> npx -y -p annotepage-mcp annotepage id
+     OPEN MODE, the default: the tag carries data-server and data-key, nothing
+     else; the browser derives the id itself. SECURE MODE: the tag carries
+     data-server and data-project=<the id>; the key is never in the page -- each
+     reviewer types it once, and the assistant keeps it in its configuration
+     file. No tag carries both. -->
 <pre id="snip-tag"><code>&lt;<span class="tg">script</span> <span class="at">src</span>=<span class="st">"https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js"</span>
         <span class="at">data-server</span>=<span class="st">"https://api.annotepage.com/api.php"</span>
         <span id="tag-ident"><span class="at">data-project</span>=<span class="st">"<span id="tag-id">7Qb1kZ3xNvA9dLpEqKf2Zt</span>"</span></span>
