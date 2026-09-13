@@ -51,7 +51,7 @@
                          rather than resolved (FORMAT.md section 1.5).
      neither             we stay out, and we say so once in the console. */
 
-/* ONE COPY PER DOCUMENT, HOWEVER MANY TIMES THIS FILE RUNS.
+/* ONE TOOL PER PAGE, HOWEVER MANY TIMES THIS FILE RUNS.
 
    A tag inside <body> is executed again by every router that swaps the body
    and re-activates its scripts -- Turbo, htmx's hx-boost, Livewire's
@@ -60,28 +60,46 @@
    of listeners on one page, one remark sent twice.
 
    So the copy that boots first takes a slot ON THE DOCUMENT (85-pages), and
-   any later one finds it here and stands down BEFORE reading a setting,
-   drawing a pixel or writing a line in the console -- a re-execution on every
-   navigation would otherwise repeat the same warning at every click. It does
-   one thing instead: it asks the running copy to look at the page again. A
-   re-executed tag is the plainest sign there is that the body just changed.
+   keeps it for the life of the document. Any later copy finds it (below, once
+   the tag and the object have been read, and before a single setting is
+   judged) and does not start. Which of two things it says depends on what it
+   carries:
+
+     THE SAME CONFIGURATION -- same src, same settings on the tag, same
+     object. That is a router executing the tag again, at every click, and it
+     stands down in silence: a line per navigation would bury the console. It
+     asks the running copy to look at the page again instead, since a
+     re-executed tag is the plainest sign there is that the body just changed.
+
+     ANOTHER CONFIGURATION -- another project, key, prefix, version, server or
+     file. It stands down too, and says so ONCE for the document. One tool
+     runs per page BY RULE: two projects on one site are two tags on two sets
+     of pages, never two tags on one. The rule was nearly the other one --
+     every configuration boots, each holds its own slot -- and it was set
+     aside because two tools on a page share one body, one click, one history
+     wrapper, and a reviewer who cannot tell which pill files where. What
+     cannot be allowed is the silence: a second tag that quietly never starts
+     is a project somebody believes is running.
+
+   NO TAKEOVER, EVEN WHEN THE OWNER IS OUT OF ITS data-path. Handing the
+   document to whichever copy's prefix matches would make "which tool is on
+   this page" depend on the order of navigations, and the owner coming back
+   into its prefix would have to take it back. The first copy owns the
+   document; the only release is the upgrade hand-over (80-upgrade).
 
    WHY THE DOCUMENT AND A REGISTERED SYMBOL. The document is what "one per
-   document" means, and it outlives a body swap. Symbol.for gives two copies of
+   page" means, and it outlives a body swap. Symbol.for gives two copies of
    this file -- two versions, from two addresses -- the same key without it
    being a name a site's script can overwrite by accident: window.Annotepage
    was the obvious place, and a page is allowed to assign that object whole
    (15-labels).
 
-   THE CONTRACT BETWEEN COPIES IS { copy: { version, recheck } }, and it is
-   read by versions that do not exist yet. Adding to it is free; renaming
-   either member breaks the copy that ships next to an older one. */
+   THE CONTRACT BETWEEN COPIES IS
+     { copy: { version, identity, recheck }, handedOver: [identity],
+       refused: [identity] }
+   and it is read by versions that do not exist yet. Adding to it is free;
+   renaming a member breaks the copy that ships next to an older one. */
 const INSTANCE_SLOT = Symbol.for('annotepage');
-const alreadyRunning = document[INSTANCE_SLOT];
-if (alreadyRunning && alreadyRunning.copy) {
-    alreadyRunning.copy.recheck();
-    return;
-}
 
 /* THE SETTINGS, AND THE WHOLE LIST OF THEM. `data-` plus the name on a tag,
    the name alone in the object. Documented in the client's README, and
@@ -137,6 +155,62 @@ const script = (document.currentScript && document.currentScript.src)
 const SCRIPT_SRC = script ? script.src : '';
 
 const declaredConfig = window.annotepageConfig;
+
+/* -- Is this document already somebody's? ---------------------------------
+   Read HERE: after the two sources are in hand, and before anything below can
+   write to the console about them. A refused configuration executed again by
+   a router must not repeat its warning at every click either.
+
+   WHAT A CONFIGURATION IS, for this comparison: the file's address, every
+   setting the tag carries as written, and the object as written. Raw and not
+   adopted: the adopted form is only known after the judging this has to come
+   before. An attribute that is not a setting -- annotepage.com toggles
+   data-annotepage-on on its live tag -- is not part of it, or a page flipping
+   its own switch would be told it carries two tools. */
+const data = (script && script.dataset) || {};
+const textOfObject = (value) => {
+    // A getter that throws, or a loop in the object: not ours to fail on.
+    try {
+        return String(JSON.stringify(value));
+    } catch (e) {
+        return String(value);
+    }
+};
+const COPY_IDENTITY = JSON.stringify([SCRIPT_SRC,
+    SETTINGS.map((name) => (declaredIn(data, name) ? String(data[name]).trim() : null)),
+    textOfObject(declaredConfig)]);
+
+const slotFound = document[INSTANCE_SLOT];
+const handedOverHere = (slotFound && slotFound.handedOver) || [];
+if (slotFound && (slotFound.copy || handedOverHere.indexOf(COPY_IDENTITY) !== -1)) {
+    const holder = slotFound.copy;
+    /* A COPY THAT HANDED OVER is still this configuration: the newer version
+       carries its settings under another address (80-upgrade). The old tag
+       executed again by a router is the same declaration, and neither a
+       warning nor a second hand-over is owed for it. */
+    const same = handedOverHere.indexOf(COPY_IDENTITY) !== -1
+        || !!(holder && holder.identity === COPY_IDENTITY);
+    if (!same) {
+        const refused = slotFound.refused || (slotFound.refused = []);
+        if (refused.indexOf(COPY_IDENTITY) === -1) {
+            refused.push(COPY_IDENTITY);
+            complain('this page already runs annotepage with another configuration, '
+                + 'and one tool runs per page: this one ('
+                + (SCRIPT_SRC || 'window.annotepageConfig') + ') was not started. '
+                + 'Several projects on one site means each page loads only its own '
+                + 'tag. See https://annotepage.com/questions.html#one-per-page');
+        }
+    }
+    /* IN A try, because this runs inside whatever executed the tag -- a
+       router, in the middle of its navigation -- and a fault of the running
+       copy thrown from here would surface there, uncaught, at every click.
+       The next sign of navigation asks again. */
+    try {
+        if (holder) holder.recheck();
+    } catch (e) { /* the running copy's fault, not the page's */ }
+    return;
+}
+
 const HAS_CONFIG = declaredConfig !== undefined && declaredConfig !== null;
 if (HAS_CONFIG && (typeof declaredConfig !== 'object' || Array.isArray(declaredConfig))) {
     refuse('tag.config_shape', null,
@@ -155,7 +229,6 @@ const isTextList = (value) => {
 /* What each source declares, as text, and whether it declares it AT ALL -- an
    empty data-key is not the same fact as no data-key (see THE KEY below). */
 const fromTag = {};
-const data = (script && script.dataset) || {};
 for (let i = 0; i < SETTINGS.length; i += 1) {
     const name = SETTINGS[i];
     if (declaredIn(data, name)) fromTag[name] = String(data[name]).trim();

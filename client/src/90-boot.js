@@ -118,10 +118,20 @@ const withdraw = () => {
     ui = null;
 };
 
-/** A blocking screen: the host exists from now on, the labels come first. */
+/** The one reading of bootIsStale (85-pages) this file makes, against the
+    boot and the page as they are now. */
+const staleBoot = (run, index) => bootIsStale({
+    run: run, current: bootRun, index: index, pageIndex: PAGE_INDEX });
+
+/** A blocking screen: the host exists from now on, the labels come first.
+    A screen whose labels land after the reader left the prefix is not opened:
+    stepAside has already taken its host down. */
 const showScreen = (open) => {
+    const run = bootRun;
     buildHost();
-    loadLabels().then(open);
+    loadLabels().then(() => {
+        if (!staleBoot(run)) open();
+    });
 };
 
 /**
@@ -151,16 +161,17 @@ function startWithSalt(text, derived) {
     /* The path is read HERE and not at the top of start(): a key pasted on
        the key screen can arrive several pages after the boot began. */
     PAGE_PATH = pagePath();
-    return indexOfPath(keys.indexKey, PAGE_PATH)
-        .then((index) => {
-            PAGE_INDEX = index;
-            return call('list');
-        })
-        .then((first) => {
+    const run = bootRun;
+    return indexOfPath(keys.indexKey, PAGE_PATH).then((index) => {
+        if (staleBoot(run)) return null;
+        PAGE_INDEX = index;
+        return call('list').then((first) => {
             /* The reader left the declared prefix while this boot was on the
-               network: that page shows nothing, and stepAside (85-pages) has
-               already made sure of it. */
-            if (outOfScope) return null;
+               network -- and may already be back in it, under a boot of its
+               own (bootIsStale, 85-pages). Either way this answer is about a
+               page that left, and nothing is done with it: not shown, and not
+               a silence that would withdraw the newer boot's tool. */
+            if (staleBoot(run, index)) return null;
             if (!first.ok && !speaksAtStartup(first)) {
                 // Complete silence: no node, no pixel, no message. If a key
                 // screen was open, it goes away with the rest.
@@ -193,11 +204,12 @@ function startWithSalt(text, derived) {
                it comes from, and replacing ourselves from a CDN would undo
                that choice behind their back. */
             const cdn = newer ? cdnServing(SCRIPT_SRC) : null;
-            if (cdn && handOverTo(cdn, newer, () => { proceed(first); })) return null;
+            if (cdn && handOverTo(cdn, newer, () => { proceed(first, run, index); })) return null;
             if (newer) upgradeAvailable = newer;
 
-            return proceed(first);
+            return proceed(first, run, index);
         });
+    });
 }
 
 /**
@@ -237,12 +249,16 @@ const forgetKey = () => {
     openSaltScreen();
 };
 
-/** Everything the tool does once it has decided to stay. */
-function proceed(first) {
+/** Everything the tool does once it has decided to stay -- for the boot
+    numbered `run`, which asked with `index`. Checked at every turn it takes:
+    it is also called late, when a hand-over fails (80-upgrade). */
+function proceed(first, run, index) {
+    if (staleBoot(run, index)) return Promise.resolve(null);
     // From here on the tool EXISTS, and will no longer keep quiet
     // about its failures.
     buildHost();
     return loadLabels().then(() => {
+        if (staleBoot(run, index)) return null;
         clearLayer();
         buildUi();
         if (first.ok) {
@@ -251,6 +267,7 @@ function proceed(first) {
             expired = readExpired(first.data);
             serverWide = readServerTotals(first.data);
             return readList(first.data).then((read) => {
+                if (staleBoot(run, index)) return null;
                 notes = read;
                 redraw();
                 return null;
@@ -260,6 +277,7 @@ function proceed(first) {
         redraw();
         return null;
     }).then(() => {
+        if (staleBoot(run, index)) return null;
         /* THE ADDRESS MAY HAVE MOVED DURING THE BOOT: a derivation, a request
            and a label file is long enough for a router to push a page. The
            signs that arrived meanwhile were told to wait (pageStep), so this
@@ -271,6 +289,10 @@ function proceed(first) {
 }
 
 const start = () => {
+    // A boot of its own: whatever an earlier one still has on the network is
+    // dropped when it lands (bootIsStale, 85-pages).
+    bootRun += 1;
+    const run = bootRun;
     author = readAuthor();
     // Read ONCE, here, and never again: the side is asked of the storage at
     // startup like the name, not at every draw.
@@ -325,6 +347,7 @@ const start = () => {
         }
 
         derive(keyBytes).then((derived) => {
+            if (staleBoot(run)) return null;
             /* Both attributes on one tag: they have to AGREE, and the id is
                the one thing the key can check itself against (FORMAT.md
                1.2). Disagreement is refused exactly as a wrongly pasted key
@@ -342,7 +365,7 @@ const start = () => {
         }, () => {
             // derive() only fails when WebCrypto itself does, which is what
             // that screen is about.
-            showScreen(openContextScreen);
+            if (!staleBoot(run)) showScreen(openContextScreen);
         });
         return;
     }
@@ -360,6 +383,7 @@ const start = () => {
     }
 
     derive(bytes).then((derived) => {
+        if (staleBoot(run)) return null;
         if (derived.id !== PROJECT) {
             // The key stored under this key does not derive this id: the
             // tag has changed project, or the storage was tampered with. We
@@ -369,15 +393,17 @@ const start = () => {
         }
         return startWithSalt(text, derived);
     }, () => {
-        showScreen(openSaltScreen);
+        if (!staleBoot(run)) showScreen(openSaltScreen);
     });
 };
 
 /* THIS COPY, AS OTHER COPIES SEE IT. The shape is a contract with versions
    that do not exist yet: see 00-preamble. The claim cannot fail here -- a copy
    that found the document held has already returned from the preamble, and
-   nothing between the two is asynchronous. */
-const thisCopy = { version: TOOL_VERSION, recheck: recheck };
+   nothing between the two is asynchronous. `identity` is what a later copy
+   compares its own configuration with, to know whether it is this one
+   executed again or a second tool it must refuse. */
+const thisCopy = { version: TOOL_VERSION, identity: COPY_IDENTITY, recheck: recheck };
 claimDocument(document, thisCopy);
 
 /* Listening starts before the boot and whatever the boot decides: a page

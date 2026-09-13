@@ -159,7 +159,9 @@ const handOverTo = (cdn, version, onFailure) => {
     // before the work rather than after it.
     withdraw();
     /* AND THE DOCUMENT IS GIVEN BACK, or the newer copy would find it held
-       and stand down (00-preamble), leaving the page with no tool at all. */
+       and stand down (00-preamble), leaving the page with no tool at all. It
+       is the one release there is, and it records this copy's configuration,
+       so that the old tag executed again stays silent (85-pages). */
     releaseDocument(document, thisCopy);
 
     const fresh = document.createElement('script');
@@ -172,9 +174,10 @@ const handOverTo = (cdn, version, onFailure) => {
     fresh.addEventListener('error', () => {
         handingOver = false;
         /* Taken back only if still free. While the new version was being
-           fetched, a router may have executed the old tag again, and that copy
-           now holds the document: two copies booting is the defect the slot
-           exists to prevent, so this one stays down. */
+           fetched, a tag with another configuration may have booted and taken
+           the document: two tools on one page is what the slot exists to
+           prevent, so this one stays down. The old tag executed again cannot
+           be that copy: it stands down on the record releaseDocument left. */
         if (claimDocument(document, thisCopy)) onFailure();
     });
     (document.head || document.documentElement).appendChild(fresh);

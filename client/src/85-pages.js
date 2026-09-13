@@ -45,10 +45,21 @@ const claimDocument = (doc, copy) => {
 /* Given back ONLY by a copy handing over to a newer version (80-upgrade). A
    copy that went silent keeps the slot, and that is deliberate: silent is
    still this document's answer, and a re-executed tag that booted again would
-   ask the same server the same question at every navigation. */
+   ask the same server the same question at every navigation. So does a copy
+   standing down outside its data-path: see NO TAKEOVER in 00-preamble.
+
+   AND WHAT IT WAS CONFIGURED WITH IS REMEMBERED. The newer version arrives
+   under another address, so the old tag executed again by a router no longer
+   matches the copy holding the document. Without this record it would read
+   as another configuration: warned about as a second tool, or -- during the
+   fetch, with nobody holding the slot -- booting and handing over a second
+   time. */
 const releaseDocument = (doc, copy) => {
     const slot = slotOf(doc);
-    if (slot.copy === copy) slot.copy = null;
+    if (slot.copy !== copy) return;
+    slot.copy = null;
+    if (!slot.handedOver) slot.handedOver = [];
+    slot.handedOver.push(copy.identity);
 };
 
 /**
@@ -87,11 +98,20 @@ const listenForPages = (win, doc) => {
         return true;
     }
 
+    /* A LIMIT, SAID HERE BECAUSE THIS IS WHERE IT COMES FROM. A router that
+       kept its own reference to history.pushState before this tag loaded --
+       `const push = history.pushState.bind(history)` at module load is a
+       common way to write one -- calls that reference and never the wrapper
+       below. Its navigations are not heard through history: only through
+       popstate, a re-executed tag, a swapped body, or the Navigation API where
+       the browser has it. Nothing a script loaded later can do reaches a
+       reference taken earlier, and loading first is not this tag's to
+       decide. */
     const history = win.history;
     ['pushState', 'replaceState'].forEach((name) => {
         const original = history && history[name];
         if (typeof original !== 'function') return;
-        history[name] = function () {
+        const wrapper = function () {
             // The site's call first, untouched, and its exception with it: a
             // refused URL is the site's to hear about, and a navigation that
             // did not happen is not one to follow.
@@ -110,6 +130,18 @@ const listenForPages = (win, doc) => {
             }
             return result;
         };
+        /* A HISTORY THE SITE FROZE. Object.freeze(History.prototype) -- a
+           hardening script does it -- makes this assignment throw, since the
+           bundle is strict, and it threw before the boot had started: the
+           tool never appeared, on a page that had done nothing wrong. It is
+           not worked around with defineProperty on the instance either: a
+           site that froze its history has said it is not to be wrapped. This
+           copy boots without hearing pushState, and hears the rest. */
+        try {
+            history[name] = wrapper;
+        } catch (e) {
+            /* Refused: the site's history stays exactly as the site froze it. */
+        }
     });
     return true;
 };
@@ -137,6 +169,21 @@ const pageStep = (s) => {
     if (s.outOfScope) return 'enter';
     return s.running ? 'follow' : 'wait';
 };
+
+/**
+ * WHETHER AN ANSWER STILL BELONGS TO THE BOOT THAT ASKED FOR IT.
+ *
+ * A boot is a derivation, a request and a label file, and the reader can
+ * leave the declared prefix and come back into it before it lands. Coming
+ * back starts a second boot (pageStep: enter) while the first is still on
+ * the network, and the first one's list, applied, is page A's notes opened
+ * with page B's index: every one of them "unreadable". So each boot carries
+ * the number it was started under (`run`, against bootRun in 30-state) and
+ * the index it asked with, and an answer that lands under another of either
+ * is dropped whole. `index` undefined is a step taken before there is one.
+ */
+const bootIsStale = (s) => s.run !== s.current
+    || (s.index !== undefined && s.index !== s.pageIndex);
 
 /* -- What the running copy does about it --------------------------------- */
 
@@ -194,6 +241,8 @@ const changePage = () => {
 /** Out of the declared prefix: exactly what a full load of that page shows,
     which is nothing. The key stays: coming back must not ask for it. */
 const stepAside = () => {
+    // A boot still on the network belongs to the page that left (bootIsStale).
+    bootRun += 1;
     withdraw();
     forgetPage();
     PAGE_INDEX = '';
@@ -233,6 +282,35 @@ const followPage = () => {
 
 let hostWatch = null;
 let watchedBody = null;
+
+/* HOW OFTEN THE HOST IS PUT BACK, AND WHEN THAT STOPS.
+
+   A site can remove, on purpose, every child of <body> it does not know --
+   a MutationObserver of its own, a "clean the DOM" script. Each removal is a
+   mutation this copy answers by putting the host back, and each putting back
+   is a mutation the site answers by removing it. Both callbacks are
+   microtasks: the browser never gets to paint or to take a click again, and
+   the page is frozen. Unbounded, this repair is the one failure the tool may
+   never cause.
+
+   So it is COUNTED. More than REATTACH_LIMIT puttings back within
+   REATTACH_WINDOW milliseconds is not a router -- a router swaps a body once
+   per navigation, and a navigation takes a request -- it is somebody
+   removing the element on purpose. The tool then stops, takes everything it
+   holds down with it, and says so once: an element that vanishes with nothing
+   said is the failure nobody finds. */
+const REATTACH_LIMIT = 10;
+const REATTACH_WINDOW = 2000;
+let reattached = [];
+let reattachRefusalSaid = false;
+
+/** Records one putting back at `now` in `log`. False when the budget is spent. */
+const reattachAllowed = (log, now) => {
+    while (log.length && now - log[0] >= REATTACH_WINDOW) log.shift();
+    if (log.length >= REATTACH_LIMIT) return false;
+    log.push(now);
+    return true;
+};
 
 const watchFrame = () => {
     hostWatch.disconnect();
@@ -286,7 +364,20 @@ const keepHostAttached = () => {
     for (let i = 0; i < found.length; i += 1) {
         if (found[i] !== host && !found[i].shadowRoot) found[i].remove();
     }
-    if (detached) body.appendChild(host);
+    if (!detached) return;
+    if (!reattachAllowed(reattached, Date.now())) {
+        withdraw();
+        if (!reattachRefusalSaid) {
+            reattachRefusalSaid = true;
+            complain('something on this page removes the element this client draws in '
+                + '(<annotepage-notes>) each time it is put back. It was put back '
+                + REATTACH_LIMIT + ' times in ' + (REATTACH_WINDOW / 1000) + ' seconds, '
+                + 'and the tool has stopped rather than freeze the page. Whatever removes '
+                + 'unknown children of <body> has to leave that element alone.');
+        }
+        return;
+    }
+    body.appendChild(host);
 };
 
 /**

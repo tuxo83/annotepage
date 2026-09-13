@@ -60,6 +60,10 @@ let PAGE_PATH = '';
    outlives its first page has to remember WHY it is silent, because only this
    reason goes away when the path changes. */
 let outOfScope = false;
+/* The number of the boot under way. Raised by every start() and by leaving
+   the declared prefix, so that an answer landing for an earlier boot can tell
+   it no longer belongs to the page (bootIsStale, 85-pages). */
+let bootRun = 0;
 
 const inTool = (n) => !!(host && n && (n === host || host.contains(n)));
 

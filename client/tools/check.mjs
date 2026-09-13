@@ -44,6 +44,11 @@ const window = { crypto: webcrypto };
 const document = { documentElement: {
     getAttribute: (name) => (name === 'lang' ? page.lang : null) } };
 const code = [
+    /* STRICT, BECAUSE THE BUNDLE IS (build.mjs). A Function body is sloppy
+       unless told otherwise, and sloppy mode forgives what the served file
+       throws on: an assignment to a frozen history went through here in
+       silence while it stopped the tool from booting in a browser. */
+    '\'use strict\';',
     read('10-utils.js'),
     /* 15-labels.js is data and nothing but data: the English set T() falls
        back on. It is loaded here so that the fallback can be PROVEN rather
@@ -72,6 +77,7 @@ const code = [
     '         versionNumbers, announcedVersion, cdnServing, officialUrl,',
     '         shippedLabelsFor, shippedLabelsUrl, labelsFileFor,',
     '         pageStep, claimDocument, releaseDocument, listenForPages,',
+    '         bootIsStale, reattachAllowed, REATTACH_LIMIT, REATTACH_WINDOW,',
     '         INSTANCE_SLOT };'
 ].join('\n');
 
@@ -259,11 +265,11 @@ const main = async () => {
         };
         // A document another copy already runs in (00-preamble, 85-pages).
         if ('slot' in page) doc[Symbol.for('annotepage')] = page.slot;
-        const got = new Function('window', 'document', 'location', preamble
+        const got = new Function('window', 'document', 'location', '\'use strict\';\n' + preamble
             + '\nreturn { API: API, PROJECT: PROJECT, DECLARED_KEY: DECLARED_KEY,'
             + ' DECLARED_PROJECT: DECLARED_PROJECT, KEY_DECLARED: KEY_DECLARED,'
             + ' SETUP_REQUESTED: SETUP_REQUESTED, MODE: MODE, PATH_PREFIX: PATH_PREFIX,'
-            + ' DOMAINS: DOMAINS.join("|"), FAILURE: CONFIG_FAILURE };'
+            + ' DOMAINS: DOMAINS.join("|"), FAILURE: CONFIG_FAILURE, IDENTITY: COPY_IDENTITY };'
         )(win, doc, { origin: SITE });
         return { got: got, warnings: warnings };
     };
@@ -372,20 +378,70 @@ const main = async () => {
         (nothing.warnings[0] || '').indexOf('annotepageConfig') !== -1, true);
 
     /* -- AND A SECOND COPY IN THE SAME DOCUMENT ------------------------
-       A router re-executing the tag, or a template carrying it twice. The
-       second copy must read nothing, say nothing, and hand the question to
-       the copy that runs -- once per execution. */
+       One tool per page, by rule (00-preamble). A router re-executing the
+       tag, or a template carrying the same line twice, is the SAME
+       configuration: read nothing, say nothing, hand the question to the copy
+       that runs. Another configuration on the same page does not start
+       either, and it is the one of the two that has to be SAID: before this,
+       a second project on one template never started and nothing anywhere
+       told anybody. */
+    const TAG = SITE + '/js/annotepage.js';
+    const configured = (dataset, extra) => Object.assign({ src: TAG, dataset: dataset }, extra || {});
+    const identityOf = (page) => settingsOf(page).got.IDENTITY;
+    const OTHER_ID = 'AAAAAAAAAAAAAAAAAAAAAA';
+    const X = configured({ server: API, project: ID, path: '/fr/' });
+    const Y = configured({ server: API, project: OTHER_ID, path: '/en/' });
     let rechecked = 0;
-    const held = settingsOf({ src: SITE + '/js/annotepage.js', dataset: { server: API, project: ID },
-        slot: { copy: { version: '0.0.0', recheck: () => { rechecked += 1; } }, listening: true } });
-    check('a copy finding the document held stands down before reading a setting',
+    const holderX = () => ({ copy: { version: '0.0.0', identity: identityOf(X),
+        recheck: () => { rechecked += 1; } }, listening: true });
+
+    const slotX = holderX();
+    const held = settingsOf(Object.assign({ slot: slotX }, X));
+    check('the same configuration finding the document held stands down before reading a setting',
         refusal(held), 'nothing was read at all');
     check('and says nothing in the console, which a re-execution per click would repeat',
         held.warnings.length, 0);
     check('and asks the running copy to look at the page again, once', rechecked, 1);
+
+    const secondTool = settingsOf(Object.assign({ slot: slotX }, Y));
+    check('another project with another data-path on the same page does not start',
+        refusal(secondTool), 'nothing was read at all');
+    check('and says so, in one line', secondTool.warnings.length, 1);
+    check('which names the rule and where it is explained',
+        /one tool runs per page/.test(secondTool.warnings[0] || '')
+            && /questions\.html#one-per-page/.test(secondTool.warnings[0] || ''), true);
+    check('and it still tells the running copy the page may have changed', rechecked, 2);
+    check('the same second tag executed again by a router says nothing more',
+        settingsOf(Object.assign({ slot: slotX }, Y)).warnings.length, 0);
+
+    check('the same settings from another file are another configuration',
+        settingsOf(Object.assign({ slot: holderX() },
+            configured({ server: API, project: ID, path: '/fr/' }, { src: SITE + '/js/other.js' })))
+            .warnings.length, 1);
+    check('so is the same tag with another data-version, as a body swap brings after a deploy',
+        settingsOf(Object.assign({ slot: holderX() },
+            configured({ server: API, project: ID, path: '/fr/', version: 'build-2' }))).warnings.length, 1);
+    check('an attribute that is not a setting does not make another configuration',
+        settingsOf(Object.assign({ slot: holderX() },
+            configured({ server: API, project: ID, path: '/fr/', annotepageOn: 'yes' }))).warnings.length, 0);
+
+    /* The preamble runs inside whatever executed the tag -- a router, mid
+       navigation. A fault of the running copy must stay there. */
+    const faulty = { copy: { version: '0.0.0', identity: identityOf(X),
+        recheck: () => { throw new Error('a defect of the running copy'); } }, listening: true };
+    let escaped = 'nothing escaped';
+    try { settingsOf(Object.assign({ slot: faulty }, X)); } catch (e) { escaped = 'escaped: ' + e.message; }
+    check('a running copy that throws when asked to look again does not throw into the router',
+        escaped, 'nothing escaped');
+
     check('a document given back by a copy handing over boots the next one normally',
-        refusal(settingsOf({ src: SITE + '/js/annotepage.js', dataset: { server: API, project: ID },
-            slot: { copy: null, listening: true } })), 'none');
+        refusal(settingsOf(Object.assign({ slot: { copy: null, listening: true, handedOver: [identityOf(X)] } },
+            configured({ server: API, project: ID, path: '/fr/' }, { src: SITE + '/js/newer.js' })))), 'none');
+    const oldTagAgain = settingsOf(Object.assign({ slot: { copy: null, listening: true,
+        handedOver: [identityOf(X)] } }, X));
+    check('while the old tag executed again after that hand-over stands down, in silence',
+        refusal(oldTagAgain) + ', ' + oldTagAgain.warnings.length + ' warning(s)',
+        'nothing was read at all, 0 warning(s)');
 
     /* THE SETTINGS ARE DOCUMENTED WHERE THEY ARE COPIED FROM. The package's
        readme is the table people read before writing either form; a setting
@@ -544,10 +600,58 @@ const main = async () => {
     check('a refused configuration or a copy that handed over never moves',
         step({ path: '/b', frozen: true }), 'none');
 
+    /* A boot that lands after a newer one started, or with an index that is
+       no longer the page's: the exit-and-return that opened page A's list
+       with page B's index. */
+    const stale = (s) => module.bootIsStale(Object.assign(
+        { run: 1, current: 1, index: 'A', pageIndex: 'A' }, s));
+    check('a boot landing on its own page and run is applied', stale({}), false);
+    check('a boot overtaken by a newer one (out of the prefix and back) is dropped',
+        stale({ current: 2 }), true);
+    check('an answer asked with page A\'s index while the page is B is dropped',
+        stale({ pageIndex: 'B' }), true);
+    check('and one asked while the next index is still being computed too',
+        stale({ pageIndex: '' }), true);
+    check('a step taken before there is an index is judged on the run alone',
+        stale({ index: undefined, pageIndex: '' }), false);
+
+    /* WHAT CAN BE SEEN FROM OUTSIDE 90-BOOT, which is all DOM: every turn a
+       boot takes consults that rule, and every new boot or exit raises the
+       run. A continuation added without the check is the defect back. */
+    const pagesSource = read('85-pages.js');
+    const between = (text, from, to) => {
+        const a = text.indexOf(from);
+        const b = text.indexOf(to, a + 1);
+        return a === -1 || b === -1 ? '' : text.slice(a, b);
+    };
+    const count = (text, needle) => text.split(needle).length - 1;
+    check('startWithSalt checks the run before the index and the list before using it',
+        count(between(boot, 'function startWithSalt(', 'const forgetKey'), 'staleBoot(run'), 2);
+    check('proceed checks before building, after the labels, after decrypting and before following',
+        count(between(boot, 'function proceed(', 'const start = '), 'staleBoot(run, index)'), 4);
+    check('a failed hand-over proceeds under the run and index it started with',
+        /handOverTo\(cdn, newer, \(\) => \{ proceed\(first, run, index\); \}\)/.test(boot), true);
+    check('start() and stepAside() both raise the run',
+        /const start = \(\) => \{[\s\S]{0,200}bootRun \+= 1;/.test(boot)
+            && /const stepAside = \(\) => \{[\s\S]{0,200}bootRun \+= 1;/.test(pagesSource), true);
+
+    /* The host put back against a site that removes it on purpose. */
+    const budget = [];
+    let granted = 0;
+    for (let i = 0; i < module.REATTACH_LIMIT; i += 1) if (module.reattachAllowed(budget, 1000)) granted += 1;
+    check('the host is put back up to the limit', granted, module.REATTACH_LIMIT);
+    check('and not once more in the same window, which is where the ping-pong froze the page',
+        module.reattachAllowed(budget, 1000 + module.REATTACH_WINDOW - 1), false);
+    check('a window later it may be put back again, as a router swapping bodies needs',
+        module.reattachAllowed(budget, 1000 + module.REATTACH_WINDOW), true);
+    check('keepHostAttached asks the budget before every putting back, and withdraws when it is spent',
+        /reattachAllowed\(reattached, Date\.now\(\)\)\) \{\s*withdraw\(\);/.test(pagesSource)
+            && count(pagesSource, 'appendChild(host)') === 1, true);
+
     process.stdout.write('one copy per document\n');
     const documentA = {};
-    const copyOne = { version: '1.0.0', recheck: () => {} };
-    const copyTwo = { version: '1.0.0', recheck: () => {} };
+    const copyOne = { version: '1.0.0', identity: 'one', recheck: () => {} };
+    const copyTwo = { version: '1.0.0', identity: 'two', recheck: () => {} };
     check('the first copy takes the document', module.claimDocument(documentA, copyOne), true);
     check('a second copy does not', module.claimDocument(documentA, copyTwo), false);
     check('and the first still holds it', documentA[module.INSTANCE_SLOT].copy === copyOne, true);
@@ -555,6 +659,8 @@ const main = async () => {
     module.releaseDocument(documentA, copyTwo);
     check('a copy that does not hold it cannot give it back', documentA[module.INSTANCE_SLOT].copy === copyOne, true);
     module.releaseDocument(documentA, copyOne);
+    check('the holder handing over leaves its configuration on record, for its tag executed again',
+        (documentA[module.INSTANCE_SLOT].handedOver || []).join(','), 'one');
     check('the holder handing over frees it for the newer copy',
         module.claimDocument(documentA, copyTwo), true);
     check('the slot is the preamble\'s own key, a registered symbol',
@@ -648,6 +754,26 @@ const main = async () => {
     modern.fire('nav:currententrychange');
     modern.fire('popstate');
     check('both signs reach the copy', heard, 2);
+
+    /* A history the site froze, without the Navigation API: the assignment
+       throws in strict mode, and it used to throw before the boot. */
+    const frozenHistory = Object.freeze({
+        pushState() { return 'the site\'s own push'; },
+        replaceState() { return 'the site\'s own replace'; }
+    });
+    const hardened = fakeSite(false);
+    hardened.history = Object.create(frozenHistory);
+    const hardenedDoc = {};
+    let hardenedHeard = 0;
+    module.claimDocument(hardenedDoc, { version: '1.0.0', identity: 'h', recheck: () => { hardenedHeard += 1; } });
+    let thrown = 'nothing thrown';
+    try { module.listenForPages(hardened, hardenedDoc); } catch (e) { thrown = e.constructor.name + ': ' + e.message; }
+    check('listening on a frozen History does not throw, so the boot still runs', thrown, 'nothing thrown');
+    check('and the site\'s methods are left as it froze them',
+        hardened.history.pushState === frozenHistory.pushState
+            && hardened.history.pushState(null, '', '/x') === 'the site\'s own push', true);
+    hardened.fire('popstate');
+    check('and the back button is still heard', hardenedHeard, 1);
 
     process.stdout.write(failures ? '\n' + failures + ' failure(s)\n' : '\neverything conforms\n');
     process.exit(failures ? 1 : 0);
