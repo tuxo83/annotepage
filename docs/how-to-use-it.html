@@ -307,7 +307,11 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
 /* The footnote the third remark was about. It is drawn at the grey it was
    measured at, because that grey is the defect; the pane is aria-hidden, so
    it is never the only place a fact appears. */
-.pg-fn { margin: 1rem 0 0; font-size: .74rem; color: var(--pale); }
+/* NO FOOTNOTE ON THE PAGE UNDER REVIEW. "Values recorded at the bench, plain
+   text, comma separated." stood here: the only real sentence on a page drawn in
+   grey bars, small, beside "Annotate this page" -- so it read as a caption of
+   the tool, and "plain text" as a claim about notes that are encrypted. It is a
+   bar now, like the rest of that page's text. */
 
 /* THE TWO GREYS OF THE FOOTNOTE, BEFORE AND AFTER, and one of them fails on
    purpose. The failing colour is the defect the third remark was about -- the
@@ -329,7 +333,6 @@ body:has(#d-wait:checked) .use-steps > li.between + li {
    deploy has happened by then in both branches -- in one it rode the merge, in
    the other it is the step just above. So the footnote here keeps the fixed
    grey, with nothing to switch. */
-#g3 .pg-fn { color: var(--fixed); }
 
 /* -- part 01: the gesture -------------------------------------------------
 
@@ -809,7 +812,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                         <div class="bar-line w70 below"></div>
                         <div class="bar-line w85"></div>
                         <div class="bar-line w45"></div>
-                        <p class="pg-fn">Values recorded at the bench, plain text, comma separated.</p>
+                        <div class="bar-line w45 below"></div>
                     </div>
 
                     <div class="dock">
@@ -1199,7 +1202,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
                         <div class="bar-line w70 below"></div>
                         <div class="bar-line w85"></div>
                         <div class="bar-line w45"></div>
-                        <p class="pg-fn">Values recorded at the bench, plain text, comma separated.</p>
+                        <div class="bar-line w45 below"></div>
                     </div>
 
                     <div class="dock">
@@ -1713,7 +1716,7 @@ body:has(#d-wait:checked)   .if-live   { display: none; }
 <template id="annotepage-tool"><script src="/annotepage-client-2.29.0.js"
         data-server="https://api.annotepage.com/api.php"
         data-key="GuXIs4rDgkg-QMOOJ4St3ovNTofRiIYQqhodxtbF63s"
-        data-version="2026.9.26"
+        data-version="2026.9.27"
         defer></script></template>
 <script>
 (function () {
