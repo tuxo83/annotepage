@@ -71,8 +71,9 @@
      asks the running copy to look at the page again instead, since a
      re-executed tag is the plainest sign there is that the body just changed.
 
-     ANOTHER CONFIGURATION -- another project, key, prefix, version, server or
-     file. It stands down too, and says so ONCE for the document. One tool
+     ANOTHER CONFIGURATION -- another project, key, prefix, server or file. It
+     stands down too, and says so ONCE for the document, however many
+     different configurations follow it. One tool
      runs per page BY RULE: two projects on one site are two tags on two sets
      of pages, never two tags on one. The rule was nearly the other one --
      every configuration boots, each holds its own slot -- and it was set
@@ -80,6 +81,12 @@
      wrapper, and a reviewer who cannot tell which pill files where. What
      cannot be allowed is the silence: a second tag that quietly never starts
      is a project somebody believes is running.
+
+     AN IDENTITY THIS COPY CANNOT READ -- a running copy that predates
+     identities, or one that writes them another way -- is neither. Nothing
+     can be said about it that is true, so nothing is said: a false "another
+     configuration" is exactly what a CDN serving a newer release in the
+     middle of a visit would print, on a page carrying one tag.
 
    NO TAKEOVER, EVEN WHEN THE OWNER IS OUT OF ITS data-path. Handing the
    document to whichever copy's prefix matches would make "which tool is on
@@ -98,7 +105,11 @@
      { copy: { version, identity, recheck }, handedOver: [identity],
        refused: [identity] }
    and it is read by versions that do not exist yet. Adding to it is free;
-   renaming a member breaks the copy that ships next to an older one. */
+   renaming a member breaks the copy that ships next to an older one.
+   `refused` is non-empty once the warning has been said for the document --
+   that is the whole of "once" -- and it keeps at most REFUSED_KEPT entries:
+   a trace for whoever inspects the slot, not a list that grows at every
+   navigation. */
 const INSTANCE_SLOT = Symbol.for('annotepage');
 
 /* THE SETTINGS, AND THE WHOLE LIST OF THEM. `data-` plus the name on a tag,
@@ -161,27 +172,139 @@ const declaredConfig = window.annotepageConfig;
    write to the console about them. A refused configuration executed again by
    a router must not repeat its warning at every click either.
 
-   WHAT A CONFIGURATION IS, for this comparison: the file's address, every
-   setting the tag carries as written, and the object as written. Raw and not
-   adopted: the adopted form is only known after the judging this has to come
-   before. An attribute that is not a setting -- annotepage.com toggles
-   data-annotepage-on on its live tag -- is not part of it, or a page flipping
-   its own switch would be told it carries two tools. */
+   WHAT A CONFIGURATION IS, for this comparison: the file, every setting the
+   tag carries, and the object. Read before adoption -- the adopted form is
+   only known after the judging this has to come before -- but NOT as
+   written: two spellings of one declaration are one configuration, or a
+   router executing the tag again is told it brought a second tool. So the
+   object's keys are ordered, a value is trimmed, a list of origins is
+   trimmed and ordered item by item, and `setup: false` is the absence it
+   means (see WHICH SOURCE WINS).
+
+   THE FILE IS ITS ADDRESS WITHOUT THE QUERY STRING. A query on a script's
+   address is how a CMS defeats caches -- WordPress writes ?ver=, often with
+   the time in it -- so it changes at every deploy, or at every request, and
+   never names another project. Ignoring it can only ever merge two tags
+   whose settings are already identical, and running one tool for those is
+   the rule anyway. The path stays: another file is another configuration.
+
+   NOT PART OF IT, EITHER:
+     an attribute that is not a setting -- annotepage.com toggles
+       data-annotepage-on on its live tag -- or a page flipping its own
+       switch would be told it carries two tools;
+     data-version, which is a label for the notes and not a project. A body
+       swapped after a deploy brings build-2 in the same tag. That tag stands
+       down like any re-executed one, and THE RUNNING COPY KEEPS THE VERSION
+       IT READ AT BOOT until the page is reloaded: notes written meanwhile
+       are filed under the build the document was loaded with.
+
+   AND IT NEVER THROWS. The object is the page's, and it may hold anything: a
+   BigInt that JSON.stringify refuses, an object with no prototype that
+   String() cannot convert, a getter that throws, a loop. Each of those gets
+   a text of its own, so that two such objects are still told apart. */
 const data = (script && script.dataset) || {};
-const textOfObject = (value) => {
-    // A getter that throws, or a loop in the object: not ours to fail on.
-    try {
-        return String(JSON.stringify(value));
-    } catch (e) {
+
+/* Identities this copy writes start with this. One that does not was written
+   by a copy that predates it or reads configurations another way. */
+const IDENTITY_FORMAT = 'annotepage/identity/1';
+const readableIdentity = (value) =>
+    typeof value === 'string' && value.indexOf('["' + IDENTITY_FORMAT + '",') === 0;
+const REFUSED_KEPT = 8;
+
+const isTextList = (value) => {
+    if (!Array.isArray(value)) return false;
+    for (let i = 0; i < value.length; i += 1) {
+        if (typeof value[i] !== 'string') return false;
+    }
+    return true;
+};
+
+/* Any value, as text. `seen` is the path from the top, so a loop is named
+   rather than followed; the depth is bounded for an object nobody writes by
+   hand. */
+const textOfValue = (value, seen) => {
+    const kind = typeof value;
+    if (kind === 'string') return JSON.stringify(value);
+    if (kind === 'bigint') return String(value) + 'n';
+    if (kind === 'number' || kind === 'boolean' || kind === 'undefined' || value === null) {
         return String(value);
     }
+    if (kind !== 'object') return '<' + kind + '>';
+    if (seen.indexOf(value) !== -1) return '<loop>';
+    if (seen.length >= 8) return '<deep>';
+    seen.push(value);
+    let text;
+    try {
+        const parts = [];
+        if (Array.isArray(value)) {
+            for (let i = 0; i < value.length; i += 1) parts.push(memberText(value, i, seen));
+            text = '[' + parts.join(',') + ']';
+        } else {
+            const names = Object.keys(value).sort();
+            for (let i = 0; i < names.length; i += 1) {
+                parts.push(JSON.stringify(names[i]) + ':' + memberText(value, names[i], seen));
+            }
+            text = '{' + parts.join(',') + '}';
+        }
+    } catch (e) {
+        text = '<unreadable>';
+    }
+    seen.pop();
+    return text;
 };
-const COPY_IDENTITY = JSON.stringify([SCRIPT_SRC,
-    SETTINGS.map((name) => (declaredIn(data, name) ? String(data[name]).trim() : null)),
-    textOfObject(declaredConfig)]);
+function memberText(object, name, seen) {
+    try {
+        return textOfValue(object[name], seen);
+    } catch (e) {
+        return '<throws>';
+    }
+}
+
+/* One setting, as the comparison sees it. null is "not declared". */
+const settingText = (name, value) => {
+    if (name === 'setup') return value ? 'yes' : null;
+    if (name === 'domains' && (typeof value === 'string' || isTextList(value))) {
+        const items = typeof value === 'string' ? value.split(',') : value;
+        return JSON.stringify(items.map((d) => d.trim()).filter(Boolean).sort());
+    }
+    if (typeof value === 'string') return JSON.stringify(value.trim());
+    return textOfValue(value, []);
+};
+
+const objectText = (object) => {
+    if (object === undefined) return null;
+    if (object === null || typeof object !== 'object' || Array.isArray(object)) {
+        return textOfValue(object, []);
+    }
+    try {
+        const parts = [];
+        const names = Object.keys(object).sort();
+        for (let i = 0; i < names.length; i += 1) {
+            const name = names[i];
+            if (name === 'version') continue;
+            let text;
+            try {
+                text = SETTINGS.indexOf(name) === -1
+                    ? textOfValue(object[name], [object]) : settingText(name, object[name]);
+            } catch (e) {
+                text = '<throws>';
+            }
+            if (text !== null) parts.push(JSON.stringify(name) + ':' + text);
+        }
+        return '{' + parts.join(',') + '}';
+    } catch (e) {
+        return '<unreadable>';
+    }
+};
+
+const COPY_IDENTITY = JSON.stringify([IDENTITY_FORMAT,
+    SCRIPT_SRC.replace(/[?#].*$/, ''),
+    SETTINGS.filter((name) => name !== 'version').map((name) => (declaredIn(data, name)
+        ? settingText(name, name === 'setup' ? true : String(data[name])) : null)),
+    objectText(declaredConfig)]);
 
 const slotFound = document[INSTANCE_SLOT];
-const handedOverHere = (slotFound && slotFound.handedOver) || [];
+const handedOverHere = (slotFound && Array.isArray(slotFound.handedOver)) ? slotFound.handedOver : [];
 if (slotFound && (slotFound.copy || handedOverHere.indexOf(COPY_IDENTITY) !== -1)) {
     const holder = slotFound.copy;
     /* A COPY THAT HANDED OVER is still this configuration: the newer version
@@ -190,15 +313,26 @@ if (slotFound && (slotFound.copy || handedOverHere.indexOf(COPY_IDENTITY) !== -1
        warning nor a second hand-over is owed for it. */
     const same = handedOverHere.indexOf(COPY_IDENTITY) !== -1
         || !!(holder && holder.identity === COPY_IDENTITY);
-    if (!same) {
-        const refused = slotFound.refused || (slotFound.refused = []);
-        if (refused.indexOf(COPY_IDENTITY) === -1) {
-            refused.push(COPY_IDENTITY);
+    /* UNKNOWN IS NOT DIFFERENT: a holder with no identity this copy can read,
+       or a hand-over recorded in another format -- this tag may be the very
+       one that copy was loaded by. */
+    const unknown = !same && (!holder || !readableIdentity(holder.identity)
+        || handedOverHere.some((identity) => !readableIdentity(identity)));
+    if (!same && !unknown) {
+        if (!Array.isArray(slotFound.refused)) slotFound.refused = [];
+        const refused = slotFound.refused;
+        // ONCE FOR THE DOCUMENT, not once per configuration: a template
+        // cycling through several would otherwise print a line per kind.
+        if (!refused.length) {
             complain('this page already runs annotepage with another configuration, '
                 + 'and one tool runs per page: this one ('
-                + (SCRIPT_SRC || 'window.annotepageConfig') + ') was not started. '
+                + (SCRIPT_SRC || 'window.annotepageConfig') + ') was not started, '
+                + 'and any further one on this page stands down without another line. '
                 + 'Several projects on one site means each page loads only its own '
                 + 'tag. See https://annotepage.com/questions.html#one-per-page');
+        }
+        if (refused.indexOf(COPY_IDENTITY) === -1 && refused.length < REFUSED_KEPT) {
+            refused.push(COPY_IDENTITY);
         }
     }
     /* IN A try, because this runs inside whatever executed the tag -- a
@@ -217,14 +351,6 @@ if (HAS_CONFIG && (typeof declaredConfig !== 'object' || Array.isArray(declaredC
         'window.annotepageConfig is not an object, so nothing could be read from '
         + 'it. It is written { server: "...", project: "..." }.');
 }
-
-const isTextList = (value) => {
-    if (!Array.isArray(value)) return false;
-    for (let i = 0; i < value.length; i += 1) {
-        if (typeof value[i] !== 'string') return false;
-    }
-    return true;
-};
 
 /* What each source declares, as text, and whether it declares it AT ALL -- an
    empty data-key is not the same fact as no data-key (see THE KEY below). */

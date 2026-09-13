@@ -77,7 +77,7 @@ const code = [
     '         versionNumbers, announcedVersion, cdnServing, officialUrl,',
     '         shippedLabelsFor, shippedLabelsUrl, labelsFileFor,',
     '         pageStep, claimDocument, releaseDocument, listenForPages,',
-    '         bootIsStale, reattachAllowed, REATTACH_LIMIT, REATTACH_WINDOW,',
+    '         bootIsStale, reattachAllowed, REATTACH_LIMIT, CONTESTED_WITHIN,',
     '         INSTANCE_SLOT };'
 ].join('\n');
 
@@ -418,9 +418,13 @@ const main = async () => {
         settingsOf(Object.assign({ slot: holderX() },
             configured({ server: API, project: ID, path: '/fr/' }, { src: SITE + '/js/other.js' })))
             .warnings.length, 1);
-    check('so is the same tag with another data-version, as a body swap brings after a deploy',
+    /* It said 1 until the second review. data-version is a label for the
+       notes, not a project: a body swapped after a deploy brings build-2 in the
+       same tag, and warning about "several projects" there was false. The
+       running copy keeps the version it booted with until a reload. */
+    check('the same tag with another data-version, as a body swap brings after a deploy, is the same configuration',
         settingsOf(Object.assign({ slot: holderX() },
-            configured({ server: API, project: ID, path: '/fr/', version: 'build-2' }))).warnings.length, 1);
+            configured({ server: API, project: ID, path: '/fr/', version: 'build-2' }))).warnings.length, 0);
     check('an attribute that is not a setting does not make another configuration',
         settingsOf(Object.assign({ slot: holderX() },
             configured({ server: API, project: ID, path: '/fr/', annotepageOn: 'yes' }))).warnings.length, 0);
@@ -442,6 +446,73 @@ const main = async () => {
     check('while the old tag executed again after that hand-over stands down, in silence',
         refusal(oldTagAgain) + ', ' + oldTagAgain.warnings.length + ' warning(s)',
         'nothing was read at all, 0 warning(s)');
+
+    /* TWO SPELLINGS OF ONE DECLARATION ARE ONE CONFIGURATION. Each of these
+       printed the "another configuration" line at every navigation. */
+    const heldBy = (page) => ({ copy: { version: '0.0.0', identity: identityOf(page),
+        recheck: () => {} }, listening: true });
+    const warningsBeside = (running, arriving) =>
+        settingsOf(Object.assign({ slot: heldBy(running) }, arriving)).warnings.length;
+    check('a cache-busting query on the file (?ver=) is the same file',
+        warningsBeside(configured({ server: API, project: ID }, { src: TAG + '?ver=1694500000' }),
+            configured({ server: API, project: ID }, { src: TAG + '?ver=1694500042' })), 0);
+    check('while another project is still another configuration, whatever the query',
+        warningsBeside(configured({ server: API, project: ID }, { src: TAG + '?ver=1' }),
+            configured({ server: API, project: OTHER_ID }, { src: TAG + '?ver=1' })), 1);
+    check('the object with its keys in another order is the same object',
+        warningsBeside({ global: { server: API, project: ID, path: '/fr/' } },
+            { global: { path: '/fr/', project: ID, server: API } }), 0);
+    check('a list of origins spaced differently is the same list',
+        warningsBeside(configured({ server: API, project: ID, domains: 'https://a.example.com,https://b.example.com' }),
+            configured({ server: API, project: ID, domains: 'https://a.example.com, https://b.example.com' })), 0);
+
+    const crowded = holderX();
+    let spoken = 0;
+    for (let i = 0; i < 30; i += 1) {
+        spoken += settingsOf(Object.assign({ slot: crowded },
+            configured({ server: API, project: ID, path: '/p' + i + '/' }))).warnings.length;
+    }
+    check('thirty different configurations after the first: one line for the whole document', spoken, 1);
+    check('and the record of them stays bounded', crowded.refused.length, 8);
+
+    /* THE IDENTITY IS TOTAL: whatever the page put in the object, the preamble
+       does not throw, and two different objects are still two. */
+    const bare = Object.create(null);
+    Object.assign(bare, { server: API, project: ID, count: 10n });
+    const trap = { server: API };
+    Object.defineProperty(trap, 'project', { enumerable: true, get: () => { throw new Error('a getter of the page'); } });
+    const thrownBy = (global) => {
+        try {
+            settingsOf({ slot: holderX(), global: global });
+            return 'nothing thrown';
+        } catch (e) {
+            return e.constructor.name + ': ' + e.message;
+        }
+    };
+    check('an object without a prototype holding a BigInt does not throw into the page', thrownBy(bare), 'nothing thrown');
+    check('nor does a getter that throws', thrownBy(trap), 'nothing thrown');
+    const looped = (project) => {
+        const o = { server: API, project: project, extra: {} };
+        o.extra.back = o;
+        return o;
+    };
+    check('two objects with a loop in them are still told apart by what they declare',
+        warningsBeside({ global: looped(ID) }, { global: looped(OTHER_ID) }), 1);
+    check('and an object with a loop is the same as itself',
+        warningsBeside({ global: looped(ID) }, { global: looped(ID) }), 0);
+
+    /* AN IDENTITY THAT CANNOT BE READ IS UNKNOWN, NOT DIFFERENT. A copy of an
+       earlier build holds the document with none, and the CDN serving the new
+       release mid-visit re-executes the same tag under this code. */
+    check('a running copy with no identity: the tag stands down in silence',
+        settingsOf(Object.assign({ slot: { copy: { version: '2.29.0', recheck: () => {} }, listening: true } }, Y))
+            .warnings.length, 0);
+    check('a running copy whose identity is written in another format: silence too',
+        settingsOf(Object.assign({ slot: { copy: { version: '9.0.0', identity: '["annotepage/identity/9"]',
+            recheck: () => {} }, listening: true } }, Y)).warnings.length, 0);
+    check('a hand-over recorded in another format: this tag may be that copy\'s, so silence',
+        settingsOf(Object.assign({ slot: { copy: { version: '9.0.0', identity: identityOf(X), recheck: () => {} },
+            listening: true, handedOver: ['an identity an older version wrote'] } }, Y)).warnings.length, 0);
 
     /* THE SETTINGS ARE DOCUMENTED WHERE THEY ARE COPIED FROM. The package's
        readme is the table people read before writing either form; a setting
@@ -615,38 +686,238 @@ const main = async () => {
     check('a step taken before there is an index is judged on the run alone',
         stale({ index: undefined, pageIndex: '' }), false);
 
-    /* WHAT CAN BE SEEN FROM OUTSIDE 90-BOOT, which is all DOM: every turn a
-       boot takes consults that rule, and every new boot or exit raises the
-       run. A continuation added without the check is the defect back. */
-    const pagesSource = read('85-pages.js');
-    const between = (text, from, to) => {
-        const a = text.indexOf(from);
-        const b = text.indexOf(to, a + 1);
-        return a === -1 || b === -1 ? '' : text.slice(a, b);
-    };
-    const count = (text, needle) => text.split(needle).length - 1;
-    check('startWithSalt checks the run before the index and the list before using it',
-        count(between(boot, 'function startWithSalt(', 'const forgetKey'), 'staleBoot(run'), 2);
-    check('proceed checks before building, after the labels, after decrypting and before following',
-        count(between(boot, 'function proceed(', 'const start = '), 'staleBoot(run, index)'), 4);
-    check('a failed hand-over proceeds under the run and index it started with',
-        /handOverTo\(cdn, newer, \(\) => \{ proceed\(first, run, index\); \}\)/.test(boot), true);
-    check('start() and stepAside() both raise the run',
-        /const start = \(\) => \{[\s\S]{0,200}bootRun \+= 1;/.test(boot)
-            && /const stepAside = \(\) => \{[\s\S]{0,200}bootRun \+= 1;/.test(pagesSource), true);
-
     /* The host put back against a site that removes it on purpose. */
-    const budget = [];
+    const pingPong = { at: -Infinity, contested: 0 };
     let granted = 0;
-    for (let i = 0; i < module.REATTACH_LIMIT; i += 1) if (module.reattachAllowed(budget, 1000)) granted += 1;
-    check('the host is put back up to the limit', granted, module.REATTACH_LIMIT);
-    check('and not once more in the same window, which is where the ping-pong froze the page',
-        module.reattachAllowed(budget, 1000 + module.REATTACH_WINDOW - 1), false);
-    check('a window later it may be put back again, as a router swapping bodies needs',
-        module.reattachAllowed(budget, 1000 + module.REATTACH_WINDOW), true);
-    check('keepHostAttached asks the budget before every putting back, and withdraws when it is spent',
-        /reattachAllowed\(reattached, Date\.now\(\)\)\) \{\s*withdraw\(\);/.test(pagesSource)
-            && count(pagesSource, 'appendChild(host)') === 1, true);
+    for (let i = 0; i < module.REATTACH_LIMIT + 5; i += 1) if (module.reattachAllowed(pingPong, 1000)) granted += 1;
+    check('a host removed again at once is put back up to the limit, and not once more',
+        granted, module.REATTACH_LIMIT);
+    check('a removal later than CONTESTED_WITHIN starts the count again',
+        module.reattachAllowed(pingPong, 1000 + module.CONTESTED_WITHIN), true);
+    const cachedVisits = { at: -Infinity, contested: 0 };
+    let visitsGranted = 0;
+    for (let i = 0, t = 0; i < 20; i += 1, t += 170) {
+        // Turbo on a cached page: the preview, then the response 20 ms later.
+        if (module.reattachAllowed(cachedVisits, t)) visitsGranted += 1;
+        if (module.reattachAllowed(cachedVisits, t + 20)) visitsGranted += 1;
+    }
+    check('twenty cached Turbo visits, two swaps each, in under four seconds: every one put back',
+        visitsGranted, 40);
+
+    /* -- THE BOOT, RUN RATHER THAN READ --------------------------------
+       90-boot is all DOM, so this used to count staleBoot( in its source. A
+       count passes on a check moved to the wrong line. Here the real 30-state,
+       80-upgrade, 85-pages and 90-boot run together, the network, the crypto
+       and the drawing replaced by promises the test lands by hand, and each
+       guard is proven by what happens without it: every check below was made
+       to fail by deleting the line it is about, on a copy. */
+    const flush = () => new Promise((resolve) => setImmediate(resolve));
+    const outcome = (promise) => {
+        const seen = { state: 'pending' };
+        Promise.resolve(promise).then(() => { seen.state = 'resolved'; },
+            (e) => { seen.state = 'rejected: ' + (e && e.message); });
+        return seen;
+    };
+    const bootHarness = (options) => {
+        const h = Object.assign({ pending: {}, log: [], warnings: [], elements: [], clock: 0,
+            path: '/a', pathReads: 0, onDraw: null }, options || {});
+        h.wait = (name) => new Promise((resolve) => { (h.pending[name] = h.pending[name] || []).push(resolve); });
+        h.land = (name, value) => {
+            const resolve = (h.pending[name] || []).shift();
+            if (!resolve) throw new Error('nothing is waiting for ' + name);
+            resolve(value);
+        };
+        h.waiting = (name) => (h.pending[name] || []).length;
+        h.element = (tag) => {
+            const e = { tag: tag, isConnected: false, listeners: {}, attributes: [],
+                setAttribute(name, value) { this.attributes.push({ name: name, value: value }); },
+                addEventListener(type, fn) { (this.listeners[type] = this.listeners[type] || []).push(fn); },
+                fire(type) { (this.listeners[type] || []).forEach((fn) => fn()); },
+                remove() { this.isConnected = false; } };
+            h.elements.push(e);
+            return e;
+        };
+        const doc = { body: null, documentElement: { getAttribute: () => null },
+            querySelectorAll: () => [], createElement: (tag) => h.element(tag),
+            head: { appendChild: (n) => { h.log.push('injected ' + n.src); } },
+            addEventListener: () => {} };
+        const win = { crypto: webcrypto, addEventListener: () => {},
+            navigation: { addEventListener: () => {} } };
+        const stubs = `
+            const INSTANCE_SLOT = Symbol.for('annotepage');
+            const CONFIG_FAILURE = null;
+            const SCRIPT_SRC = h.src || '';
+            const script = { attributes: [{ name: 'data-key', value: 'k' }] };
+            const LOCAL_LABELS_URL = h.labels || null;
+            let PROJECT = '';
+            let PUBLIC_KEY = false;
+            const DECLARED_KEY = '', DECLARED_PROJECT = '', KEY_DECLARED = false, SETUP_REQUESTED = false;
+            const DOMAINS = [];
+            const PATH_PREFIX = h.prefix || '';
+            const COPY_IDENTITY = 'harness';
+            const complain = (line) => { h.warnings.push(line); };
+            const CRYPTO = {};
+            const keyFromText = () => new Uint8Array(32);
+            const derive = () => h.wait('derive');
+            const pagePath = () => { h.pathReads += 1; return h.path; };
+            const indexOfPath = () => h.wait('index');
+            const call = (action) => h.wait('call:' + action);
+            const failureFrom = () => ({ title: 'title', detail: 'detail' });
+            const readTotals = () => null, readRetention = () => 0, readExpired = () => null,
+                readServerTotals = () => null;
+            const readList = () => h.wait('decrypt');
+            const anchor = () => {}, drawMarkers = () => {}, closePop = () => {}, closeForm = () => {},
+                hideHighlight = () => {};
+            const drawPanel = () => { const once = h.onDraw; h.onDraw = null; if (once) once(); };
+            const leaveMode = () => { mode = false; };
+            const buildHost = () => {
+                if (host) return;
+                host = h.element('annotepage-notes');
+                document.body.appendChild(host);
+                watchHost();
+                root = { appendChild: (n) => { h.log.push('into the shadow root: ' + n.tag); } };
+            };
+            // As 60-ui's does: the first thing it does is root.appendChild.
+            const buildUi = () => { root.appendChild(h.element('div')); ui = {}; h.log.push('buildUi'); };
+            const clearLayer = () => { if (root) ui = null; };
+            const openTagScreen = () => {}, openSaltScreen = () => {}, openSetupScreen = () => {},
+                openContextScreen = () => {};
+        `;
+        const run = new Function('window', 'document', 'h', 'Date', 'FORMAT', 'TOOL_VERSION', 'SITE_VERSION',
+            ['\'use strict\';', stubs, read('10-utils.js'), read('30-state.js'), read('80-upgrade.js'),
+                read('85-pages.js'), read('90-boot.js'),
+                'return (expression) => eval(expression);'].join('\n'))(
+            win, doc, h, { now: () => h.clock }, FORMAT, TOOL_VERSION, '');
+        // The boot waits for DOMContentLoaded while there is no body; the
+        // checks call what they need themselves.
+        doc.body = { appendChild: (n) => { n.isConnected = true; } };
+        return { h: h, run: run, fn: (name) => run(name) };
+    };
+    const FAILED = { ok: false, cause: 'server' };
+
+    {
+        const b = bootHarness();
+        b.fn('startWithSalt')('key', { indexKey: 1 });
+        b.fn('stepAside')();
+        b.h.land('index', 'I');
+        await flush();
+        check('startWithSalt: leaving while the index is computed stops the boot before it asks for the list',
+            b.h.waiting('call:list') + ' ' + JSON.stringify(b.run('PAGE_INDEX')), '0 ""');
+    }
+    {
+        const b = bootHarness();
+        b.fn('startWithSalt')('key', { indexKey: 1 });
+        b.h.land('index', 'I');
+        await flush();
+        b.fn('stepAside')();
+        b.run('outOfScope = false; PAGE_INDEX = "I"');
+        b.fn('buildHost')();
+        b.h.land('call:list', { ok: false, cause: 'network' });
+        await flush();
+        check('startWithSalt: a silence landing for a boot overtaken by a newer one leaves the newer tool alone',
+            b.run('host') !== null, true);
+    }
+    {
+        const b = bootHarness();
+        b.run('PAGE_INDEX = "I"; bootRun = 2');
+        b.fn('proceed')(FAILED, 1, 'I');
+        await flush();
+        check('proceed: an overtaken boot builds nothing', b.run('host'), null);
+    }
+    {
+        const b = bootHarness({ labels: 'https://site.example.com/labels/fr.js' });
+        b.run('PAGE_INDEX = "I"');
+        const boot = outcome(b.fn('proceed')(FAILED, b.run('bootRun'), 'I'));
+        const labelFile = b.h.elements.filter((e) => e.tag === 'script').pop();
+        b.fn('stepAside')();
+        labelFile.fire('load');
+        await flush();
+        check('proceed: leaving while the labels load, the interface is not built into a dropped root',
+            boot.state + (b.h.log.includes('buildUi') ? ', built' : ''), 'resolved');
+    }
+    {
+        const b = bootHarness();
+        b.run('PAGE_INDEX = "I"');
+        b.fn('proceed')({ ok: true, data: {} }, b.run('bootRun'), 'I');
+        await flush();
+        b.fn('stepAside')();
+        b.h.land('decrypt', [{ id: 'a note of the page that left' }]);
+        await flush();
+        check('proceed: notes decrypted for a page that left are not kept', b.run('notes.length'), 0);
+    }
+    {
+        const b = bootHarness();
+        b.run('PAGE_INDEX = "I"');
+        b.h.onDraw = () => b.fn('stepAside')();
+        b.h.pathReads = 0;
+        b.fn('proceed')(FAILED, b.run('bootRun'), 'I');
+        await flush();
+        check('proceed: a boot overtaken while it draws does not go on to follow the address',
+            b.h.pathReads, 0);
+    }
+    for (const exitMeanwhile of [false, true]) {
+        const b = bootHarness({ src: 'https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js' });
+        b.fn('startWithSalt')('key', { indexKey: 1 });
+        b.h.land('index', 'I');
+        await flush();
+        b.h.land('call:list', { ok: true, data: { client_version: newer } });
+        await flush();
+        const injected = b.h.elements.filter((e) => e.tag === 'script').pop();
+        if (exitMeanwhile) b.fn('stepAside')();
+        if (injected) injected.fire('error');
+        await flush();
+        check(exitMeanwhile
+            ? 'a hand-over that fails after the reader left proceeds under its own run, and builds nothing'
+            : 'a hand-over that fails proceeds, and the tool is built',
+        (injected ? 'handed over, ' : 'no hand-over, ') + (b.h.log.includes('buildUi') ? 'built' : 'not built'),
+        exitMeanwhile ? 'handed over, not built' : 'handed over, built');
+    }
+    {
+        const b = bootHarness({ prefix: '/elsewhere/' });
+        const before = b.run('bootRun');
+        b.fn('start')();
+        const afterStart = b.run('bootRun');
+        b.fn('stepAside')();
+        check('start() and stepAside() each raise the run', (afterStart - before) + ' ' + (b.run('bootRun') - afterStart),
+            '1 1');
+    }
+
+    /* keepHostAttached, against the two sites the second review described. */
+    {
+        const b = bootHarness({ labels: 'https://cdn.jsdelivr.net/npm/annotepage-client@2/labels/fr.js' });
+        b.run('PAGE_INDEX = "I"');
+        const boot = outcome(b.fn('proceed')(FAILED, b.run('bootRun'), 'I'));
+        const labelFile = b.h.elements.filter((e) => e.tag === 'script').pop();
+        let putBack = 0;
+        for (let i = 0; i < 30 && b.run('host'); i += 1) {
+            b.run('host').isConnected = false;           // the site's observer, at once
+            b.fn('keepHostAttached')();
+            if (b.run('host') && b.run('host').isConnected) putBack += 1;
+        }
+        labelFile.fire('load');
+        await flush();
+        check('a site removing the host at once, on a French page: put back ' + module.REATTACH_LIMIT
+            + ' times, withdrawn, one line, and the boot landing after it throws nothing',
+        putBack + ' put back, ' + (b.run('host') ? 'still there' : 'withdrawn') + ', ' + b.h.warnings.length
+            + ' line, boot ' + boot.state + (b.h.log.includes('buildUi') ? ', built' : ''),
+        module.REATTACH_LIMIT + ' put back, withdrawn, 1 line, boot resolved');
+    }
+    {
+        const b = bootHarness();
+        b.fn('buildHost')();
+        for (let i = 0; i < 10 && b.run('host'); i += 1) {
+            b.run('host').isConnected = false;           // the preview
+            b.fn('keepHostAttached')();
+            if (!b.run('host')) break;
+            b.h.clock += 20;
+            b.run('host').isConnected = false;           // the response
+            b.fn('keepHostAttached')();
+            b.h.clock += 150;
+        }
+        check('ten cached Turbo visits in under two seconds: the host is still there, and nothing said',
+            (b.run('host') && b.run('host').isConnected ? 'there' : 'gone') + ', ' + b.h.warnings.length + ' line',
+            'there, 0 line');
+    }
 
     process.stdout.write('one copy per document\n');
     const documentA = {};

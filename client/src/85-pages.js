@@ -293,22 +293,33 @@ let watchedBody = null;
    the page is frozen. Unbounded, this repair is the one failure the tool may
    never cause.
 
-   So it is COUNTED. More than REATTACH_LIMIT puttings back within
-   REATTACH_WINDOW milliseconds is not a router -- a router swaps a body once
-   per navigation, and a navigation takes a request -- it is somebody
-   removing the element on purpose. The tool then stops, takes everything it
-   holds down with it, and says so once: an element that vanishes with nothing
-   said is the failure nobody finds. */
+   So what is COUNTED is the ping-pong itself: a host found removed less than
+   CONTESTED_WITHIN milliseconds after it was put back. REATTACH_LIMIT of
+   those IN A ROW is somebody removing the element on purpose, and the tool
+   then stops, takes everything it holds down with it, and says so once: an
+   element that vanishes with nothing said is the failure nobody finds.
+
+   NOT A NUMBER OF SWAPS PER WINDOW, which is what this was, and it switched
+   the tool off on a site doing nothing wrong. Turbo visiting a page it has
+   cached swaps the body twice -- the preview, then the response -- so five
+   quick pagination clicks, or ten presses on Back, spent a budget of ten in
+   two seconds. Those two swaps can land within a few milliseconds of each
+   other, but the next navigation waits for a person: any removal later than
+   CONTESTED_WITHIN starts the count again. A loop that removes the element
+   more slowly than that is not refused, and does not need to be: the browser
+   paints and takes clicks between two of its rounds. */
 const REATTACH_LIMIT = 10;
-const REATTACH_WINDOW = 2000;
-let reattached = [];
+const CONTESTED_WITHIN = 100;
+const reattached = { at: -Infinity, contested: 0 };
 let reattachRefusalSaid = false;
 
-/** Records one putting back at `now` in `log`. False when the budget is spent. */
-const reattachAllowed = (log, now) => {
-    while (log.length && now - log[0] >= REATTACH_WINDOW) log.shift();
-    if (log.length >= REATTACH_LIMIT) return false;
-    log.push(now);
+/** Records one putting back at `now` in `record`. False when REATTACH_LIMIT
+    removals in a row each came within CONTESTED_WITHIN of the putting back
+    before it. */
+const reattachAllowed = (record, now) => {
+    record.contested = now - record.at < CONTESTED_WITHIN ? record.contested + 1 : 0;
+    if (record.contested >= REATTACH_LIMIT) return false;
+    record.at = now;
     return true;
 };
 
@@ -366,14 +377,23 @@ const keepHostAttached = () => {
     }
     if (!detached) return;
     if (!reattachAllowed(reattached, Date.now())) {
+        /* THE BOOT UNDER WAY ENDS HERE TOO. The ping-pong runs in microtasks,
+           so it can spend the budget while a label file is still on the
+           network -- and that boot, landing, would build its interface into
+           the shadow root withdraw() has just dropped: a TypeError in the
+           site's error tracker. Raising the run makes every later turn of
+           it a stale one (bootIsStale), which is how stepAside stops a boot
+           as well. */
+        bootRun += 1;
         withdraw();
         if (!reattachRefusalSaid) {
             reattachRefusalSaid = true;
             complain('something on this page removes the element this client draws in '
                 + '(<annotepage-notes>) each time it is put back. It was put back '
-                + REATTACH_LIMIT + ' times in ' + (REATTACH_WINDOW / 1000) + ' seconds, '
-                + 'and the tool has stopped rather than freeze the page. Whatever removes '
-                + 'unknown children of <body> has to leave that element alone.');
+                + REATTACH_LIMIT + ' times in a row, each removed again within '
+                + CONTESTED_WITHIN + ' ms, and the tool has stopped rather than freeze '
+                + 'the page. Whatever removes unknown children of <body> has to leave '
+                + 'that element alone.');
         }
         return;
     }
