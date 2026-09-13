@@ -36,7 +36,8 @@
     "check:origins": "node tools/check-origins.mjs",
     "check:clipage": "node tools/check-install-cli-page.mjs",
     "check:limits": "node tools/check-limits.mjs",
-    "check:wordpress": "node tools/check-wordpress.mjs"
+    "check:wordpress": "node tools/check-wordpress.mjs",
+    "check:browser": "node tools/check-navigation-browser.mjs"
   },
   "engines": {
     "node": ">=20"

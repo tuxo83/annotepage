@@ -21,13 +21,27 @@
 import { createHash } from 'node:crypto';
 import { labelsScript } from './labels-script.mjs';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const SRC = join(ROOT, 'src');
 const DIST = join(ROOT, 'dist');
+
+/* --out <file>: THE BUNDLE ALONE, WRITTEN SOMEWHERE ELSE. For a check that
+   needs the bundle of the working tree without touching dist/. The other
+   checks read dist/annotepage.js, and HASHES.txt is what gets published: a
+   check that rewrote either would change what the next one measures, and a
+   restore after the fact is skipped by the one run that crashes. So with
+   --out, that file is the only thing written -- no HASHES.txt line, no
+   labels/fr.js. The bytes are the same as a normal build's. */
+const outAt = process.argv.indexOf('--out');
+const OUT = outAt === -1 ? null : process.argv[outAt + 1];
+if (outAt !== -1 && !OUT) {
+    console.error('usage: node client/tools/build.mjs [--out <file>]');
+    process.exit(1);
+}
 
 /* The order is the table of contents of the generated file. It is not
    alphabetical by accident: the numbers ARE the order, so that an addition
@@ -101,9 +115,8 @@ const file = [
     ''
 ].join('\n');
 
-if (!existsSync(DIST)) mkdirSync(DIST, { recursive: true });
-
-const target = join(DIST, 'annotepage.js');
+const target = OUT ? resolve(OUT) : join(DIST, 'annotepage.js');
+if (!existsSync(dirname(target))) mkdirSync(dirname(target), { recursive: true });
 writeFileSync(target, file, 'utf8');
 
 /* The digest is computed on the BYTES WRITTEN, never on the string in
@@ -120,16 +133,18 @@ const tag = [
     '        defer></' + 'script>'
 ].join('\n');
 
-/* THE FRENCH SET, AS A FILE THE TAG CAN LOAD -- see labels-script.mjs. */
-const frJson = readFileSync(join(ROOT, 'labels', 'fr.json'), 'utf8');
-writeFileSync(join(ROOT, 'labels', 'fr.js'), labelsScript(frJson, 'fr'), 'utf8');
+if (!OUT) {
+    /* THE FRENCH SET, AS A FILE THE TAG CAN LOAD -- see labels-script.mjs. */
+    const frJson = readFileSync(join(ROOT, 'labels', 'fr.json'), 'utf8');
+    writeFileSync(join(ROOT, 'labels', 'fr.js'), labelsScript(frJson, 'fr'), 'utf8');
 
-const log = join(DIST, 'HASHES.txt');
-const previous = existsSync(log) ? readFileSync(log, 'utf8').split('\n') : [];
-const kept = previous.filter((l) => l.trim() !== '' && l.indexOf(VERSION + '  ') !== 0);
-writeFileSync(log,
-    [VERSION + '  ' + digest + '  ' + bytes.length + ' bytes'].concat(kept).join('\n') + '\n',
-    'utf8');
+    const log = join(DIST, 'HASHES.txt');
+    const previous = existsSync(log) ? readFileSync(log, 'utf8').split('\n') : [];
+    const kept = previous.filter((l) => l.trim() !== '' && l.indexOf(VERSION + '  ') !== 0);
+    writeFileSync(log,
+        [VERSION + '  ' + digest + '  ' + bytes.length + ' bytes'].concat(kept).join('\n') + '\n',
+        'utf8');
+}
 
 process.stdout.write(
     'annotepage-client ' + VERSION + ' -- format ' + FORMAT + '\n'

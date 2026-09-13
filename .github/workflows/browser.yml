@@ -1,0 +1,82 @@
+# ============================================================================
+# browser.yml -- the navigation proof, in a real browser, against a real relay.
+#
+# tools/check-navigation-browser.mjs drives Chrome through every way a site
+# changes page without reloading and counts the tools on each page. It is not
+# part of `npm run check` because it needs a browser and puppeteer, and the
+# suite has to run with Node alone; its header says why at length.
+#
+# WHY main AND next ONLY. Those are the two branches that publish (see
+# publish.yml): a version that reaches `@2` or `@next` must have passed it.
+# tools/release.mjs already refuses a client release where it fails, but that
+# runs on one machine; this is the copy nobody can skip.
+#
+# PUPPETEER NEVER ENTERS THE CHECKOUT. The repository has no dependencies, by
+# rule, so it is installed under $RUNNER_TEMP and named to the proof through
+# ANNOTEPAGE_PUPPETEER. Its version is pinned for the reason any supply chain
+# is: what runs here is what was chosen, not whatever was published this
+# morning.
+#
+# WHY PUPPETEER'S OWN CHROME AND NOT THE IMAGE'S. A puppeteer release is built
+# against one Chrome revision; the image's Chrome moves every week, and a
+# protocol mismatch fails in ways that look like the client's fault.
+# ============================================================================
+
+name: browser
+
+on:
+  push:
+    branches:
+      - main
+      - next
+
+permissions:
+  contents: read
+
+jobs:
+  navigation:
+    name: navigation proof in a browser
+    runs-on: ubuntu-latest
+    # A browser that hangs would otherwise hold the job for six hours. A full
+    # run takes under a minute.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      # The same Node as the publication, for the reason check.yml gives.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      # Said here, by name, before the proof starts. The proof checks the same
+      # list and refuses too; this step is so the run's summary names the
+      # image as the cause rather than the code.
+      - name: PHP and the extensions the relay needs
+        run: |
+          set -eu
+          if ! command -v php >/dev/null 2>&1; then
+            echo "::error::no php on the runner image -- the proof runs a real relay behind php's development server"
+            exit 1
+          fi
+          php -v
+          missing=''
+          for extension in pdo_sqlite mbstring json filter; do
+            php -r "exit(extension_loaded('${extension}') ? 0 : 1);" || missing="${missing} ${extension}"
+          done
+          if [ -n "${missing}" ]; then
+            echo "::error::php on the runner image lacks:${missing} -- the relay cannot be installed with sqlite storage"
+            exit 1
+          fi
+
+      - name: Puppeteer, outside the repository
+        run: |
+          set -eu
+          directory="${RUNNER_TEMP}/puppeteer"
+          mkdir -p "${directory}"
+          npm install --prefix "${directory}" --no-audit --no-fund puppeteer@25.9.0
+          echo "ANNOTEPAGE_PUPPETEER=${directory}" >> "${GITHUB_ENV}"
+
+      # No bundle path: the proof builds the checked-out sources itself, to a
+      # temporary file.
+      - name: Navigation proof
+        run: npm run check:browser

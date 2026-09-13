@@ -13,7 +13,7 @@
 
 import { readFileSync, writeFileSync, copyFileSync, rmSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 
 const [pkg, version] = process.argv.slice(2);
 
@@ -76,6 +76,31 @@ if (pkg === 'client') {
     const bundle = readFileSync('client/dist/annotepage.js');
     const digest = 'sha384-' + createHash('sha384').update(bundle).digest('base64');
     console.log(`  rebuilt  ${bundle.length} bytes  ${digest.slice(0, 22)}...`);
+
+    /* THE BROWSER PROOF, ON THE BUNDLE THAT IS ABOUT TO BE COPIED AND DIGESTED
+       -- before anything else is written, so a refusal leaves only the version
+       bump and the rebuild to undo.
+
+       A REFUSAL AND NOT A WARNING. What it measures -- one tool per page across
+       client-side navigation, a site whose observer removes it -- is invisible
+       to `npm run check`, which has no document that navigates. A warning would
+       scroll past between the lines below, and the push that follows publishes
+       to every page that loads `@2`. "Could not run" refuses too: no browser
+       is not evidence that nothing broke. */
+    console.log('  browser proof on the rebuilt bundle...');
+    const proof = spawnSync(process.execPath,
+        ['tools/check-navigation-browser.mjs', 'client/dist/annotepage.js', `client ${version}`],
+        { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    if (proof.status !== 0) {
+        process.stdout.write(proof.stdout || '');
+        process.stderr.write(proof.stderr || (proof.error ? String(proof.error) + '\n' : ''));
+        console.error(proof.status === 2
+            ? '\nthe browser proof could not run, so this release stops here.'
+            : '\nthe browser proof failed on the rebuilt bundle, so this release stops here.');
+        console.error('The tree was clean when this started: `git checkout .` undoes the version bump.');
+        process.exit(1);
+    }
+    console.log(`  ${proof.stdout.trim().split('\n').pop()}`);
 
     /* The website serves the client itself, under a name carrying the version.
        The name has to change: the old URL is cached for ten minutes and may sit
