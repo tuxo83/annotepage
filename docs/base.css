@@ -682,6 +682,13 @@
     font-size: .78em; color: var(--dim);
 }
 .top nav .drop-menu a:hover { background: var(--bg-soft); text-decoration: none; }
+/* THREE KINDS OF THING, SO THREE GROUPS. The menu read as one list of four --
+   reported -- when it is the whole project, then the two published packages,
+   then the WordPress plugin. A rule between groups says so without a word. */
+.drop-sep {
+    display: block; height: 1px; margin: .3rem .45rem;
+    background: var(--line-soft);
+}
 
 
 /* -- A FILE ON A DESKTOP, AS A PARTIAL SCREENSHOT -------------------------
