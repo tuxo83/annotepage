@@ -185,11 +185,11 @@ const HEADINGS = {
     '/french/x': 'Titre de la page hostile',
 };
 const indexOf = {};
-const seed = async (k, path, excerpt, label) => {
+const seed = async (k, path, excerpt, label, fingerprint) => {
     const index = await lib.indexOfPath(k.indexKey, path);
     indexOf[index] = label;
     const payload = await lib.seal(k.encryptionKey, k.id, index, 'note',
-        { page: path, selector: '', fingerprint: 'h1', excerpt, author: 'tester', text: 'note written on ' + path });
+        { page: path, selector: '', fingerprint: fingerprint || 'h1', excerpt, author: 'tester', text: 'note written on ' + path });
     const r = await fetch(API + '?action=add', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ project: k.id, mode: 'encrypted', index, payload }).toString() });
     const t = await r.text();
@@ -201,6 +201,10 @@ const keyBytes2 = new Uint8Array(32); for (let i = 0; i < 32; i += 1) keyBytes2[
 const KEY2 = lib.b64url(keyBytes2);
 const keys2 = await lib.derive(keyBytes2);
 for (const path of ['/two/fr/x', '/two/en/x']) await seed(keys2, path, 'Note of project Y', 'Y:' + path);
+// data-zone="article": a note written in the footer before the zone existed.
+const FOOTER_TEXT = 'Footer text of the zone page';
+// The fingerprint is the element's real one (tag and id): 'p' alone ties with the article's bare paragraphs.
+await seed(keys, '/zone/a', FOOTER_TEXT, '/zone/a', 'p#foot-text');
 
 // ---- 3. fake pages ----
 const tag = (extra) => `<script src="/annotepage.js${extra || ''}" data-server="${API}" data-key="${KEY}"></script>`;
@@ -296,6 +300,24 @@ const frenchHostilePage = () => hostilePage()
     .replace('<html lang="en">', '<html lang="fr">')
     .replace('src="/annotepage.js"', 'src="' + CDN_BUNDLE + '"')
     .replace(HEADINGS['/hostile/x'], HEADINGS['/french/x']);
+// data-zone: header / nav / article / footer, and a zone the router renders on page B only.
+const zonePage = (zone) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>zone</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;margin:0;color:#222} header,footer{background:#eef1f6;padding:14px 28px}
+nav a{margin-right:14px} article{margin:28px;padding:8px 20px;max-width:620px} h2{margin:.4em 0}</style>
+<script src="/annotepage.js" data-server="${API}" data-key="${KEY}" data-zone="${zone}" defer></script></head><body>
+<header><nav><a href="/elsewhere" id="head-link">Home</a> <a href="/elsewhere">About</a></nav><p id="head-text">Header text of the zone page</p></header>
+<article><h2 id="art-title">Article title of the zone page</h2><p id="art-text">Article text of the zone page, where remarks are welcome.</p>
+<p>A second paragraph of the article, also open to remarks.</p></article>
+<footer><p id="foot-text">${FOOTER_TEXT}</p></footer></body></html>`;
+const zoneSpaPage = () => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>zone spa</title>
+<script src="/annotepage.js" data-server="${API}" data-key="${KEY}" data-zone=".late" defer></script></head><body>
+<main id="app"></main><script>
+function render() { document.getElementById('app').innerHTML = location.pathname === '/zonespa/b'
+  ? '<h1>Page B</h1><section class="late"><p id="late-text">Late zone text rendered by the router</p></section>'
+  : '<h1>Page A</h1><p id="a-text">Page A has no zone at all</p>'; }
+window.go = function (p) { history.pushState({}, '', p); render(); };
+render();
+</script></body></html>`;
 
 let bundleHits = 0;
 const pages = createServer((req, res) => {
@@ -314,6 +336,10 @@ const pages = createServer((req, res) => {
     else if (url.pathname.startsWith('/bust/')) html = turboWith(url.pathname, '/bust', bustTag());
     else if (url.pathname.startsWith('/deploy/')) html = turboWith(url.pathname, '/deploy', deployTag(url.pathname));
     else if (url.pathname === '/french/x') html = frenchHostilePage();
+    else if (url.pathname === '/zone/a') html = zonePage('article');
+    else if (url.pathname === '/zone/none') html = zonePage('.nothing-here');
+    else if (url.pathname === '/zone/bad') html = zonePage('article >');
+    else if (url.pathname.startsWith('/zonespa/')) html = zoneSpaPage();
     if (!html) { res.writeHead(404); return res.end('no'); }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(html);
 });
@@ -587,6 +613,110 @@ for (const [base, label] of [['/bust', 'cache-busting ?ver= on the re-executed t
     s = await measure(page);
     record(label + ': one tool, the second page\'s note', s, one(s) && s.rows === HEADINGS[base + '/two']);
     record(label + ': no warning', errors, errors.length === 0);
+    await page.close();
+}
+
+// ---- data-zone ----
+const zoneState = (page) => page.evaluate(() => {
+    const h = [...document.querySelectorAll('annotepage-notes')].find((x) => x.shadowRoot && x.isConnected);
+    if (!h) return null;
+    const r = h.shadowRoot;
+    const notice = r.querySelector('.ap-zone-notice');
+    const hl = r.querySelector('.ap-highlight');
+    const instr = r.querySelector('.ap-panel-instructions div');
+    return { path: location.pathname, frames: r.querySelectorAll('.ap-zone').length,
+        formOpen: !!r.querySelector('.ap-form.ap-open'),
+        notice: notice && notice.style.display === 'block' ? notice.textContent : '',
+        highlight: !!hl && hl.style.display === 'block',
+        rows: [...r.querySelectorAll('.ap-row-about')].map((e) => e.textContent).join(' | '),
+        markers: r.querySelectorAll('.ap-marker').length, instructions: instr ? instr.textContent : '' };
+});
+const untilZone = async (page, ok, ms = 4000) => {
+    const t0 = Date.now(); let last = null;
+    while (Date.now() - t0 < ms) { last = await zoneState(page); if (last && ok(last)) return last; await sleep(100); }
+    return last;
+};
+const OUTSIDE = 'Remarks go in the outlined areas of this page.';
+const NONE = 'No part of this page is open to remarks.';
+
+{
+    const { page, errors } = await openPage(false);
+    await page.goto(ORIGIN + '/zone/a');
+    const s = await until(page, (x) => x.rows === FOOTER_TEXT);
+    record('zone "article": the tool boots, the footer note is listed', s, one(s) && s.rows === FOOTER_TEXT);
+    await clickTool(page);
+    let z = await untilZone(page, (x) => x.frames === 1 && x.markers === 1);
+    record('zone "article": annotation mode outlines one zone, the instruction names it, the footer badge is drawn', z,
+        z && z.frames === 1 && z.markers === 1 && /outlined areas/.test(z.instructions));
+    await page.hover('#head-text');
+    await sleep(200);
+    const hoverOut = await zoneState(page);
+    await page.hover('#art-text');
+    await sleep(200);
+    const hoverIn = await zoneState(page);
+    record('zone "article": hovering the header highlights nothing, hovering the article does', { out: hoverOut.highlight, in: hoverIn.highlight },
+        hoverOut.highlight === false && hoverIn.highlight === true);
+    await page.click('#head-link');
+    await sleep(250);
+    z = await zoneState(page);
+    record('zone "article": a click in the header creates nothing, shows the message, does not follow the link', z,
+        z.formOpen === false && z.notice === OUTSIDE && z.path === '/zone/a');
+    await page.click('#art-text');
+    z = await untilZone(page, (x) => x.formOpen, 2000);
+    record('zone "article": a click in the article opens the note form, and the message goes', z, z.formOpen === true && z.notice === '');
+    await page.keyboard.press('Escape');
+    z = await zoneState(page);
+    const badgeOnFooter = await page.evaluate(() => {
+        const h = [...document.querySelectorAll('annotepage-notes')].find((x) => x.shadowRoot && x.isConnected);
+        const m = h.shadowRoot.querySelector('.ap-marker');
+        const f = document.getElementById('foot-text').getBoundingClientRect();
+        return !!m && Math.abs(parseFloat(m.style.top) - (f.top - 8)) < 2 && Math.abs(parseFloat(m.style.left) - (f.left - 8)) < 2;
+    });
+    record('zone "article": the footer note is still listed, and its badge sits on the footer paragraph', { z, badgeOnFooter },
+        z.rows === FOOTER_TEXT && z.markers === 1 && badgeOnFooter);
+    record('zone "article": no page error or console warning', errors, errors.length === 0);
+    await page.close();
+}
+
+for (const [path, pattern, label] of [['/zone/none', /matches nothing on this page/, 'zone matching nothing'],
+    ['/zone/bad', /not a valid CSS selector list: "article >" does not parse/, 'invalid zone "article >"']]) {
+    const { page, errors } = await openPage(false);
+    await page.goto(ORIGIN + path);
+    const s = await until(page, (x) => one(x));
+    await clickTool(page);
+    await sleep(500);
+    await page.click('#art-text');
+    await sleep(250);
+    const z = await zoneState(page);
+    record(label + ': nothing can be annotated, not even the article, and the click says so', { s, z },
+        one(s) && z.formOpen === false && z.frames === 0 && z.notice === NONE);
+    await page.hover('#art-text');
+    await sleep(150);
+    const lit = (await zoneState(page)).highlight;
+    record(label + ': no highlight anywhere', lit, lit === false);
+    record(label + ': exactly one console line, saying why', errors, errors.length === 1 && pattern.test(errors[0]));
+    await page.close();
+}
+
+{
+    const { page, errors } = await openPage(false);
+    await page.goto(ORIGIN + '/zonespa/a');
+    const s = await until(page, (x) => one(x));
+    await clickTool(page);
+    await sleep(400);
+    await page.click('#a-text');
+    await sleep(250);
+    let z = await zoneState(page);
+    record('zone rendered later: on page A, with no zone yet, nothing opens', { s, z }, one(s) && z.formOpen === false && z.notice === NONE);
+    await page.evaluate(() => window.go('/zonespa/b'));
+    z = await untilZone(page, (x) => x.path === '/zonespa/b' && x.frames === 1, 3000);
+    record('zone rendered later: after a client-side navigation, still in annotation mode, the new zone is outlined', z,
+        z && z.frames === 1);
+    await page.click('#late-text');
+    z = await untilZone(page, (x) => x.formOpen, 2000);
+    record('zone rendered later: a click in it opens the note form', z, z.formOpen === true);
+    record('zone rendered later: one console line, from page A, and nothing else', errors,
+        errors.length === 1 && /matches nothing/.test(errors[0]));
     await page.close();
 }
 
