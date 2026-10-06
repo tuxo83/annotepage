@@ -7,7 +7,9 @@
    body and in the head, a prefix left and entered again, the tag included
    twice, two tags for two projects on one template, a frozen
    History.prototype, a list request still on the network when the page
-   changes, and a site that removes every body child it does not know.
+   changes, and a site that removes every body child it does not know. And
+   the document that is not served at all: one file opened from two folders,
+   which is one page only if it says so (data-page).
    `npm run check` runs the client's sections in Node, where no document
    navigates and no observer fights back. This proof lived outside the
    repository and ran when somebody remembered; it is here so that the release
@@ -42,7 +44,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
-import { mkdtempSync, cpSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -718,6 +720,87 @@ for (const [path, pattern, label] of [['/zone/none', /matches nothing on this pa
     record('zone rendered later: one console line, from page A, and nothing else', errors,
         errors.length === 1 && /matches nothing/.test(errors[0]));
     await page.close();
+}
+
+// ---- data-page: a file that is sent, not served ----
+/* Opened with file://, from two folders and under two names, the way two
+   people who received it would. The path of a file is the folder it was saved
+   in, so without a declared page each copy is a page of its own. The relay
+   accepts them because it was installed for anyone: a file has the origin
+   `null`, which no list of sites can name. */
+{
+    const SENT_PAGE = '/sent/review.html';
+    const SENT_HEADING = 'Heading of the sent file';
+    const SENT_TEXT = 'A paragraph of the sent file';
+    await seed(keys, SENT_PAGE, SENT_HEADING, SENT_PAGE);
+    const sentFile = (pageAttribute) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>sent</title>
+<script src="${ORIGIN}/annotepage.js" data-server="${API}" data-key="${KEY}"${pageAttribute} defer></script></head>
+<body><h1>${SENT_HEADING}</h1><p id="sent-text">${SENT_TEXT}</p></body></html>`;
+    const savedAs = (folder, name, pageAttribute) => {
+        mkdirSync(join(dir, folder), { recursive: true });
+        const file = join(dir, folder, name);
+        writeFileSync(file, sentFile(pageAttribute), 'utf8');
+        return pathToFileURL(file).href;
+    };
+    const DECLARED = ' data-page="' + SENT_PAGE + '"';
+    const first = savedAs('received-by-one', 'review.html', DECLARED);
+    const second = savedAs(join('received by another', 'kept'), 'review (1).html', DECLARED);
+    const undeclared = savedAs('received-by-a-third', 'review.html', '');
+    const misnamed = savedAs('received-by-a-fourth', 'review.html', ' data-page="review"');
+    const requested = (lists) => lists.join(',');
+
+    const a = await openPage(false);
+    await a.page.evaluateOnNewDocument(() => { try { localStorage.setItem('annotepage/author', 'first reader'); } catch (e) { /* said by the result */ } });
+    await a.page.goto(first);
+    let s = await until(a.page, (x) => x.rows === SENT_HEADING);
+    record('sent file, first copy: it boots from a folder and lists the note of the page it declares', { s, lists: a.lists },
+        one(s) && s.rows === SENT_HEADING && requested(a.lists) === SENT_PAGE);
+    await clickTool(a.page);
+    await sleep(400);
+    await a.page.click('#sent-text');
+    await sleep(300);
+    const sent = await a.page.evaluate(() => {
+        const h = [...document.querySelectorAll('annotepage-notes')].find((x) => x.shadowRoot && x.isConnected);
+        const form = h.shadowRoot.querySelector('.ap-form.ap-open');
+        if (!form) return 'no form';
+        const area = form.querySelector('.ap-area');
+        area.value = 'written from the first copy';
+        area.dispatchEvent(new Event('input'));
+        form.querySelector('.ap-primary').click();
+        return 'sent';
+    });
+    s = await until(a.page, (x) => x.rows.split(' | ').length === 2);
+    record('sent file, first copy: a remark written from it is accepted and listed', { sent, s },
+        sent === 'sent' && s.rows.split(' | ').length === 2);
+    const bothRows = s.rows.split(' | ').sort().join(' | ');
+
+    const b = await openPage(false);
+    await b.page.goto(second);
+    s = await until(b.page, (x) => x.rows.split(' | ').length === 2);
+    record('sent file, second copy: another folder, another name, the same two notes -- the one written from the first included',
+        { s, lists: b.lists }, one(s) && s.rows.split(' | ').sort().join(' | ') === bothRows && requested(b.lists) === SENT_PAGE);
+    record('sent file: no page error or console warning in either copy', { first: a.errors, second: b.errors },
+        a.errors.length === 0 && b.errors.length === 0);
+
+    const c = await openPage(false);
+    await c.page.goto(undeclared);
+    s = await until(c.page, (x) => one(x) && c.lists.length > 0);
+    await sleep(500);
+    s = await measure(c.page);
+    record('sent file, no data-page: the same file is a page of its own, and lists none of them', { s, lists: c.lists },
+        one(s) && s.rows === '' && c.lists.length === 1 && c.lists[0] !== SENT_PAGE);
+
+    const d = await openPage(false);
+    await d.page.goto(misnamed);
+    await sleep(1200);
+    const screen = await d.page.evaluate(() => {
+        const h = [...document.querySelectorAll('annotepage-notes')].find((x) => x.shadowRoot && x.isConnected);
+        return h ? h.shadowRoot.textContent : '';
+    });
+    record('sent file, data-page="review": refused on screen and once in the console, nothing requested',
+        { screen: screen.slice(0, 160), errors: d.errors, lists: d.lists },
+        /is not a\s+page path/.test(screen) && d.errors.length === 1 && /not a page path/.test(d.errors[0]) && d.lists.length === 0);
+    for (const opened of [a, b, c, d]) await opened.page.close();
 }
 
 await browser.close();
