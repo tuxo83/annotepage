@@ -110,6 +110,7 @@ const configToPaste = (id) => {
     lines.push("        project: '" + id + "'");
     if (MODE === 'plain') lines.push("        mode: 'plain'");
     if (PATH_PREFIX) lines.push("        path: '" + PATH_PREFIX + "'");
+    if (DECLARED_PAGE) lines.push("        page: '" + DECLARED_PAGE + "'");
     return '<script>\n'
         + '    window.annotepageConfig = {\n'
         + lines.join(',\n') + '\n'
@@ -130,6 +131,9 @@ const tagToPaste = (id) => {
     t += '\n        data-project="' + id + '"';
     if (MODE === 'plain') t += '\n        data-mode="plain"';
     if (PATH_PREFIX) t += '\n        data-path="' + PATH_PREFIX + '"';
+    // A document that names its page keeps naming it: the tag pasted back
+    // without it would file the same document under its address again.
+    if (DECLARED_PAGE) t += '\n        data-page="' + DECLARED_PAGE + '"';
     t += '\n        defer></' + 'script>';
     return t;
 };

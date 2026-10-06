@@ -467,7 +467,7 @@ ns.defaultLabels = {
     /* -- A configuration that cannot be used, wherever it was written --
        The settings can also be declared in window.annotepageConfig, for the
        pages where a tag cannot carry them -- concatenated scripts, a module,
-       an asset pipeline (00-preamble). These five say what is wrong with one,
+       an asset pipeline (00-preamble). These say what is wrong with one,
        and they never name a tag: whoever reads them may not have one. */
     'tag.title_config': 'This annotepage configuration cannot be used',
     'tag.two_sources':
@@ -495,6 +495,22 @@ ns.defaultLabels = {
         'window.annotepageConfig on this page is not an object. It is written '
         + 'window.annotepageConfig = { server: "...", key: "..." }, before the '
         + 'client is loaded. Nothing was read from it.',
+    /* The page a document declares for itself (data-page). Said for both
+       sources, like the five above: the reader may hold either. */
+    'tag.page_shape':
+        'This document declares which page it is (data-page on the tag, or '
+        + 'page in window.annotepageConfig), and what it declares is not a '
+        + 'page path. It is written like the path of an address -- '
+        + '/reviews/budget.html -- with a single leading slash, no space, no '
+        + '".." and 300 characters at most. Nothing was sent and nothing was '
+        + 'decrypted: a page named wrongly is a page whose remarks nobody '
+        + 'else would find.',
+    'tag.page_outside_path':
+        'This document declares which page it is (data-page) and a path '
+        + 'prefix (data-path), and the page is outside the prefix: the tool '
+        + 'would never start here. Nothing was sent. Correct one of the two, '
+        + 'or remove the prefix -- a document that names its own page does '
+        + 'not need one.',
 
     /* -- Setup --------------------------------------------------------- */
     'setup.title': 'Install annotepage on this site',

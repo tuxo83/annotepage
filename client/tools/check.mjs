@@ -275,7 +275,8 @@ const main = async () => {
             + ' DECLARED_PROJECT: DECLARED_PROJECT, KEY_DECLARED: KEY_DECLARED,'
             + ' SETUP_REQUESTED: SETUP_REQUESTED, MODE: MODE, PATH_PREFIX: PATH_PREFIX,'
             + ' DOMAINS: DOMAINS.join("|"), FAILURE: CONFIG_FAILURE, IDENTITY: COPY_IDENTITY,'
-            + ' ZONE_DECLARED: ZONE_DECLARED, ZONE_SELECTOR: ZONE_SELECTOR };'
+            + ' ZONE_DECLARED: ZONE_DECLARED, ZONE_SELECTOR: ZONE_SELECTOR,'
+            + ' DECLARED_PAGE: DECLARED_PAGE };'
         )(win, doc, { origin: SITE });
         return { got: got, warnings: warnings };
     };
@@ -530,11 +531,11 @@ const main = async () => {
     const listed = quoted.map((q) => q.slice(1, -1));
     const readme = readFileSync(join(HERE, '..', 'README.md'), 'utf8');
     const documented = [...readme.matchAll(/^\|\s*`data-([a-z]+)`\s*\|/gm)].map((m) => m[1]);
-    check('the client reads eleven settings', listed.length, 11);
+    check('the client reads twelve settings', listed.length, 12);
     check('and the readme documents those, and only those',
         listed.filter((s) => !documented.includes(s))
-            .concat(documented.filter((s) => !listed.includes(s))).join(', ') || 'the same eleven',
-        'the same eleven');
+            .concat(documented.filter((s) => !listed.includes(s))).join(', ') || 'the same twelve',
+        'the same twelve');
 
     /* -- THE ZONE (data-zone) ----------------------------------------------
        Where a remark can be WRITTEN, never where one is read. What runs here
@@ -646,6 +647,114 @@ const main = async () => {
         module.zoneFrom(false, '', compiles), link), 'anywhere');
     check('an invalid zone opens nothing, not even the zone it meant',
         module.pickVerdict(module.zoneFrom(true, 'article >', compiles), em), 'nowhere');
+
+    /* -- THE PAGE A DOCUMENT DECLARES (data-page) ---------------------------
+       A file that is sent rather than served is opened from wherever each
+       person saved it, and the page index is computed from the path: the
+       same file, under the same key, was a different page on every machine,
+       and nobody saw anybody else's remarks. Nothing failed, so nothing said
+       so.
+
+       WHAT IS PROVED HERE: a declared page replaces the address in the one
+       function a page comes from, so two copies opened from two directories
+       get ONE index -- the index a site serving that path gets; an undeclared
+       document is filed exactly as before; and a declaration that is not a
+       path is refused out loud instead of being repaired into a second
+       spelling of the page. The rule is the server's own (ap_field_page),
+       because in encrypted mode the server never sees the value. */
+    process.stdout.write('\nthe page a document declares for itself\n');
+
+    const PAGE = '/reviews/budget.html';
+    const SAVED_HERE = '/D:/Downloads/budget.html';
+    const SAVED_THERE = '/media/usb/received/budget%20(1).html';
+    /* The preamble and the section that owns pagePath(), evaluated together
+       with an address of our choosing: what the client would call this page. */
+    const pathOf = (dataset, pathname) => new Function('window', 'document', 'location',
+        '\'use strict\';\n' + preamble + '\n' + read('20-crypto.js') + '\nreturn pagePath();')(
+        { console: { warn: () => {} } },
+        { currentScript: { src: TAG, dataset: dataset }, baseURI: 'file://' + pathname },
+        { origin: 'null', pathname: pathname });
+
+    check('the tag\'s data-page is read, trimmed',
+        settingsOf(configured({ server: API, project: ID, page: '  ' + PAGE + ' ' })).got.DECLARED_PAGE, PAGE);
+    check('and page in the object the same way',
+        settingsOf({ global: { server: API, project: ID, page: PAGE } }).got.DECLARED_PAGE, PAGE);
+    check('no data-page declares no page',
+        settingsOf(configured({ server: API, project: ID })).got.DECLARED_PAGE, '');
+
+    check('without it, a file is the page of the directory it was saved in',
+        pathOf({ server: API, project: ID }, SAVED_HERE) + ' ' + pathOf({ server: API, project: ID }, SAVED_THERE),
+        SAVED_HERE + ' ' + SAVED_THERE);
+    check('with it, the same file is one page wherever it was saved',
+        pathOf({ server: API, project: ID, page: PAGE }, SAVED_HERE) + ' '
+            + pathOf({ server: API, project: ID, page: PAGE }, SAVED_THERE), PAGE + ' ' + PAGE);
+    check('so two people holding it compute one index',
+        await module.indexOfPath(keys.indexKey, pathOf({ server: API, project: ID, page: PAGE }, SAVED_HERE))
+            === await module.indexOfPath(keys.indexKey, pathOf({ server: API, project: ID, page: PAGE }, SAVED_THERE)),
+        true);
+    check('which they did not before',
+        await module.indexOfPath(keys.indexKey, pathOf({ server: API, project: ID }, SAVED_HERE))
+            === await module.indexOfPath(keys.indexKey, pathOf({ server: API, project: ID }, SAVED_THERE)),
+        false);
+    check('and it is the index of that path on a site: a copy shares the notes of the page online',
+        await module.indexOfPath(keys.indexKey, pathOf({ server: API, project: ID, page: PAGE }, SAVED_HERE))
+            === await module.indexOfPath(keys.indexKey, pathOf({ server: API, project: ID }, PAGE)),
+        true);
+
+    const pageRefusal = (page) => refusal(settingsOf(configured({ server: API, project: ID, page: page })));
+    check('an empty data-page is refused: somebody meant to fill it in', pageRefusal(''), 'tag.page_shape');
+    check('a name that is not a path is refused, not given a slash', pageRefusal('budget-2026'), 'tag.page_shape');
+    check('two leading slashes are refused', pageRefusal('//reviews/budget.html'), 'tag.page_shape');
+    check('a ".." is refused', pageRefusal('/reviews/../budget.html'), 'tag.page_shape');
+    check('a space is refused', pageRefusal('/reviews/budget 2026.html'), 'tag.page_shape');
+    check('a letter an address would have encoded is refused', pageRefusal('/revues/budg\u00e9t.html'), 'tag.page_shape');
+    check('301 characters are refused', pageRefusal('/' + 'a'.repeat(300)), 'tag.page_shape');
+    check('300 are a page', pageRefusal('/' + 'a'.repeat(299)), 'none');
+    check('the characters an address really carries are a page',
+        pageRefusal('/reviews/budget%20(1)_v2~final.html'), 'none');
+    check('the root is a page', pageRefusal('/'), 'none');
+    const badPage = settingsOf(configured({ server: API, project: ID, page: 'budget' }));
+    check('a refused page adopts nothing else either',
+        badPage.got.API + '|' + badPage.got.PROJECT + '|' + badPage.got.DECLARED_PAGE, '||');
+    check('and it is said once, in the console', badPage.warnings.length, 1);
+    check('a refused page is not used: the address would answer, on a tool that does not start',
+        pathOf({ server: API, project: ID, page: 'budget' }, SAVED_HERE), SAVED_HERE);
+    check('in the object too', refusal(settingsOf({ global: { server: API, project: ID, page: 'budget' } })),
+        'tag.page_shape');
+    check('a page in the object that is not text is refused, by name',
+        refusal(settingsOf({ global: { server: API, project: ID, page: 12 } })), 'tag.config_value:page');
+    check('a tag and an object that disagree about the page are refused like any other setting',
+        refusal(settingsOf({ src: TAG, dataset: { server: API, project: ID, page: PAGE },
+            global: { server: API, project: ID, page: '/reviews/other.html' } })), 'tag.two_sources:page');
+
+    /* The scope is checked against the page the copy is on, which is the
+       declared one: outside the prefix the tool would be silent on every load
+       of a document somebody configured. */
+    check('a declared page outside the declared prefix is refused, not silently out of scope',
+        refusal(settingsOf(configured({ server: API, project: ID, page: PAGE, path: '/fr/' }))),
+        'tag.page_outside_path');
+    check('inside it, both are adopted',
+        (() => {
+            const r = settingsOf(configured({ server: API, project: ID, page: PAGE, path: '/reviews/' }));
+            return refusal(r) + ' ' + r.got.PATH_PREFIX + ' ' + r.got.DECLARED_PAGE;
+        })(), 'none /reviews/ ' + PAGE);
+
+    check('the page is part of what makes a configuration',
+        identityOf(configured({ server: API, project: ID, page: PAGE }))
+            === identityOf(configured({ server: API, project: ID })) ? 'the same identity' : 'two identities',
+        'two identities');
+    check('another page on the same document is another configuration, said once',
+        warningsBeside(configured({ server: API, project: ID, page: PAGE }),
+            configured({ server: API, project: ID, page: '/reviews/other.html' })), 1);
+    check('the same page executed again by a router is the same configuration',
+        warningsBeside(configured({ server: API, project: ID, page: PAGE }),
+            configured({ server: API, project: ID, page: ' ' + PAGE + ' ' })), 0);
+    /* One setting more, one member more in every identity: the format moved
+       again, for the reason it moved for the zone. */
+    check('a running copy of the identity format before page existed: the tag stands down in silence',
+        settingsOf(Object.assign({ slot: { copy: { version: '2.31.0',
+            identity: '["annotepage/identity/2","' + TAG + '",[],null]', recheck: () => {} },
+            listening: true } }, configured({ server: API, project: ID }))).warnings.length, 0);
 
     /* -- THE SHIPPED TRANSLATION COVERS THE SHIPPED LABELS ---------------
        A missing label falls back on English, which is the right behaviour and

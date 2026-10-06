@@ -96,8 +96,14 @@ const derive = (keyBytes) => {
  *
  * The computation happens IN BOTH MODES: one code path, one way of grouping.
  * Two would have diverged by the second fix.
+ *
+ * A DOCUMENT THAT DECLARES ITS PAGE IS THAT PAGE, wherever it was opened from
+ * (data-page, 00-preamble). Already judged there, so it is returned as it was
+ * written: this is the one place a page comes from, and everything that asks
+ * -- the index, the scope, the note, the navigation watch -- gets one answer.
  */
 const pagePath = () => {
+    if (DECLARED_PAGE) return DECLARED_PAGE;
     let c = String(location.pathname || '/');
     if (c.charAt(0) !== '/') c = '/' + c;
     c = c.replace(/^\/+/, '/');

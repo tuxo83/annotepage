@@ -144,6 +144,8 @@
         "tag.config_setting": "La configuration annotepage de cette page (window.annotepageConfig) porte « {name} », qui n’est pas un réglage de cet outil. Rien n’en a été lu — un réglage dont le nom est faux est un réglage que personne n’a réglé. Les noms sont ceux écrits sur la balise, sans data-.",
         "tag.config_value": "Le réglage « {name} » de la configuration annotepage de cette page (window.annotepageConfig) doit être écrit en texte, entre guillemets. Rien n’en a été lu.",
         "tag.config_shape": "window.annotepageConfig, sur cette page, n’est pas un objet. Il s’écrit window.annotepageConfig = { server: \"...\", key: \"...\" }, avant le chargement du client. Rien n’en a été lu.",
+        "tag.page_shape": "Ce document déclare quelle page il est (data-page sur la balise, ou page dans window.annotepageConfig), et ce qu’il déclare n’est pas un chemin de page. Il s’écrit comme le chemin d’une adresse — /revues/budget.html — avec une seule barre oblique en tête, sans espace, sans « .. » et en 300 caractères au plus. Rien n’a été envoyé, rien n’a été déchiffré : une page mal nommée est une page dont personne d’autre ne retrouverait les remarques.",
+        "tag.page_outside_path": "Ce document déclare quelle page il est (data-page) et un préfixe de chemin (data-path), et la page est hors du préfixe : l’outil ne démarrerait jamais ici. Rien n’a été envoyé. Corrigez l’un des deux, ou retirez le préfixe — un document qui nomme sa propre page n’en a pas besoin.",
         "setup.title": "Installer annotepage sur ce site",
         "setup.generate": "Engendrer une clé et créer le projet",
         "setup.warning_title": "À lire avant de continuer",

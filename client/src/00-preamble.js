@@ -122,7 +122,7 @@ const INSTANCE_SLOT = Symbol.for('annotepage');
    window.annotepageConfig is ours alone, so a name we do not know there is a
    typo, and a typo that is ignored is a setting somebody believes they set. */
 const SETTINGS = ['server', 'project', 'key', 'setup', 'mode', 'path',
-    'domains', 'version', 'environment', 'labels', 'zone'];
+    'domains', 'version', 'environment', 'labels', 'zone', 'page'];
 
 /* Not "written": 60-ui already holds a local of that name, and a helper of the
    whole file shadowed inside one function is a reader's trap for nothing. */
@@ -210,8 +210,10 @@ const data = (script && script.dataset) || {};
    order, so one more setting is one more member in every identity -- the same
    configuration written another way. Left at 1, a copy of the release before
    still holding the document would read this one's identity as a different
-   configuration and warn about a second tool, on a page carrying one tag. */
-const IDENTITY_FORMAT = 'annotepage/identity/2';
+   configuration and warn about a second tool, on a page carrying one tag.
+
+   3 SINCE `page` JOINED THEM, for that same reason. */
+const IDENTITY_FORMAT = 'annotepage/identity/3';
 const readableIdentity = (value) =>
     typeof value === 'string' && value.indexOf('["' + IDENTITY_FORMAT + '",') === 0;
 const REFUSED_KEPT = 8;
@@ -443,6 +445,64 @@ if (script) {
     return;
 }
 
+/* THE PAGE, WHEN THE DOCUMENT NAMES ITS OWN (data-page, or `page`).
+
+   The page index is computed from the path of the address (20-crypto), and a
+   document that is not served has no address worth the name: a file sent by
+   mail is opened from wherever each person saved it, so two people holding
+   the same file under the same key are on two pages, and neither sees the
+   other's remarks. Nothing fails and nothing is said -- each of them simply
+   gets an empty page.
+
+   So such a document can SAY which page it is: a path, written the way an
+   address would carry it, and used in the place of location.pathname. The
+   derivation does not move (FORMAT.md section 4) -- what goes into it does.
+   It is a path and not a free name ON PURPOSE: everything downstream already
+   knows what a path is -- the server's own rule for `page` in plain mode, the
+   text export, the assistant, which recomputes an index from it -- and a copy
+   of a page of a site, declared with that page's path, shares its notes with
+   the page that is online.
+
+   JUDGED HERE, BY THE SERVER'S RULE (ap_field_page, input.php), because in
+   encrypted mode the server never sees it: a single leading slash, no `..`,
+   the characters a path is made of, 300 at most. NOTHING IS REPAIRED. A
+   missing slash added here would be a second spelling of one page, and the
+   next implementation would not add it.
+
+   AN EMPTY ONE IS REFUSED, like an empty key: somebody meant to fill it in,
+   and falling back on the address is the very thing they wrote it to avoid.
+
+   AND IT HAS TO SIT INSIDE THE DECLARED PREFIX when there is one. The scope
+   is checked against the page this copy is on (30-state), which is now the
+   declared one: outside the prefix the tool would stand down on every load,
+   in the silence the scope is allowed -- on a document somebody configured.
+
+   IT BELONGS TO ONE DOCUMENT, NEVER TO A SHARED TEMPLATE. On every page of a
+   site it makes them all one page. Nothing here can tell, so the
+   documentation says it. */
+const MAX_PAGE = 300;
+const pageProblem = (page, prefix) => {
+    if (page.length > MAX_PAGE || page.indexOf('..') !== -1
+        || !/^\/(?!\/)[A-Za-z0-9/._~%()@+,;=:&-]*$/.test(page)) return 'shape';
+    if (prefix && page.indexOf(prefix) !== 0) return 'outside';
+    return '';
+};
+if (!CONFIG_FAILURE && declaredIn(config, 'page')) {
+    const problem = pageProblem(config.page, declaredIn(config, 'path') ? config.path : '');
+    if (problem === 'shape') {
+        refuse('tag.page_shape', null,
+            'the page this document declares (data-page, or "page") is not a page '
+            + 'path. It is written like the path of an address, /reviews/budget.html: '
+            + 'a single leading slash, no space, no "..", ' + MAX_PAGE + ' characters '
+            + 'at most. Nothing was sent.');
+    } else if (problem === 'outside') {
+        refuse('tag.page_outside_path', null,
+            'the page this document declares (data-page, or "page") is outside the '
+            + 'path prefix it declares as well (data-path, or "path"), so the tool '
+            + 'would never start here. Nothing was sent. Correct one of the two.');
+    }
+}
+
 /* A refusal adopts NOTHING. Half a configuration would start the tool on
    whichever half happened to be readable, which is the guess this whole file
    exists to avoid. 90-boot shows the reason instead. */
@@ -537,6 +597,11 @@ const MODE = read('mode').toLowerCase() === 'plain' ? 'plain' : 'encrypted';
    the staging notes -- and NOT a security boundary: whoever has the project id
    and the key writes wherever they like. */
 const PATH_PREFIX = read('path');
+
+/* The page this document says it is, or '' when it says nothing and the
+   address answers (see THE PAGE, above, where it was judged). One reader:
+   pagePath() in 20-crypto, which is the only place a page comes from. */
+const DECLARED_PAGE = read('page');
 
 /* The project origins. The real lock is the server's (FORMAT.md section
    6.2); this one only avoids talking to a server that is going to say no,

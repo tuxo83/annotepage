@@ -20,6 +20,11 @@
    takes it back when it returns (50-anchors). A query string or a fragment
    that changes is the same page too, for the same reason.
 
+   A DOCUMENT THAT DECLARES ITS PAGE (data-page) NEVER CHANGES PAGE: pagePath()
+   answers the declared one whatever the address does, so every sign of
+   navigation below compares it with itself and does nothing. That is the
+   declaration being kept, not a navigation being missed.
+
    NOTHING HERE TOUCHES THE DERIVATION. pagePath() and indexOfPath() are
    called exactly as the boot calls them; what changed is how often. */
 

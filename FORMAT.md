@@ -538,7 +538,9 @@ page_index = base64url_without_padding(
 `path` is **exactly** what `location.pathname` produces: an absolute path
 beginning with a single slash, with no scheme, no host, no query string, no
 fragment. Format 1's shape rules apply before the computation (a single
-leading slash, no `..` segment).
+leading slash, no `..` segment). One exception, and it replaces where the path
+comes from, not what is done with it: a document that declares its own page
+(below).
 
 Two points that make the difference between two implementations that talk to
 each other and two that do not:
@@ -574,6 +576,66 @@ A reimplementation that resolves `..` the ordinary way computes a different
 HMAC, so a different `page_index`, so its notes land in a page nobody else
 looks at — with no error anywhere, on either side. It is the one place in this
 document where following the obvious reading is worse than following the text.
+
+### A document that declares its page
+
+The path of the address identifies a page only where the address is shared. A
+document that is **sent rather than served** — a file attached to a message,
+opened from wherever each person saved it — has a different `location.pathname`
+on every machine: the same file, under the same key, is then as many pages as
+it has readers, and none of them sees another's notes. Nothing fails and
+nothing says so.
+
+Such a document may declare which page it is: `data-page` on the tag, or `page`
+in the object (the client's readme). When it does, **`path` is the declared
+value, and `location.pathname` is not read at all.** Everything after that is
+unchanged — the same HMAC, the same `page` field in the note, the same AAD.
+
+The declared value is a path, not a free name, and that is the decision that
+keeps this out of the format number (§7): every reader already receives a path
+and nothing but a path. The server's rule for `page` in plain mode, the text
+export, and the consistency check a reader runs before replying — recompute the
+index from `page`, compare with `page_index` — hold for a declared page without
+knowing it was declared.
+
+Its shape is the one the server enforces on `page` in plain mode (§6.1), and
+the client applies it **in both modes**, since in encrypted mode nobody else
+can:
+
+```
+begins with a single "/"            # not "//"
+contains no ".." anywhere
+only  A-Z a-z 0-9 / . _ ~ % ( ) @ + , ; = : & -
+300 characters at most
+```
+
+**Nothing is repaired.** A value outside that shape is refused and the client
+does not start: a slash added for the writer, or a space encoded for them,
+would be a second spelling of one page, and the next implementation would not
+make the same repair. The `..` rule above does not apply either — there is no
+`..` to drop in a value that may not contain one.
+
+Three consequences, each of them intended:
+
+- **two copies that declare the same page are the same page**, whatever they
+  are named and wherever they are opened from;
+- **a copy declared with the path of a page that is online shares that page's
+  notes** — same project, same path, same index. That is how a page of a site
+  is sent to somebody who cannot reach the site;
+- **the declaration belongs to one document.** Written in a template shared by
+  a whole site it makes every page of that site one page. No implementation
+  can detect that, so it is a rule for whoever writes the tag.
+
+A declared page together with a path prefix (§4, below) must lie inside the
+prefix; the client refuses the pair otherwise, since the scope is checked
+against the page it is on and it would stand down on every load.
+
+The server learns nothing new: it still receives an index and never a path.
+What it does see, unrelated to this section, is the `Origin` of the request,
+and a document opened from a disk sends `null` — an origin present and absent
+from every list (§6.2). A project that declares its origins therefore refuses
+such a document with a 403; a project served without an origin list, which is
+what a relay with open registration serves, accepts it.
 
 ### What the server can do without decrypting
 
