@@ -708,6 +708,34 @@ data-zone=<b>".post-content, .comments"</b></pre>
                 <p class="qa-a">It guides reviewers; it is not a security boundary. The
             restriction lives in the browser, where anyone determined can lift it.</p>
             </article>
+            <!-- THE ONE CASE WHERE THE ADDRESS IS NOT THE PAGE. A page is its
+                 path, and a file sent by mail has a different one on every
+                 machine: each reader was alone on a page of their own, with
+                 nothing on screen to say so. The attribute is client/README.md's
+                 data-page row; this says when it is needed and what it costs. -->
+            <article class="qa" data-tags="The tag on your page|Nothing appears">
+                <h3 class="qa-q" id="sent-file">I send the HTML file instead of a link. Will everyone see the same notes?</h3>
+                <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Nothing appears</span></p>
+                <p class="qa-a">Not on its own. A page is identified by the path in its
+            address, and a file opened from a disk has the path of the folder it was
+            saved in &mdash; a different one for every person, and for you as soon as
+            you move or rename it. Same file, same key, and each reader gets an empty
+            page of their own.</p>
+                <p class="qa-a">Tell the file which page it is, with
+            <code>data-page</code> on the tag. Every copy then shares one set of notes,
+            wherever it is opened from:</p>
+<pre class="qa-code">data-page=<b>"/reviews/budget-2026.html"</b>
+data-page=<b>"/3f2b8c1e-9a4d-4c7b-8e21-5d6f0a1b2c3d"</b></pre>
+                <p class="qa-a">The value is yours to choose, written like a path: it
+            starts with one <code>/</code>, has no space and no <code>..</code>.
+            Anything else is refused on screen rather than corrected. Give it the path
+            of a page that is online and the copy shares that page&rsquo;s notes.</p>
+                <p class="qa-a"><b>Three things to know.</b> Put it on a single document,
+            never in a template shared by a site &mdash; every page would become the
+            same page. Notes written before you added it stay under the old path. And a
+            file opened from a disk has no site address, so a project restricted to a
+            list of sites refuses it; it needs a project without that list.</p>
+            </article>
             <article class="qa" data-tags="The tag on your page|Your site">
                 <h3 class="qa-q" id="language">What language does it speak?</h3>
                 <p class="qa-tags"><span class="qa-tag">The tag on your page</span><span class="qa-tag">Your site</span></p>
