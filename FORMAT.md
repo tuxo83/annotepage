@@ -1158,6 +1158,33 @@ hundreds of networks, and throws key and buckets away on the first request
 that arrives on a later day. That is a statement about what this code
 stores. The web server in front of it logs what web servers log.
 
+**Why the address is treated this way, and against what it was measured.**
+Counting things without identifying anybody is a solved problem with a
+published rule, and this follows it rather than inventing one. The French
+data-protection authority, the CNIL, sets out how visitors may be counted in
+public places from the addresses their devices emit
+([its page on audience and footfall measurement](https://www.cnil.fr/fr/dispositifs-de-mesure-daudience-et-de-frequentation-dans-des-espaces-accessibles-au-public-la-cnil)):
+the raw address is not kept; it is replaced at once by a pseudonym made with a
+salt or a key; what is left is anonymised or destroyed at the end of the day;
+and anonymous means a high collision rate — many sources giving one
+identifier — with no precise timestamp. A network address is not a person and
+a server is not a visitor, so none of that is owed here. It is applied anyway,
+and on the strict side of each point:
+
+| The rule | What the receiver does |
+| --- | --- |
+| the raw address is not kept | it is never written, not even for an instant |
+| a pseudonym made with a salt or a key | an HMAC under a key drawn at random |
+| a high collision rate | the digest is cut to sixteen bits, and taken of the network, not the address: hundreds of networks share each value |
+| no precise timestamp | the day, never the time |
+| destroyed at the end of the day | key and values are discarded on the first request of the next day (UTC) |
+
+Two things this does not claim. The discarding happens when the next day's
+first request arrives, not on the stroke of midnight: on a receiver that is
+asked anything at all, that is seconds. And the identifier a server draws for
+itself is outside this rule altogether — it is random, it is the same from one
+day to the next, and it names an installation, not a person.
+
 **Which server receives.** No configuration says so. The receiving code ships
 to every server, in `internal/`, where no request reaches it, and answers
 through `stats.php` — a door of a few lines that no release contains. A server

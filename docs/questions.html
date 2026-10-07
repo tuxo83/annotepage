@@ -335,32 +335,29 @@ code {
             paths, never your text &mdash; in secure mode it cannot read a line
             it stores.</p>
             </article>
-            <!-- THE ONE THING A SERVER SENDS BY DEFAULT, SAID WHERE PEOPLE LOOK
-                 FOR IT. On unless refused, so the card says both in its first
-                 line; and it says what is KEPT WITH THE NUMBERS, which is the
-                 claim that can be checked against internal/statistics.php and
-                 internal/statistics-receiver.php -- not what a web server
-                 logs, which no code here decides. -->
+            <!-- WHAT IS COLLECTED, SAID AS WHAT IT IS: usage totals. First what
+                 they are, then what they are not, then how to turn them off --
+                 a card that began with the off switch read as an apology for
+                 something that needs none. The reasoning behind each sentence,
+                 and the method the address is treated by, are in FORMAT.md
+                 section 6.5; this says the result. -->
             <article class="qa" data-tags="Privacy|Your own server">
-                <h3 class="qa-q" id="statistics">Does my own server send anything about itself?</h3>
+                <h3 class="qa-q" id="statistics">What statistics does annotepage collect?</h3>
                 <p class="qa-tags"><span class="qa-tag">Privacy</span><span class="qa-tag">Your own server</span></p>
-                <p class="qa-a">One thing, on by default, and one line turns it off. Once
-            a day it tells the project&rsquo;s server how much it carries: its
-            version and three totals &mdash; projects, notes, pages. That is how
-            anybody can say how many servers run annotepage; the sum is public, at
-            <code>api.annotepage.com/stats.php</code>. A server installed before
-            2.36.0 starts when it updates.</p>
-                <p class="qa-a"><b>Nothing that identifies you is kept with those
-            numbers</b>: no domain name, no IP address, no project, no page, not a
-            word of a note. What tells one server from another is an identifier
-            drawn at random on yours, derived from nothing. Like any request, the
-            declaration arrives from your server&rsquo;s address: the receiving
-            code does not keep it with the numbers, and the web server in front
-            of it logs it as it logs every request.</p>
-                <p class="qa-a">To refuse, write
+                <p class="qa-a"><b>Usage totals, and nothing else.</b> Once a day, each
+            annotepage server tells the project three numbers: how many projects,
+            notes and pages it has carried, along with its version. That is how we
+            know how many servers run annotepage, and how much they are used.</p>
+                <p class="qa-a"><b>Nothing identifies you.</b> No domain name, no
+            project, no page, not a word of a note. Servers are told apart by an
+            identifier each one draws at random, tied to nothing. Addresses are
+            never stored: only a keyed fingerprint shared by hundreds of networks,
+            kept for the day &mdash; the rigour asked of far more sensitive
+            data.</p>
+                <p class="qa-a"><b>It is on by default, and one line turns it off:</b>
             <code>'report_statistics' =&gt; false</code> in
-            <code>internal/config-local.php</code>, or set it in the installer.
-            Nothing is sent then.</p>
+            <code>internal/config-local.php</code>, or the matching option in the
+            installer.</p>
             </article>
 
                         <article class="qa" data-tags="Who can do what|Privacy">
