@@ -10,7 +10,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath hooks",
     "build": "node client/tools/build.mjs",
-    "check": "npm run check:shapes && npm run check:bundle && npm run check:installer && npm run check:sri && npm run check:injection && npm run check:css && npm run check:html && npm run check:shell && npm run check:sitelinks && npm run check:header && npm run check:names && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp && npm run check:e2e && npm run check:store && npm run check:storepair && npm run check:install && npm run check:origins && npm run check:questions && npm run check:clipage && npm run check:limits && npm run check:wordpress",
+    "check": "npm run check:shapes && npm run check:bundle && npm run check:installer && npm run check:sri && npm run check:injection && npm run check:css && npm run check:html && npm run check:shell && npm run check:sitelinks && npm run check:header && npm run check:names && npm run check:versions && npm run check:manifest && npm run check:landing && npm run check:client && npm run check:mcp && npm run check:e2e && npm run check:store && npm run check:storepair && npm run check:install && npm run check:origins && npm run check:questions && npm run check:clipage && npm run check:limits && npm run check:statistics && npm run check:wordpress",
     "check:sri": "node tools/check-sri.mjs",
     "check:injection": "node tools/check-no-html-injection.mjs",
     "check:versions": "node tools/check-versions.mjs",
@@ -36,6 +36,7 @@
     "check:origins": "node tools/check-origins.mjs",
     "check:clipage": "node tools/check-install-cli-page.mjs",
     "check:limits": "node tools/check-limits.mjs",
+    "check:statistics": "node tools/check-statistics.mjs",
     "check:wordpress": "node tools/check-wordpress.mjs",
     "check:browser": "node tools/check-navigation-browser.mjs"
   },

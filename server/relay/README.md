@@ -30,6 +30,53 @@ path it got. One `..` too many is worse, because it arrives as a 503 saying the
 file is missing and to check the number of levels climbed -- which is exactly
 the mistake, said in a sentence somebody has to read carefully.
 
+## The statistics of every server
+
+Each annotepage server tells this one, once a day, how much it carries: an
+identifier it drew at random, its version, and three totals. This machine
+keeps one row per server and answers the sum to anybody:
+
+```
+GET <base>/stats.php     {"instances": n, "active": n, "projects": n,
+                          "notes": n, "pages": n, "as_of": "..."}
+```
+
+**There is nothing to install and nothing to configure.** The receiving code
+arrives with every release, in `internal/`. This machine finds out by itself
+that it is the one the address leads to — it writes a witness file beside
+`api.php`, fetches it at its own public address, and recognises it — then
+writes `stats.php`, a few lines, and starts answering. It does that at the
+first note written after an update, and again at each new version.
+`webroot/internal/statistics.php` says how, under WHICH SERVER RECEIVES.
+
+Three things it needs: the PHP that answers requests may write beside
+`api.php`; the web server serves a `.txt` file put there; and the machine can
+reach its own public address over https. A machine that updates itself from
+the web usually has all three, but that is not a proof of it. Where one is
+missing, `stats.php` is not written and the address answers 404; then say it
+in the configuration — `'collect_statistics' => true` — and, if PHP cannot
+write there, put the door there by hand: its content is the constant
+`AP_STATISTICS_DOOR` in `webroot/internal/statistics.php`. This machine must
+also not have refused to report: with `report_statistics => false` it does not
+try the proof, and only the configuration line makes it the receiver.
+
+**What it keeps** is in the database, in the table the store calls its memory:
+per declaring server, the identifier, the version, three totals, the day of
+the first and of the last declaration. No address: to ration new identifiers
+it keeps sixteen bits of a keyed digest of the *network* a request came from,
+a bucket shared by hundreds of networks, thrown away with its key on the first
+request of a later day. **The web server's own
+access log is another matter, and it is yours**: it records the address of
+every server that declares, as it records every other request, and nothing in
+this code can prevent that. If the promise on the site is to mean what it says
+on this machine, do not keep those lines longer than you need them.
+
+**The totals never go down**, and nothing removes a row on its own: a server
+that stops declaring stays in the sum. The header of
+`webroot/internal/statistics-receiver.php` says how a declared number is
+bounded, what that leaves open in numbers, and that the remedy for invented
+rows is a person deleting them.
+
 ## The database
 
 One MySQL database, one user with the usual rights. **No schema to create**: the

@@ -278,6 +278,33 @@ return array(
     // 145 ms at 240,000. Worth knowing before turning it on on a busy relay.
     // 'publish_server_totals' => true,
 
+    // STATISTICS -- ON BY DEFAULT, and this line is how to say no.
+    //
+    // Once a day this server tells the project's own server how much it
+    // carries: an identifier drawn at random here (derived from nothing, so
+    // it leads back to nothing), the version of this server, and three totals
+    // -- projects, notes, pages. Never a domain name, a project id, a page
+    // path, a line of a note, a key or a name. internal/statistics.php is the
+    // whole of it. The sum of every server is public.
+    //
+    // The receiver also sees the address this server calls from, as for any
+    // request. A server on which no note was ever written sends nothing. The
+    // request is made from the daily command or after the first note of the
+    // day has been answered, and a receiver that is down changes nothing here.
+    // 'report_statistics' => false,
+
+    // And where those numbers go, for a fork that runs its own receiver.
+    // https, unless this server itself answers over plain http. Everybody
+    // else leaves it alone.
+    // 'statistics_address' => 'https://example.com/stats.php',
+
+    // WHICH SERVER RECEIVES is not a setting either: the server the address
+    // above leads to finds that out by itself, and writes its own stats.php.
+    // This key is for the host where it cannot -- no right to write beside
+    // api.php, or no way to call itself -- and for making sure a server never
+    // does: true receives, false never will.
+    // 'collect_statistics' => true,
+
     // MAXIMUM SIZE OF A REQUEST BODY, in bytes. Beyond it the answer is 413,
     // read before anything else is parsed. The default suits a note carrying
     // an encrypted envelope; a relay that wants a tighter ceiling lowers it.

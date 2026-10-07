@@ -178,6 +178,14 @@ require __DIR__ . '/internal/rate-limit.php';
 // and there names no storage at all.
 require __DIR__ . '/internal/text-export.php';
 require __DIR__ . '/internal/update.php';
+// GUARDED, AND SO ARE ITS THREE CALLS BELOW. The updater puts the files in
+// place one at a time, and this one arrives AFTER api.php: required outright,
+// a process killed between the two would leave a server that answers 500 to
+// everything -- on the host whose only way to finish the update goes through
+// this very file. Without it this server reports nothing, and that is all.
+if (is_file(__DIR__ . '/internal/statistics.php')) {
+    require __DIR__ . '/internal/statistics.php';
+}
 
 // --- 3. https -------------------------------------------------------------
 //
@@ -617,6 +625,29 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
         empty($config['publish_server_totals'])
             ? 'no -- `list` answers this project\'s figures only'
             : 'yes -- `list` also answers what the whole server holds');
+    if (function_exists('ap_statistics_diagnostic_lines')) {
+        /* The store is asked which end this server is -- ONLY ON A SERVER
+           THAT IS INSTALLED, AND NEVER AT THE PRICE OF THIS PAGE. Asked of an
+           unconfigured server it would create the storage it is asked about;
+           asked of an unreachable database it would throw, and this page
+           would lose the verdict that says the database is unreachable --
+           both measured. So: an active configuration, and every failure
+           caught, falling back on what the configuration alone says. */
+        $pairs = null;
+        if (!empty($config['active']) && class_exists('ApStore')) {
+            try {
+                $pairs = ap_statistics_diagnostic_lines($config, new ApStore($config));
+            } catch (Throwable $e) {
+                $pairs = null;
+            }
+        }
+        if ($pairs === null) {
+            $pairs = ap_statistics_diagnostic_lines($config, null);
+        }
+        foreach ($pairs as $pair) {
+            ap_diag_line($pair[0], $pair[1]);
+        }
+    }
     /* `format.` and no longer `config.`, because that is what they are: the
        length of each field is fixed by the code, not by this server's
        configuration, and a line that says `config.` invites somebody to go
@@ -709,6 +740,10 @@ function ap_write_diagnostic($config, $version, $configError, $mode)
        annotated page had stopped working. It names it now: what is asked of a
        store is knowable, so not asking was a choice, and the wrong one. */
     $behind = array();
+    // NOT the four the statistics use: a store kept on purpose that lacks
+    // them reports nothing, which config.report_statistics says in its own
+    // line -- and telling its owner to replace it for that would be asking
+    // them to give up their store for something they may have refused.
     foreach (array('expiredTotals', 'serverTotals', 'compact', 'setTitle') as $needed) {
         if (!method_exists('ApStore', $needed)) {
             $behind[] = $needed . '()';
@@ -1036,6 +1071,14 @@ if ($write && !empty($config['max_note_age_days']) && mt_rand(1, 50) === 1
 //   - on writes only, like the sweep, and for the same reason.
 if ($write) {
     ap_update_schedule($config);
+    // AND THE DAY'S STATISTICS, on the same idiom: about once a day,
+    // registered here, decided and sent after the answer and only after an
+    // answer that was a success. A random identifier, the version and three
+    // totals -- internal/statistics.php says what, and
+    // `report_statistics => false` says no. Nothing is asked of the store here.
+    if (function_exists('ap_statistics_schedule')) {
+        ap_statistics_schedule($config, $store);
+    }
 }
 
 switch ($action) {

@@ -163,7 +163,8 @@ function ap_config_defaults()
         // directory writable by YOU and not by the web server. If you have a
         // shell, use that and leave this key alone.
         //
-        // With this off, not one byte goes out on a visitor's request.
+        // With this off, no update check goes out on a visitor's request.
+        // (The day's statistics are a separate key, `report_statistics`.)
         // ?action=diagnostic still reports the running and the published
         // version, because that costs no permission and it is the part every
         // installation wants.
@@ -378,6 +379,41 @@ function ap_config_defaults()
         // Three integers.
         'publish_server_totals' => false,
 
+        // STATISTICS -- once a day this server tells the project's own server
+        // how much it carries. ON, and this key is how to say no.
+        //
+        // WHAT IS SENT, and the list is closed: an identifier drawn at random
+        // on this server (derived from nothing, so it leads back to nothing),
+        // the version of this server, and three totals -- projects, notes,
+        // pages. NEVER a domain name, a project id, a page path, a line of a
+        // note, a key or a name. internal/statistics.php is the whole of it,
+        // and it says so at its top.
+        //
+        // WHY IT EXISTS: a tool installed from one file is never heard of
+        // again, and nobody could say whether ten servers run it or ten
+        // thousand. The sum of every server is public.
+        //
+        // WHAT THE RECEIVER LEARNS BESIDES: the address this server calls
+        // from, as for any request anything makes.
+        //
+        // WHAT IT COSTS: one small request a day, with a deadline of a few
+        // seconds, made after the visitor has their answer -- or, on a host
+        // that cannot let a visitor go first, at the end of one request a day
+        // and for about two seconds (the name lookup is the system's). A receiver that is down changes
+        // nothing here. A server on which no note was ever written sends
+        // nothing.
+        //
+        // false, and not one byte of it leaves this machine.
+        //
+        // WHERE THEY GO is written in internal/statistics.php and is not a
+        // setting. The code that receives them is on every server, in
+        // internal/, where no request reaches it; it answers on the one
+        // server the address leads to, which finds that out by itself
+        // (statistics.php, WHICH SERVER RECEIVES). A fork that runs its own
+        // names it with `statistics_address`, which config-local.example.php
+        // describes.
+        'report_statistics' => true,
+
         // Header carrying the client address when a proxy sits in front (for
         // example 'HTTP_X_FORWARDED_FOR'). NULL BY DEFAULT, and that default is
         // the point: a header the client can write itself would make rate
@@ -555,6 +591,14 @@ function ap_config()
     $config['open_registration'] = !empty($config['open_registration']);
     $config['auto_update'] = !empty($config['auto_update']);
     $config['allow_plain_http'] = !empty($config['allow_plain_http']);
+    /* `'false'` BETWEEN QUOTES IS A NO, on this key and on no other. Every
+       flag above is something a person turns ON, where a string read as true
+       does what they meant; this is the one a person turns OFF, and reading
+       their refusal as consent would send what they said not to send. */
+    $config['report_statistics'] = is_string($config['report_statistics'])
+        ? !in_array(strtolower(trim($config['report_statistics'])),
+            array('', '0', 'false', 'no', 'off'), true)
+        : !empty($config['report_statistics']);
     $config['local_config'] = $local;
     $config['local_config_present'] = is_file($local);
 

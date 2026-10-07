@@ -88,9 +88,14 @@ for (let i = 0; i < 40; i += 1) {
    afterwards: what is being checked is that a number typed on the command
    line arrives at the counter. If the installer stopped writing one of these,
    this file would fail here rather than pass on a default. */
+/* --report-statistics=false, HERE AND ON EVERY INSTALLATION BELOW. A server
+   that writes a note declares itself to the project once a day unless told
+   not to, and these write notes: left alone, each run of this file would add
+   servers that do not exist to the public count. check-statistics.mjs refuses
+   an installation in this file that does not say no. */
 const install = spawnSync('php', [join(root, 'install.php'),
     '--api-address=http://127.0.0.1:' + port + '/api.php',
-    '--answers-for=anyone', '--storage=sqlite', '--updated-by=cron',
+    '--answers-for=anyone', '--report-statistics=false', '--storage=sqlite', '--updated-by=cron',
     '--rate-window-seconds=3600',
     '--rate-writes-per-ip=3',
     '--rate-writes-per-project=1000',
@@ -297,7 +302,7 @@ if (tooMany) {
        the only mode in which the server sees a field at all. */
     const put = spawnSync('php', [join(root2, 'install.php'),
         '--api-address=http://127.0.0.1:' + port2 + '/api.php',
-        '--answers-for=one-site', '--storage=sqlite', '--updated-by=cron',
+        '--answers-for=one-site', '--report-statistics=false', '--storage=sqlite', '--updated-by=cron',
     ], { encoding: 'utf8', cwd: root2 });
     const path2 = join(root2, 'internal', 'config-local.php');
     check('the plain-mode fixture did not install', put.status === 0,
@@ -443,6 +448,9 @@ if (tooMany) {
     const args = [...wanted].map(([k, v]) => '--' + k.replace(/_/g, '-') + '=' + v);
     const run = spawnSync('php', [join(root3, 'install.php'),
         '--api-address=http://127.0.0.1:' + port3 + '/api.php',
+        /* No --report-statistics here: `args` gives every setting a value,
+           that one included, and this server never holds a note -- it is
+           installed, read back, and thrown away. */
         '--answers-for=one-site', '--storage=sqlite', '--updated-by=cron', ...args],
         { encoding: 'utf8', cwd: root3 });
     check('the shell refused a command line made of one value per setting',
@@ -490,7 +498,7 @@ if (tooMany) {
         { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body, redirect: 'manual' })).text());
 
-    const answer = await post('audience=mine&storage=sqlite&updates=cron'
+    const answer = await post('audience=mine&storage=sqlite&updates=cron&report_statistics=false'
         + '&rate_writes_per_ip=abc&max_body_bytes=-9&diagnostic=ful'
         + '&publish_server_totals=peutetre');
     check('the form installed something despite four values the shell refuses',

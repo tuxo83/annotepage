@@ -492,9 +492,8 @@ function ap_i_environment($here, $outboundUrl)
         $ok ? 'works (' . $reach['transport'] . ')' : 'no way out',
         true,
         $ok
-            ? 'This server can fetch over HTTPS. That is what automatic updates need; '
-              . 'nothing else here uses it.'
-            : 'This server cannot reach the outside. Everything works; only automatic '
+            ? 'This server can fetch over HTTPS. That is what automatic updates need.'
+            : 'This server cannot fetch over HTTPS. Everything works; only automatic '
               . 'updates are impossible, and this page will not pretend otherwise.');
 
     return array($lines, $ok);
@@ -1249,6 +1248,28 @@ function ap_i_settings()
                        . 'who can open one annotated page. Counted on every page load: '
                        . 'measured at 5.7 ms without it and 41.8 ms with it on 60,000 '
                        . 'notes.'),
+        /* ON UNLESS REFUSED, AND SAID WHERE IT CAN BE REFUSED. The one
+           setting whose default sends something off this machine. `decided`
+           is what puts it in the table the first screen shows WITHOUT the
+           switch being opened -- "left alone, this installation writes" --
+           so that nobody learns of it from a line in a log; the field itself
+           is with the others, behind the switch.
+           TWO LENGTHS OF ONE FACT. Under the field the words are counted,
+           and the sentence a click away says the rest: `decided` is four
+           words. In that table nothing else speaks for it, so `shown` says
+           what goes and to whom.
+           Not called anonymous: the identifier is random, but it is the same
+           one every day and it arrives from this server's address. */
+        array('key' => 'report_statistics', 'hint' => '', 'group' => 'advanced', 'kind' => 'bool', 'unit' => '',
+            'label' => 'Send daily statistics',
+            'decided' => array('one-site' => 'true -- sent daily', 'anyone' => 'true -- sent daily'),
+            'shown'   => 'yes: a random identifier, the version and three totals, to the project, once a day',
+            'say'   => 'Once a day this server tells the project how much it carries: '
+                       . 'an identifier drawn at random here, its version, and three '
+                       . 'totals -- projects, notes, pages. Never a domain name, a '
+                       . 'project id, a page, a line of a note or a key; the receiver '
+                       . 'sees the address the request comes from, as for any request. '
+                       . 'The sum of every server is public. false sends nothing at all.'),
         array('key' => 'forward_root_to', 'hint' => 'The directory only, never api.php.', 'group' => 'advanced', 'kind' => 'text', 'unit' => '',
             'example' => 'https://annotepage.com',
             'label' => 'Where a bare visit to this directory goes',
@@ -1347,7 +1368,7 @@ function ap_i_settings()
 }
 
 /**
- * What a field left empty is worth, in words, for the fifteen of them.
+ * What a field left empty is worth, in words, for every one of them.
  *
  * A SETTING WHOSE VALUE YOU CANNOT SEE IS A SETTING YOU CANNOT DECIDE. Four of
  * them said it -- the ones this installation writes itself -- and the other
@@ -1874,7 +1895,8 @@ function ap_i_screen_installed($installedRelay, $serverUrl, $here, $selfName,
     $screen[] = array('pre', 'php ' . ap_i_h($updateScript) . "\n\n"
         . ap_i_h($cronWhen) . ' php ' . ap_i_h($updateScript) . " &gt;/dev/null");
     $screen[] = array('p', 'It updates when a release is due, then does the housekeeping '
-        . '&mdash; retention and storage &mdash; so it is the only line this server '
+        . '&mdash; retention and storage &mdash; and, unless you said no, tells the '
+        . 'project how much this server carries, so it is the only line this server '
         . 'needs. <code>--only-update</code> and <code>--only-maintenance</code> run '
         . 'either half alone. That minute and that hour were drawn for you, and any '
         . 'others do as well: what matters is that every installation does not ask '
@@ -2453,7 +2475,7 @@ function ap_i_render_help($selfName, $long = false)
                 . 'and the default stays in force -- and a later version may raise it '
                 . 'for you, which a value written into your file would prevent.') . "\n\n"
               . ap_i_wrap('They come in the same four sections as the form, in the same '
-                . 'order, for the same reason: a flat list of fifteen says a list exists '
+                . 'order, for the same reason: a flat list of sixteen says a list exists '
                 . 'without saying what is in it.') . "\n"
             : ap_i_wrap('Each one is a key of internal/config.php under its own name. '
                 . 'Left out, the default stays in force.') . "\n");
@@ -3216,6 +3238,24 @@ function ap_i_config_text(array $values)
        `diagnostic`, before these three guards existed. */
     if (!isset($chosen['publish_server_totals'])) {
         $text .= "    'publish_server_totals' => false,\n\n";
+    } else {
+        $text .= "    // Set while installing; the line is further up.\n\n";
+    }
+
+    $text .= "    // STATISTICS -- once a day this server tells the project how much it\n";
+    $text .= "    // carries: an identifier drawn at random here, its version, and three\n";
+    $text .= "    // totals (projects, notes, pages). Never a domain name, a project id,\n";
+    $text .= "    // a page, a line of a note or a key; the receiver sees the address the\n";
+    $text .= "    // request comes from, as for any request. The sum of every server is\n";
+    $text .= "    // public. A server no note was ever written on sends nothing.\n";
+    $text .= "    //\n";
+    $text .= "    // false, and nothing is sent at all.\n";
+    /* WRITTEN AS AN ACTIVE LINE, true included. This is the one default that
+       sends something off the machine, and whoever opens this file to learn
+       what their server does must find it switched on in a line they can
+       change -- not deduce it from a key that is absent. */
+    if (!isset($chosen['report_statistics'])) {
+        $text .= "    'report_statistics' => true,\n\n";
     } else {
         $text .= "    // Set while installing; the line is further up.\n\n";
     }
@@ -5469,7 +5509,12 @@ function ap_i_run(array $options)
            The four this installation decides say it per audience, since the
            answer above changes the number; the other eleven say the default
            that stays in force. */
-        if (isset($setting['decided'])) {
+        if (isset($setting['decided'])
+            && $setting['decided']['one-site'] === $setting['decided']['anyone']) {
+            // One answer for both audiences is said once: twice, the second
+            // is hidden by the stylesheet and still read by whoever counts.
+            $decided = 'Empty: ' . ap_i_h(ap_i_effective_value($setting, 'one-site')) . '.';
+        } elseif (isset($setting['decided'])) {
             $decided = '<span class="if-one">Empty: '
                 . ap_i_h(ap_i_effective_value($setting, 'one-site')) . '.</span>'
                 . '<span class="if-anyone">Empty: '
@@ -5543,6 +5588,12 @@ function ap_i_run(array $options)
     $others = 0;
     foreach ($behind as $setting) {
         if (!isset($setting['decided'])) { $others++; continue; }
+        if (isset($setting['shown'])) {
+            // The same for everybody, and said in full: see report_statistics.
+            echo '<tr><td class="k">' . ap_i_h($setting['label']) . '</td><td class="m">'
+                . ap_i_h($setting['shown']) . "</td></tr>\n";
+            continue;
+        }
         echo '<tr><td class="k">' . ap_i_h($setting['label']) . '</td><td class="m">'
             . '<span class="if-one">' . ap_i_h($setting['decided']['one-site'])
             . '</span><span class="if-anyone">'

@@ -159,8 +159,11 @@ for (let i = 0; i < 40 && !serverUp; i += 1) {
 /* It used to go on regardless, and every scenario then failed on a relay that
    was never there -- fifty failures that all said the same wrong thing. */
 if (!serverUp) cannotRun(['php\'s development server did not answer on port ' + API_PORT + ' within 6 s.']);
+/* --report-statistics=false: this relay is seeded with notes, and a server
+   that holds one declares itself to the project once a day unless told not to
+   (check-statistics.mjs refuses an installation here that does not). */
 const inst = spawnSync('php', [join(web, 'install.php'), '--api-address=http://127.0.0.1:' + API_PORT + '/api.php',
-    '--answers-for=anyone', '--storage=sqlite', '--updated-by=cron', '--allow-plain-http=true'], { cwd: web, encoding: 'utf8' });
+    '--answers-for=anyone', '--report-statistics=false', '--storage=sqlite', '--updated-by=cron', '--allow-plain-http=true'], { cwd: web, encoding: 'utf8' });
 if (inst.status !== 0) { console.log('install failed', inst.stdout, inst.stderr); process.exit(1); }
 const API = 'http://127.0.0.1:' + API_PORT + '/api.php';
 const ORIGIN = 'http://127.0.0.1:' + PAGES_PORT;

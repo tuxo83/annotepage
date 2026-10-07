@@ -81,6 +81,8 @@ class ApStore
 
     /** @var string full name of the retention tally table */
     private $tallyTable;
+    /** @var string full name of the table of what this installation remembers */
+    private $memoryTable;
 
     public function __construct(array $config)
     {
@@ -99,6 +101,7 @@ class ApStore
         $this->table     = $prefix . 'notes';
         $this->rateTable = $prefix . 'rate';
         $this->tallyTable = $prefix . 'tally';
+        $this->memoryTable = $prefix . 'memory';
         $this->file      = self::resolveFile($config);
     }
 
@@ -843,6 +846,128 @@ class ApStore
             } catch (PDOException $e) {
                 ap_log('tally write: ' . $e->getMessage());
             }
+        }
+    }
+
+    /**
+     * WHAT THIS INSTALLATION REMEMBERS ABOUT ITSELF: a name, and a short text.
+     *
+     * Its uses are the statistics: the identifier and the date of the daily
+     * report on every server (internal/statistics.php), and on the one server
+     * that receives, what the others declared (internal/statistics-receiver.php).
+     * It is here, in the store, because the
+     * store is the one place every installation can write: the served
+     * directory is read-only on a host set up properly, and a MySQL
+     * installation has no data directory at all.
+     *
+     * A THIRD TABLE, for the reason the tally is a second one: a row of this
+     * kind among the notes would appear in the export, which is a contract.
+     *
+     * MADE BY THE FIRST THING WRITTEN TO IT, never by a question. Reading a
+     * table that is not there answers nothing and leaves it not there, so a
+     * server with nothing to remember never gains one.
+     *
+     * AND IT NEVER COSTS A NOTE: every failure here is an empty answer.
+     */
+    private function ensureMemory()
+    {
+        try {
+            $this->pdo()->exec(
+                'CREATE TABLE IF NOT EXISTS "' . $this->memoryTable . '" ('
+                . '"name" VARCHAR(40) NOT NULL PRIMARY KEY, '
+                . '"value" VARCHAR(255) NOT NULL DEFAULT \'\')');
+            return true;
+        } catch (PDOException $e) {
+            // NOT LOGGED. A store that cannot make this table cannot make it
+            // on the next write either, and a line per note written is how an
+            // error log stops being read. The diagnostic is where it shows.
+            return false;
+        }
+    }
+
+    /** The text remembered under that name, or '' when there is none. */
+    public function remembered($name)
+    {
+        // NO FILE, NO QUESTION. Opening the database is what creates it, and
+        // a diagnostic must not create the database it comes looking for
+        // (see state(), which says why). There is nothing in it to read.
+        if (!is_file($this->file)) {
+            return '';
+        }
+        try {
+            $req = $this->pdo()->prepare(
+                'SELECT "value" FROM "' . $this->memoryTable . '" WHERE "name" = ?');
+            $req->execute(array((string) $name));
+            $value = $req->fetchColumn();
+        } catch (PDOException $e) {
+            // No table yet, and none is made for a question: a server that
+            // refused the statistics is asked, answers nothing, and keeps a
+            // database with nothing of theirs in it. remember() makes it.
+            return '';
+        }
+        return $value === false ? '' : (string) $value;
+    }
+
+    /** Remembers it. False when it could not be written. */
+    public function remember($name, $value)
+    {
+        $write = function () use ($name, $value) {
+            $this->pdo()->prepare(
+                // OR REPLACE, and not ON CONFLICT ... DO UPDATE: that form
+                // needs SQLite 3.24, and this tool is dropped onto whatever
+                // the host has (see consumeRate, which avoids it too).
+                'INSERT OR REPLACE INTO "' . $this->memoryTable . '" ("name", "value") VALUES (?, ?)')
+                ->execute(array((string) $name, (string) $value));
+        };
+        try {
+            $write();
+            return true;
+        } catch (PDOException $e) {
+            if (!$this->ensureMemory()) {
+                return false;
+            }
+        }
+        try {
+            $write();
+            return true;
+        } catch (PDOException $e) {
+            return false;   // not logged: see ensureMemory()
+        }
+    }
+
+    /**
+     * Everything remembered under names that begin with $prefix, name => text.
+     * The prefix is one this code wrote itself, never something a request
+     * brought: it goes into a LIKE as it is.
+     */
+    public function rememberedLike($prefix)
+    {
+        $found = array();
+        if (!is_file($this->file)) {
+            return $found;   // as in remembered(): asking creates nothing
+        }
+        try {
+            $req = $this->pdo()->prepare(
+                'SELECT "name", "value" FROM "' . $this->memoryTable . '" WHERE "name" LIKE ?');
+            $req->execute(array((string) $prefix . '%'));
+            foreach ($req->fetchAll(PDO::FETCH_NUM) as $row) {
+                $found[(string) $row[0]] = (string) $row[1];
+            }
+        } catch (PDOException $e) {
+            return array();
+        }
+        return $found;
+    }
+
+    /** Forgets it. False when it could not. */
+    public function forget($name)
+    {
+        try {
+            $this->pdo()->prepare('DELETE FROM "' . $this->memoryTable . '" WHERE "name" = ?')
+                ->execute(array((string) $name));
+            return true;
+        } catch (PDOException $e) {
+            return false;
         }
     }
 

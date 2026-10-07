@@ -68,8 +68,9 @@ if (!defined('AP_INTERNAL')) {
  *
  * THIS FILE STILL RUNS ON ITS OWN, and must: every server installed before
  * this change has it in a crontab, and a line that started failing would be
- * a sweep that silently stopped. Run directly it does the housekeeping and
- * nothing else -- the same as `update.php --only-maintenance`. Run both, and
+ * a sweep that silently stopped. Run directly it does the housekeeping, sends
+ * the day's statistics if they are owed (statistics.php), and nothing else --
+ * the same as `update.php --only-maintenance`. Run both, and
  * the second finds nothing to do: everything below is idempotent.
  *
  * @return array ok => false only when there is no server to maintain;
@@ -86,6 +87,31 @@ function ap_maintenance_run(array $config)
 
     ap_require_store($config);
     $store = new ApStore($config);
+
+    /* -- THE DAY'S STATISTICS ---------------------------------------------------
+       Three totals and a random identifier, to the project's server, unless
+       `report_statistics` says no (internal/statistics.php, which is the whole
+       of it). Here because this is the daily moment every installation has,
+       and FIRST because the totals count what was ever written -- a sweep
+       below moves a note from one column to the other and changes no sum.
+
+       IT SAYS WHAT IT SENT, when this command is what sent it, with the key
+       that turns it off. (The first note of a day sends it too, from the web,
+       and then this command has nothing to add.) And it never stops the
+       housekeeping. */
+    try {
+        // is_file, because a missing `require` is not an exception and
+        // cannot be caught: see the same guard in api.php.
+        if (is_file(__DIR__ . '/statistics.php')) {
+            require_once __DIR__ . '/statistics.php';
+            $told = ap_statistics_run($config, $store);
+            if ($told['line'] !== '') {
+                $lines[] = $told['line'];
+            }
+        }
+    } catch (Throwable $e) {
+        ap_log('statistics: ' . $e->getMessage());
+    }
 
     /* -- THE STORAGE FIRST, AND BEFORE THE RETENTION QUESTION ------------------
        A table written before 2.15 bounds its columns with a VARCHAR width, where

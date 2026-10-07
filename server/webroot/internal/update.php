@@ -973,8 +973,10 @@ function ap_update_release_visitor()
  * Called from api.php on WRITES only, next to the retention sweep.
  *
  * Off by default, at most one check per day, nothing on a read, and not one
- * byte leaves this machine while `auto_update` is false -- the key is read
- * before the state file is even looked at.
+ * byte of it leaves this machine while `auto_update` is false -- the key is
+ * read before the state file is even looked at. (What a server says about
+ * itself once a day is another file and another key: internal/statistics.php,
+ * `report_statistics`.)
  */
 function ap_update_schedule(array $config)
 {
@@ -1378,7 +1380,7 @@ if (defined('AP_UPDATE_CLI')) {
     if (in_array('--help', $args, true)) {
         echo "php internal/update.php                     update if a release is due, then maintain\n"
             . "php internal/update.php --only-update       the update, nothing else\n"
-            . "php internal/update.php --only-maintenance  retention and storage, nothing fetched\n"
+            . "php internal/update.php --only-maintenance  retention and storage, no update fetched\n"
             . "\nExit codes: 0 done or nothing to do, 1 something failed, 2 the command line.\n";
         exit(0);
     }

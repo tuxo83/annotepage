@@ -1069,6 +1069,116 @@ The other actions, which a human calls by hand, keep their explained 404.
 
 ---
 
+### 6.5 An address that is not one of the seven: the statistics
+
+Outside `api.php`, outside the format number, and answered by one server only.
+It is described here because it is on the wire, and what is on the wire is in
+this file.
+
+**What a server sends.** About once a day — the gate is twenty-three hours,
+and two notes written in the same instant can each pass it, sending the same
+declaration twice — unless its configuration says `report_statistics =>
+false`, and never before a first note has been written on it:
+
+```
+POST https://api.annotepage.com/stats.php
+Content-Type: application/x-www-form-urlencoded
+
+id        22 base64url characters, drawn at random by that server the first
+          time it has something to report, and kept. Derived from nothing.
+version   the server's version
+projects  how many projects it has ever carried
+notes     how many remarks it has ever carried, expired ones included
+pages     how many pages those were on
+```
+
+Five fields, and a reader may rely on there being no sixth: no domain, no
+project id, no page index, no envelope, no key. The request carries no
+`Origin`, no `Referer` and no cookie — a server makes it, not a page. Its
+`User-Agent` repeats the version. **The receiver sees the address the request
+comes from, as for any request**: the identifier is random, the connection is
+not anonymous.
+
+The totals count what was **ever** carried, not what is held: a server with
+retention deletes every night, and a number that shrank with it would read as
+a tool people are leaving. A page whose notes all expired and that is annotated
+again is counted twice; these are totals of activity, not an inventory.
+
+The identifier lives in the server's own store. **A copied database carries
+it**: two servers restored from one backup declare under one identifier and
+are counted as one — the first of the two to declare each day is the one
+heard.
+
+**What the receiver answers.** `recorded` or `kept` in `text/plain` with 200 —
+`kept` when that identifier was already heard that day (UTC) — 400 for a field
+that is not what the list above says, 411 without a `Content-Length`, 413 past
+1024 bytes, 429 when new identifiers are rationed, 405 for a verb that is not
+GET, HEAD or POST, 503 when it cannot keep what it was told, 308 towards
+https for a request that came over plain http. A server that is not the
+receiver answers 404. The sender reads the status and nothing else,
+and tries again the next day whatever it was.
+
+**What anybody may read.**
+
+```
+GET https://api.annotepage.com/stats.php
+
+{"instances": 12, "active": 9, "projects": 340, "notes": 5210,
+ "pages": 1480, "as_of": "2026-10-06T20:00:00Z"}
+```
+
+`instances` is every server ever heard from; `active` is those heard from in
+the last thirty days. The sum is not counted on every request: it is kept for
+up to five minutes, unless a declaration arrives and changes it, and `as_of`
+says when it was last counted (the receiver's own notes are counted at most
+once an hour). `Access-Control-Allow-Origin: *`, the only place this
+server answers a star: there is no credential and nothing in the answer is
+anybody's.
+
+**The totals never go down.** What was carried stays carried: a server that
+stops declaring keeps its numbers in the sum, and one that declares less than
+it had keeps what it had said. `active` is the one figure that can fall.
+
+**The numbers are declared, not verified.** The receiver cannot check a total
+against a database it never sees. It slows a false one: one declaration a day
+per identifier, replacing the previous one; a new identifier rationed per
+network and per day; a first declaration clipped, and each later one allowed a
+fixed step. Nothing removes an invented row on its own — that is the price of
+totals that never fall — so the remedy is the operator of the receiver. The
+receiver's own notes are counted, not declared. The ceilings, and what they
+leave open in numbers, are at the top of
+`server/webroot/internal/statistics-receiver.php` and are not part of this
+format.
+
+**What the receiver keeps** per server is the identifier, the version, the
+three totals and the day — not the time — of the first and last declaration.
+It does not keep the address: to ration new identifiers it holds sixteen bits
+of a keyed digest of the network a request came from, a bucket shared by
+hundreds of networks, and throws key and buckets away on the first request
+that arrives on a later day. That is a statement about what this code
+stores. The web server in front of it logs what web servers log.
+
+**Which server receives.** No configuration says so. The receiving code ships
+to every server, in `internal/`, where no request reaches it, and answers
+through `stats.php` — a door of a few lines that no release contains. A server
+writes that door when it has **proved** that the receiving address leads to
+it: it puts a file with a random name and random content beside `api.php`,
+asks for it at the receiving address over https with the certificate checked,
+and finds its own content there. The name a request claims to be for is only
+a hint that the proof is worth trying — a name can be claimed by anybody, a
+file cannot be served from a machine the name does not lead to. Only a plain
+answer settles it — the witness, a 404, or an answer that is not the witness:
+no answer, or an error, leaves the question open, asked again about once an
+hour and a few times per hint. A server that goes on being called by that
+name goes on asking hourly; one that is not stops.
+A server that set `report_statistics => false` tries none of this, whatever
+name a request claims. The proof is redone when the server's version
+changes, and a server that stops being the receiver removes the door it
+wrote. `collect_statistics => true` in a
+configuration makes a server the receiver without the proof, for a host that
+cannot write beside `api.php` or cannot call itself; `false` makes sure it
+never is. The server that receives does not declare.
+
 ## 7. The format number and its rule of evolution
 
 The format number is an **integer**, with no dot. It is **2**.

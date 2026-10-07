@@ -160,7 +160,42 @@ in its own header. Three things those headers cannot say:
 - **`index.php` exists so that a bare visit is a 404** and not a directory
   listing.
 
----
+## What this server says about itself, once a day
+
+**It is on by default, and one line turns it off**:
+`'report_statistics' => false` in `internal/config-local.php`. The installer
+writes the line either way and shows it on its first screen, under "left
+alone, this installation writes"; the field to change it is with the optional
+settings, and on the command line it is `--report-statistics=false`. **A server
+installed before 2.36.0 starts when it updates**, with no line in its file:
+add the one above to refuse.
+
+Once a day this server tells the project's own server how much it carries, so
+that somebody can say how many servers run this tool. What is sent is five
+fields and the list is closed: an identifier drawn at random on this server —
+derived from nothing — the version, and three totals: projects, notes, pages.
+**Never a domain name, a project id, a page path, a line of a note, a key or a
+name.** The receiver sees the address the request comes from, as for any
+request. `internal/statistics.php` is the whole of it, and its first page says
+what the rest does.
+
+It is sent after a note has been written, about once a day, or from the
+daily command if that runs first — and then the command prints what it sent. A
+server on which no note was ever written sends nothing. A receiver that is
+down, slow or gone changes nothing here: the request has a deadline of a few
+seconds, and on a host that cannot let a visitor go before making it, that one
+visitor waits about two seconds, once a day.
+
+The code that *receives* such declarations is in `internal/` on every server
+too, where no request reaches it. It answers on one server — the one the
+address leads to, which finds that out by itself and writes its own
+`stats.php`. Yours does not, and has no `stats.php`. With
+`report_statistics => false` your server makes no request of any kind for
+this, whatever name it is called by.
+
+`?action=diagnostic`, with `'diagnostic' => 'full'`, says whether it is on and
+where it goes. The sum of every server is public, at
+`https://api.annotepage.com/stats.php`.
 
 ## Two behaviours that look like bugs
 
