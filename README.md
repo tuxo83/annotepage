@@ -9,7 +9,11 @@ Annotate a web page. A reviewer clicks an element and writes what is wrong. An
 assistant reads the notes, fixes the code, replies in the thread with what it
 measured, and resolves the remark stamped with the version the fix ships in.
 
-Free, MIT, no account, no tracking.
+Free, MIT, no account. Statistics, but no tracking: a server of your own tells
+the project, once a day, its version and how many projects, notes and pages it
+has carried, under an identifier it drew at random — and nothing about who
+uses it. [What is sent, and the line that turns it
+off](https://annotepage.com/questions.html#statistics).
 
 **Key lost = notes lost.** No recovery, no escrow, no rotation — the server has
 never had the key. It is said here, and nowhere else in this repository,

@@ -335,6 +335,33 @@ code {
             paths, never your text &mdash; in secure mode it cannot read a line
             it stores.</p>
             </article>
+            <!-- THE ONE THING A SERVER SENDS BY DEFAULT, SAID WHERE PEOPLE LOOK
+                 FOR IT. On unless refused, so the card says both in its first
+                 line; and it says what is KEPT WITH THE NUMBERS, which is the
+                 claim that can be checked against internal/statistics.php and
+                 internal/statistics-receiver.php -- not what a web server
+                 logs, which no code here decides. -->
+            <article class="qa" data-tags="Privacy|Your own server">
+                <h3 class="qa-q" id="statistics">Does my own server send anything about itself?</h3>
+                <p class="qa-tags"><span class="qa-tag">Privacy</span><span class="qa-tag">Your own server</span></p>
+                <p class="qa-a">One thing, on by default, and one line turns it off. Once
+            a day it tells the project&rsquo;s server how much it carries: its
+            version and three totals &mdash; projects, notes, pages. That is how
+            anybody can say how many servers run annotepage; the sum is public, at
+            <code>api.annotepage.com/stats.php</code>. A server installed before
+            2.36.0 starts when it updates.</p>
+                <p class="qa-a"><b>Nothing that identifies you is kept with those
+            numbers</b>: no domain name, no IP address, no project, no page, not a
+            word of a note. What tells one server from another is an identifier
+            drawn at random on yours, derived from nothing. Like any request, the
+            declaration arrives from your server&rsquo;s address: the receiving
+            code does not keep it with the numbers, and the web server in front
+            of it logs it as it logs every request.</p>
+                <p class="qa-a">To refuse, write
+            <code>'report_statistics' =&gt; false</code> in
+            <code>internal/config-local.php</code>, or set it in the installer.
+            Nothing is sent then.</p>
+            </article>
 
                         <article class="qa" data-tags="Who can do what|Privacy">
                 <h3 class="qa-q">Is there an account, a moderator, a way to delete a note?</h3>
@@ -450,7 +477,7 @@ code {
             <article class="qa" data-tags="Updates|Your own server">
                 <h3 class="qa-q" id="updates">What does the daily line change on my server?</h3>
                 <p class="qa-tags"><span class="qa-tag">Updates</span><span class="qa-tag">Your own server</span></p>
-                <p class="qa-a">Two things, in this order. <b>The update</b>: it asks
+                <p class="qa-a">Three things. <b>The update</b>: it asks
             which version is published, and when it is newer, downloads only the
             files that differ, checks each one, and swaps them in. The files it
             replaced are kept in <code>.update/previous-&lt;version&gt;-&lt;date&gt;</code>,
@@ -458,7 +485,10 @@ code {
             older than your configuration keeps them &mdash;
             <a href="#kept">ninety days after the last reply</a>, unless you
             changed it &mdash; and adjusts the tables when a release needs
-            it.</p>
+            it. <b>The statistics</b>: it tells the project how much this
+            server carries &mdash; <a href="#statistics">three totals, under
+            an identifier drawn at random</a> &mdash; unless you turned that
+            off.</p>
                 <p class="qa-a">It never touches
             <code>internal/config-local.php</code>, never puts
             <code>install.php</code> back once it is deleted, and never replaces
@@ -476,9 +506,11 @@ code {
             and are swapped in together; if the swap fails, the old ones go
             back. A run that overruns its time swaps nothing and tries again the
             next day.</p>
-                <p class="qa-a">What leaves your server is a request for the version
-            number, once a day, and the files when there is a release. Nothing
-            about your notes, your sites or your visitors. The line the install
+                <p class="qa-a">What an update takes from your server is a request for
+            the version number, once a day, and the files when there is a release.
+            Nothing about your notes, your sites or your visitors &mdash; the one
+            other thing a server sends is <a href="#statistics">its daily
+            totals</a>. The line the install
             page gives you runs at a minute and an hour drawn for your install,
             so servers do not all ask at the same second.</p>
             </article>
@@ -504,7 +536,7 @@ code {
                 <p class="qa-tags"><span class="qa-tag">Updates</span><span class="qa-tag">Your own server</span></p>
                 <p class="qa-a">Yes. Run <code>php internal/update.php</code> when
             you choose; <code>--only-maintenance</code> does the housekeeping
-            and fetches nothing, and <code>--help</code> lists both.</p>
+            and fetches no update, and <code>--help</code> lists both.</p>
                 <p class="qa-a">With nothing scheduled, the server keeps working on
             the version it has. Old threads still go, but only when somebody
             writes a note, and then one time in fifty &mdash; so a quiet project
