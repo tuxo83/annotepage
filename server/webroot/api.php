@@ -1144,6 +1144,16 @@ switch ($action) {
                 $payload['server'] = $server;
             }
         }
+        /* AND WHAT ALL THE SERVERS HOLD TOGETHER, where this one takes part in
+           the statistics: three numbers that came back with its last daily
+           report, kept here -- internal/statistics.php says how. Absent from
+           a server that refused them, and from one that has not reported yet. */
+        if (function_exists('ap_statistics_world')) {
+            $world = ap_statistics_world($config, $store);
+            if ($world !== null) {
+                $payload['world'] = $world;
+            }
+        }
         ap_respond_json(ap_response_envelope($payload));
         break;
 

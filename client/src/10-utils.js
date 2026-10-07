@@ -132,6 +132,19 @@ const pageLanguage = () =>
     (document.documentElement.getAttribute('lang') || '').trim();
 
 /**
+ * A count, with its thousands apart: 6204 is read digit by digit, 6,204 at a
+ * glance. Written the way the DOCUMENT's language writes it, like the dates
+ * below, and the plain digits where that language is not one the browser knows.
+ */
+const readableNumber = (n) => {
+    try {
+        return Number(n).toLocaleString(pageLanguage() || 'en');
+    } catch (e) {
+        return String(n);
+    }
+};
+
+/**
  * ISO date from the server -> THE READER'S LOCAL TIME.
  *
  * The server writes in UTC with an explicit offset; the conversion happens

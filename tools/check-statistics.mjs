@@ -108,6 +108,7 @@ const listen = async (handler) => {
     return 'http://127.0.0.1:' + port + '/stats.php';
 };
 const asked = [];
+const WORLD = { instances: 412, projects: 1930, notes: 6204 };
 const RECEIVER = await listen((request, response) => {
     const chunks = [];
     request.on('data', (c) => chunks.push(c));
@@ -121,8 +122,9 @@ const RECEIVER = await listen((request, response) => {
         }
         received.push({ method: request.method, url: request.url,
             headers: request.rawHeaders.slice(), body: Buffer.concat(chunks).toString('utf8') });
-        response.writeHead(200, { 'Content-Type': 'text/plain' });
-        response.end('recorded\n');
+        // What the real one answers: the word, and the sum of every server.
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify(Object.assign({ result: 'recorded' }, WORLD)) + '\n');
     });
 });
 /* And the receivers nobody wants: one that says a fixed status, one that
@@ -403,10 +405,114 @@ site.aDayLater();
 count = received.length;
 const read = await fetch(site.base + '/api.php?action=list&project=' + P1 + '&index=' + I1,
     { headers: { Origin: 'https://site.example.com' } });
-await read.arrayBuffer();
+const listed = JSON.parse(Buffer.from(await read.arrayBuffer()).toString('utf8'));
 await settle();
 check('a page loading its notes sent the day\'s declaration: that belongs to writes',
     read.status === 200 && received.length === count, read.status + ', ' + (received.length - count) + ' request(s)');
+
+/* WHAT CAME BACK WITH THE YES IS KEPT, AND HANDED TO THE PANEL: the sum of
+   every server, three numbers, on the call the page already makes. */
+const worldOf = (answer) => (answer && answer.data ? answer.data.world : answer && answer.world);
+const lists = async (it, project, index) => JSON.parse(await (await fetch(it.base + '/api.php?action=list&project='
+    + (project || P1) + '&index=' + (index || I1), { headers: { Origin: 'https://site.example.com' } })).text());
+/* IT IS KEPT TO BE SHOWN FROM THE NEXT DAY, NOT FROM NOW. A page that showed
+   a new sum the moment its server received it would say when that server
+   reported; every server that reported today starts showing at midnight UTC. */
+const utcDay = (back) => new Date(Date.now() - (back || 0) * 86400000).toISOString().slice(0, 10);
+const worldRow = () => site.sqlite("SELECT value FROM notes_memory WHERE name = 'statistics-world'");
+const setWorld = (row) => site.sqlite("UPDATE notes_memory SET value = '" + JSON.stringify(row) + "' WHERE name = 'statistics-world'");
+check('what is kept of the sum received today is not the three numbers and the day, waiting, with nothing shown yet',
+    worldRow() === JSON.stringify({ at: 0, i: 0, p: 0, n: 0, d: utcDay(), di: 412, dp: 1930, dn: 6204 }), worldRow());
+check('the sum was shown on the day it was received: the moment a page changes would say when its server reported',
+    worldOf(listed) === undefined, JSON.stringify(worldOf(listed)));
+const keptWorld = JSON.parse(worldRow());
+const waitingSince = (days) => setWorld(Object.assign({}, keptWorld, { d: utcDay(days) }));
+waitingSince(1);
+check('the day after, the list of notes does not carry the three totals of every server',
+    JSON.stringify(worldOf(await lists(site))) === JSON.stringify({ servers: 412, sites: 1930, notes: 6204 }), JSON.stringify(await lists(site)).slice(0, 300));
+check('showing it wrote something: which sum is shown is decided by the date, on a call that only reads',
+    worldRow() === JSON.stringify(Object.assign({}, keptWorld, { d: utcDay(1) })), worldRow());
+/* A SUM A MONTH OLD IS NOT THE PRESENT, and is not shown as if it were. */
+waitingSince(29);
+const stillShown = worldOf(await lists(site));
+waitingSince(32);
+const tooOld = worldOf(await lists(site));
+check('a sum 29 days old was dropped, or one 32 days old is still shown', !!stillShown && tooOld === undefined,
+    JSON.stringify(stillShown) + ' / ' + JSON.stringify(tooOld));
+/* AND FEW IS NOT SHOWN AS IF IT WERE MANY. Under a thousand notes or fifty
+   sites, nothing; under ten servers, the sites and the notes without them. */
+const withSum = async (i, p, n) => { setWorld({ at: 0, i: 0, p: 0, n: 0, d: utcDay(1), di: i, dp: p, dn: n }); return JSON.stringify(worldOf(await lists(site))); };
+check('a sum of 999 notes is shown, or one of 1000 is not',
+    await withSum(50, 60, 999) === undefined && await withSum(50, 60, 1000) === '{"servers":50,"sites":60,"notes":1000}',
+    await withSum(50, 60, 999) + ' / ' + await withSum(50, 60, 1000));
+check('49 sites are counted out loud, or 50 are not: under fifty the notes are shown without them',
+    await withSum(50, 49, 5000) === '{"servers":50,"notes":5000}' && await withSum(50, 50, 5000) === '{"servers":50,"sites":50,"notes":5000}',
+    await withSum(50, 49, 5000) + ' / ' + await withSum(50, 50, 5000));
+check('nine servers are counted out loud, or ten are not',
+    await withSum(9, 300, 5000) === '{"sites":300,"notes":5000}' && await withSum(10, 300, 5000) === '{"servers":10,"sites":300,"notes":5000}',
+    await withSum(9, 300, 5000) + ' / ' + await withSum(10, 300, 5000));
+check('many notes on few sites and few servers are not shown as the notes alone', await withSum(2, 3, 5000) === '{"notes":5000}', await withSum(2, 3, 5000));
+/* THE SUM SHOWN STAYS UNTIL THE ONE THAT WAITS IS A DAY OLD, and a row that
+   is not what this server writes shows nothing. */
+setWorld({ at: Math.floor(Date.now() / 1000) - 86400, i: 20, p: 70, n: 2000, d: utcDay(), di: 30, dp: 80, dn: 3000 });
+check('with a newer sum waiting since today, the one before it was dropped or the new one shown early',
+    JSON.stringify(worldOf(await lists(site))) === '{"servers":20,"sites":70,"notes":2000}', JSON.stringify(worldOf(await lists(site))));
+for (const bad of [{ at: 0, i: 0, p: 0, n: 0, d: utcDay(1), di: 30, dp: -80, dn: 3000 }, { at: 0, i: 0, p: 0, n: 0, d: utcDay(1), di: '30', dp: 80, dn: 3000 },
+    { at: 0, i: 0, p: 0, n: 0, d: 'yesterday', di: 30, dp: 80, dn: 3000 }, { d: utcDay(1), di: 30, dp: 80, dn: 3000 }]) {
+    setWorld(bad);
+    check('a kept row that is not one was shown: ' + JSON.stringify(bad), worldOf(await lists(site)) === undefined, JSON.stringify(worldOf(await lists(site))));
+}
+/* THE DAY IT WAITS FROM IS THE LATER OF ITS OWN AND THE RECEIVER'S. A report
+   that left a second before midnight is answered a second after it, with the
+   sum every other server is only given that new day: tagged with the day it
+   left, it would be shown at once, on one site alone. */
+const askEarly = (code) => spawnSync('php', ['-r', 'define("AP_INTERNAL", 1); function ap_log($m) {} require '
+    + JSON.stringify(join(webroot, 'internal', 'statistics.php')) + '; ' + code], { encoding: 'utf8' }).stdout.trim();
+const tagged = (now, sum) => askEarly('class S { public $v = ""; function remembered($n) { return $this->v; } function remember($n, $v) { $this->v = $v; return true; } }'
+    + ' $s = new S(); ap_statistics_keep_world($s, json_decode(' + JSON.stringify(JSON.stringify(sum)) + ', true), ' + now + '); echo $s->v;');
+const midnight = Math.floor(Date.now() / 86400000) * 86400;
+const lateAnswer = JSON.parse(tagged(midnight - 1, { result: 'recorded', instances: 40, projects: 310, notes: 5200, day: utcDay() }) || '{}');
+check('a report that left before midnight and was answered after it is tagged with the day it left', lateAnswer.d === utcDay() && lateAnswer.dn === 5200,
+    JSON.stringify(lateAnswer));
+const noDay = JSON.parse(tagged(midnight - 1, { result: 'recorded', instances: 40, projects: 310, notes: 5200 }) || '{}');
+const oddDay = JSON.parse(tagged(midnight + 5, { result: 'recorded', instances: 40, projects: 310, notes: 5200, day: '<b>' }) || '{}');
+const earlyDay = JSON.parse(tagged(midnight + 5, { result: 'recorded', instances: 40, projects: 310, notes: 5200, day: utcDay(3) }) || '{}');
+check('with no day in the answer, one that is not a day, or one earlier than its own, a server does not tag with its own',
+    noDay.d === utcDay(1) && oddDay.d === utcDay() && earlyDay.d === utcDay(), [noDay.d, oddDay.d, earlyDay.d].join(' '));
+/* NOTHING RECEIVED NOW CHANGES WHAT IS SHOWN NOW, WHATEVER THE CLOCKS SAY.
+   Sixteen thousand reports, a few hours to two days apart, from servers whose
+   clock is right, behind, ahead, or jumps by up to forty years either way,
+   to a receiver that says any day at all, the year 9999 included: what the
+   page is handed just before a report and just after it is the same, every
+   time. And none of it leaves a server showing nothing for good: four days of
+   right clocks later, each shows what it was last given. */
+const steady = askEarly('class S { public $v = ""; function remembered($n) { return $this->v; } function remember($n, $v) { $this->v = $v; return true; } }'
+    + ' $changed = 0; $stuck = 0; $pairs = 0;'
+    + ' for ($seed = 1; $seed <= 40; $seed++) { mt_srand($seed); $s = new S(); $c = array(); $now = 1800000000; $n = 2000;'
+    + '  for ($k = 0; $k < 400; $k++) { $now += mt_rand(3600, 172800); $n += mt_rand(0, 50); $at = $now;'
+    // the clock itself, wrong now and then: seconds to forty years, both ways
+    + '   $wrong = mt_rand(0, 19); if ($wrong === 0) { $at = $now - mt_rand(1, 1260000000); } if ($wrong === 1) { $at = $now + mt_rand(1, 1260000000); }'
+    + '   if ($wrong === 2) { $at = (int) (floor($now / 86400) * 86400) + mt_rand(-2, 2); }'
+    + '   $skew = array(0, 0, 0, -1, 1, -3, 3, 40, -40, 20000)[mt_rand(0, 9)]; $day = gmdate("Y-m-d", $at + $skew * 86400);'
+    + '   if ($skew === 20000) { $day = "9999-12-31"; }'
+    + '   $sum = array("instances" => 40, "projects" => 310, "notes" => $n) + (mt_rand(0, 9) ? array("day" => $day) : array());'
+    + '   $before = json_encode(ap_statistics_world($c, $s, $at)); ap_statistics_keep_world($s, $sum, $at);'
+    + '   $after = json_encode(ap_statistics_world($c, $s, $at)); $pairs++; if ($before !== $after) { $changed++; } }'
+    // and then four days of a clock that is right and a receiver that says so
+    + '  for ($k = 0; $k < 4; $k++) { $now += 86400; ap_statistics_keep_world($s, array("instances" => 41, "projects" => 311, "notes" => 9000 + $k, "day" => gmdate("Y-m-d", $now)), $now); }'
+    + '  $end = ap_statistics_world($c, $s, $now); if (!is_array($end) || $end["notes"] < 9000) { $stuck++; } }'
+    + ' echo $pairs, " pairs, ", $changed, " changed, ", $stuck, " stuck";');
+check('a report changed what the page is shown at the moment it was made, or a clock once wrong left a server showing nothing for good',
+    steady === '16000 pairs, 0 changed, 0 stuck', steady);
+waitingSince(1);
+/* AND A SERVER THAT SAYS NO SHOWS NONE, kept or not: it is asked nothing. */
+const configBefore = site.config();
+site.set(["    'report_statistics' => false,"]);
+const afterNo = worldOf(await lists(site));
+writeFileSync(site.configPath, configBefore);
+check('a server that refused the statistics still shows the sum it once received', afterNo === undefined, JSON.stringify(afterNo));
+check('the sum is not shown again once the refusal is lifted', !!worldOf(await lists(site)));
+setWorld(keptWorld);
 ran = await site.daily();
 await settle();
 
@@ -653,6 +759,37 @@ chmodSync((blind.config().match(/'file'\s*=>\s*'([^']+)'/) || [])[1], 0o644);
 /* ======================================================================
    2. WHICH SERVER RECEIVES, AND HOW IT FINDS OUT
    ====================================================================== */
+
+/* A RECEIVER FROM BEFORE THE SUM ANSWERS ONE WORD, and one that is somebody
+   else's answers what it likes. The declaration went through either way; what
+   is kept is three whole numbers or nothing, and never what was not asked for. */
+const answering = async (name, body) => {
+    let heard = 0;
+    const address = await listen((request, response) => { request.resume(); request.on('end', () => {
+        heard += 1; response.writeHead(200, { 'Content-Type': 'text/plain' }); response.end(body); }); });
+    const it = await stand(name);
+    it.install();
+    it.set(["    'statistics_address' => '" + address + "',"]);
+    const wrote = await it.add(P1, I1);
+    await settle();
+    return { wrote: wrote.status, heard, kept: it.sqlite("SELECT value FROM notes_memory WHERE name = 'statistics-world'"),
+        list: await (await fetch(it.base + '/api.php?action=list&project=' + P1 + '&index=' + I1, { headers: { Origin: 'https://site.example.com' } })).text() };
+};
+const worded = await answering('worded', 'recorded\n');
+check('a receiver that answers the one word of before was not declared to, or left something kept',
+    worded.wrote === 200 && worded.heard === 1 && worded.kept === '' && !/"world"/.test(worded.list), JSON.stringify(worded).slice(0, 300));
+for (const [what, body] of [
+    ['numbers that are text', '{"result":"recorded","instances":"12","projects":"3","notes":"5000"}'],
+    ['a negative number', '{"result":"recorded","instances":12,"projects":-3,"notes":5000}'],
+    ['a number with no end', '{"result":"recorded","instances":12,"projects":3,"notes":' + '9'.repeat(40) + '}'],
+    ['one number missing', '{"result":"recorded","instances":12,"notes":5000}'],
+    ['markup where a number goes', '{"result":"recorded","instances":12,"projects":3,"notes":"<b>many</b>"}'],
+    ['an answer with no end', '{"result":"recorded","pad":"' + 'x'.repeat(4000) + '","instances":12,"projects":3,"notes":5000}'],
+]) {
+    const odd = await answering('odd', body);
+    check('a receiver answering ' + what + ' stopped the note, or had it kept and shown',
+        odd.wrote === 200 && odd.heard === 1 && odd.kept === '' && !/"world"/.test(odd.list), JSON.stringify(odd).slice(0, 300));
+}
 
 /* THE RECEIVING CODE IS ON EVERY SERVER AND ANSWERS ON ONE. Nothing ships the
    door: it is written by the server that proved the address leads to it. */
@@ -947,7 +1084,12 @@ const declare = async (fields, opts) => {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded',
             'X-Forwarded-For': (opts && opts.from) || v4(113, 7) },
         body: typeof fields === 'string' ? fields : new URLSearchParams(fields).toString() });
-    return { status: r.status, text: (await r.text()).trim() };
+    // A declaration that was heard is answered in JSON: the word, and the
+    // sum beside it. `text` is the word, as every check below reads it.
+    const raw = (await r.text()).trim();
+    let answer = null;
+    try { answer = JSON.parse(raw); } catch (e) { /* a refusal is a sentence */ }
+    return { status: r.status, text: answer && typeof answer.result === 'string' ? answer.result : raw, answer, raw };
 };
 const id = (n) => ('instance' + String(n).padStart(14, '0')).slice(0, 22);
 const row = (n, more) => Object.assign({ id: id(n), version: VERSION, projects: 1, notes: 10, pages: 2 }, more || {});
@@ -966,6 +1108,8 @@ let sum = await totals();
 check('one declaration is not one more instance with its numbers',
     sum.instances === base.instances + 1 && sum.active === base.active + 1 && sum.projects === base.projects + 1
         && sum.notes === base.notes + 10 && sum.pages === base.pages + 2, JSON.stringify(base) + ' -> ' + JSON.stringify(sum));
+check('with no day before this one, a declaration was answered with more than the word',
+    said.raw === '{"result":"recorded"}', said.raw);
 const rowsAtStart = names().filter((n) => n.startsWith('s:')).length;
 let before = dump();
 said = await declare(row(1, { notes: 400 }));
@@ -1046,7 +1190,7 @@ check('the memory holds an address a declaration came from',
     !everything.includes(v4(113, 7)) && !everything.includes([203, 0, 113].join('.')) && !everything.includes('2001:db8')
         && !everything.includes('cb0071'), everything);
 check('the receiver keeps something under a name that is not on its closed list',
-    names().every((n) => /^(statistics|statistics-day|statistics-own|statistics-sum|statistics-retired|s:[A-Za-z0-9_-]{22}|b:[0-9a-f]{4})$/.test(n)),
+    names().every((n) => /^(statistics|statistics-day|statistics-own|statistics-sum|statistics-retired|statistics-world|statistics-last|statistics-closed|h:[0-9]{4}-[0-9]{2}-[0-9]{2}|s:[A-Za-z0-9_-]{22}|b:[0-9a-f]{4})$/.test(n)),
     names().join(','));
 check('what is kept of where a request came from is more than 16 bits and a count',
     names().filter((n) => n.startsWith('b:')).length >= 4
@@ -1122,6 +1266,79 @@ await declare(row(7), { from: v4(121, 1) });
 const recounted = JSON.parse((await get()).text);
 check('a declaration did not make the next reader count again', recounted.instances === cached.instances + 1,
     cached.instances + ' -> ' + recounted.instances);
+
+/* EACH DAY'S SUM IS KEPT, one row a day, and the rows of the days before are
+   never touched: that is what the history is read from. A sum and nothing
+   under it. */
+const history = async () => JSON.parse(await (await fetch(STATS + '?history')).text());
+const now = await totals();
+check('the day has no row of its own in the history, or it is not the sum as last counted',
+    memo('h:' + day()) === JSON.stringify({ i: now.instances, a: now.active, p: now.projects, n: now.notes, g: now.pages }),
+    memo('h:' + day()) + ' / ' + JSON.stringify(now));
+/* GIVEN OUT ONLY FOR DAYS THAT COUNTED TEN SERVERS: between two rows of a
+   handful, the difference is one server's day. */
+setMemo('h:' + day(3), { i: 9, a: 9, p: 20, n: 300, g: 40 });
+setMemo('h:' + day(2), { i: 10, a: 9, p: 22, n: 330, g: 44 });
+setMemo('h:' + day(1), { i: 12, a: 11, p: 23, n: 340, g: 45 });
+setMemo('h:not-a-day', { i: 99, a: 9, p: 9, n: 9, g: 9 });
+await declare(row(8), { from: v4(122, 1) });
+const pastDays = await history();
+const todayListed = now.instances + 1 >= 10 ? [day()] : [];
+check('the history is not the days of ten servers or more, in order, each with its five figures',
+    Array.isArray(pastDays.days) && pastDays.days.map((d) => d.day).join(',') === [day(2), day(1)].concat(todayListed).join(',')
+        && JSON.stringify(pastDays.days[0]) === JSON.stringify({ day: day(2), instances: 10, active: 9, projects: 22, notes: 330, pages: 44 }),
+    JSON.stringify(pastDays));
+check('a declaration today did not enter the day\'s row, or rewrote the row of a day before',
+    JSON.parse(memo('h:' + day())).i === now.instances + 1 && JSON.parse(memo('h:' + day())).n === now.notes + 10
+        && memo('h:' + day(1)) === JSON.stringify({ i: 12, a: 11, p: 23, n: 340, g: 45 }), memo('h:' + day()) + ' ' + memo('h:' + day(1)));
+check('a row of the history holds something other than five numbers: it must not be able to name a server',
+    names().filter((n) => n.startsWith('h:')).every((n) => n === 'h:not-a-day' || /^\{"i":[0-9]+,"a":[0-9]+,"p":[0-9]+,"n":[0-9]+,"g":[0-9]+\}$/.test(memo(n))),
+    names().filter((n) => n.startsWith('h:')).map(memo).join(' '));
+relay.sqlite("DELETE FROM notes_memory WHERE name = 'h:not-a-day' OR name IN ('h:" + day(1) + "', 'h:" + day(2) + "', 'h:" + day(3) + "')");
+
+/* A DECLARATION IS ANSWERED WITH THE SUM OF THE DAY BEFORE, the same for
+   every server that declares today -- never with the sum it has just entered,
+   which would mark the moment it declared. The day before is closed by the
+   first count of a new day. */
+setMemo('statistics-last', { day: day(1), i: 40, p: 310, n: 5200 });
+relay.sqlite("DELETE FROM notes_memory WHERE name = 'statistics-closed' OR name = 'statistics-world'");
+said = await declare(row(9), { from: v4(124, 1) });
+const sumThen = await totals();
+check('a declaration was not answered with the last count of the day before',
+    said.raw === '{"result":"recorded","instances":40,"projects":310,"notes":5200,"day":"' + day() + '"}', said.raw);
+check('a declaration was answered with the sum it had just entered', said.answer.notes !== sumThen.notes && said.answer.instances !== sumThen.instances,
+    said.raw + ' / ' + JSON.stringify(sumThen));
+const again = await declare(row(1));
+check('a second server the same day, or the same one again, was answered something else', again.raw === '{"result":"kept","instances":40,"projects":310,"notes":5200,"day":"' + day() + '"}', again.raw);
+check('the count that followed took the place of the closed day', JSON.parse(memo('statistics-closed')).day === day(1)
+    && JSON.parse(memo('statistics-last')).day === day() && JSON.parse(memo('statistics-last')).n === sumThen.notes,
+    memo('statistics-closed') + ' ' + memo('statistics-last'));
+/* AND THE RECEIVER SHOWS ITS OWN READERS THE SAME CLOSED DAY, though it
+   declares to nobody and so is answered by nobody. */
+const homeRow = () => JSON.parse(memo('statistics-world') || '{}');
+check('the receiving server did not keep, to show from tomorrow, the sum it answers declarations with',
+    homeRow().d === day() && homeRow().di === 40 && homeRow().dp === 310 && homeRow().dn === 5200
+        && worldOf(await lists(relay, P1, I1)) === undefined, memo('statistics-world'));
+setMemo('statistics-world', Object.assign(homeRow(), { d: day(1) }));
+const atHome = worldOf(await lists(relay, P1, I1));
+check('the day after, the receiving server does not hand its own panel that sum',
+    JSON.stringify(atHome) === '{"servers":40,"sites":310,"notes":5200}', JSON.stringify(atHome));
+/* A REQUEST THAT BEGAN BEFORE MIDNIGHT AND COUNTS AFTER THE NEW DAY WAS OPENED
+   writes nothing about days: the day ahead of its clock is left as it is. */
+const closedBefore = memo('statistics-closed');
+setMemo('statistics-last', { day: day(-1), i: 77, p: 777, n: 7777 });
+await totals();
+check('a count whose clock is behind the last day counted closed that day or put its own back',
+    memo('statistics-closed') === closedBefore && memo('statistics-last') === JSON.stringify({ day: day(-1), i: 77, p: 777, n: 7777 }),
+    memo('statistics-closed') + ' ' + memo('statistics-last'));
+/* AND A DAY IS CLOSED ONCE. Two requests astride midnight can each read the
+   last count before the other writes; a second closing, with other numbers,
+   would leave the first server answered that day holding a sum of its own. */
+setMemo('statistics-last', { day: day(1), i: 55, p: 555, n: 5555 });
+await totals();
+check('a day already closed was closed again, with other numbers', memo('statistics-closed') === closedBefore
+    && JSON.parse(closedBefore).for === day(), memo('statistics-closed'));
+setMemo('statistics-last', { day: day(), i: sumThen.instances, p: sumThen.projects, n: sumThen.notes });
 
 /* THERE IS A LAST ROW. Full, the silent rows are folded into one running
    total -- nothing leaves the sum -- and when none is silent, a newcomer is
@@ -1202,6 +1419,13 @@ check('a real server writing its first note was not added to the sum by the real
     sumAfter.instances === sumBefore.instances + 1 && sumAfter.notes === sumBefore.notes + 1,
     JSON.stringify(sumBefore) + ' -> ' + JSON.stringify(sumAfter));
 check('the receiver does not hold the identifier that server remembers', !!farId && !!memo('s:' + farId), farId);
+const farRow = JSON.parse(far.sqlite("SELECT value FROM notes_memory WHERE name = 'statistics-world'") || '{}');
+check('a real server did not keep the sum of the day before, as the real receiver answered its declaration',
+    farRow.d === day() && farRow.di === 40 && farRow.dp === 310 && farRow.dn === 5200 && worldOf(await lists(far, P2, I2)) === undefined,
+    JSON.stringify(farRow));
+far.sqlite("UPDATE notes_memory SET value = '" + JSON.stringify(Object.assign(farRow, { d: day(1) })) + "' WHERE name = 'statistics-world'");
+check('and the day after, it does not show it', JSON.stringify(worldOf(await lists(far, P2, I2))) === '{"servers":40,"sites":310,"notes":5200}',
+    JSON.stringify(worldOf(await lists(far, P2, I2))));
 
 /* ======================================================================
    3. THE INSTALLER, ON BOTH FACES

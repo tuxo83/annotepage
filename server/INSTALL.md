@@ -193,6 +193,12 @@ address leads to, which finds that out by itself and writes its own
 `report_statistics => false` your server makes no request of any kind for
 this, whatever name it is called by.
 
+**What comes back is three numbers**: how many servers, sites and notes there
+are in all. Your server keeps them and shows them in the panel's "The figures"
+window, under those of the site — once there are enough to be worth showing.
+The page never asks the project for them; a server that sends nothing
+receives nothing, and shows nothing.
+
 `?action=diagnostic`, with `'diagnostic' => 'full'`, says whether it is on and
 where it goes. The sum of every server is public, at
 `https://api.annotepage.com/stats.php`.

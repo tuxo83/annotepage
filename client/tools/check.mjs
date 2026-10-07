@@ -990,7 +990,7 @@ const main = async () => {
             const call = (action) => h.wait('call:' + action);
             const failureFrom = () => ({ title: 'title', detail: 'detail' });
             const readTotals = () => null, readRetention = () => 0, readExpired = () => null,
-                readServerTotals = () => null;
+                readServerTotals = () => null, readWorld = () => null;
             const readList = () => h.wait('decrypt');
             const anchor = () => {}, drawMarkers = () => {}, closePop = () => {}, closeForm = () => {},
                 hideHighlight = () => {};
@@ -1271,6 +1271,73 @@ const main = async () => {
             && hardened.history.pushState(null, '', '/x') === 'the site\'s own push', true);
     hardened.fire('popstate');
     check('and the back button is still heard', hardenedHeard, 1);
+
+    /* THE FIGURES WINDOW. Up to three rows -- this site, the server, every
+       server -- and what age removed is counted in each rather than shown
+       beside it. Run on the function itself, cut out of the section that
+       draws the panel, with elements that only remember what they were given. */
+    process.stdout.write('\nthe figures: three scopes, and nothing subtracted\n');
+    {
+        const ui = readFileSync(join(SRC, '60-ui.js'), 'utf8');
+        const from = ui.indexOf('const statsRow = () => {');
+        const body = ui.slice(from, ui.indexOf('\n};', from) + 3);
+        const api = readFileSync(join(SRC, '40-api.js'), 'utf8');
+        const reader = api.slice(api.indexOf('const readWorld = '), api.indexOf('const readList = '));
+        const draw = (state, lang) => new Function('state', 'lang', `
+            const el = (cls, text) => ({ cls, text: text || '', kids: [], classList: { add(c) { this.owner.cls += ' ' + c; } },
+                appendChild(k) { this.kids.push(k); return k; } });
+            const create = (tag, cls, text) => { const e = el(cls, text); e.classList.owner = e; return e; };
+            const T = (key) => key;
+            const readableNumber = (n) => Number(n).toLocaleString(lang);
+            let totals = state.totals, expired = state.expired, serverWide = state.serverWide, world = state.world, retention = 0;
+            ${body}
+            const flat = (e) => e.cls.includes('ap-stat-n') || e.cls.includes('ap-stat-w') || e.cls.includes('ap-stat-label') || e.cls.includes('ap-stat-aside')
+                ? [e.text].concat(...e.kids.map(flat)) : [].concat(...e.kids.map(flat));
+            const rows = statsRow();
+            return rows === null ? null : JSON.stringify(rows.kids.map((b) => (b.cls.includes('ap-stats-world') ? '*' : '') + flat(b).join(' ')));`)(state, lang || 'en');
+        const readWorld = new Function(reader + '; return readWorld;')();
+        const site = { totals: { notes: 3, open: 2, pages: 2 }, expired: null, serverWide: null, world: null };
+        check('no totals from the server: no window at all', draw(Object.assign({}, site, { totals: null })), null);
+        check('this site alone, on a server that says nothing else', draw(site),
+            JSON.stringify(['panel.stats_here_label 3 panel.stats_written 2 panel.stats_open 2 panel.stats_pages']));
+        check('what age removed is counted in, notes and pages, and "still open" is not touched',
+            draw(Object.assign({}, site, { expired: { notes: 4, pages: 1, last: null } })),
+            JSON.stringify(['panel.stats_here_label 7 panel.stats_written 2 panel.stats_open 3 panel.stats_pages']));
+        check('one of each takes the singular', draw({ totals: { notes: 1, open: 1, pages: 1 }, expired: null, serverWide: null, world: null }),
+            JSON.stringify(['panel.stats_here_label 1 panel.stats_written_one 1 panel.stats_open_one 1 panel.stats_pages_one']));
+        check('the three rows, in order, the last one set apart and saying how old it is',
+            draw(Object.assign({}, site, { serverWide: { projects: 5, notes: 20, pages: 14, expiredNotes: 7, expiredPages: 2 },
+                world: { servers: 412, sites: 1930, notes: 6204 } })),
+            JSON.stringify(['panel.stats_here_label 3 panel.stats_written 2 panel.stats_open 2 panel.stats_pages',
+                'panel.stats_server_label 5 panel.stats_sites 27 panel.stats_written',
+                '*panel.stats_world_label panel.stats_daily 412 panel.stats_servers 1,930 panel.stats_sites 6,204 panel.stats_written']));
+        check('while the server gives no count of servers, the row is sites and notes',
+            draw(Object.assign({}, site, { world: { servers: null, sites: 300, notes: 5000 } })),
+            JSON.stringify(['panel.stats_here_label 3 panel.stats_written 2 panel.stats_open 2 panel.stats_pages',
+                '*panel.stats_world_label panel.stats_daily 300 panel.stats_sites 5,000 panel.stats_written']));
+        check('every server without this server\'s own row', draw(Object.assign({}, site, { world: { servers: 1, sites: 1, notes: 1 } })),
+            JSON.stringify(['panel.stats_here_label 3 panel.stats_written 2 panel.stats_open 2 panel.stats_pages',
+                '*panel.stats_world_label panel.stats_daily 1 panel.stats_servers_one 1 panel.stats_sites_one 1 panel.stats_written_one']));
+        check('thousands are written the way the page\'s language writes them',
+            draw(Object.assign({}, site, { world: { servers: 2, sites: 3, notes: 6204 } }), 'de').includes('6.204 '), true);
+        check('the three numbers of every server are read', JSON.stringify(readWorld({ world: { servers: 4, sites: 9.7, notes: 30 } })),
+            '{"servers":4,"sites":9,"notes":30}');
+        check('a server that sends none: nothing', readWorld({ totals: {} }), null);
+        check('no count of servers, or one that is not a number: the two other figures, and no third',
+            JSON.stringify([readWorld({ world: { sites: 9, notes: 3 } }), readWorld({ world: { servers: '4', sites: 9, notes: 3 } }),
+                readWorld({ world: { servers: -1, sites: 9, notes: 3 } })]),
+            JSON.stringify(Array(3).fill({ servers: null, sites: 9, notes: 3 })));
+        check('no count of sites either: the notes alone',
+            JSON.stringify([readWorld({ world: { notes: 3 } }), readWorld({ world: { servers: 4, sites: -9, notes: 3 } })]),
+            JSON.stringify([{ servers: null, sites: null, notes: 3 }, { servers: 4, sites: null, notes: 3 }]));
+        check('and the row is then the label and that one figure',
+            draw(Object.assign({}, site, { world: { servers: null, sites: null, notes: 5000 } })),
+            JSON.stringify(['panel.stats_here_label 3 panel.stats_written 2 panel.stats_open 2 panel.stats_pages',
+                '*panel.stats_world_label panel.stats_daily 5,000 panel.stats_written']));
+        check('notes missing or not a number: nothing, rather than a row with a hole',
+            [readWorld({ world: { servers: 4, sites: 9 } }),
+                readWorld({ world: { servers: 4, sites: 9, notes: '3' } }), readWorld({ world: 'many' })].every((w) => w === null), true);
+    }
 
     process.stdout.write(failures ? '\n' + failures + ' failure(s)\n' : '\neverything conforms\n');
     process.exit(failures ? 1 : 0);

@@ -893,7 +893,8 @@ code paths, and the second would be the less tested one.
 
 Response: `{"ok":true,"tool":"annotepage","format":2,"version":"...",
 "project":"...","index":"...","notes":[...],"totals":{...},"expired":{...},
-"retention":<days>}`.
+"retention":<days>}`, with `"server":{...}` on a server that publishes its own
+totals and `"world":{...}` on one that takes part in the statistics (§6.5).
 
 `totals` counts the whole project — notes, still open, pages carrying one —
 and `retention` is how many days a thread is kept after its last message, `0`
@@ -1109,14 +1110,45 @@ it**: two servers restored from one backup declare under one identifier and
 are counted as one — the first of the two to declare each day is the one
 heard.
 
-**What the receiver answers.** `recorded` or `kept` in `text/plain` with 200 —
-`kept` when that identifier was already heard that day (UTC) — 400 for a field
+**What the receiver answers.** 200 and one line of JSON:
+`{"result":"recorded","instances":12,"projects":340,"notes":5210,
+"day":"2026-10-07"}` — `result`
+is `kept` when that identifier was already heard that day (UTC), and the three
+numbers are the sum of every server **as last counted on the latest earlier
+day that had a count** — absent, with `day`, while there is no such day. `day`
+is the receiver's own date (UTC). Not the sum the declaration has just
+entered: the sender shows these numbers to its readers, and the sum of that
+instant would mark the moment it declared, for anybody watching the public
+total to read what one site's server had just added. Yesterday's is the same
+for every server that declares today. Before 2.37.0 the answer was the
+word alone, in `text/plain`. Otherwise: 400 for a field
 that is not what the list above says, 411 without a `Content-Length`, 413 past
 1024 bytes, 429 when new identifiers are rationed, 405 for a verb that is not
 GET, HEAD or POST, 503 when it cannot keep what it was told, 308 towards
 https for a request that came over plain http. A server that is not the
-receiver answers 404. The sender reads the status and nothing else,
-and tries again the next day whatever it was.
+receiver answers 404. The sender tries again the next day whatever the status
+was.
+
+**What the sender does with the answer.** It keeps the three numbers with the
+day it got them (UTC) — its own date, or the day after it when the receiver's
+`day` is later, so that a report that left just before midnight is not shown a
+second after — and, **from the day after** by its own clock, hands them to the page in
+the answer to `list`, as
+`"world":{"servers":12,"sites":340,"notes":5210}` — so the window that shows a
+reader the figures of their site can show those of every server, and the
+reader's browser asks nobody but the server holding their notes. No request
+is made for them: they arrive with the daily report or not at all, so a server
+with `report_statistics => false` receives none and its `list` carries no
+`world`. Not from the moment they arrive: a page that changed when its server
+reported would say when that was. Nothing a server receives changes what it
+shows that day; what it shows changes at midnight UTC by its own clock, and a
+sum that arrives while another still waits is not kept. What
+`world` does say of a server is that it reported the day before. It is absent
+when the numbers are more than thirty days old, and when the sum is under a
+thousand notes — a line that is there to say this is used is not shown while
+it would say the opposite. Past that, `notes` is always in it; `sites` joins
+it from fifty and `servers` from ten. The receiving server, which declares to nobody, keeps its own sum the
+same way.
 
 **What anybody may read.**
 
@@ -1134,6 +1166,25 @@ says when it was last counted (the receiver's own notes are counted at most
 once an hour). `Access-Control-Allow-Origin: *`, the only place this
 server answers a star: there is no credential and nothing in the answer is
 anybody's.
+
+**And each day's sum is kept.**
+
+```
+GET https://api.annotepage.com/stats.php?history
+
+{"days": [{"day": "2026-10-06", "instances": 12, "active": 9,
+           "projects": 340, "notes": 5210, "pages": 1480}, ...]}
+```
+
+One entry per day (UTC), in order, the latest four hundred: the five figures
+as they stood the last time the sum was counted that day. A day on which
+nobody declared and nobody asked has no entry; nothing was added that day, and
+only `active` may have moved. The rows are kept for good. Each is a sum and
+nothing under it — no identifier, no version, nothing about where a
+declaration came from. **A day that counted fewer than ten servers is kept and
+not listed**: between two rows of a handful of servers the difference is one
+server's day, and a history published for good would say that of somebody long
+after anyone was watching.
 
 **The totals never go down.** What was carried stays carried: a server that
 stops declaring keeps its numbers in the sum, and one that declares less than

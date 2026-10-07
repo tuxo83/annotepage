@@ -8,9 +8,13 @@
  * that server declared, as far as the bounds below let it be believed -- and
  * gives the sum to anybody who asks.
  *
- *   GET  stats.php     {"instances": n, "active": n, "projects": n,
- *                       "notes": n, "pages": n, "as_of": "..."}
- *   POST stats.php     id, version, projects, notes, pages -- one declaration
+ *   GET  stats.php           {"instances": n, "active": n, "projects": n,
+ *                             "notes": n, "pages": n, "as_of": "..."}
+ *   GET  stats.php?history   {"days": [{"day": "2026-01-31", ...the five}, ...]}
+ *   POST stats.php           id, version, projects, notes, pages -- one
+ *                            declaration; answered with the sum of the day
+ *                            before, which the server that declared shows
+ *                            its readers
  *
  * IT IS ON EVERY SERVER AND IT ANSWERS ON ONE. Like everything in internal/,
  * no request reaches this file: called directly it is a 404. What calls it is
@@ -33,6 +37,28 @@
  * -- keeps what it had said. `instances` is every server ever heard from;
  * `active` is those heard from in the last thirty days, and is the one figure
  * here that can fall.
+ *
+ * AND EACH DAY'S SUM IS KEPT, one row a day and for good: the five figures of
+ * the sum as they stood the last time it was counted that day. That is what
+ * lets anybody say how many notes, sites and servers there were on a given
+ * date, and draw how it grew. It is a sum and nothing under it: no identifier,
+ * no version, nothing about where a declaration came from -- a row that could
+ * not name a server on the day it was written cannot name one a year later.
+ * A day on which nobody declared and nobody asked has no row; the totals of
+ * that day are those of the row before it.
+ *
+ * THE HISTORY IS GIVEN OUT ONLY FOR DAYS THAT COUNTED ENOUGH SERVERS. Between
+ * two rows of a handful of servers, the difference is one server's day; kept
+ * and published for good, that would say of somebody, years later, what
+ * nobody was watching for at the time. Under HISTORY_FLOOR servers a day's
+ * row is kept and not listed.
+ *
+ * A DECLARATION IS ANSWERED WITH YESTERDAY'S SUM, NOT WITH THE ONE IT HAS JUST
+ * ENTERED. The server that declares shows that answer to its readers; were it
+ * the sum of that very instant, it would be a mark of the moment that server
+ * declared -- and whoever watches the public sum could read, at that moment,
+ * what one named site's server had added. The last count of the day before is
+ * the same for everybody who declares today, and marks nobody.
  *
  * THE NUMBERS ARE DECLARED, SO THEY CAN BE LIED ABOUT, and nothing here can
  * check a total against a database it never sees. What it does is make a lie
@@ -126,6 +152,16 @@ define('AP_STATS_DAY', 'statistics-day');
 define('AP_STATS_RETIRED', 'statistics-retired');
 define('AP_STATS_OWN', 'statistics-own');
 define('AP_STATS_SUM', 'statistics-sum');
+/** One row per day, `h:2026-01-31`: the sum as last counted that day. */
+define('AP_STATS_HISTORY', 'h:');
+/** How many days one answer of the history carries, the latest ones. */
+define('AP_STATS_HISTORY_DAYS', 400);
+/** Servers a day must count before its row is given out: see THE HISTORY. */
+define('AP_STATS_HISTORY_FLOOR', 10);
+/* The last count of the current day, and the last count of the day before
+   it that had one: what a declaration is answered with. */
+define('AP_STATS_LAST', 'statistics-last');
+define('AP_STATS_CLOSED', 'statistics-closed');
 
 require __DIR__ . '/errors.php';
 ap_install_handlers();
@@ -302,6 +338,115 @@ function ap_stats_count_own($store)
     }
 }
 
+/**
+ * The sum, counted or recalled: instances, active, projects, notes, pages, at.
+ *
+ * NOT COUNTED ON EVERY REQUEST. This address is public and unauthenticated,
+ * and counting reads every row: the sum is kept for a few minutes, and a
+ * declaration that changes it throws the kept one away.
+ */
+function ap_stats_sum($store, $now)
+{
+    $sum = ap_stats_recall($store, AP_STATS_SUM, array());
+    if (isset($sum['at'], $sum['instances']) && $now - (int) $sum['at'] < AP_STATS_SUM_EVERY) {
+        return $sum;
+    }
+    /* THIS SERVER, COUNTED AND NOT DECLARED -- and less often still: the count
+       walks the whole notes table (see `publish_server_totals` in config.php
+       for what that costs). A count that failed leaves the last one standing
+       rather than a row of zeros. */
+    $own = ap_stats_recall($store, AP_STATS_OWN, array('at' => 0, 'projects' => 0, 'notes' => 0, 'pages' => 0));
+    if ($now - (int) $own['at'] >= AP_STATS_OWN_EVERY) {
+        $counted = ap_stats_count_own($store);
+        $own = array_merge($own, $counted === null ? array() : $counted, array('at' => $now));
+        $store->remember(AP_STATS_OWN, json_encode($own));
+    }
+    $retired = ap_stats_recall($store, AP_STATS_RETIRED,
+        array('instances' => 0, 'projects' => 0, 'notes' => 0, 'pages' => 0));
+    $activeSince = ap_stats_day($now, AP_STATS_ACTIVE_DAYS);
+    // Itself included, once it holds a note -- the rule every other server
+    // applies before declaring anything.
+    $counts = (int) $own['notes'] > 0 ? 1 : 0;
+    $sum = array(
+        'at'        => $now,
+        'instances' => $counts + (int) $retired['instances'],
+        'active'    => $counts,
+        'projects'  => (int) $own['projects'] + (int) $retired['projects'],
+        'notes'     => (int) $own['notes'] + (int) $retired['notes'],
+        'pages'     => (int) $own['pages'] + (int) $retired['pages'],
+    );
+    foreach (ap_stats_rows($store) as $row) {
+        $sum['instances'] += 1;
+        $sum['active'] += $row['last'] >= $activeSince ? 1 : 0;
+        $sum['projects'] += $row['projects'];
+        $sum['notes'] += $row['notes'];
+        $sum['pages'] += $row['pages'];
+    }
+    $store->remember(AP_STATS_SUM, json_encode($sum));
+    $today = ap_stats_day($now);
+    $last = ap_stats_recall($store, AP_STATS_LAST, array());
+    /* A REQUEST THAT BEGAN BEFORE MIDNIGHT AND COUNTS AFTER ANOTHER HAS OPENED
+       THE NEW DAY writes nothing about days: its clock is yesterday's, and it
+       would close the new day as if it were over and put yesterday back. */
+    if (isset($last['day']) && is_string($last['day']) && $last['day'] > $today) {
+        return $sum;
+    }
+    /* THE DAY BEFORE IS CLOSED WHEN A NEW ONE IS FIRST COUNTED: what was the
+       last count until now becomes the sum declarations are answered with,
+       all day. Then this count takes its place. */
+    /* ONCE FOR A DAY, AND NOT AGAIN: two requests astride midnight can each
+       read the last count before the other writes, and the second would close
+       the day a second time with other numbers -- so that the first server
+       answered that day would hold a sum nobody else was given. */
+    $closed = ap_stats_recall($store, AP_STATS_CLOSED, array());
+    if (isset($last['day'], $last['i'], $last['p'], $last['n']) && $last['day'] < $today
+        && !(isset($closed['for']) && is_string($closed['for']) && $closed['for'] >= $today)) {
+        $last['for'] = $today;
+        $store->remember(AP_STATS_CLOSED, json_encode($last));
+        if (function_exists('ap_statistics_keep_world')) {
+            // What this server shows its own readers: the same closed day.
+            ap_statistics_keep_world($store, array('instances' => (int) $last['i'],
+                'projects' => (int) $last['p'], 'notes' => (int) $last['n']), $now);
+        }
+    }
+    $store->remember(AP_STATS_LAST, json_encode(array('day' => $today,
+        'i' => $sum['instances'], 'p' => $sum['projects'], 'n' => $sum['notes'])));
+    /* AND THE DAY'S ROW OF THE HISTORY, written over at each count: what a
+       day keeps is its last count. Short names, as the rows of the servers
+       have: i, a, p, n, g. */
+    $store->remember(AP_STATS_HISTORY . ap_stats_day($now), json_encode(array(
+        'i' => $sum['instances'], 'a' => $sum['active'], 'p' => $sum['projects'],
+        'n' => $sum['notes'], 'g' => $sum['pages'])));
+    return $sum;
+}
+
+/** What a declaration is answered with: the word, and the sum beside it. */
+function ap_stats_answered($store, $now, $word)
+{
+    $said = array('result' => $word);
+    try {
+        // Counted, so that the day's row holds this declaration; answered
+        // with the day before -- and with the word alone while there is none.
+        ap_stats_sum($store, $now);
+        $closed = ap_stats_recall($store, AP_STATS_CLOSED, array());
+        if (isset($closed['i'], $closed['p'], $closed['n'])) {
+            $said['instances'] = (int) $closed['i'];
+            $said['projects'] = (int) $closed['p'];
+            $said['notes'] = (int) $closed['n'];
+            // And the day it is HERE: the server that declared keeps the sum
+            // to show from the day after, and a clock of its own that is
+            // behind this one must not make that day come early.
+            $said['day'] = ap_stats_day($now);
+        }
+    } catch (Throwable $e) {
+        // The declaration was kept, and that is the answer; the sum is a
+        // courtesy, and a server that gets none shows none.
+        ap_log('statistics: sum for a declaration: ' . $e->getMessage());
+    }
+    ap_stats_leave(200, json_encode($said) . "\n", array(
+        'Content-Type: application/json; charset=utf-8', 'Cache-Control: no-store'));
+}
+
 // --- Who may be answered at all ---------------------------------------------
 
 try {
@@ -384,14 +529,14 @@ if ($method === 'POST') {
        drew as its own identifier is in its own memory, so it knows. */
     $mine = ap_statistics_memory($store);
     if ($mine !== null && $mine['id'] !== '' && hash_equals($mine['id'], $id)) {
-        ap_stats_leave(200, "kept\n");
+        ap_stats_answered($store, $now, 'kept');
     }
     $known = ap_stats_row($store->remembered(AP_STATS_ROW . $id));
 
     if ($known !== null && $known['last'] === $today) {
         // Heard today already. Not an error -- a server restarted, or two of
         // its requests crossed -- and nothing is written.
-        ap_stats_leave(200, "kept\n");
+        ap_stats_answered($store, $now, 'kept');
     }
 
     if ($known === null) {
@@ -437,8 +582,8 @@ if ($method === 'POST') {
     if (!$store->remember(AP_STATS_ROW . $id, ap_stats_row_text($row))) {
         ap_stats_leave(503, "The declaration could not be kept.\n");
     }
-    $store->forget(AP_STATS_SUM);   // the next reader counts again
-    ap_stats_leave(200, "recorded\n");
+    $store->forget(AP_STATS_SUM);   // counted again, this declaration in it
+    ap_stats_answered($store, $now, 'recorded');
 }
 
 if ($method !== 'GET' && $method !== 'HEAD') {
@@ -448,44 +593,33 @@ if ($method !== 'GET' && $method !== 'HEAD') {
 
 // --- The sum ---------------------------------------------------------------
 
-/* NOT COUNTED ON EVERY REQUEST. This address is public and unauthenticated,
-   and counting reads every row: the sum is kept for a few minutes, and a
-   declaration that changes it throws the kept one away. */
-$sum = ap_stats_recall($store, AP_STATS_SUM, array());
-if (!isset($sum['at'], $sum['instances']) || $now - (int) $sum['at'] >= AP_STATS_SUM_EVERY) {
-    /* THIS SERVER, COUNTED AND NOT DECLARED -- and less often still: the count
-       walks the whole notes table (see `publish_server_totals` in config.php
-       for what that costs). A count that failed leaves the last one standing
-       rather than a row of zeros. */
-    $own = ap_stats_recall($store, AP_STATS_OWN, array('at' => 0, 'projects' => 0, 'notes' => 0, 'pages' => 0));
-    if ($now - (int) $own['at'] >= AP_STATS_OWN_EVERY) {
-        $counted = ap_stats_count_own($store);
-        $own = array_merge($own, $counted === null ? array() : $counted, array('at' => $now));
-        $store->remember(AP_STATS_OWN, json_encode($own));
+/* THE HISTORY, when it is what was asked for: the days in order, the latest
+   ones. Every row is a sum this address has already given to whoever asked
+   that day. */
+if (isset($_GET['history'])) {
+    ap_stats_sum($store, $now);   // today has its row before it is listed
+    $days = array();
+    foreach ($store->rememberedLike(AP_STATS_HISTORY) as $name => $text) {
+        $date = substr($name, strlen(AP_STATS_HISTORY));
+        $kept = json_decode((string) $text, true);
+        if (!preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}\z/', $date) || !is_array($kept)
+            || !isset($kept['i'], $kept['a'], $kept['p'], $kept['n'], $kept['g'])
+            || (int) $kept['i'] < AP_STATS_HISTORY_FLOOR) {
+            continue;
+        }
+        $days[$date] = array('day' => $date, 'instances' => (int) $kept['i'], 'active' => (int) $kept['a'],
+            'projects' => (int) $kept['p'], 'notes' => (int) $kept['n'], 'pages' => (int) $kept['g']);
     }
-    $retired = ap_stats_recall($store, AP_STATS_RETIRED,
-        array('instances' => 0, 'projects' => 0, 'notes' => 0, 'pages' => 0));
-    $activeSince = ap_stats_day($now, AP_STATS_ACTIVE_DAYS);
-    // Itself included, once it holds a note -- the rule every other server
-    // applies before declaring anything.
-    $counts = (int) $own['notes'] > 0 ? 1 : 0;
-    $sum = array(
-        'at'        => $now,
-        'instances' => $counts + (int) $retired['instances'],
-        'active'    => $counts,
-        'projects'  => (int) $own['projects'] + (int) $retired['projects'],
-        'notes'     => (int) $own['notes'] + (int) $retired['notes'],
-        'pages'     => (int) $own['pages'] + (int) $retired['pages'],
-    );
-    foreach (ap_stats_rows($store) as $row) {
-        $sum['instances'] += 1;
-        $sum['active'] += $row['last'] >= $activeSince ? 1 : 0;
-        $sum['projects'] += $row['projects'];
-        $sum['notes'] += $row['notes'];
-        $sum['pages'] += $row['pages'];
-    }
-    $store->remember(AP_STATS_SUM, json_encode($sum));
+    ksort($days);
+    $days = array_slice(array_values($days), -AP_STATS_HISTORY_DAYS);
+    ap_stats_leave(200, $method === 'HEAD' ? '' : json_encode(array('days' => $days)) . "\n", array(
+        'Content-Type: application/json; charset=utf-8',
+        'Cache-Control: public, max-age=' . AP_STATS_SUM_EVERY,
+        'Access-Control-Allow-Origin: *',
+    ));
 }
+
+$sum = ap_stats_sum($store, $now);
 $answer = array(
     'instances' => (int) $sum['instances'],
     'active'    => (int) $sum['active'],

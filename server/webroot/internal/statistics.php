@@ -313,6 +313,185 @@ function ap_statistics_remember($store, array $memory)
     )));
 }
 
+/* -- WHAT ALL THE SERVERS HOLD TOGETHER, TO SHOW A READER -------------------
+
+   The receiver answers a declaration with the sum of all of them: how many
+   servers, how many sites, how many notes. It is kept here, one short row,
+   and handed to the panel with the list of notes -- so the window that shows
+   a reader the figures of their site can show those of the whole project
+   under them, and the reader's browser never asks anybody but this server.
+
+   NO REQUEST IS MADE FOR IT. It arrives in the answer to the daily report and
+   by no other way: a server that reports nothing receives nothing and shows
+   nothing, which is what its operator asked for.
+
+   IT IS THE SUM OF THE DAY BEFORE THE REPORT, the same for every server that
+   reports that day (statistics-receiver.php says why), AND IT IS SHOWN FROM
+   THE DAY AFTER, at midnight UTC by each server's own clock
+   (ap_statistics_keep_world):
+   neither what a page shows nor the moment it changes says when its server
+   reported. What it does say is that the server reported the day before. */
+
+define('AP_STATISTICS_WORLD', 'statistics-world');
+/** Days after which a kept sum is too old to show as the present. */
+define('AP_STATISTICS_WORLD_DAYS', 30);
+/* WHAT IS WORTH SHOWING, FIGURE BY FIGURE. The line is there to say that
+   this is used, and "1 server, 5 sites" says the opposite. Under NOTES
+   nothing is shown at all. Past it the notes are shown -- they are written,
+   and that is use -- and each of the two other figures joins them once it
+   is one worth reading: the sites from SITES, the servers from SERVERS. A
+   figure left out is not a figure hidden: the public total gives all of
+   them to whoever asks.
+   Decided here and not in the page, so that every server follows a change of
+   these two numbers at its next update. */
+define('AP_STATISTICS_WORLD_NOTES', 1000);
+define('AP_STATISTICS_WORLD_SITES', 50);
+define('AP_STATISTICS_WORLD_SERVERS', 10);
+
+/** The kept row, decoded: the sum that is shown and the one that waits. */
+function ap_statistics_world_row($store)
+{
+    $empty = array('at' => 0, 'i' => 0, 'p' => 0, 'n' => 0, 'd' => '', 'di' => 0, 'dp' => 0, 'dn' => 0);
+    $kept = json_decode((string) $store->remembered(AP_STATISTICS_WORLD), true);
+    if (!is_array($kept)) {
+        return $empty;
+    }
+    // Read as it was written, or not at all: whole numbers, none negative,
+    // and a day that is one.
+    foreach (array('at', 'i', 'p', 'n', 'di', 'dp', 'dn') as $field) {
+        if (!isset($kept[$field]) || !is_int($kept[$field]) || $kept[$field] < 0) {
+            return $empty;
+        }
+    }
+    if (!isset($kept['d']) || !is_string($kept['d'])
+        || ($kept['d'] !== '' && !preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}\z/', $kept['d']))) {
+        return $empty;
+    }
+    return array_intersect_key($kept, $empty);
+}
+
+/**
+ * Keeps a sum just received -- to be shown FROM THE NEXT DAY, not from now.
+ *
+ * A page that began to show a new sum the moment its server received it would
+ * say when that server reported; and whoever watches the public total could
+ * read, at that moment, what one named site's server had added to it. So what
+ * arrives today waits, and every server that reported today starts showing it
+ * at the same instant: midnight, UTC.
+ */
+function ap_statistics_keep_world($store, $sum, $now)
+{
+    $read = function ($name) use ($sum) {
+        return is_array($sum) && isset($sum[$name]) && is_int($sum[$name])
+            && $sum[$name] >= 0 && $sum[$name] <= 999999999999 ? $sum[$name] : null;
+    };
+    $servers = $read('instances');
+    $sites = $read('projects');
+    $notes = $read('notes');
+    if ($servers === null || $sites === null || $notes === null) {
+        return false;   // not the three numbers: nothing kept, the old ones stay
+    }
+    try {
+        if (!method_exists($store, 'remembered') || !method_exists($store, 'remember')) {
+            return false;
+        }
+        $row = ap_statistics_world_row($store);
+        /* ONE RULE, HERE AND WHERE IT IS SHOWN: a sum that waits is shown
+           once THIS server's date has passed the day it is tagged with. So
+           nothing received now can change what a page shows now -- whatever
+           the clocks say.
+           While one still waits, a new one is not kept: taking its place
+           would be fine, but pushing it forward into what is shown would be
+           a change at the moment of a report, which is the one thing this
+           must never be. A day's figures are skipped; the next ones are not. */
+        $today = gmdate('Y-m-d', (int) $now);
+        $tomorrow = gmdate('Y-m-d', (int) $now + 86400);
+        if ($row['d'] !== '' && $row['d'] >= $today && $row['d'] <= $tomorrow) {
+            return true;
+        }
+        /* A TAG FURTHER AHEAD THAN TOMORROW WAS WRITTEN BY A CLOCK THAT WAS
+           WRONG -- set to the wrong year, then corrected. Left to wait, it
+           would wait until that year and keep everything else out until
+           then. It is replaced, and not pushed forward: it was never shown. */
+        // What waited is already the one shown, by the date: write it so.
+        if ($row['d'] !== '' && $row['d'] < $today) {
+            $row['at'] = (int) strtotime($row['d'] . ' 00:00:00 UTC');
+            $row['i'] = $row['di'];
+            $row['p'] = $row['dp'];
+            $row['n'] = $row['dn'];
+        }
+        /* THE DAY IT IS TAGGED WITH IS THE LATER OF TWO: this server's, and
+           the one the receiver says it is -- but never more than one day
+           ahead of this server's. A report that leaves a second before
+           midnight is heard a second after it, and is answered with the sum
+           every other server will only be given that new day: tagged with
+           the day it left, it would be shown at the next midnight, a second
+           later, alone. The ceiling is there so that a receiver saying the
+           year 9999 delays one answer by a day, and not all of them for ever. */
+        $tag = $today;
+        if (isset($sum['day']) && is_string($sum['day'])
+            && preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}\z/', $sum['day']) && $sum['day'] > $today) {
+            $tag = $tomorrow;
+        }
+        $today = $tag;
+        $row['d'] = $today;
+        $row['di'] = $servers;
+        $row['dp'] = $sites;
+        $row['dn'] = $notes;
+        return (bool) $store->remember(AP_STATISTICS_WORLD, json_encode($row));
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * What the panel is handed, or null: array('notes'), with 'sites' and
+ * 'servers' before it once there are enough of each to be worth a figure.
+ *
+ * ONE READ, on the call every page makes -- and none at all on a server that
+ * refused the statistics, which is asked nothing about them anywhere. NOTHING
+ * IS WRITTEN: which of the two kept sums is the one to show is decided by the
+ * date, each time.
+ */
+function ap_statistics_world(array $config, $store, $now = null)
+{
+    try {
+        if (!ap_statistics_reports($config) && ap_statistics_told($config) !== true) {
+            return null;
+        }
+        if (!method_exists($store, 'remembered')) {
+            return null;
+        }
+        $row = ap_statistics_world_row($store);
+        $now = $now === null ? time() : (int) $now;
+        if ($row['d'] !== '' && $row['d'] < gmdate('Y-m-d', $now)) {
+            $shown = array('at' => (int) strtotime($row['d'] . ' 00:00:00 UTC'),
+                'i' => $row['di'], 'p' => $row['dp'], 'n' => $row['dn']);
+        } else {
+            $shown = $row;
+        }
+        // A date ahead of the clock is a clock that was moved: nothing.
+        if ($shown['at'] <= 0 || $shown['at'] > $now
+            || $now - $shown['at'] > AP_STATISTICS_WORLD_DAYS * 86400) {
+            return null;
+        }
+        if ($shown['n'] < AP_STATISTICS_WORLD_NOTES) {
+            return null;
+        }
+        $world = array();
+        if ($shown['i'] >= AP_STATISTICS_WORLD_SERVERS) {
+            $world['servers'] = $shown['i'];
+        }
+        if ($shown['p'] >= AP_STATISTICS_WORLD_SITES) {
+            $world['sites'] = $shown['p'];
+        }
+        $world['notes'] = $shown['n'];
+        return $world;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
 /** 16 bytes from the system's generator, in base64url: 22 characters. */
 function ap_statistics_new_id()
 {
@@ -466,8 +645,31 @@ function ap_statistics_request($method, $url, $body, $agent, $timeout, $keep = 0
            up to a ceiling: the caller looks for something IN it. */
         $ceiling = $keep > 0 ? $keep + 2048 : 512;
         $read = '';
+        /* AND, FOR A DECLARATION, IT STOPS AT THE LENGTH THE ANSWER ANNOUNCED.
+           Asked to close, a server may keep the connection open all the same;
+           waiting for an end that does not come would spend the whole
+           deadline on an answer that arrived in the first instant.
+           ONLY FOR A DECLARATION. The other request made here is the proof of
+           which server receives, and that one is read as it always was, to
+           the end: nothing new decides when its answer is complete. */
+        $whole = function ($read) {
+            $at = strpos($read, "\r\n\r\n");
+            if ($at === false) {
+                return false;
+            }
+            // Or, where the answer came in pieces, at the piece of no length
+            // that ends them -- looked for in the BODY: a header can end in
+            // a zero too, and the blank line after it is not the end.
+            $body = (string) substr($read, $at + 4);
+            if (stripos(substr($read, 0, $at), 'chunked') !== false
+                && ($body === "0\r\n\r\n" || substr($body, -7) === "\r\n0\r\n\r\n")) {
+                return true;
+            }
+            return preg_match('/^Content-Length:[ \t]*([0-9]{1,9})[ \t]*\r?$/mi', substr($read, 0, $at), $said)
+                && strlen($read) - $at - 4 >= (int) $said[1];
+        };
         while (microtime(true) < $deadline && strlen($read) < $ceiling
-            && ($keep > 0 || strpos($read, "\n") === false)) {
+            && ($keep > 0 ? !($post && $whole($read)) : strpos($read, "\n") === false)) {
             $asked = microtime(true);
             $chunk = @fread($socket, 512);
             if ($chunk === false || $chunk === '') {
@@ -498,11 +700,13 @@ function ap_statistics_request($method, $url, $body, $agent, $timeout, $keep = 0
     return $refused('this host cannot make an outbound request');
 }
 
-/** One declaration: a POST, form-encoded, and nothing of the answer kept. */
+/** One declaration: a POST, form-encoded. The start of the answer is kept. */
 function ap_statistics_post($url, array $fields, $timeout)
 {
+    // The answer is the sum of every server, a line of JSON: see
+    // ap_statistics_keep_world. A receiver from before that answers a word.
     return ap_statistics_request('POST', $url, http_build_query($fields, '', '&'),
-        'annotepage-statistics/' . (isset($fields['version']) ? $fields['version'] : ''), $timeout);
+        'annotepage-statistics/' . (isset($fields['version']) ? $fields['version'] : ''), $timeout, 512);
 }
 
 /* -- WHICH SERVER RECEIVES --------------------------------------------------
@@ -882,6 +1086,15 @@ function ap_statistics_run(array $config, $store, $timeout = AP_STATISTICS_TIMEO
         if ($memory['quiet']) {
             $memory['quiet'] = false;
             ap_statistics_remember($store, $memory);
+        }
+        // What came back with the yes, when it is the sum.
+        // LOOKED FOR, not parsed from the first byte: one transport hands back
+        // the body and the other the headers before it, and a receiver from
+        // before this answers one word, in which there is nothing to find.
+        if (preg_match('/\{"result"[^{}]{0,300}\}/', (string) $sent['answer'], $found)) {
+            // The clock is read again: the count and the request took time,
+            // and midnight may have passed during them.
+            ap_statistics_keep_world($store, json_decode($found[0], true), time());
         }
         return array('sent' => true, 'line' => 'Statistics: sent this server\'s random'
             . ' identifier, its version and three totals -- ' . $figures['projects'] . ' project'

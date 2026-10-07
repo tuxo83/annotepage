@@ -215,60 +215,64 @@ const statsRow = () => {
        one, which is the rule everywhere else here. */
     const figure = (n, word) => {
         const box = create('span', 'ap-stat');
-        box.appendChild(create('span', 'ap-stat-n', String(n)));
+        box.appendChild(create('span', 'ap-stat-n', readableNumber(n)));
         box.appendChild(create('span', 'ap-stat-w', T(n === 1 ? word + '_one' : word)));
         return box;
     };
 
-    /* TWO BLOCKS, AND THE SECOND IS OFTEN ABSENT. This site first, because it
-       is the one the reviewer is looking at; the whole server underneath, so
-       that a figure of six pages is not read as "this tool holds six pages".
-       Each block says what it HAS and what age TOOK, together: what was
-       removed, alone, describes a hole without saying what is around it. */
-    const block = (label) => {
+    /* UP TO THREE ROWS OF ONE SHAPE: this site, the server holding it, every
+       server there is. A label and at most three figures each, the same size
+       in all three -- the last row is one more scope, not an advertisement.
+       The first is always there; each of the others only where this server
+       has it to give. */
+    const block = (label, aside) => {
         const box = create('div', 'ap-stats-block');
-        box.appendChild(create('span', 'ap-stat-label', T(label)));
+        const head = create('span', 'ap-stat-label', T(label));
+        if (aside) head.appendChild(create('span', 'ap-stat-aside', T(aside)));
+        box.appendChild(head);
         const row = create('div', 'ap-panel-stats');
         box.appendChild(row);
         rows.appendChild(box);
         return { box: box, row: row };
     };
 
-    const removed = (box, notes, pages, last) => {
-        const line = create('div', 'ap-panel-stats ap-stat-gone');
-        line.appendChild(create('span', 'ap-stat-since', T('panel.stats_gone_label')));
-        line.appendChild(figure(notes, 'panel.stats_notes'));
-        line.appendChild(figure(pages, 'panel.stats_pages'));
-        if (last) {
-            line.appendChild(create('span', 'ap-stat-when',
-                T('panel.stats_swept', { d: readableDate(last) })));
-        }
-        box.appendChild(line);
-    };
+    /* NOTES WRITTEN, AND WHAT AGE TOOK IS AMONG THEM. A server that removes
+       old threads used to show what was left and, on a line of its own, what
+       had gone: two figures to add up for one answer, and a count of notes
+       that went DOWN on a site people were still using. What was written was
+       written. "Written" is in the label so that "still open" beside it reads
+       as a part of it and not as a second count of the same thing. */
+    const gone = expired !== null ? expired : { notes: 0, pages: 0 };
 
     const here = block('panel.stats_here_label');
-    here.row.appendChild(figure(totals.notes, 'panel.stats_notes'));
+    here.row.appendChild(figure(totals.notes + gone.notes, 'panel.stats_written'));
     here.row.appendChild(figure(totals.open, 'panel.stats_open'));
-    here.row.appendChild(figure(totals.pages, 'panel.stats_pages'));
-    /* Drawn only where the server counts AND something can go: a server with
-       no retention has nothing to report, and one that has never swept says
-       zero, which is an answer and not a blank. */
-    if (expired !== null && (retention > 0 || expired.notes > 0 || expired.pages > 0)) {
-        removed(here.box, expired.notes, expired.pages, expired.last);
-    }
+    here.row.appendChild(figure(totals.pages + gone.pages, 'panel.stats_pages'));
 
-    /* AND THE WHOLE SERVER, on the servers whose operator chose to publish it.
+    /* THE WHOLE SERVER, on the servers whose operator chose to publish it.
        Absent everywhere else -- see `publish_server_totals`, which is off until
-       somebody writes it -- and then this window is the first block alone,
-       which is exactly what it was before this existed. */
+       somebody writes it. Sites and notes: pages are a figure of the site,
+       where the reader can see them. */
     if (serverWide !== null) {
         const all = block('panel.stats_server_label');
         all.row.appendChild(figure(serverWide.projects, 'panel.stats_sites'));
-        all.row.appendChild(figure(serverWide.notes, 'panel.stats_notes'));
-        all.row.appendChild(figure(serverWide.pages, 'panel.stats_pages'));
-        if (serverWide.expiredNotes > 0 || serverWide.expiredPages > 0 || retention > 0) {
-            removed(all.box, serverWide.expiredNotes, serverWide.expiredPages, null);
+        all.row.appendChild(figure(serverWide.notes + serverWide.expiredNotes, 'panel.stats_written'));
+    }
+
+    /* AND EVERY SERVER TOGETHER, where this one takes part in the statistics.
+       SERVERS AND SITES BEFORE NOTES: a count of notes alone could be one
+       person's, and what a reader wants to know is whether anybody else uses
+       this. The figures are a day old, and the label says so. */
+    if (world !== null) {
+        const everywhere = block('panel.stats_world_label', 'panel.stats_daily');
+        everywhere.box.classList.add('ap-stats-world');
+        if (world.servers !== null) {
+            everywhere.row.appendChild(figure(world.servers, 'panel.stats_servers'));
         }
+        if (world.sites !== null) {
+            everywhere.row.appendChild(figure(world.sites, 'panel.stats_sites'));
+        }
+        everywhere.row.appendChild(figure(world.notes, 'panel.stats_written'));
     }
 
     return rows;

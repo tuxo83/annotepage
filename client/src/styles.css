@@ -547,25 +547,21 @@
 }
 .ap-stat-n { font-size: 15px; font-weight: 650; color: var(--ap-text); }
 .ap-stat-w { font-size: 12px; color: var(--ap-text-soft); }
-/* TWO BLOCKS, THIS SITE THEN THE WHOLE SERVER, and the second is absent on
-   nearly every server. Each block is a label, the figures it holds, and -- when
-   age takes anything here -- a second row for what it took. */
-.ap-stats { display: flex; flex-direction: column; gap: 16px; }
+/* UP TO THREE BLOCKS: this site, the server, every server. Each is a label and
+   the figures it holds, and the figures are the same size in all three. */
+.ap-stats { display: flex; flex-direction: column; gap: 14px; }
 .ap-stats-block { display: flex; flex-direction: column; gap: 4px; }
 .ap-stats .ap-panel-stats { margin-bottom: 0; }
-/* WHAT WAS REMOVED READS AS A FOOTNOTE TO THE ROW ABOVE, not as a second set of
-   figures competing with it: same shapes, one step quieter, and indented under
-   the count it belongs to. */
-.ap-stat-gone { padding-left: 10px; border-left: 2px solid var(--ap-border); }
-.ap-stat-gone .ap-stat-n { font-size: 13px; font-weight: 600; color: var(--ap-text-soft); }
-.ap-stat-since {
-    font-size: 11px; font-weight: 650; letter-spacing: .02em;
-    text-transform: uppercase; color: var(--ap-text-soft); align-self: baseline;
+/* What follows a label on its line -- "updated daily" -- is about the label,
+   not part of it: lower case, lighter, after a dot. */
+.ap-stat-aside { font-weight: 400; letter-spacing: 0; text-transform: none; }
+.ap-stat-aside::before { content: "\00b7"; margin: 0 6px; }
+/* THE LAST BLOCK IS NOT THIS SERVER'S. A soft ground sets it apart from the
+   two above it, which are; nothing about it is larger. */
+.ap-stats-world {
+    margin: 0 -8px; padding: 8px;
+    background: var(--ap-bg-soft); border-radius: 8px;
 }
-/* The date of the last sweep is context for the figures beside it, not another
-   figure: soft ink, smaller, and it wraps under them rather than stretching
-   the row. */
-.ap-stat-when { font-size: 12px; color: var(--ap-text-soft); align-self: baseline; }
 .ap-panel-instructions {
     padding: 10px 14px;
     border-bottom: 1px solid var(--ap-border);

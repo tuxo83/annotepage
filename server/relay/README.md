@@ -71,6 +71,13 @@ every server that declares, as it records every other request, and nothing in
 this code can prevent that. If the promise on the site is to mean what it says
 on this machine, do not keep those lines longer than you need them.
 
+**And one row a day, for good**: the sum as it stood the last time it was
+counted that day — five numbers, no identifier — which is what
+`stats.php?history` answers from (listing only the days that counted ten
+servers or more: under that, the difference between two days is one server's
+day), and what lets anybody say how many servers,
+sites and notes there were on a given date.
+
 **The totals never go down**, and nothing removes a row on its own: a server
 that stops declaring stays in the sum. The header of
 `webroot/internal/statistics-receiver.php` says how a declared number is

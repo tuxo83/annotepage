@@ -22,6 +22,10 @@ let expired = null;         // { notes, pages, last_sweep } : what retention has
 let serverWide = null;      // { projects, notes, pages } for the WHOLE server,
                             // and only where its operator published them.
                             // Absent everywhere else, on purpose
+let world = null;           // { servers|null, sites|null, notes } for EVERY annotepage
+                            // server together, as this one was last told.
+                            // null where the server takes no part in the
+                            // statistics, or has not reported yet
 let target = null;          // element being annotated
 let hovered = null;         // element under the pointer
 let currentFailure = null;  // { title, detail } shown in the panel

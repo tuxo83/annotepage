@@ -157,29 +157,29 @@ ns.defaultLabels = {
     'config.author': 'Assistant',
     'config.warn': 'It carries your key. Anyone holding this file can read '
         + 'these notes and write them.',
-    'panel.stats_notes': 'notes',
+    'panel.stats_written': 'notes written',
+    'panel.stats_servers': 'servers',
     'panel.stats_open': 'still open',
     'panel.stats_pages': 'pages',
     'panel.stats_sites': 'sites',
     /* THE SINGULAR OF EACH, looked up when the figure is 1. A translation
        that writes none of these falls back on the plural above, in English,
        like every other missing label. */
-    'panel.stats_notes_one': 'note',
+    'panel.stats_written_one': 'note written',
+    'panel.stats_servers_one': 'server',
     'panel.stats_open_one': 'still open',
     'panel.stats_pages_one': 'page',
     'panel.stats_sites_one': 'site',
-    /* WHAT WENT, AND WHY THE WINDOW SAYS IT AT ALL. The panel already warns
-       that this server removes a thread after so many days; a reviewer who
-       comes back to a page they annotated and finds it bare deserves the
-       figure that turns a hole into a fact. "Removed by age" and not
-       "deleted": nobody chose these, which is the whole point. */
     'panel.stats_here_label': 'On this site',
-    'panel.stats_gone_label': 'Removed by age',
-    'panel.stats_swept': 'last sweep {d}',
     /* THE WHOLE SERVER, on the servers that publish it -- most do not, and
        then this line is never drawn. "This server" and not "the API": the
        reviewer is being told about the machine holding their notes. */
     'panel.stats_server_label': 'On this whole server',
+    /* EVERY SERVER TOGETHER, where this one takes part in the statistics. The
+       second label follows the first on the same line, quieter: the figures
+       came with the server's last daily report and are as old as it is. */
+    'panel.stats_world_label': 'On all annotepage servers',
+    'panel.stats_daily': 'updated daily',
     'panel.refresh': 'Refresh',
 
     /* -- Notes whose element cannot be found any more ------------------- */

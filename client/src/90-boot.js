@@ -33,6 +33,7 @@ const reload = () => {
         retention = readRetention(r.data);
         expired = readExpired(r.data);
         serverWide = readServerTotals(r.data);
+        world = readWorld(r.data);
         return readList(r.data).then((read) => {
             if (index !== PAGE_INDEX) return null;
             notes = read;
@@ -266,6 +267,7 @@ function proceed(first, run, index) {
             retention = readRetention(first.data);
             expired = readExpired(first.data);
             serverWide = readServerTotals(first.data);
+            world = readWorld(first.data);
             return readList(first.data).then((read) => {
                 if (staleBoot(run, index)) return null;
                 notes = read;

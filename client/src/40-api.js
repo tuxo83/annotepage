@@ -410,6 +410,23 @@ const readServerTotals = (data) => {
     };
 };
 
+/* WHAT EVERY ANNOTEPAGE SERVER HOLDS, TOGETHER. Three numbers this server was
+   handed with the answer to its daily report and passes on: this page asks
+   nobody else for them. Absent from a server that takes no part in the
+   statistics and from one older than the field, and then null draws nothing. */
+const readWorld = (data) => {
+    const w = data && data.world;
+    if (!w || typeof w !== 'object') return null;
+    const n = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.floor(v) : null);
+    const notes = n(w.notes);
+    if (notes === null) return null;
+    /* THE COUNTS OF SERVERS AND OF SITES ARE THE SERVER'S TO GIVE OR NOT. It
+       leaves each out while there are few -- "2 servers" beside five thousand
+       notes reads as a small thing, and it is not one -- and then the row is
+       the figures that are there. */
+    return { servers: n(w.servers), sites: n(w.sites), notes: notes };
+};
+
 const readList = (data) => {
     skipped = { newer: 0, unreadable: 0, unknown: 0 };
     const raw = data && Array.isArray(data.notes) ? data.notes : [];
