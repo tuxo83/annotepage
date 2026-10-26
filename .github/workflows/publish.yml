@@ -110,6 +110,10 @@ jobs:
           # says why). Same rule: bump its version and push, and it goes out.
           - package: annotepage
             directory: npm-name
+          # The server as a Node library and app. Same rule as the others: bump
+          # its version in server-node/package.json and push, and it goes out.
+          - package: annotepage-server
+            directory: server-node
 
     name: ${{ matrix.package }}
 
