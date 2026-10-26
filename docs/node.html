@@ -48,9 +48,12 @@ main .wrap > .ways { max-width: none; }
 main { padding: clamp(1.8rem, 4vw, 2.8rem) 0 clamp(3rem, 8vw, 4.5rem); }
 h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); line-height: 1.1; margin: 0; }
 .lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; margin: .9rem 0 0; }
-/* A small orientation line: this is the developer page, and the way back to
-   the rest of the site, since the menu does not list it. */
-.dev-note { font-size: .9rem; color: var(--dim); margin: 1rem 0 0; }
+/* A small orientation line: this is the developer page, and below it the way
+   back to the rest of the site -- the same .more buttons the landing page and
+   the FAQ use -- since the menu does not list this page. */
+.dev-note { font-size: .95rem; color: var(--dim); margin: 1.2rem 0 0; }
+.see-out { display: flex; flex-wrap: wrap; gap: .8rem; margin: 1rem 0 0; }
+main .wrap > .see-out { max-width: none; }
 
 /* Words left, code right -- the install page's rows, folding at the same width
    so the two pages lay the component out the same way. No counter: these are
@@ -142,9 +145,12 @@ code:not(pre code) {
     <div class="wrap">
         <h1>The library &amp; app, in Node</h1>
         <p class="lead">Embed it in the app you already run, or launch it on its own. No PHP.</p>
-        <p class="dev-note">The developer page for annotepage's server. Not what you came for?
-            &rarr; <a href="/">Home</a>, <a href="how-to-use-it.html">Use</a>,
-            <a href="how-to-install-it.html">Install</a>, <a href="questions.html">FAQ</a>.</p>
+        <p class="dev-note">The developer page for annotepage's server. Not what you came for?</p>
+        <p class="see-out">
+            <a class="more" href="/">What annotepage is<span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="more" href="how-to-use-it.html">See a detailed usage example<span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="more" href="how-to-install-it.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
+        </p>
 
         <ul class="ways">
             <li>
@@ -182,7 +188,6 @@ app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span
             </li>
         </ul>
 
-        <p class="close">The browser client and the wire format do not change.</p>
 
         <p class="route">
             <a href="https://github.com/tuxo83/annotepage/tree/main/server-node"
