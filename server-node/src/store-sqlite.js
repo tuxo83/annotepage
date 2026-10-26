@@ -42,7 +42,7 @@ import { normalise, utcStamp } from './notes.js';
  *  reads. No width: SQLite ignores it and the bound is input.js's, before the
  *  write. Every column carries a default so ADD COLUMN works on a table that
  *  already holds rows. */
-const EXPECTED_COLUMNS = {
+export const EXPECTED_COLUMNS = {
     project: "TEXT NOT NULL DEFAULT ''",
     page_index: "TEXT NOT NULL DEFAULT ''",
     format: 'INTEGER NOT NULL DEFAULT 1',
