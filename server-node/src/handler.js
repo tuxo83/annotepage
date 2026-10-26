@@ -92,13 +92,13 @@ function requirePost(method, what) {
  * @param {object} store the store (see store-sqlite.js)
  * @param {object} [deps] injected pieces: `bounds`, `writeTextExport`,
  *   `statistics` (world + schedule), `log`
- * @returns {(request: Request) => Promise<Response>}
+ * @returns {(request: Request, info?: { address?: string }) => Promise<Response>}
  */
 export function createHandler(config, store, deps = {}) {
     const bounds = deps.bounds || OPEN_BOUNDS;
     const log = typeof deps.log === 'function' ? deps.log : () => {};
 
-    return async function handle(request) {
+    return async function handle(request, info = {}) {
         let cors = [];
         try {
             const req = await readRequest(request);
@@ -152,6 +152,13 @@ export function createHandler(config, store, deps = {}) {
             const isWrite = action === 'add' || action === 'resolve' || action === 'title';
             cors = bounds.applyOriginLock({ config, id, project, isWrite, origin });
 
+            // Rate limiting needs the client address, which a Request does not
+            // carry: the adapter passes it in `info.address`, and a configured
+            // header (behind a proxy) is read from the request headers.
+            const rate = (kind) => bounds.applyRateLimit({
+                config, store, id, kind, headers: req.headers, address: info.address,
+            });
+
             // RETENTION, opportunistically, on writes only, and it cannot cost a
             // note: expireOlderThan swallows its own errors. Running before the
             // write also means the note just saved is never a candidate.
@@ -169,15 +176,15 @@ export function createHandler(config, store, deps = {}) {
 
             switch (action) {
                 case 'list':
-                    return listAction(config, store, bounds, deps, params, id, cors);
+                    return listAction(config, store, rate, deps, params, id, cors);
                 case 'add':
-                    return addAction(config, store, bounds, params, id, project, method, cors);
+                    return addAction(config, store, bounds, rate, params, id, project, method, cors);
                 case 'resolve':
-                    return resolveAction(config, store, bounds, params, id, method, cors);
+                    return resolveAction(config, store, rate, params, id, method, cors);
                 case 'title':
-                    return titleAction(config, store, bounds, params, id, method, cors);
+                    return titleAction(config, store, rate, params, id, method, cors);
                 case 'text':
-                    return textAction(config, store, bounds, deps, id, cors);
+                    return textAction(config, store, rate, deps, id, cors);
                 default:
                     throw unknownActionFailure(action);
             }
@@ -208,8 +215,8 @@ function inactive(config, message) {
     };
 }
 
-function listAction(config, store, bounds, deps, params, id, cors) {
-    bounds.applyRateLimit({ config, store, id, kind: 'read' });
+function listAction(config, store, rate, deps, params, id, cors) {
+    rate('read');
     const index = fieldIndex(params, 'index', true);
     const payload = {
         project: id,
@@ -234,9 +241,9 @@ function listAction(config, store, bounds, deps, params, id, cors) {
     return jsonResponse(config, responseEnvelope(config, payload), { cors });
 }
 
-function addAction(config, store, bounds, params, id, project, method, cors) {
+function addAction(config, store, bounds, rate, params, id, project, method, cors) {
     requirePost(method, 'Writing a note');
-    bounds.applyRateLimit({ config, store, id, kind: 'write' });
+    rate('write');
     bounds.checkNoteCap({ config, store, id });
     const mode = fieldMode(params, config.allowPlainMode, id, project);
     const note = noteFromRequest(params, config.allowPlainMode, store, id, mode);
@@ -246,9 +253,9 @@ function addAction(config, store, bounds, params, id, project, method, cors) {
     }), { cors });
 }
 
-function resolveAction(config, store, bounds, params, id, method, cors) {
+function resolveAction(config, store, rate, params, id, method, cors) {
     requirePost(method, 'Resolving a note');
-    bounds.applyRateLimit({ config, store, id, kind: 'write' });
+    rate('write');
     const noteId = fieldId(params, 'id', 'id');
     const target = store.note(noteId, id);
     if (target === null) {
@@ -289,9 +296,9 @@ function resolveAction(config, store, bounds, params, id, method, cors) {
     }), { cors });
 }
 
-function titleAction(config, store, bounds, params, id, method, cors) {
+function titleAction(config, store, rate, params, id, method, cors) {
     requirePost(method, 'Titling a note');
-    bounds.applyRateLimit({ config, store, id, kind: 'write' });
+    rate('write');
     const noteId = fieldId(params, 'id', 'id');
     const target = store.note(noteId, id);
     if (target === null) {
@@ -321,8 +328,8 @@ function titleAction(config, store, bounds, params, id, method, cors) {
     }), { cors });
 }
 
-function textAction(config, store, bounds, deps, id, cors) {
-    bounds.applyRateLimit({ config, store, id, kind: 'export' });
+function textAction(config, store, rate, deps, id, cors) {
+    rate('export');
     if (typeof deps.writeTextExport !== 'function') {
         // The text export is the next batch (B4 -- export texte). Until it is
         // wired, this address says so rather than answer a half-grammar.

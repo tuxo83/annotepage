@@ -100,5 +100,7 @@ export async function readRequest(request) {
         params: new Params(source),
         origin: request.headers.get('origin'),
         contentLength: Number(request.headers.get('content-length') || 0),
+        // Kept for the bounds: a configured client-IP header is read from here.
+        headers: request.headers,
     };
 }

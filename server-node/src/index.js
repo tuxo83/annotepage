@@ -19,10 +19,12 @@
 
 import { normaliseConfig } from './config.js';
 import { createHandler } from './handler.js';
+import { createBounds } from './bounds.js';
 
 export { SqliteStore } from './store-sqlite.js';
 export { ApFailure } from './errors.js';
 export { normaliseConfig } from './config.js';
+export { createBounds } from './bounds.js';
 export { AP_FORMAT } from './constants.js';
 
 /**
@@ -41,7 +43,12 @@ export function createServer(options = {}) {
         throw new Error('createServer needs a `store` -- e.g. new SqliteStore({ file }).');
     }
     const config = normaliseConfig(rest);
-    const handler = createHandler(config, store, { bounds, writeTextExport, statistics, log });
+    // The real bounds enforce the domain lock, rate limits and caps -- all off
+    // until the configuration turns one on. A host may pass its own `bounds`.
+    const handler = createHandler(config, store, {
+        bounds: bounds || createBounds({ log }),
+        writeTextExport, statistics, log,
+    });
     return {
         // `fetch` is the name the edge runtimes expect, so `export default` of
         // this object runs on Bun, Deno and Workers unchanged.

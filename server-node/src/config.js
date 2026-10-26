@@ -16,6 +16,8 @@
  * carry an Origin, exactly as the PHP relay enforces.
  */
 
+import { validateDeclaredOrigins } from './origins.js';
+
 /** A version string, or 'unknown'. The three announce-never-gate versions of
  *  FORMAT.md section 6.1: the server's own, the client it believes current, the
  *  mcp it believes current. Absent/invalid reads as 'unknown'. */
@@ -25,6 +27,11 @@ function versionOr(value) {
         return value.trim();
     }
     return 'unknown';
+}
+
+/** A non-negative integer from the configuration, 0 for anything else. */
+function nonNegInt(value) {
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
 }
 
 /** The server's own version accepts a looser shape (a VERSION file can carry a
@@ -50,13 +57,16 @@ function normaliseProjects(projects) {
         : Object.entries(projects);
     for (const [id, p] of entries) {
         const project = p || {};
+        // origins: null (or absent) means no domain lock -- fine when
+        // self-hosted and same-origin. A list turns the anti-abuse lock on,
+        // and each entry is validated and canonicalised here so a typo is a
+        // configuration error now, not a silent 403 later.
         let origins = project.origins;
-        if (origins === undefined) {
+        if (origins === undefined || origins === null) {
             origins = null;
-        } else if (origins !== null && !Array.isArray(origins)) {
-            origins = [String(origins)];
-        } else if (Array.isArray(origins)) {
-            origins = origins.map(String);
+        } else {
+            origins = validateDeclaredOrigins(
+                Array.isArray(origins) ? origins : [origins], String(id));
         }
         const mode = project.mode === 'plain' ? 'plain' : 'encrypted';
         out.set(String(id), { origins, mode });
@@ -88,12 +98,21 @@ export function normaliseConfig(raw = {}) {
         version: serverVersionOr(raw.version),
         clientVersion: versionOr(raw.clientVersion),
         mcpVersion: versionOr(raw.mcpVersion),
-        // Bounds knobs (enforced by the bounds module). Carried through so the
-        // host sets them in one place; the handler reads them via bounds.
-        rate: raw.rate || {},
-        maxBodyBytes: Number.isFinite(raw.maxBodyBytes) ? raw.maxBodyBytes : 0,
-        maxProjects: Number.isFinite(raw.maxProjects) ? raw.maxProjects : 0,
-        maxNotesPerProject: Number.isFinite(raw.maxNotesPerProject) ? raw.maxNotesPerProject : 0,
+        // Bounds knobs, read by the bounds module (see bounds.js). All off by
+        // default -- a server that asked for none pays for none, exactly as the
+        // PHP: a 0 window or a 0 cap touches no counter.
+        maxBodyBytes: nonNegInt(raw.maxBodyBytes),
+        rateWindowSeconds: nonNegInt(raw.rateWindowSeconds),
+        rateWritesPerIp: nonNegInt(raw.rateWritesPerIp),
+        rateWritesPerProject: nonNegInt(raw.rateWritesPerProject),
+        rateReadsPerIp: nonNegInt(raw.rateReadsPerIp),
+        rateExportsPerIp: nonNegInt(raw.rateExportsPerIp),
+        maxNotesPerProject: nonNegInt(raw.maxNotesPerProject),
+        // A header to read the client address from, behind a proxy. NEVER
+        // trusted by default: a header the client writes makes a limit
+        // bypassable in one line (see bounds.js).
+        clientIpHeader: typeof raw.clientIpHeader === 'string' && raw.clientIpHeader !== ''
+            ? raw.clientIpHeader : null,
     };
 }
 
