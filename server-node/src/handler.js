@@ -167,27 +167,30 @@ export function createHandler(config, store, deps = {}) {
                 store.expireOlderThan(config.maxNoteAgeDays);
             }
 
-            // THE DAY'S STATISTICS, on writes only, after a successful answer.
-            // Scheduled here, run by the injected statistics piece; nothing when
-            // none is injected.
-            if (isWrite && deps.statistics && typeof deps.statistics.schedule === 'function') {
-                deps.statistics.schedule(config, store);
-            }
-
+            let response;
             switch (action) {
                 case 'list':
-                    return listAction(config, store, rate, deps, params, id, cors);
+                    response = listAction(config, store, rate, deps, params, id, cors); break;
                 case 'add':
-                    return addAction(config, store, bounds, rate, params, id, project, method, cors);
+                    response = addAction(config, store, bounds, rate, params, id, project, method, cors); break;
                 case 'resolve':
-                    return resolveAction(config, store, rate, params, id, method, cors);
+                    response = resolveAction(config, store, rate, params, id, method, cors); break;
                 case 'title':
-                    return titleAction(config, store, rate, params, id, method, cors);
+                    response = titleAction(config, store, rate, params, id, method, cors); break;
                 case 'text':
-                    return textAction(config, store, rate, deps, id, cors);
+                    response = textAction(config, store, rate, deps, id, cors); break;
                 default:
                     throw unknownActionFailure(action);
             }
+
+            // THE DAY'S STATISTICS, on a successful write only, after the answer
+            // is built and NEVER awaited: a report must not stand between a
+            // visitor and their note. Off unless the host opted in (see config).
+            if (isWrite && response.status === 200
+                && deps.statistics && typeof deps.statistics.report === 'function') {
+                deps.statistics.report(config, store);
+            }
+            return response;
         } catch (err) {
             if (err instanceof ApFailure) {
                 return textResponse(config, err.message + '\n', {

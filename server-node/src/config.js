@@ -90,7 +90,14 @@ export function normaliseConfig(raw = {}) {
             ? !!raw.requireOriginOnWrites : !selfHosted,
         openRegistration: !!raw.openRegistration,
         publishServerTotals: !!raw.publishServerTotals,
-        reportStatistics: raw.reportStatistics !== false,   // default true
+        // OFF by default, UNLIKE the PHP server. A PHP server is installed by
+        // an operator who sees the setup screen say what is sent; a library
+        // embedded in someone else's app must not phone home unasked. Opt in
+        // with `reportStatistics: true`.
+        reportStatistics: raw.reportStatistics === true,
+        statisticsAddress: typeof raw.statisticsAddress === 'string' && raw.statisticsAddress !== ''
+            ? raw.statisticsAddress : null,
+        allowPlainHttp: !!raw.allowPlainHttp,
         maxNoteAgeDays: Number.isFinite(raw.maxNoteAgeDays) && raw.maxNoteAgeDays > 0
             ? Math.floor(raw.maxNoteAgeDays) : 0,
         diagnostic,

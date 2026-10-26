@@ -21,12 +21,14 @@ import { normaliseConfig } from './config.js';
 import { createHandler } from './handler.js';
 import { createBounds } from './bounds.js';
 import { writeTextExport as defaultTextExport } from './text-export.js';
+import { createStatistics } from './statistics.js';
 
 export { SqliteStore } from './store-sqlite.js';
 export { ApFailure } from './errors.js';
 export { normaliseConfig } from './config.js';
 export { createBounds } from './bounds.js';
 export { writeTextExport } from './text-export.js';
+export { createStatistics } from './statistics.js';
 export { AP_FORMAT } from './constants.js';
 
 /**
@@ -50,7 +52,7 @@ export function createServer(options = {}) {
     const handler = createHandler(config, store, {
         bounds: bounds || createBounds({ log }),
         writeTextExport: writeTextExport || defaultTextExport,
-        statistics,
+        statistics: statistics || createStatistics({ log }),
         log,
     });
     return {
