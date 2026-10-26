@@ -21,43 +21,55 @@
    annotepage.com/node.html -- one hand-written page.
    No dependency, no remote font, no third-party script, no external image.
 
-   A DOOR, not a manual: the two ways to run the server, each as a row the site
-   already uses -- a short caption on the left, the code on the right, folding
-   to one column when narrow. The `.use-steps` layout is the install page's,
-   WITHOUT its numbers: these two are alternatives, not a sequence, so nothing
-   counts them. What a flag does, and how to embed it for real, is in the
-   package readme and is not restated here.
-
-   It carries the site header (base.css) but IS NOT in the menu: the server's
-   runtime is a detail, and reviewers outnumber the developers who run it. It
-   is reached from Install and the Source menu. check-site-header.mjs knows it
-   as a framed page off the menu.
-
-   The code blocks are the install page's palette, without the copy button and
-   its script.
+   The colours and the components (header, menu, code frame) are base.css's.
+   This file carries the SAME foundational block as every other page of the
+   site -- the box model, body, typography, the wrap and its reading measure --
+   so the header, the menu and the alignment match the rest, byte for byte in
+   intent. Leaving it out is what made this page drift. Then it lays this page
+   out: two ways to run the server as the install page's rows (caption left,
+   code right), without the numbers -- these are alternatives, not a sequence.
    --------------------------------------------------------------------------- */
 
-/* The same frame width as every other page: the wrap centres at 85rem and
-   pads its sides, and inside main each direct child is held to the reading
-   measure -- except the two-column rows, which go wide like the install page's
-   steps. Without this the page ran full-bleed and misaligned with the rest. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+}
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin: 0; }
+h1 { font-size: clamp(2rem, 7vw, 3.1rem); font-weight: 700; }
+h2 { font-size: clamp(1.4rem, 4.4vw, 1.9rem); font-weight: 650; }
+h3 { font-size: 1.05rem; font-weight: 650; }
+p  { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
 .wrap { width: 100%; max-width: 85rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
 main .wrap > * { max-width: var(--measure); }
+main .wrap > h1 { max-width: 42rem; }
 main .wrap > .ways { max-width: none; }
-
-main { padding: clamp(1.8rem, 4vw, 2.8rem) 0 clamp(3rem, 8vw, 4.5rem); }
-h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); line-height: 1.1; margin: 0; }
-.lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; margin: .9rem 0 0; }
-/* A small orientation line: this is the developer page, and below it the way
-   back to the rest of the site -- the same .more buttons the landing page and
-   the FAQ use -- since the menu does not list this page. */
-.dev-note { font-size: .95rem; color: var(--dim); margin: 1.2rem 0 0; }
-.see-out { display: flex; flex-wrap: wrap; gap: .8rem; margin: 1rem 0 0; }
 main .wrap > .see-out { max-width: none; }
 
-/* Words left, code right -- the install page's rows, folding at the same width
-   so the two pages lay the component out the same way. No counter: these are
-   two ways to do one thing, not two steps. */
+.dim { color: var(--dim); }
+.small { font-size: .875rem; line-height: 1.55; }
+
+@media (max-width: 700px) { body { font-size: 16px; } }
+
+/* -- This page --------------------------------------------------------- */
+main { padding: clamp(1.8rem, 4vw, 2.8rem) 0 clamp(3rem, 8vw, 4.5rem); }
+h1 + .lead { margin-top: 1.15rem; }
+.lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; }
+.dev-note { font-size: .95rem; color: var(--dim); margin: 1.2rem 0 0; }
+.see-out { display: flex; flex-wrap: wrap; gap: .8rem; margin: 1rem 0 0; }
+
+/* Words left, code right -- the install page's rows. No counter: alternatives. */
 .ways { display: grid; gap: clamp(1.6rem, 3.4vw, 3rem); margin: 2rem 0 0; padding: 0; list-style: none; }
 .ways > li { display: grid; gap: clamp(.8rem, 3vw, 2.4rem); grid-template-columns: minmax(0, 1fr); align-items: center; }
 @media (min-width: 62rem) {
@@ -67,7 +79,7 @@ main .wrap > .see-out { max-width: none; }
 .ways .say { margin: .5rem 0 0; color: var(--dim); font-size: .95rem; max-width: 30em; }
 .ways .snip { margin: 0; }
 
-/* -- Code snippets, the install page's palette, pinned dark in both themes -- */
+/* Code snippets, the install page's palette, pinned dark in both themes. */
 :root {
     --code-ground: #1a1a1a; --code-edge: #4a5058; --code-text: #e6e6e6;
     --code-name: #7aa2f7; --code-att: #e0af68; --code-str: #9ece6a; --code-dim: #9aa0a6;
@@ -88,8 +100,7 @@ code:not(pre code) {
     border-radius: 5px; padding: .08em .32em;
 }
 
-.close { color: var(--dim); font-size: .95rem; margin: clamp(2rem, 5vw, 3rem) 0 0; }
-.route { font-size: .95rem; color: var(--dim); margin: 1.2rem 0 0; }
+.route { font-size: .95rem; color: var(--dim); margin: 2.4rem 0 0; }
 </style>
 </head>
 <body>
