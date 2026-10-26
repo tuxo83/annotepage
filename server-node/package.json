@@ -1,0 +1,28 @@
+{
+  "name": "annotepage-server",
+  "version": "0.1.0",
+  "description": "The annotepage server as an embeddable Node module: the seven addresses, the store and the bounds, over the web-standard Request/Response. No PHP, no framework.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./stores/sqlite": "./src/store-sqlite.js"
+  },
+  "files": [
+    "src/",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuxo83/annotepage.git",
+    "directory": "server-node"
+  },
+  "homepage": "https://annotepage.com",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
