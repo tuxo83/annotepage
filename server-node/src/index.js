@@ -20,11 +20,13 @@
 import { normaliseConfig } from './config.js';
 import { createHandler } from './handler.js';
 import { createBounds } from './bounds.js';
+import { writeTextExport as defaultTextExport } from './text-export.js';
 
 export { SqliteStore } from './store-sqlite.js';
 export { ApFailure } from './errors.js';
 export { normaliseConfig } from './config.js';
 export { createBounds } from './bounds.js';
+export { writeTextExport } from './text-export.js';
 export { AP_FORMAT } from './constants.js';
 
 /**
@@ -47,7 +49,9 @@ export function createServer(options = {}) {
     // until the configuration turns one on. A host may pass its own `bounds`.
     const handler = createHandler(config, store, {
         bounds: bounds || createBounds({ log }),
-        writeTextExport, statistics, log,
+        writeTextExport: writeTextExport || defaultTextExport,
+        statistics,
+        log,
     });
     return {
         // `fetch` is the name the edge runtimes expect, so `export default` of

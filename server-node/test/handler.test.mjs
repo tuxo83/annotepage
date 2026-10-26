@@ -193,9 +193,10 @@ test('a newer-format envelope is refused with the format message', async () => {
     assert.match(await res.text(), /newer version of annotepage/);
 });
 
-test('the text export is staged until its batch', async () => {
+test('the text export answers text/plain (grammar checked in its own suite)', async () => {
     const res = await get(server(), `action=text&project=${PROJECT}`);
-    assert.equal(res.status, 503);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'text/plain; charset=utf-8');
 });
 
 test('a page path with .. is refused', async () => {
