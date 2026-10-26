@@ -7,7 +7,8 @@
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
-    "./stores/sqlite": "./src/store-sqlite.js"
+    "./stores/sqlite": "./src/store-sqlite.js",
+    "./adapters": "./src/adapters.js"
   },
   "files": [
     "src/",
