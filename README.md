@@ -20,12 +20,13 @@ never had the key. It is said here, and nowhere else in this repository,
 because it is the one thing that will hurt:
 [why](https://annotepage.com/questions.html#no-recovery).
 
-## The three pieces
+## The four pieces
 
 | | |
 |---|---|
 | [`client/`](client/) | the annotation layer, one file, one `<script>` tag — npm `annotepage-client` |
 | [`server/`](server/) | one PHP codebase, on the site itself or on a machine serving several |
+| [`server-node/`](server-node/) | the same server in Node, to embed in an app or run on its own — no PHP — npm `annotepage-server` |
 | [`mcp/`](mcp/) | the assistants' access: an MCP server and a CLI — npm `annotepage-mcp` |
 
 ## For whoever reads the code
