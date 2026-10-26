@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The server, in Node &mdash; annotepage</title>
-<meta name="description" content="annotepage's server as a Node package: embed it in the app you already run, or launch it on its own with npx. No PHP, same client, same format, same end-to-end encryption.">
+<meta name="description" content="annotepage's server in Node: a library you embed in the app you already run, or an app you launch with npx. No PHP, same client, same format.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
@@ -13,7 +13,7 @@
 <meta property="og:site_name"   content="annotepage">
 <meta property="og:url"         content="https://annotepage.com/node.html">
 <meta property="og:title"       content="The server, in Node">
-<meta property="og:description" content="Embed annotepage's server in the Node app you already run, or launch it with npx. No PHP, same client, same format, same encryption.">
+<meta property="og:description" content="Embed annotepage's server in your Node app, or launch it with npx. No PHP, same client, same format.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/base.css">
 <style>
@@ -21,83 +21,61 @@
    annotepage.com/node.html -- one hand-written page.
    No dependency, no remote font, no third-party script, no external image.
 
-   It is a DOOR, not a manual: what the Node server is, the two ways to run it,
-   and where the code and the format live. The detail is in the package readme
-   and in FORMAT.md, and is not restated here.
+   A DOOR, not a manual: the two ways to run the server, shown as the site
+   shows things -- a line, a row of chips, two code blocks -- and nothing more.
+   What each flag does, and how to embed it for real, is in the package readme;
+   it is not restated here, for the reason the install page is shorter than the
+   one it replaced: the length was the defect.
 
-   It carries the site's header (base.css) but IS NOT in the menu: the server's
-   runtime is an implementation detail, and the four reviewers who annotate for
-   every one developer who runs the server should not meet it in a menu that
-   follows them on every page. It is reached from the Install page and the
-   Source menu instead. check-site-header.mjs knows it by name, as a framed
-   page that the menu does not list.
+   It carries the site header (base.css) but IS NOT in the menu: the server's
+   runtime is a detail, and the reviewers who annotate outnumber the developers
+   who run it. It is reached from Install and the Source menu.
+   check-site-header.mjs knows it by name, as a framed page off the menu.
 
-   The content styles below are the Install page's, token for token, so a code
-   block and an aside read the same here as everywhere -- without the copy
-   button and its script, which this page has no need of.
+   The chips are the landing page's `.claims`, the code blocks the install
+   page's palette (without the copy button and its script). Nothing new is
+   drawn here.
    --------------------------------------------------------------------------- */
 
-main { padding: 2.2rem 0 3.5rem; }
-h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 .6rem; }
-h2 { font-size: 1.2rem; margin: 2.4rem 0 .4rem; }
-.lede { font-size: 1.12rem; color: var(--dim); margin: 0 0 1.4rem; max-width: 42em; }
-main p { max-width: 42em; }
-main ul { max-width: 42em; padding-left: 1.2rem; }
-main li { margin: .25rem 0; }
+main { padding: clamp(1.8rem, 4vw, 2.8rem) 0 clamp(3rem, 8vw, 4.5rem); }
+h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); line-height: 1.1; margin: 0; }
+h2 { font-size: 1.15rem; margin: 2.6rem 0 0; }
+.lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 38em; margin: .8rem 0 0; }
+.dim { color: var(--dim); }
+.small { font-size: .875rem; line-height: 1.55; margin: .45rem 0 0; }
 
-/* -- Code snippets, the Install page's palette, pinned dark in both themes -- */
+.claims { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
+.claims li {
+    font-size: .82rem; font-weight: 600; letter-spacing: .01em;
+    border: 1px solid var(--line); border-radius: 1.2rem;
+    padding: .3rem .78rem; color: var(--text); background: var(--bg-soft);
+}
+.claims li span { color: var(--dim); font-weight: 400; }
+
+/* -- Code snippets, the install page's palette, pinned dark in both themes -- */
 :root {
-    --code-ground:    #1a1a1a;
-    --code-edge:      #4a5058;
-    --code-text:      #e6e6e6;
-    --code-name:      #7aa2f7;
-    --code-att:       #e0af68;
-    --code-str:       #9ece6a;
-    --code-dim:       #9aa0a6;
+    --code-ground: #1a1a1a; --code-edge: #4a5058; --code-text: #e6e6e6;
+    --code-name: #7aa2f7; --code-att: #e0af68; --code-str: #9ece6a; --code-dim: #9aa0a6;
 }
 .snip {
-    margin: 1.1rem 0;
-    border: 1px solid var(--code-edge);
-    border-radius: var(--radius);
-    background: var(--code-ground);
-    color: var(--code-text);
-    overflow: hidden;
+    margin: .7rem 0 0;
+    border: 1px solid var(--code-edge); border-radius: var(--radius);
+    background: var(--code-ground); color: var(--code-text); overflow: hidden;
 }
 .snip .tg { color: var(--code-name); }
 .snip .at { color: var(--code-att); }
 .snip .st { color: var(--code-str); }
 .snip .op { color: var(--code-dim); }
 .snip .cm { color: var(--code-dim); }
-.snip pre {
-    margin: 0; padding: .95rem 1rem;
-    overflow-x: auto;              /* the frame scrolls, never the page */
-    -webkit-overflow-scrolling: touch;
-}
-.snip pre code {
-    font-family: var(--mono); font-size: .8rem; line-height: 1.65;
-    white-space: pre; display: block; min-width: 0;
-}
+.snip pre { margin: 0; padding: .95rem 1rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.snip pre code { font-family: var(--mono); font-size: .8rem; line-height: 1.65; white-space: pre; display: block; min-width: 0; }
 code:not(pre code) {
     font-family: var(--mono); font-size: .87em;
     background: var(--bg-code); border: 1px solid var(--line-soft);
     border-radius: 5px; padding: .08em .32em;
 }
 
-/* -- The aside, the Install page's -------------------------------------- */
-.note-aside {
-    display: inline-flex; align-items: baseline; gap: .5rem;
-    margin: 1.6rem 0 0; max-width: 46em;
-    padding: .55rem .85rem;
-    border: 1px solid var(--line-soft); border-radius: 8px;
-    background: var(--bg-soft);
-    font-size: .88rem; color: var(--dim);
-}
-.note-aside b { color: var(--text); }
-.note-aside .mk { flex: none; }
-.is-info .mk { color: var(--accent); }
-
-.onward { margin-top: 2.6rem; font-size: .95rem; }
-.onward a { white-space: nowrap; }
+.route { font-size: .95rem; color: var(--dim); margin: 2.8rem 0 0; }
 </style>
 </head>
 <body>
@@ -139,7 +117,7 @@ code:not(pre code) {
                        aria-label="The MCP for the assistant, on npm, opens in a new tab">The MCP, for the assistant <span class="drop-where">npm</span></a>
                     <a href="https://github.com/tuxo83/annotepage/tree/main/server-node"
                        target="_blank" rel="noopener"
-                       aria-label="The server for a Node app, on GitHub, npm soon, opens in a new tab">The server, for a Node app <span class="drop-where">GitHub, npm soon</span></a>
+                       aria-label="The library and app for Node, on GitHub, npm soon, opens in a new tab">The library &amp; app, in Node <span class="drop-where">GitHub, npm soon</span></a>
                     <span class="drop-sep" aria-hidden="true"></span>
                     <a href="/annotepage-wordpress-1.0.1.zip"
                        aria-label="The plugin for WordPress, a zip to upload, soon on wordpress.org">The plugin, for WordPress <span class="drop-where">zip, wordpress.org soon</span></a>
@@ -152,57 +130,40 @@ code:not(pre code) {
 <main>
     <div class="wrap">
         <h1>The server, in Node</h1>
-        <p class="lede">The review server is a PHP app you install &mdash; or a Node
-        package you drop into the app you already run. Same notes, the same browser
-        client, the same format. No PHP, and no second server beside your own.</p>
+        <p class="lead">Your own app, not PHP &mdash; a library you embed, or an app you run.</p>
 
-        <h2 id="run">Run it on its own</h2>
-        <p>From a terminal, nothing to write:</p>
-        <div class="snip"><pre><code><span class="tg">npx</span> <span class="at">annotepage-server</span> <span class="op">--project</span> <span class="st">&lt;your project id&gt;</span> <span class="op">--report-statistics</span> <span class="st">false</span></code></pre></div>
-        <p>It listens on <code>:3000</code> and answers the client. <code>--help</code>
-        lists the rest &mdash; <code>--port</code>, <code>--db</code>,
-        <code>--prefix</code>, <code>--relay</code>, <code>--config</code>.</p>
+        <ul class="claims">
+            <li>No PHP</li>
+            <li>Same browser client</li>
+            <li>End&#8209;to&#8209;end encrypted <span>&middot; no key on the server</span></li>
+            <li>SQLite <span>&middot; interchangeable with PHP</span></li>
+        </ul>
 
-        <h2 id="embed">Embed it in your app</h2>
-        <p>Or mount it where your app already answers requests:</p>
+        <h2>Run it</h2>
+        <div class="snip"><pre><code><span class="tg">npx</span> <span class="at">annotepage-server</span> <span class="op">--project</span> <span class="st">&lt;id&gt;</span> <span class="op">--report-statistics</span> <span class="st">false</span></code></pre></div>
+        <p class="small dim"><code>--help</code> for the rest.</p>
+
+        <h2>Embed it</h2>
         <div class="snip"><pre><code><span class="tg">import</span> { createServer } <span class="tg">from</span> <span class="st">'annotepage-server'</span>;
 <span class="tg">import</span> { SqliteStore } <span class="tg">from</span> <span class="st">'annotepage-server/stores/sqlite'</span>;
 <span class="tg">import</span> { nodeListener } <span class="tg">from</span> <span class="st">'annotepage-server/adapters'</span>;
 
 <span class="tg">const</span> api = <span class="at">createServer</span>({
     store: <span class="tg">new</span> <span class="at">SqliteStore</span>({ file: <span class="st">'./data/notes.sqlite'</span> }),
-    projects: { <span class="st">'&lt;your project id&gt;'</span>: { mode: <span class="st">'encrypted'</span> } },
+    projects: { <span class="st">'&lt;id&gt;'</span>: { mode: <span class="st">'encrypted'</span> } },
     reportStatistics: <span class="op">false</span>,
 });
-app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span class="at">nodeListener</span>(api));   <span class="cm">// Express, http, Fastify…</span></code></pre></div>
-        <p>The core is <code>api.fetch(request)</code> &mdash; a web-standard Request
-        in, a Response out &mdash; so Express, Fastify, and the fetch runtimes (Bun,
-        Deno, Cloudflare Workers) all take it as they are. The browser client points
-        at the mount and is otherwise unchanged.</p>
+app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span class="at">nodeListener</span>(api));</code></pre></div>
+        <p class="small dim">A fetch handler &mdash; Express, Fastify, Bun, Deno, Workers.</p>
 
-        <p class="note-aside is-info">
-            <span class="mk" aria-hidden="true">&#9432;</span>
-            <span>The encryption does not move: the server stores ciphertext and
-            <b>never holds the key</b>, exactly as the PHP one. A SQLite file written
-            by either server is read by the other, so a project can move off PHP
-            without touching a note.</span>
-        </p>
-
-        <h2 id="statistics">The one choice with no default</h2>
-        <p>Whether the server reports once a day &mdash; a random identifier, its
-        version and three totals, and <a href="questions.html#statistics">nothing
-        else</a> &mdash; is not decided for you: you pass <code>report-statistics</code>
-        one way or the other. It is the only setting that sends anything off the
-        machine.</p>
-
-        <p class="onward">
-            The code: <a href="https://github.com/tuxo83/annotepage/tree/main/server-node"
-               target="_blank" rel="noopener">server-node on GitHub</a> (npm soon).
+        <p class="route">
+            <a href="https://github.com/tuxo83/annotepage/tree/main/server-node"
+               target="_blank" rel="noopener">server-node</a> (npm soon)
             &nbsp;&middot;&nbsp;
-            The format and the security model: <a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md"
-               target="_blank" rel="noopener">FORMAT.md</a>.
+            <a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md"
+               target="_blank" rel="noopener">FORMAT.md</a>
             &nbsp;&middot;&nbsp;
-            The PHP server instead: <a href="how-to-install-it.html">Install</a>.
+            <a href="how-to-install-it.html">the PHP server</a>
         </p>
     </div>
 </main>
