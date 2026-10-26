@@ -187,9 +187,9 @@ test('what the installation remembers survives and can be forgotten', () => {
 
 test('consumeRate counts up within a window', () => {
     const store = fresh();
-    assert.equal(store.consumeRate('ip:1.2.3.4', 100), 1);
-    assert.equal(store.consumeRate('ip:1.2.3.4', 100), 2);
-    assert.equal(store.consumeRate('ip:1.2.3.4', 101), 1);   // a new window restarts
+    assert.equal(store.consumeRate('counter-a', 100), 1);
+    assert.equal(store.consumeRate('counter-a', 100), 2);
+    assert.equal(store.consumeRate('counter-a', 101), 1);   // a new window restarts
 });
 
 test('a bad table prefix is refused', () => {

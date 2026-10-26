@@ -81,15 +81,15 @@ test('a relay accepts an open-registration write that carries an Origin', async 
 test('writes are rate limited per address, with a Retry-After', async () => {
     const api = server({ rateWindowSeconds: 3600, rateWritesPerIp: 2 });
     const fields = { project: PROJECT, mode: 'plain', index: IDX, page: '/p', author: 'A', text: 't' };
-    const one = await req(api, { method: 'POST', query: 'action=add', fields, address: '1.1.1.1' });
-    const two = await req(api, { method: 'POST', query: 'action=add', fields, address: '1.1.1.1' });
-    const three = await req(api, { method: 'POST', query: 'action=add', fields, address: '1.1.1.1' });
+    const one = await req(api, { method: 'POST', query: 'action=add', fields, address: '127.0.0.1' });
+    const two = await req(api, { method: 'POST', query: 'action=add', fields, address: '127.0.0.1' });
+    const three = await req(api, { method: 'POST', query: 'action=add', fields, address: '127.0.0.1' });
     assert.equal(one.status, 200);
     assert.equal(two.status, 200);
     assert.equal(three.status, 429);
     assert.ok(Number(three.headers.get('retry-after')) > 0);
     // A different address has its own counter.
-    const other = await req(api, { method: 'POST', query: 'action=add', fields, address: '2.2.2.2' });
+    const other = await req(api, { method: 'POST', query: 'action=add', fields, address: '0.0.0.0' });
     assert.equal(other.status, 200);
 });
 
