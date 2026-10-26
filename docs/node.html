@@ -21,36 +21,37 @@
    annotepage.com/node.html -- one hand-written page.
    No dependency, no remote font, no third-party script, no external image.
 
-   A DOOR, not a manual: the two ways to run the server, shown as the site
-   shows things -- a line, a row of chips, two code blocks -- and nothing more.
-   What each flag does, and how to embed it for real, is in the package readme;
-   it is not restated here, for the reason the install page is shorter than the
-   one it replaced: the length was the defect.
+   A DOOR, not a manual: the two ways to run the server, each as a row the site
+   already uses -- a short caption on the left, the code on the right, folding
+   to one column when narrow. The `.use-steps` layout is the install page's,
+   WITHOUT its numbers: these two are alternatives, not a sequence, so nothing
+   counts them. What a flag does, and how to embed it for real, is in the
+   package readme and is not restated here.
 
    It carries the site header (base.css) but IS NOT in the menu: the server's
-   runtime is a detail, and the reviewers who annotate outnumber the developers
-   who run it. It is reached from Install and the Source menu.
-   check-site-header.mjs knows it by name, as a framed page off the menu.
+   runtime is a detail, and reviewers outnumber the developers who run it. It
+   is reached from Install and the Source menu. check-site-header.mjs knows it
+   as a framed page off the menu.
 
-   The chips are the landing page's `.claims`, the code blocks the install
-   page's palette (without the copy button and its script). Nothing new is
-   drawn here.
+   The code blocks are the install page's palette, without the copy button and
+   its script.
    --------------------------------------------------------------------------- */
 
 main { padding: clamp(1.8rem, 4vw, 2.8rem) 0 clamp(3rem, 8vw, 4.5rem); }
 h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); line-height: 1.1; margin: 0; }
-h2 { font-size: 1.15rem; margin: 2.6rem 0 0; }
-.lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 38em; margin: .8rem 0 0; }
-.dim { color: var(--dim); }
-.small { font-size: .875rem; line-height: 1.55; margin: .45rem 0 0; }
+.lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; margin: .9rem 0 0; }
 
-.claims { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
-.claims li {
-    font-size: .82rem; font-weight: 600; letter-spacing: .01em;
-    border: 1px solid var(--line); border-radius: 1.2rem;
-    padding: .3rem .78rem; color: var(--text); background: var(--bg-soft);
+/* Words left, code right -- the install page's rows, folding at the same width
+   so the two pages lay the component out the same way. No counter: these are
+   two ways to do one thing, not two steps. */
+.ways { display: grid; gap: clamp(1.6rem, 3.4vw, 3rem); margin: 2rem 0 0; padding: 0; list-style: none; }
+.ways > li { display: grid; gap: clamp(.8rem, 3vw, 2.4rem); grid-template-columns: minmax(0, 1fr); align-items: center; }
+@media (min-width: 62rem) {
+    .ways > li { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); }
 }
-.claims li span { color: var(--dim); font-weight: 400; }
+.ways .cap { margin: 0; font-size: clamp(1.06rem, 2.5vw, 1.24rem); font-weight: 650; line-height: 1.3; letter-spacing: -0.01em; }
+.ways .say { margin: .5rem 0 0; color: var(--dim); font-size: .95rem; max-width: 30em; }
+.ways .snip { margin: 0; }
 
 /* -- Code snippets, the install page's palette, pinned dark in both themes -- */
 :root {
@@ -58,7 +59,6 @@ h2 { font-size: 1.15rem; margin: 2.6rem 0 0; }
     --code-name: #7aa2f7; --code-att: #e0af68; --code-str: #9ece6a; --code-dim: #9aa0a6;
 }
 .snip {
-    margin: .7rem 0 0;
     border: 1px solid var(--code-edge); border-radius: var(--radius);
     background: var(--code-ground); color: var(--code-text); overflow: hidden;
 }
@@ -66,7 +66,6 @@ h2 { font-size: 1.15rem; margin: 2.6rem 0 0; }
 .snip .at { color: var(--code-att); }
 .snip .st { color: var(--code-str); }
 .snip .op { color: var(--code-dim); }
-.snip .cm { color: var(--code-dim); }
 .snip pre { margin: 0; padding: .95rem 1rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .snip pre code { font-family: var(--mono); font-size: .8rem; line-height: 1.65; white-space: pre; display: block; min-width: 0; }
 code:not(pre code) {
@@ -75,7 +74,8 @@ code:not(pre code) {
     border-radius: 5px; padding: .08em .32em;
 }
 
-.route { font-size: .95rem; color: var(--dim); margin: 2.8rem 0 0; }
+.close { color: var(--dim); font-size: .95rem; margin: clamp(2rem, 5vw, 3rem) 0 0; }
+.route { font-size: .95rem; color: var(--dim); margin: 1.2rem 0 0; }
 </style>
 </head>
 <body>
@@ -130,31 +130,36 @@ code:not(pre code) {
 <main>
     <div class="wrap">
         <h1>The server, in Node</h1>
-        <p class="lead">Your own app, not PHP &mdash; a library you embed, or an app you run.</p>
+        <p class="lead">Embed it in the app you already run, or launch it on its own. No PHP.</p>
 
-        <ul class="claims">
-            <li>No PHP</li>
-            <li>Same browser client</li>
-            <li>End&#8209;to&#8209;end encrypted <span>&middot; no key on the server</span></li>
-            <li>SQLite <span>&middot; interchangeable with PHP</span></li>
-        </ul>
-
-        <h2>Run it</h2>
-        <div class="snip"><pre><code><span class="tg">npx</span> <span class="at">annotepage-server</span> <span class="op">--project</span> <span class="st">&lt;id&gt;</span> <span class="op">--report-statistics</span> <span class="st">false</span></code></pre></div>
-        <p class="small dim"><code>--help</code> for the rest.</p>
-
-        <h2>Embed it</h2>
-        <div class="snip"><pre><code><span class="tg">import</span> { createServer } <span class="tg">from</span> <span class="st">'annotepage-server'</span>;
+        <ul class="ways">
+            <li>
+                <div>
+                    <p class="cap">Embed it</p>
+                    <p class="say">In the app you already run.</p>
+                    <p class="say">A fetch handler &mdash; Express, Fastify, Bun, Deno, Workers.</p>
+                </div>
+                <div class="snip"><pre><code><span class="tg">import</span> { createServer } <span class="tg">from</span> <span class="st">'annotepage-server'</span>;
 <span class="tg">import</span> { SqliteStore } <span class="tg">from</span> <span class="st">'annotepage-server/stores/sqlite'</span>;
 <span class="tg">import</span> { nodeListener } <span class="tg">from</span> <span class="st">'annotepage-server/adapters'</span>;
 
 <span class="tg">const</span> api = <span class="at">createServer</span>({
     store: <span class="tg">new</span> <span class="at">SqliteStore</span>({ file: <span class="st">'./data/notes.sqlite'</span> }),
     projects: { <span class="st">'&lt;id&gt;'</span>: { mode: <span class="st">'encrypted'</span> } },
-    reportStatistics: <span class="op">false</span>,
 });
 app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span class="at">nodeListener</span>(api));</code></pre></div>
-        <p class="small dim">A fetch handler &mdash; Express, Fastify, Bun, Deno, Workers.</p>
+            </li>
+            <li>
+                <div>
+                    <p class="cap">Run it</p>
+                    <p class="say">On its own, from a terminal.</p>
+                    <p class="say"><code>--help</code> for the options.</p>
+                </div>
+                <div class="snip"><pre><code><span class="tg">npx</span> <span class="at">annotepage-server</span> <span class="op">--project</span> <span class="st">&lt;id&gt;</span></code></pre></div>
+            </li>
+        </ul>
+
+        <p class="close">The browser client and the wire format do not change.</p>
 
         <p class="route">
             <a href="https://github.com/tuxo83/annotepage/tree/main/server-node"
