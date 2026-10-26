@@ -17,18 +17,15 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/base.css">
 <style>
-/* ---------------------------------------------------------------------------
-   annotepage.com/node.html -- one hand-written page.
+/* annotepage.com/node.html -- one hand-written page.
    No dependency, no remote font, no third-party script, no external image.
 
-   The colours and the components (header, menu, code frame) are base.css's.
-   This file carries the SAME foundational block as every other page of the
-   site -- the box model, body, typography, the wrap and its reading measure --
-   so the header, the menu and the alignment match the rest, byte for byte in
-   intent. Leaving it out is what made this page drift. Then it lays this page
-   out: two ways to run the server as the install page's rows (caption left,
-   code right), without the numbers -- these are alternatives, not a sequence.
-   --------------------------------------------------------------------------- */
+   It REUSES the site's own components and carries the same foundational block
+   every page does, so nothing here looks different from the rest: the header
+   and the menu are base.css's; the rows are the install page's .use-steps
+   (caption left, code right) with its .snip code blocks and copy button; the
+   buttons back to the site are the landing page's and the FAQ's .more. The
+   only thing this file adds is the layout of THIS page. */
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -54,53 +51,103 @@ p:last-child { margin-bottom: 0; }
 .wrap { width: 100%; max-width: 85rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
 main .wrap > * { max-width: var(--measure); }
 main .wrap > h1 { max-width: 42rem; }
-main .wrap > .ways { max-width: none; }
+main .wrap > .use-steps { max-width: none; }
 main .wrap > .see-out { max-width: none; }
 
 .dim { color: var(--dim); }
 .small { font-size: .875rem; line-height: 1.55; }
+.vh {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
 
 @media (max-width: 700px) { body { font-size: 16px; } }
 
-/* -- This page --------------------------------------------------------- */
 main { padding: clamp(1.8rem, 4vw, 2.8rem) 0 clamp(3rem, 8vw, 4.5rem); }
 h1 + .lead { margin-top: 1.15rem; }
 .lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; }
 .dev-note { font-size: .95rem; color: var(--dim); margin: 1.2rem 0 0; }
-.see-out { display: flex; flex-wrap: wrap; gap: .8rem; margin: 1rem 0 0; }
 
-/* Words left, code right -- the install page's rows. No counter: alternatives. */
-.ways { display: grid; gap: clamp(1.6rem, 3.4vw, 3rem); margin: 2rem 0 0; padding: 0; list-style: none; }
-.ways > li { display: grid; gap: clamp(.8rem, 3vw, 2.4rem); grid-template-columns: minmax(0, 1fr); align-items: center; }
+/* The way back to the rest of the site: the FAQ's centred row of .more. */
+.see-out { display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem; margin: 1.6rem 0 0; }
+
+/* The install page's rows: caption left, code right, folding at 62rem. No
+   counter -- these are ways, not numbered steps. .cap and .say are base.css's. */
+.use-steps { display: grid; gap: clamp(1.6rem, 3.4vw, 3.2rem); margin: 2.2rem 0 0; padding: 0; list-style: none; }
+.use-steps > li { display: grid; gap: clamp(.8rem, 3vw, 2.4rem); grid-template-columns: minmax(0, 1fr); align-items: center; }
 @media (min-width: 62rem) {
-    .ways > li { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); }
+    .use-steps > li { grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); }
 }
-.ways .cap { margin: 0; font-size: clamp(1.06rem, 2.5vw, 1.24rem); font-weight: 650; line-height: 1.3; letter-spacing: -0.01em; }
-.ways .say { margin: .5rem 0 0; color: var(--dim); font-size: .95rem; max-width: 30em; }
-.ways .snip { margin: 0; }
+.use-steps .say + .say { margin-top: .55rem; }
+.use-steps .snip { margin: 0; }
 
-/* Code snippets, the install page's palette, pinned dark in both themes. */
+/* The install page's code snippets -- palette, copy button, pre -- verbatim. */
 :root {
-    --code-ground: #1a1a1a; --code-edge: #4a5058; --code-text: #e6e6e6;
-    --code-name: #7aa2f7; --code-att: #e0af68; --code-str: #9ece6a; --code-dim: #9aa0a6;
+    --code-ground:    #1a1a1a;
+    --code-edge:      #4a5058;
+    --code-text:      #e6e6e6;
+    --code-name:      #7aa2f7;
+    --code-att:       #e0af68;
+    --code-str:       #9ece6a;
+    --code-dim:       #9aa0a6;
+    --code-chip:      #262626;
+    --code-chip-line: #8a8f98;
 }
 .snip {
-    border: 1px solid var(--code-edge); border-radius: var(--radius);
-    background: var(--code-ground); color: var(--code-text); overflow: hidden;
+    position: relative;
+    margin: 0;
+    border: 1px solid var(--code-edge);
+    border-radius: var(--radius);
+    background: var(--code-ground);
+    color: var(--code-text);
+    overflow: hidden;
 }
 .snip .tg { color: var(--code-name); }
 .snip .at { color: var(--code-att); }
 .snip .st { color: var(--code-str); }
 .snip .op { color: var(--code-dim); }
-.snip pre { margin: 0; padding: .95rem 1rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.snip pre code { font-family: var(--mono); font-size: .8rem; line-height: 1.65; white-space: pre; display: block; min-width: 0; }
+.copy {
+    position: absolute; top: .5rem; right: .5rem; z-index: 1;
+    display: grid; place-items: center;
+    width: 1.9rem; height: 1.9rem; padding: 0;
+    color: var(--code-dim); background: var(--code-chip);
+    border: 1px solid var(--code-chip-line); border-radius: 7px;
+    cursor: pointer;
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+}
+.copy svg {
+    width: 1.05rem; height: 1.05rem;
+    fill: none; stroke: currentColor; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.copy .i-done { display: none; }
+.copy:hover { color: var(--code-name); border-color: var(--code-name); }
+.copy[data-state="done"] { color: var(--code-ground); background: var(--code-str); border-color: var(--code-str); }
+.copy[data-state="done"] .i-copy { display: none; }
+.copy[data-state="done"] .i-done { display: block; }
+.copy[data-state="failed"] { color: var(--code-att); border-color: var(--code-att); }
+.copy:focus-visible { outline-color: var(--code-name); }
+.snip pre {
+    margin: 0;
+    padding: .95rem 3rem .95rem 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.snip pre code {
+    font-family: var(--mono);
+    font-size: .8rem;
+    line-height: 1.65;
+    white-space: pre;
+    display: block;
+    min-width: 0;
+}
 code:not(pre code) {
     font-family: var(--mono); font-size: .87em;
     background: var(--bg-code); border: 1px solid var(--line-soft);
     border-radius: 5px; padding: .08em .32em;
 }
 
-.route { font-size: .95rem; color: var(--dim); margin: 2.4rem 0 0; }
+.use-steps + .see-out { margin-top: clamp(2.4rem, 6vw, 3.6rem); }
 </style>
 </head>
 <body>
@@ -159,11 +206,9 @@ code:not(pre code) {
         <p class="dev-note">The developer page for annotepage's server. Not what you came for?</p>
         <p class="see-out">
             <a class="more" href="/">What annotepage is<span class="arrow" aria-hidden="true">&rarr;</span></a>
-            <a class="more" href="how-to-use-it.html">See a detailed usage example<span class="arrow" aria-hidden="true">&rarr;</span></a>
-            <a class="more" href="how-to-install-it.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
 
-        <ul class="ways">
+        <ol class="use-steps">
             <li>
                 <div>
                     <p class="cap">On npm</p>
@@ -171,7 +216,12 @@ code:not(pre code) {
                         <a href="https://www.npmjs.com/package/annotepage-server"
                            target="_blank" rel="noopener">annotepage-server</a>.</p>
                 </div>
-                <div class="snip"><pre><code><span class="tg">npm</span> <span class="at">install</span> annotepage-server</code></pre></div>
+                <div>
+                    <div class="snip">
+                        <button class="copy" type="button" data-copy="snip-install" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-install"><code><span class="tg">npm</span> <span class="at">install</span> annotepage-server</code></pre>
+                    </div>
+                </div>
             </li>
             <li>
                 <div>
@@ -179,7 +229,10 @@ code:not(pre code) {
                     <p class="say">In the app you already run.</p>
                     <p class="say">A fetch handler &mdash; Express, Fastify, Bun, Deno, Workers.</p>
                 </div>
-                <div class="snip"><pre><code><span class="tg">import</span> { createServer } <span class="tg">from</span> <span class="st">'annotepage-server'</span>;
+                <div>
+                    <div class="snip">
+                        <button class="copy" type="button" data-copy="snip-embed" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-embed"><code><span class="tg">import</span> { createServer } <span class="tg">from</span> <span class="st">'annotepage-server'</span>;
 <span class="tg">import</span> { SqliteStore } <span class="tg">from</span> <span class="st">'annotepage-server/stores/sqlite'</span>;
 <span class="tg">import</span> { nodeListener } <span class="tg">from</span> <span class="st">'annotepage-server/adapters'</span>;
 
@@ -187,7 +240,9 @@ code:not(pre code) {
     store: <span class="tg">new</span> <span class="at">SqliteStore</span>({ file: <span class="st">'./data/notes.sqlite'</span> }),
     projects: { <span class="st">'&lt;id&gt;'</span>: { mode: <span class="st">'encrypted'</span> } },
 });
-app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span class="at">nodeListener</span>(api));</code></pre></div>
+app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span class="at">nodeListener</span>(api));</code></pre>
+                    </div>
+                </div>
             </li>
             <li>
                 <div>
@@ -195,21 +250,97 @@ app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span
                     <p class="say">On its own, from a terminal.</p>
                     <p class="say"><code>--help</code> for the options.</p>
                 </div>
-                <div class="snip"><pre><code><span class="tg">npx</span> <span class="at">annotepage-server</span> <span class="op">--project</span> <span class="st">&lt;id&gt;</span></code></pre></div>
+                <div>
+                    <div class="snip">
+                        <button class="copy" type="button" data-copy="snip-run" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-run"><code><span class="tg">npx</span> <span class="at">annotepage-server</span> <span class="op">--project</span> <span class="st">&lt;id&gt;</span></code></pre>
+                    </div>
+                </div>
             </li>
-        </ul>
+        </ol>
 
-
-        <p class="route">
-            <a href="https://github.com/tuxo83/annotepage/tree/main/server-node"
-               target="_blank" rel="noopener">the code on GitHub</a>
-            &nbsp;&middot;&nbsp;
-            <a href="https://github.com/tuxo83/annotepage/blob/main/FORMAT.md"
-               target="_blank" rel="noopener">FORMAT.md</a>
-            &nbsp;&middot;&nbsp;
-            <a href="how-to-install-it.html">the PHP server</a>
+        <p class="see-out">
+            <a class="more" href="how-to-use-it.html">See a detailed usage example<span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="more" href="how-to-install-it.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
     </div>
 </main>
+
+<span class="vh" id="copy-status" role="status" aria-live="polite"></span>
+
+<script>
+/* The copy buttons, the install page's, verbatim. The text copied is the
+   textContent of the block above, exactly, with the trailing newline removed.
+   The Clipboard API needs a secure context and a user gesture; both hold here,
+   and execCommand is the fallback for when it is refused anyway. */
+(function () {
+    'use strict';
+
+    var status = document.getElementById('copy-status');
+
+    var textOf = function (id) {
+        var target = document.getElementById(id);
+        if (!target) return null;
+        return target.textContent.replace(/\s+$/, '');
+    };
+
+    var copyByHand = function (text) {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.top = '0';
+        area.style.left = '0';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        area.setSelectionRange(0, text.length);
+        var done = false;
+        try { done = document.execCommand('copy'); } catch (e) { done = false; }
+        document.body.removeChild(area);
+        return done;
+    };
+
+    var timers = new WeakMap();
+
+    var announce = function (button, ok) {
+        button.setAttribute('aria-label', ok ? 'Copied' : 'Select and copy');
+        button.setAttribute('data-state', ok ? 'done' : 'failed');
+        status.textContent = ok
+            ? 'Copied to the clipboard.'
+            : 'Copying was refused: select the block and copy it by hand.';
+
+        clearTimeout(timers.get(button));
+        timers.set(button, setTimeout(function () {
+            button.setAttribute('aria-label', 'Copy');
+            button.removeAttribute('data-state');
+            status.textContent = '';
+        }, ok ? 1800 : 4000));
+    };
+
+    var buttons = document.querySelectorAll('button[data-copy]');
+    for (var i = 0; i < buttons.length; i++) {
+        (function (button) {
+            var id = button.getAttribute('data-copy');
+            if (textOf(id) === null) { button.hidden = true; return; }
+
+            button.addEventListener('click', function () {
+                var text = textOf(id);
+                if (text === null) { announce(button, false); return; }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function () {
+                        announce(button, true);
+                    }, function () {
+                        announce(button, copyByHand(text));
+                    });
+                } else {
+                    announce(button, copyByHand(text));
+                }
+            });
+        }(buttons[i]));
+    }
+}());
+</script>
 </body>
 </html>
