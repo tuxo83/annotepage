@@ -56,6 +56,22 @@ const APART = [
     'docs/install.html',
 ];
 
+/* CARRIES THE HEADER, BUT THE MENU DOES NOT NAME IT. A third case, between the
+   two above: a real page of the site, with the shared header so a reader is not
+   stranded, yet absent from the four-entry menu on purpose -- its subject is
+   one a reader seeks out, not one the whole audience should meet in a menu that
+   follows them everywhere. node.html (the Node server) is the first.
+
+   It is checked like a page -- its header must match the others, byte for byte
+   once aria-current is set aside -- with one difference that is verified rather
+   than forgiven: it carries aria-current on NO entry, because none of the four
+   is it. A day it gains a menu entry, it moves into PAGES and marks that entry;
+   a day it loses its header, it moves into APART. Being in neither list is the
+   one thing that is refused, for every page, which is why this list exists. */
+const UNLISTED = new Map([
+    ['docs/node.html', null],
+]);
+
 const OPEN = '<a class="mark"';
 const CLOSE = '</nav>';
 const CURRENT = ' aria-current="page"';
@@ -74,7 +90,7 @@ const headerOf = (path) => {
 const failures = [];
 const blocks = new Map();
 
-for (const page of PAGES.keys()) {
+for (const page of [...PAGES.keys(), ...UNLISTED.keys()]) {
     const block = headerOf(page);
     if (!block) {
         failures.push(`${page} is declared a page of the site and has no header: `
@@ -115,6 +131,16 @@ for (const [page, block] of blocks) {
     const marked = [...block.text.matchAll(/<a\s+href="([^"]*)"[^>]*aria-current="page"/g)]
         .map((m) => m[1]);
 
+    /* A page the menu does not name carries aria-current on nothing: there is
+       no entry that is "the one you are on". */
+    if (UNLISTED.has(page)) {
+        if (marked.length !== 0) {
+            failures.push(`${page} is not in the menu, so it must carry no `
+                + `aria-current="page"; it marks ${marked.length}: ${marked.join(', ')}.`);
+        }
+        continue;
+    }
+
     if (marked.length !== 1) {
         failures.push(`${page} marks ${marked.length} menu entries with aria-current="page", `
             + 'not one. That attribute is what tells a screen reader which of the four '
@@ -144,6 +170,7 @@ if (failures.length) {
     console.error('site-header:\n' + failures.map((f) => '  ' + f).join('\n'));
     process.exit(1);
 }
-console.log(`site-header: ${PAGES.size} pages carry the same header, byte for byte `
+console.log(`site-header: ${PAGES.size} menu pages carry the same header, byte for byte `
     + `(${blocks.get(reference)?.text.split('\n').length ?? 0} lines), each marking its own `
-    + `entry as the current page, and the ${APART.length} standalone pages still carry none`);
+    + `entry as the current page; ${UNLISTED.size} framed page(s) not in the menu carry the `
+    + `same header and mark none; and the ${APART.length} standalone pages carry none`);
