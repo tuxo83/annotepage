@@ -1,6 +1,6 @@
 {
   "name": "annotepage-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The annotepage server as a Node library you embed, or a standalone server you run (npx annotepage-server): the seven addresses, the store and the bounds, over the web-standard Request/Response. No PHP, no framework.",
   "license": "MIT",
   "type": "module",

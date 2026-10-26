@@ -47,7 +47,7 @@ wherever you mounted this. Point its tag at the mount and it works as is.
 The same package is also a standalone server:
 
 ```
-npx annotepage-server --project <id> --report-statistics false
+npx annotepage-server --project <id>
 ```
 
 ```
@@ -55,7 +55,7 @@ npx annotepage-server --project <id> --report-statistics false
 --db <path>             SQLite file (default ./annotepage.sqlite; ':memory:' keeps nothing)
 --prefix <path>         mount path (e.g. /annotepage/api)
 --project <id[:mode]>   declare a project (mode: encrypted default, or plain); repeatable
---report-statistics <b> REQUIRED: true or false (see Statistics)
+--report-statistics <b> on by default, like PHP; false turns it off (see Statistics)
 --relay                 run as a relay (plain off, Origin required on writes)
 --open-registration     accept undeclared project ids (relay only)
 --config <file.json>    base options (the createServer object without `store`); flags override

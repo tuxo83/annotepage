@@ -22,7 +22,7 @@ import { nodeListener } from './adapters.js';
 const USAGE = `annotepage-server -- run an annotepage server on its own.
 
 Usage:
-  annotepage-server --project <id> --report-statistics <true|false> [options]
+  annotepage-server --project <id> [options]
 
 Options:
   --port <n>                 Port to listen on (default 3000).
@@ -31,9 +31,9 @@ Options:
   --prefix <path>            Mount path (default '/'); e.g. /annotepage/api.
   --project <id[:mode]>      Declare a project; mode is encrypted (default) or
                              plain. Repeatable.
-  --report-statistics <b>    REQUIRED: true or false. The one setting that
-                             sends data off the machine (a random id, the
-                             version and three totals, once a day). You decide.
+  --report-statistics <b>    Report once a day? On by default, like the PHP
+                             server; pass false to turn it off (a random id,
+                             the version and three totals -- nothing else).
   --relay                    Run as a relay (not self-hosted): plain mode off,
                              an Origin required on every write.
   --open-registration        Accept undeclared project ids (relay only).
@@ -43,7 +43,7 @@ Options:
   --help                     Print this and exit.
 
 Examples:
-  annotepage-server --project 7Qb1kZ3xNvA9dLpEqKf2Zt --report-statistics false
+  annotepage-server --project 7Qb1kZ3xNvA9dLpEqKf2Zt
   annotepage-server --config ./annotepage.json --port 8080
 `;
 
@@ -128,8 +128,7 @@ export function buildOptions(parsed, readFile) {
     if (parsed.reportStatistics !== undefined) {
         options.reportStatistics = parsed.reportStatistics;
     }
-    // Left to createServer to enforce: reportStatistics must be a real boolean,
-    // here or in the config file. The CLI does not invent a default either.
+    // Omitted, it keeps createServer's default: on, like the PHP server.
 
     const dbFile = parsed.db !== undefined ? parsed.db
         : (base.dbFile || './annotepage.sqlite');
@@ -186,7 +185,7 @@ export function run(argv, { log = console.log, fatal = (m) => { console.error(m)
     try {
         server = buildServer(built);
     } catch (e) {
-        // createServer throws when reportStatistics is missing, among others.
+        // createServer can throw on a bad store or configuration.
         return fatal(e.message);
     }
 
@@ -197,7 +196,9 @@ export function run(argv, { log = console.log, fatal = (m) => { console.error(m)
         log(`  store: ${built.dbFile}`);
         const ids = Object.keys(built.options.projects || {});
         log(`  projects: ${ids.length ? ids.join(', ') : '(none declared)'}`);
-        log(`  statistics: ${built.options.reportStatistics ? 'on' : 'off'}`);
+        // From the resolved config, not the raw options: omitting the flag
+        // keeps the default (on), and the line must say what actually runs.
+        log(`  statistics: ${server.api.config.reportStatistics ? 'on' : 'off'}`);
     });
     for (const signal of ['SIGINT', 'SIGTERM']) {
         process.on(signal, () => http.close(() => process.exit(0)));
