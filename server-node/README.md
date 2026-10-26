@@ -100,19 +100,26 @@ Everything but `store` is optional. Bounds are **off** until set.
 | `maxNotesPerProject` | `0` | Cap on notes per project. |
 | `clientIpHeader` | `null` | Header to read the client address from, behind a proxy (e.g. `x-forwarded-for`). Never trusted unless named. |
 | `publishServerTotals` | `false` | Add server-wide totals to `list` (a relay figure; off by design). |
-| `reportStatistics` | `false` | Opt in to the once-a-day phone-home (see below). |
+| `reportStatistics` | **required** | `true` or `false` -- must be set explicitly (it is the one setting that sends data off the machine; see below). |
 | `statisticsAddress` | annotepage.com | Override the statistics receiver (a fork's own). |
 | `diagnostic` | `'minimal'` | `?action=diagnostic` detail: `off`, `minimal` or `full`. |
 | `version` / `clientVersion` / `mcpVersion` | `'unknown'` | Announced in responses; never gate anything (FORMAT.md 6.1). |
 
 ## Statistics
 
-`reportStatistics` is **off by default here**, unlike the PHP server: a library
-embedded in your app must not phone home unasked. Turned on, once a day after a
-write it sends a random id, the version and three totals (projects, notes,
-pages) to `api.annotepage.com` -- no domain, no project id, no page, no note, no
-name. See [FORMAT.md §6.5](../FORMAT.md). It is fired after the response and
-never blocks it.
+`reportStatistics` has **no default** and must be set, `true` or `false`:
+unlike a PHP server, which is installed by an operator who sees a setup screen
+say what is sent, a library mounted inside your app has no such moment, so the
+choice is yours to make in the open rather than one made behind your back
+either way. `createServer` throws if it is missing.
+
+Turned on, once a day after a write it sends a random id, the version and three
+totals (projects, notes, pages) to `api.annotepage.com` -- no domain, no
+project id, no page, no note, no name (the closed list of
+[FORMAT.md §6.5](../FORMAT.md)). It is fired after the response and never blocks
+it, and the figures it gets back are shown to reviewers in the panel. It does
+not identify anyone; many self-hosted components report the like. Set it to
+whichever your project is comfortable with.
 
 ## What is not ported from the PHP
 

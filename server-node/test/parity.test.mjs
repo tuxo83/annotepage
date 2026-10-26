@@ -59,7 +59,7 @@ test('the known actions match api.php (update excepted, which is not ported)', {
     // The handler's list is not exported; reach it through its refusal message,
     // which names each action it accepts.
     const { createServer } = await import('../src/index.js');
-    const api = createServer({ store: new SqliteStore({ file: ':memory:' }) });
+    const api = createServer({ store: new SqliteStore({ file: ':memory:' }), reportStatistics: false });
     const body = await (await api.fetch(new Request('http://x/api?action=__unknown__'))).text();
     for (const action of phpActions) {
         assert.match(body, new RegExp('\\?action=' + action),

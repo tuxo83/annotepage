@@ -22,6 +22,7 @@ async function withServer(fn) {
         store: new SqliteStore({ file: ':memory:' }),
         projects: { [PROJECT]: { mode: 'plain' } },
         version: '2.0.0',
+        reportStatistics: false,
     });
     const http = createHttpServer(nodeListener(api));
     http.listen(0);

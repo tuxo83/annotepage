@@ -24,6 +24,8 @@ const api = createServer({
         '7Qb1kZ3xNvA9dLpEqKf2Zt': { mode: 'plain' },
     },
     version: '2.0.0',
+    // The one required choice: does this server phone home once a day? (readme)
+    reportStatistics: false,
 });
 
 const PREFIX = '/annotepage/api';

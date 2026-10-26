@@ -43,9 +43,9 @@ const recorded = () => new Response(
     '{"result":"recorded","instances":12,"projects":340,"notes":5210,"day":"2020-01-01"}',
     { status: 200 });
 
-test('off by default: nothing is sent', async () => {
+test('off when set to false: nothing is sent', async () => {
     const stats = createStatistics();
-    const config = normaliseConfig({ version: '2.0.0' });   // reportStatistics defaults false
+    const config = normaliseConfig({ version: '2.0.0', reportStatistics: false });
     assert.equal(config.reportStatistics, false);
     await withFetch(recorded, async (calls) => {
         await stats.report(config, storeWithNote());
@@ -119,7 +119,7 @@ test('world is null below the notes threshold', () => {
 
 test('world is null when reporting is off', () => {
     const stats = createStatistics();
-    const off = normaliseConfig({ version: '2.0.0' });
+    const off = normaliseConfig({ version: '2.0.0', reportStatistics: false });
     const store = new SqliteStore({ file: ':memory:' });
     store.ensureSchema();
     assert.equal(stats.world(off, store), null);
