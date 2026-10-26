@@ -34,20 +34,6 @@ function nonNegInt(value) {
     return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
 }
 
-/** The one setting with no default: whether the server reports statistics. It
- *  sends data off the machine, so the implementer decides it in the open, and
- *  a missing value is a mistake rather than a silent choice either way. */
-function requireExplicitBoolean(value) {
-    if (value === true || value === false) {
-        return value;
-    }
-    throw new Error(
-        'annotepage-server: `reportStatistics` must be set explicitly, true or false.\n'
-        + 'It is the one setting that sends data off this machine (a random id, the '
-        + 'version and three totals, once a day -- see the readme), so there is no '
-        + 'default: you decide, at the moment you mount the server.');
-}
-
 /** The server's own version accepts a looser shape (a VERSION file can carry a
  *  build suffix), matching ap_version(). */
 function serverVersionOr(value) {
@@ -104,14 +90,13 @@ export function normaliseConfig(raw = {}) {
             ? !!raw.requireOriginOnWrites : !selfHosted,
         openRegistration: !!raw.openRegistration,
         publishServerTotals: !!raw.publishServerTotals,
-        // NO DEFAULT, on purpose. A PHP server is installed by an operator who
-        // sees the setup screen say what is sent, so it can default to on; a
-        // library embedded in someone else's app has no such screen, and
-        // neither on nor off should be chosen behind the implementer's back.
-        // So the choice is REQUIRED: whoever mounts the server says, in one
-        // line, whether it reports -- it is their call, made at the one moment
-        // they are looking. (requireExplicit() throws when it is missing.)
-        reportStatistics: requireExplicitBoolean(raw.reportStatistics),
+        // ON by default, exactly as the PHP server (statistics.php: "The
+        // default is yes"). Keeping the two in step is the point: a server that
+        // reported on PHP goes on reporting in Node, with no behaviour to
+        // relearn and no feature delta between the two. Set `false` to turn it
+        // off. What is sent is a random id, the version and three totals, and
+        // nothing else (FORMAT.md section 6.5).
+        reportStatistics: raw.reportStatistics !== false,
         statisticsAddress: typeof raw.statisticsAddress === 'string' && raw.statisticsAddress !== ''
             ? raw.statisticsAddress : null,
         allowPlainHttp: !!raw.allowPlainHttp,

@@ -24,7 +24,8 @@ const api = createServer({
         '7Qb1kZ3xNvA9dLpEqKf2Zt': { mode: 'plain' },
     },
     version: '2.0.0',
-    // The one required choice: does this server phone home once a day? (readme)
+    // Reporting defaults to on, like the PHP server; turned off here because a
+    // throwaway :memory: demo has nothing worth reporting.
     reportStatistics: false,
 });
 

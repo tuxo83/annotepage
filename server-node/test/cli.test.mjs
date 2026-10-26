@@ -67,9 +67,8 @@ test('run starts a server that serves, and stops', async () => {
     }
 });
 
-test('run fails clearly when the required stats choice is missing', () => {
-    let message = '';
-    const ret = run(['--project', PROJECT], { log: () => {}, fatal: (m) => { message = m; } });
-    assert.equal(ret, undefined);
-    assert.match(message, /reportStatistics/);
+test('the stats choice is optional: omitting it leaves the default (on)', () => {
+    const built = buildOptions(parseArgs(['--project', PROJECT]), () => { throw new Error('no config'); });
+    // Not set here, so createServer applies the default, which is on (like PHP).
+    assert.equal('reportStatistics' in built.options, false);
 });

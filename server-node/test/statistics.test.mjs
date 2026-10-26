@@ -47,6 +47,8 @@ test('off when set to false: nothing is sent', async () => {
     const stats = createStatistics();
     const config = normaliseConfig({ version: '2.0.0', reportStatistics: false });
     assert.equal(config.reportStatistics, false);
+    // and the default, when nothing is passed, is on -- like the PHP server.
+    assert.equal(normaliseConfig({ version: '2.0.0' }).reportStatistics, true);
     await withFetch(recorded, async (calls) => {
         await stats.report(config, storeWithNote());
         assert.equal(calls.length, 0);
