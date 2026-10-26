@@ -1,17 +1,22 @@
 {
   "name": "annotepage-server",
   "version": "0.1.0",
-  "description": "The annotepage server as an embeddable Node module: the seven addresses, the store and the bounds, over the web-standard Request/Response. No PHP, no framework.",
+  "description": "The annotepage server as a Node library you embed, or a standalone server you run (npx annotepage-server): the seven addresses, the store and the bounds, over the web-standard Request/Response. No PHP, no framework.",
   "license": "MIT",
   "type": "module",
   "main": "src/index.js",
+  "bin": {
+    "annotepage-server": "bin/annotepage-server.mjs"
+  },
   "exports": {
     ".": "./src/index.js",
     "./stores/sqlite": "./src/store-sqlite.js",
-    "./adapters": "./src/adapters.js"
+    "./adapters": "./src/adapters.js",
+    "./cli": "./src/cli.js"
   },
   "files": [
     "src/",
+    "bin/",
     "README.md"
   ],
   "repository": {

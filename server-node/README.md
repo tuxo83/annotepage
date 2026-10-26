@@ -42,7 +42,31 @@ http(nodeListener(api)).listen(3000);
 The client is configured exactly as against a PHP server, with the base URL of
 wherever you mounted this. Point its tag at the mount and it works as is.
 
-## Mounting it
+## Run it as an app, without writing any Node
+
+The same package is also a standalone server:
+
+```
+npx annotepage-server --project <id> --report-statistics false
+```
+
+```
+--port <n>              listen port (default 3000)
+--db <path>             SQLite file (default ./annotepage.sqlite; ':memory:' keeps nothing)
+--prefix <path>         mount path (e.g. /annotepage/api)
+--project <id[:mode]>   declare a project (mode: encrypted default, or plain); repeatable
+--report-statistics <b> REQUIRED: true or false (see Statistics)
+--relay                 run as a relay (plain off, Origin required on writes)
+--open-registration     accept undeclared project ids (relay only)
+--config <file.json>    base options (the createServer object without `store`); flags override
+--version | --help
+```
+
+It is the same implementation as the library -- a thin front over
+`createServer` -- so anything the app does, your own code can do by importing
+instead.
+
+## Mounting it (as a library)
 
 The module's real interface is **`api.fetch(request)`** -- a standard Request
 in, a Response out. Hand it to any runtime that speaks the Fetch API:
