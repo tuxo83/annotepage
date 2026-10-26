@@ -37,9 +37,20 @@
    its script.
    --------------------------------------------------------------------------- */
 
+/* The same frame width as every other page: the wrap centres at 85rem and
+   pads its sides, and inside main each direct child is held to the reading
+   measure -- except the two-column rows, which go wide like the install page's
+   steps. Without this the page ran full-bleed and misaligned with the rest. */
+.wrap { width: 100%; max-width: 85rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
+main .wrap > * { max-width: var(--measure); }
+main .wrap > .ways { max-width: none; }
+
 main { padding: clamp(1.8rem, 4vw, 2.8rem) 0 clamp(3rem, 8vw, 4.5rem); }
 h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); line-height: 1.1; margin: 0; }
 .lead { font-size: clamp(1.02rem, 2.6vw, 1.2rem); color: var(--dim); max-width: 40em; margin: .9rem 0 0; }
+/* A small orientation line: this is the developer page, and the way back to
+   the rest of the site, since the menu does not list it. */
+.dev-note { font-size: .9rem; color: var(--dim); margin: 1rem 0 0; }
 
 /* Words left, code right -- the install page's rows, folding at the same width
    so the two pages lay the component out the same way. No counter: these are
@@ -116,9 +127,8 @@ code:not(pre code) {
                        target="_blank" rel="noopener"
                        aria-label="The MCP for the assistant, on npm, opens in a new tab">The MCP, for the assistant <span class="drop-where">npm</span></a>
                     <span class="drop-sep" aria-hidden="true"></span>
-                    <a href="https://www.npmjs.com/package/annotepage-server"
-                       target="_blank" rel="noopener"
-                       aria-label="The library and app for Node, on npm, opens in a new tab">The library &amp; app, in Node <span class="drop-where">npm</span></a>
+                    <a href="node.html"
+                       aria-label="The library and app for Node -- the Node page">The library &amp; app, in Node <span class="drop-where">npm</span></a>
                     <span class="drop-sep" aria-hidden="true"></span>
                     <a href="/annotepage-wordpress-1.0.1.zip"
                        aria-label="The plugin for WordPress, a zip to upload, soon on wordpress.org">The plugin, for WordPress <span class="drop-where">zip, wordpress.org soon</span></a>
@@ -132,8 +142,20 @@ code:not(pre code) {
     <div class="wrap">
         <h1>The library &amp; app, in Node</h1>
         <p class="lead">Embed it in the app you already run, or launch it on its own. No PHP.</p>
+        <p class="dev-note">The developer page for annotepage's server. Not what you came for?
+            &rarr; <a href="/">Home</a>, <a href="how-to-use-it.html">Use</a>,
+            <a href="how-to-install-it.html">Install</a>, <a href="questions.html">FAQ</a>.</p>
 
         <ul class="ways">
+            <li>
+                <div>
+                    <p class="cap">On npm</p>
+                    <p class="say">The package:
+                        <a href="https://www.npmjs.com/package/annotepage-server"
+                           target="_blank" rel="noopener">annotepage-server</a>.</p>
+                </div>
+                <div class="snip"><pre><code><span class="tg">npm</span> <span class="at">install</span> annotepage-server</code></pre></div>
+            </li>
             <li>
                 <div>
                     <p class="cap">Embed it</p>
@@ -163,9 +185,6 @@ app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span
         <p class="close">The browser client and the wire format do not change.</p>
 
         <p class="route">
-            <a href="https://www.npmjs.com/package/annotepage-server"
-               target="_blank" rel="noopener">annotepage-server</a> on npm
-            &nbsp;&middot;&nbsp;
             <a href="https://github.com/tuxo83/annotepage/tree/main/server-node"
                target="_blank" rel="noopener">the code on GitHub</a>
             &nbsp;&middot;&nbsp;
