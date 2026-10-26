@@ -266,7 +266,7 @@ h1 + .lead { margin-top: 1.15rem; }
 
    Nothing left to undo on a rename: the paragraph centres its own inline
    content, whatever class the anchor ends up carrying. */
-.see-more { text-align: center; }
+.see-more { display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem; }
 
 /* -- Code snippets ------------------------------------------------------- */
 
@@ -1406,6 +1406,7 @@ footer p { font-size: .85rem; color: var(--dim); max-width: 44em; }
 
         <p class="see-more">
             <a class="more" href="how-to-install-it.html">See every way to install it<span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="more" href="node.html">Embed it in your app<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
     </div>
 </section>
