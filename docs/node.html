@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The library &amp; app, in Node &mdash; annotepage</title>
-<meta name="description" content="annotepage's server in Node: a library you embed in the app you already run, or an app you launch with npx. No PHP, same client, same format.">
+<meta name="description" content="annotepage in Node: the server to embed in your app or launch with npx, and the client your pages load — both on npm, no PHP.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
@@ -13,7 +13,7 @@
 <meta property="og:site_name"   content="annotepage">
 <meta property="og:url"         content="https://annotepage.com/node.html">
 <meta property="og:title"       content="The library &amp; app, in Node">
-<meta property="og:description" content="Embed annotepage's server in your Node app, or launch it with npx. No PHP, same client, same format.">
+<meta property="og:description" content="Embed annotepage's server in your Node app or launch it with npx, and serve the client from the same package set. No PHP.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b53c0'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/base.css">
 <style>
@@ -25,7 +25,8 @@
    and the menu are base.css's; the rows are the install page's .use-steps
    (caption left, code right) with its .snip code blocks and copy button; the
    buttons back to the site are the landing page's and the FAQ's .more. The
-   only thing this file adds is the layout of THIS page. */
+   only thing this file adds is the layout of THIS page -- in two parts, the
+   server then the client, each the same install-page rows. */
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -80,6 +81,12 @@ h1 + .lead { margin-top: 1.15rem; }
 }
 .use-steps .say + .say { margin-top: .55rem; }
 .use-steps .snip { margin: 0; }
+
+/* The two parts. The h2 is base.css typography; the row list under each is the
+   install page's, the same in both. The intro line is the lead's dim grey. */
+main .wrap > h2 { margin-top: clamp(2.8rem, 6vw, 4.2rem); }
+.part-intro { color: var(--dim); margin: .7rem 0 0; max-width: 40em; }
+.part-intro + .use-steps { margin-top: clamp(1.4rem, 3vw, 1.9rem); }
 
 /* The install page's code snippets -- palette, copy button, pre -- verbatim. */
 :root {
@@ -202,12 +209,14 @@ code:not(pre code) {
 <main>
     <div class="wrap">
         <h1>The library &amp; app, in Node</h1>
-        <p class="lead">Embed it in the app you already run, or launch it on its own. No PHP.</p>
-        <p class="dev-note">The developer page for annotepage's server. Not what you came for?</p>
+        <p class="lead">The server to embed or launch, and the client your pages load &mdash; both from npm, no PHP.</p>
+        <p class="dev-note">The developer page for annotepage in Node. Not what you came for?</p>
         <p class="see-out">
             <a class="more" href="/">What annotepage is<span class="arrow" aria-hidden="true">&rarr;</span></a>
         </p>
 
+        <h2>The server</h2>
+        <p class="part-intro">Embed it in the app you already run, or launch it on its own.</p>
         <ol class="use-steps">
             <li>
                 <div>
@@ -254,6 +263,41 @@ app.<span class="at">use</span>(<span class="st">'/annotepage/api'</span>, <span
                     <div class="snip">
                         <button class="copy" type="button" data-copy="snip-run" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
 <pre id="snip-run"><code><span class="tg">npx</span> <span class="at">annotepage-server</span> <span class="op">--project</span> <span class="st">&lt;id&gt;</span></code></pre>
+                    </div>
+                </div>
+            </li>
+        </ol>
+
+        <h2>The client</h2>
+        <p class="part-intro">The annotation layer your pages load: one file, one classic <code>&lt;script&gt;</code> tag &mdash; never bundled.</p>
+        <ol class="use-steps">
+            <li>
+                <div>
+                    <p class="cap">On npm</p>
+                    <p class="say">The package:
+                        <a href="https://www.npmjs.com/package/annotepage-client"
+                           target="_blank" rel="noopener">annotepage-client</a>.</p>
+                    <p class="say">It hands you <code>dist/annotepage.js</code> &mdash; the file the tag loads, byte for byte.</p>
+                </div>
+                <div>
+                    <div class="snip">
+                        <button class="copy" type="button" data-copy="snip-client-install" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-client-install"><code><span class="tg">npm</span> <span class="at">install</span> annotepage-client</code></pre>
+                    </div>
+                </div>
+            </li>
+            <li>
+                <div>
+                    <p class="cap">Serve it</p>
+                    <p class="say">Serve that one file from your app, and load it with a classic tag &mdash; not imported, not bundled.</p>
+                    <p class="say">The <a href="how-to-install-it.html">install page</a> builds the tag, with your address, your key and the digest.</p>
+                </div>
+                <div>
+                    <div class="snip">
+                        <button class="copy" type="button" data-copy="snip-client-tag" aria-label="Copy"><svg class="i-copy" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="7.4" y="2.6" width="9.8" height="11.8" rx="2.2"/><rect x="2.8" y="5.6" width="9.8" height="11.8" rx="2.2"/></svg><svg class="i-done" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10.6l4 4 8-9"/></svg></button>
+<pre id="snip-client-tag"><code><span class="op">&lt;</span><span class="tg">script</span> <span class="at">src</span>=<span class="st">"/annotepage/annotepage.js"</span>
+        <span class="at">data-server</span>=<span class="st">"/annotepage/api"</span>
+        <span class="at">data-key</span>=<span class="st">"&lt;43 characters&gt;"</span><span class="op">&gt;&lt;/</span><span class="tg">script</span><span class="op">&gt;</span></code></pre>
                     </div>
                 </div>
             </li>
