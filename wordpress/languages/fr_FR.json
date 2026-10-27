@@ -28,7 +28,7 @@
   "Nothing was saved: a key is 43 characters. Paste one, or use the button to draw one.": "Rien n’a été enregistré : une clé fait 43 caractères. Collez-en une, ou utilisez le bouton pour en tirer une.",
   "Nothing was saved: a project id is 22 characters. Paste one, or draw a key and let it derive.": "Rien n’a été enregistré : un identifiant de projet fait 22 caractères. Collez-en un, ou tirez une clé et laissez-le se dériver.",
   "This site has no account for %s, so nobody was added for that name.": "Ce site n’a aucun compte pour %s : personne n’a donc été ajouté pour ce nom.",
-  "This screen writes one script tag at the foot of the page. It installs nothing else: the tool itself is served from a CDN and updates on its own.": "Cet écran écrit une seule balise de script au pied de la page. Il n’installe rien d’autre : l’outil lui-même est servi depuis un CDN et se met à jour tout seul.",
+  "This screen writes one script tag at the foot of the page. It installs nothing else.": "Cet écran écrit une seule balise de script au pied de la page. Il n’installe rien d’autre.",
   "Who sees it": "Qui le voit",
   "Shown to": "Montré à",
   "%1$sAdministrators%2$s &mdash; where a fresh install starts.": "%1$sLes administrateurs%2$s &mdash; là où démarre une installation neuve.",
@@ -41,7 +41,7 @@
   "%1$sEveryone, with the key in the page.%2$s Every visitor to this site can read these notes and write them, and somebody who copies the tag out of your page source can write into them from anywhere. Sound behind a login or a VPN. Worth a second thought on a public site.": "%1$sTout le monde, avec la clé dans la page.%2$s Chaque visiteur de ce site peut lire ces notes et en écrire, et quiconque copie la balise depuis le source de votre page peut y écrire depuis n’importe où. Sain derrière une authentification ou un VPN. À réfléchir à deux fois sur un site public.",
   "Where the notes go": "Où vont les notes",
   "Server address": "Adresse du serveur",
-  "The address of %s &mdash; the shared relay, filled in at activation, or your own install. The client is served from a CDN and cannot guess it.": "L’adresse de %s &mdash; le relais partagé, renseigné à l’activation, ou votre propre installation. Le client est servi depuis un CDN et ne peut pas la deviner.",
+  "The address of %s &mdash; the shared relay, filled in at activation, or your own install. The client cannot guess it.": "L’adresse de %s &mdash; le relais partagé, renseigné à l’activation, ou votre propre installation. Le client ne peut pas la deviner.",
   "Version": "Version",
   "Optional, and left empty it is not written at all. It is what lets a resolved note say &ldquo;fixed and online&rdquo; rather than &ldquo;fixed, not deployed yet&rdquo; &mdash; the second stays on the reviewer&rsquo;s screen, because the defect still is. Whatever your site calls its version; nothing here invents one.": "Facultative, et laissée vide elle n’est pas écrite du tout. C’est elle qui permet à une note résolue de dire &ldquo;corrigé et en ligne&rdquo; plutôt que &ldquo;corrigé, pas encore déployé&rdquo; &mdash; la seconde reste à l’écran du relecteur, parce que le défaut y est encore. Ce que votre site appelle sa version ; rien ici n’en invente une.",
   "The key": "La clé",
@@ -79,5 +79,12 @@
   "The browser refused to derive the project id. Nothing was changed.": "Le navigateur a refusé de déduire l’identifiant du projet. Rien n’a été modifié.",
   "Draw a new key?": "Tirer une nouvelle clé ?",
   "A new key is a new project. The notes already written stay where they are and this site stops showing them. There is no way back.": "Une nouvelle clé, c’est un nouveau projet. Les notes déjà écrites restent où elles sont et ce site cesse de les afficher. Il n’y a pas de retour en arrière.",
-  "This screen must be served over https to draw a key.": "Cet écran doit être servi en https pour tirer une clé."
+  "This screen must be served over https to draw a key.": "Cet écran doit être servi en https pour tirer une clé.",
+  "The tool is served from this site by default; the settings can load it from a CDN instead.": "L’outil est servi depuis ce site par défaut ; les réglages peuvent le charger depuis un CDN à la place.",
+  "Loading the tool": "Chargement de l’outil",
+  "Served from": "Servi depuis",
+  "This site.": "Ce site.",
+  "WordPress serves the tool from this plugin. Nothing is fetched from anywhere else.": "WordPress sert l’outil depuis cette extension. Rien n’est récupéré ailleurs.",
+  "jsDelivr, a public CDN.": "jsDelivr, un CDN public.",
+  "Browsers fetch the tool from jsDelivr, so it stays current with the latest version 2 without this plugin being updated. jsDelivr receives those requests, as any CDN does.": "Les navigateurs récupèrent l’outil depuis jsDelivr, qui reste ainsi à jour avec la dernière version 2 sans que cette extension soit mise à jour. jsDelivr reçoit ces requêtes, comme tout CDN."
 }

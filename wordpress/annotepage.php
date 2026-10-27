@@ -3,7 +3,7 @@
  * Plugin Name:       annotepage
  * Plugin URI:        https://annotepage.com/how-to-install-it.html
  * Description:       Annotate a page. Your assistant answers in the thread. Activate it and it works, for administrators only, until you say otherwise.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Requires at least: 5.2
  * Requires PHP:      7.4
  * Author:            tuxo83
@@ -34,25 +34,32 @@
  * audience is a stored setting, it is on the first screen, and widening it is
  * one radio button -- with the consequence written beside it.
  *
- * THIS PLUGIN SHIPS NO CLIENT CODE, AND THAT IS THE DECISION THAT KEEPS IT
- * ALIVE.
+ * THIS PLUGIN SHIPS THE CLIENT, SERVED LOCALLY BY DEFAULT -- AND THE REASON IT
+ * ONCE DID NOT IS KEPT HERE, BECAUSE IT IS THE COST THIS DECISION NOW PAYS.
  *
- * The obvious plugin bundles dist/annotepage.js and enqueues it. It is also
- * the plugin that has to be released every time the client is released --
- * forever, for a file it did not write, on a review queue it does not control.
- * A tool that fixes an anchoring bug on Tuesday would reach WordPress sites in
- * a fortnight, and only the ones that pressed Update.
+ * The earlier plugin shipped no client code at all: it wrote a tag pointing at
+ * the CDN, on a FLOATING MAJOR RANGE (@2) jsDelivr re-resolves on its own, so a
+ * fix to the client reached every site without this plugin moving. That was the
+ * right trade for a plugin distributed on its own -- but the plugin directory
+ * does not allow a plugin to load its scripts from a remote CDN by default:
+ * activating it would make an administrator's browser fetch a third-party file
+ * nobody consented to. So the client is SHIPPED beside this file now
+ * (dist/annotepage.js) and served from the plugin's own folder.
  *
- * So the src below is the CDN address with a FLOATING MAJOR RANGE, @2, the
- * one jsDelivr re-resolves on its own. The client ships, the sites get it, and
- * this plugin does not move. What it writes is a tag; the day the tag stops
- * changing shape -- which is the whole point of a tag -- this file stops
- * needing releases. It is not a distribution channel for the client. It is a
- * text field for people whose theme has no footer.php they dare open.
+ * What that costs is exactly what the old shape bought: a release of this plugin
+ * every time the client is released, for a file it did not write. The escape
+ * hatch is a setting -- "load from the CDN" -- off by default, consented to when
+ * it is turned on, which restores the floating range for whoever wants it. The
+ * CDN address and its range live on in ANNOTEPAGE_CLIENT_SRC for exactly that.
  *
- * What that gives up is stated rather than hidden: no `integrity` digest, for
- * the reason written beside the tag on how-to-install-it.html#locked. A pinned
- * digest is a fix that reaches nobody.
+ * What a CDN copy still gives up is stated rather than hidden: no `integrity`
+ * digest, for the reason written beside the tag on how-to-install-it.html#locked.
+ * A pinned digest is a fix that reaches nobody.
+ *
+ * AND THE FRENCH LABELS SHIP WITH IT. A CDN copy of the client loads its French
+ * set from beside itself; the copy this plugin serves deduces nothing, so
+ * dist/fr.js ships too and the tag declares it -- on a French site, in local
+ * mode only. See annotepage_client_settings().
  *
  * WHY THE QUEUE, NOW, WHERE THIS FILE USED TO REFUSE IT.
  *
@@ -64,8 +71,9 @@
  *
  * THE ORIGINAL REASON, WHICH IS STILL TRUE. The client reads
  * `document.currentScript` to find its own attributes -- the server address,
- * the key, the version. That is how a CDN-served file learns anything at all
- * about the site under review. `wp_enqueue_script` hands the tag to a queue,
+ * the key, the version. That is how the file -- served from this plugin or from
+ * a CDN -- learns anything at all about the site under review.
+ * `wp_enqueue_script` hands the tag to a queue,
  * and a queue is entitled to decide HOW to load it: a concatenation plugin
  * merges it, an optimiser defers it as a module, a "combine JS" switch inlines
  * it. Every one of those leaves currentScript null, and the client's rule of
@@ -168,10 +176,11 @@
  *     empty, and the backtrace shows the translation being loaded just in time
  *     from inside admin_bar_menu, which is exactly where it should be.
  *
- * What a VISITOR reads is still not here. Those strings belong to the client,
- * which follows the page's own <html lang> -- the one WordPress writes from the
- * site language -- and loads its French set beside itself on the CDN. A
- * `data-labels` file on the tag would override that; this plugin sets none.
+ * What a VISITOR reads is the client's, and it follows the page's own <html
+ * lang> -- the one WordPress writes from the site language. A CDN copy loads its
+ * French set beside itself; the copy this plugin serves cannot, so on a French
+ * site in local mode the tag carries a `data-labels` pointing at the dist/fr.js
+ * shipped here. See annotepage_client_settings().
  * ---------------------------------------------------------------------------
  */
 
@@ -183,16 +192,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * THE ADDRESS OF THE CLIENT. A floating major range, on purpose -- see the
- * header.
+ * THE CDN ADDRESS OF THE CLIENT -- the opt-in, not the default. See the header.
  *
- * It is a constant and not a setting. A field for it would be a field whose
- * only correct answer is this string, offered to somebody who cannot check
- * their own answer, and its wrong values fail silently: a 404 on a script tag
- * raises nothing a site owner ever sees. Whoever genuinely serves their own
- * copy of the client is editing files already.
+ * By default this plugin serves the copy shipped beside it (dist/annotepage.js),
+ * because the plugin directory does not allow a plugin to load its scripts from a
+ * remote CDN on its own. This address is what the "load from the CDN" setting
+ * points at instead, for whoever would rather the tool stayed current with the
+ * floating major range jsDelivr re-resolves than wait for a release of this
+ * plugin. A constant and not a free field: its only correct value is this one,
+ * and a wrong one fails silently -- a 404 on a script tag raises nothing a site
+ * owner ever sees.
  */
 define( 'ANNOTEPAGE_CLIENT_SRC', 'https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js' );
+
+/* THE VERSION OF THE CLIENT SHIPPED BESIDE THIS FILE. It is dist/annotepage.js's
+   own version, and tools/check-wordpress.mjs refuses to let it drift from the
+   client package the copy was taken from. It is the enqueue version in local
+   mode -- a real `?ver=` that busts a cache when a release ships a new client --
+   where the CDN mode wants none, the range being re-resolved by jsDelivr itself. */
+define( 'ANNOTEPAGE_CLIENT_VERSION', '2.33.0' );
 
 /**
  * THE ADDRESS THE NOTES GO TO, when nobody has said otherwise.
@@ -221,7 +239,7 @@ define( 'ANNOTEPAGE_GREETING', 'annotepage_greeting' );
 define( 'ANNOTEPAGE_PAGE', 'annotepage' );
 
 /* Also the cache-buster on admin.js: one string to move, not two. */
-define( 'ANNOTEPAGE_VERSION', '1.0.1' );
+define( 'ANNOTEPAGE_VERSION', '1.0.2' );
 
 /* The per-person off switch, in user meta. Absent means on. */
 define( 'ANNOTEPAGE_USER_OFF', 'annotepage_off' );
@@ -244,10 +262,11 @@ function annotepage_settings() {
 		'project'  => '',
 		'version'  => '',
 		'audience' => 'admins',
+		'source'   => 'local',
 		'roles'    => array(),
 		'people'   => array(),
 	);
-	foreach ( array( 'server', 'mode', 'key', 'project', 'version', 'audience' ) as $name ) {
+	foreach ( array( 'server', 'mode', 'key', 'project', 'version', 'audience', 'source' ) as $name ) {
 		if ( isset( $stored[ $name ] ) && is_string( $stored[ $name ] ) ) {
 			$out[ $name ] = $stored[ $name ];
 		}
@@ -267,6 +286,11 @@ function annotepage_settings() {
 	}
 	if ( ! annotepage_is_audience( $out['audience'] ) ) {
 		$out['audience'] = 'admins';
+	}
+	/* local unless it is exactly 'cdn'. An unknown value is the safe default, not
+	   a guess: 'local' asks nothing of anybody's browser. */
+	if ( 'cdn' !== $out['source'] ) {
+		$out['source'] = 'local';
 	}
 	if ( ! annotepage_is_key( $out['key'] ) ) {
 		$out['key'] = '';
@@ -579,6 +603,40 @@ function annotepage_should_print() {
  * ------------------------------------------------------------------------- */
 
 /**
+ * WHERE THE CLIENT IS SERVED FROM, which is a setting with two answers.
+ *
+ * Local by default -- the copy shipped in this plugin, served by WordPress from
+ * the plugin's own folder, so a fresh install makes no request to anybody. The
+ * CDN is the opt-in, for a site that would rather the tool stay current on its
+ * own. One place decides it, so the enqueue, the version and the shown tag never
+ * disagree about which file this site carries.
+ *
+ * @return string The src for the tag.
+ */
+function annotepage_client_src( $settings = null ) {
+	$s = ( null === $settings ) ? annotepage_settings() : $settings;
+	if ( 'cdn' === $s['source'] ) {
+		return ANNOTEPAGE_CLIENT_SRC;
+	}
+	return plugins_url( 'dist/annotepage.js', __FILE__ );
+}
+
+/**
+ * Is this site's own language French?
+ *
+ * It decides whether the French labels shipped beside the client are declared.
+ * A client served from a CDN loads its French set on its own, from beside
+ * itself; served from this plugin it deduces nothing -- the neighbouring files
+ * are the site's to arrange, not the client's to guess -- so the plugin points
+ * at the copy it ships, and only on a site whose own language is French, exactly
+ * as the CDN copy keys off the page's <html lang>. Every other language stays
+ * English and fetches nothing, which is the client's own behaviour too.
+ */
+function annotepage_is_french() {
+	return 0 === strpos( strtolower( (string) get_locale() ), 'fr' );
+}
+
+/**
  * WHAT THIS SITE DECLARES, AND THE ONE PLACE IT IS DECIDED.
  *
  * Both channels are built from this and from nothing else: the `data-`
@@ -629,6 +687,15 @@ function annotepage_client_settings() {
 		$declared['version'] = $s['version'];
 	}
 
+	/* THE LABELS, AND ONLY WHEN THIS PLUGIN IS THE ONE SERVING THE CLIENT. A CDN
+	   copy loads its French set from beside itself; the copy this plugin serves
+	   deduces nothing, so the file it ships is named here -- and only on a French
+	   site, the same condition the CDN copy applies to the page's language. In
+	   CDN mode nothing is declared and the client does what it has always done. */
+	if ( 'cdn' !== $s['source'] && annotepage_is_french() ) {
+		$declared['labels'] = plugins_url( 'dist/fr.js', __FILE__ );
+	}
+
 	return $declared;
 }
 
@@ -644,12 +711,13 @@ function annotepage_client_settings() {
 function annotepage_tag_attributes() {
 	$out = '';
 	foreach ( annotepage_client_settings() as $name => $value ) {
-		/* The server is an address a browser resolves, so it is escaped as one:
-		   esc_attr() alone would leave a `javascript:` intact.
-		   annotepage_is_server() refused that at the door already; this is the
-		   second of the two, where the value is written out. */
+		/* server and labels are addresses a browser resolves, so they are escaped
+		   as URLs: esc_attr() alone would leave a `javascript:` intact. The server
+		   was refused at the door by annotepage_is_server() already, and the labels
+		   address is this plugin's own plugins_url(); this is the second guard, where
+		   the value is written out. */
 		$out .= "\n" . '        data-' . $name . '="'
-			. ( 'server' === $name ? esc_url( $value ) : esc_attr( $value ) ) . '"';
+			. ( in_array( $name, array( 'server', 'labels' ), true ) ? esc_url( $value ) : esc_attr( $value ) ) . '"';
 	}
 	/* defer, and nothing that would make it a module. See the file header. */
 	return '' === $out ? '' : $out . "\n" . '        defer';
@@ -732,7 +800,7 @@ function annotepage_tag_markup() {
 	return annotepage_script_tag(
 		wp_get_script_tag(
 			array(
-				'src' => ANNOTEPAGE_CLIENT_SRC,
+				'src' => annotepage_client_src(),
 				'id'  => 'annotepage-js',
 			)
 		),
@@ -758,20 +826,25 @@ function annotepage_enqueue() {
 	if ( ! annotepage_should_print() ) {
 		return;
 	}
-	/* NO VERSION, AND THE SCANNER IS ANSWERED HERE RATHER THAN OBEYED.
-	   Its warning assumes a file this plugin SHIPS, whose bytes change when the
-	   plugin is released -- and then `?ver=` is what gets the new one past a
-	   cache. Neither half holds. The address is a CDN range, @2, which jsDelivr
-	   re-resolves on its own: the file changes without this plugin moving, so a
-	   number taken from this plugin cannot track it, and writing our 1.0.0 there
-	   would name a version of the client that no build of the client has ever
-	   carried -- the same invented version this file refuses to put in
-	   data-version, for the same reason, a hundred lines up. The version that is
-	   true is already in the address.
-	   NOT SILENCED, MOVED: tests/run.php asserts this null and says why, so the
-	   decision is checked by something that knows what it means. */
-	// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- the version is the @2 range in the address itself; see above.
-	wp_enqueue_script( 'annotepage', ANNOTEPAGE_CLIENT_SRC, array(), null, true );
+	$s   = annotepage_settings();
+	$src = annotepage_client_src( $s );
+
+	if ( 'cdn' === $s['source'] ) {
+		/* NO VERSION ON THE CDN ADDRESS, AND THE SCANNER IS ANSWERED RATHER THAN
+		   OBEYED. The MissingVersion warning assumes a file whose bytes change when
+		   the plugin is released, so `?ver=` is what gets the new one past a cache.
+		   The CDN address is a range, @2, that jsDelivr re-resolves on its own: the
+		   file changes without this plugin moving, a number from this plugin cannot
+		   track it, and a query string forks it into a different file for every
+		   cache in between. So null, on this branch only. */
+		// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- the version is the @2 range in the CDN address itself; see above.
+		wp_enqueue_script( 'annotepage', $src, array(), null, true );
+	} else {
+		/* The copy this plugin ships, with its real version: a `?ver=` here is
+		   honest -- the bytes change when a release ships a new client, and that is
+		   exactly when a cache should fetch again. */
+		wp_enqueue_script( 'annotepage', $src, array(), ANNOTEPAGE_CLIENT_VERSION, true );
+	}
 
 	/* 'before', so the declaration stands in the page ahead of the file that
 	   reads it. A client that loaded first would find nothing there. */
@@ -969,6 +1042,7 @@ function annotepage_greeting() {
 			<strong><?php esc_html_e( 'annotepage is on.', 'annotepage' ); ?></strong>
 			<?php echo esc_html( annotepage_state_line( $s ) ); ?>
 			<?php esc_html_e( 'Open any page of the site and the button is at the bottom right.', 'annotepage' ); ?>
+			<?php esc_html_e( 'The tool is served from this site by default; the settings can load it from a CDN instead.', 'annotepage' ); ?>
 		</p>
 		<p>
 			<?php
@@ -1040,9 +1114,9 @@ add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'annotepage_ro
  * WHICH FIELDS EXIST, AND WHY THE OTHERS DO NOT.
  *
  * 00-preamble.js reads ten attributes. This screen offers four answers, plus
- * the one question that is not an attribute at all: who sees it. Each omission
- * is a decision, and a setting nobody will ever touch is a setting that costs
- * a reader a question and gives back nothing.
+ * two questions that are not attributes at all: who sees it, and where the tool
+ * is served from. Each omission is a decision, and a setting nobody will ever
+ * touch is a setting that costs a reader a question and gives back nothing.
  *
  * KEPT
  *
@@ -1052,11 +1126,12 @@ add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'annotepage_ro
  *                the key, so the audience is the list of people who may write
  *                notes. Everything else is plumbing.
  *
- *   data-server   Required, and underivable. The client served from a CDN can
- *                 no longer deduce the API address from its own -- that address
- *                 says nothing about this site. Nothing in WordPress knows it
- *                 either. It arrives filled in with the shared relay, because
- *                 an empty required field is an install that does nothing.
+ *   data-server   Required, and underivable. The client cannot deduce the API
+ *                 address from its own -- the CDN address says nothing about this
+ *                 site, and the plugin's own folder, where the local copy sits, is
+ *                 not where api.php is. Nothing in WordPress knows it either. It
+ *                 arrives filled in with the shared relay, because an empty
+ *                 required field is an install that does nothing.
  *
  *   data-key / data-project
  *                 One of the two, never both, and WHICH ONE IS THE MODE. The
@@ -1109,12 +1184,13 @@ add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'annotepage_ro
  *                 place that cannot enforce it, and teach its owner that it
  *                 protects something. It does not.
  *
- *   data-labels   A URL to a label file belonging to the site. Not needed for
- *                 a French WordPress: with no data-labels the client follows
- *                 the page's <html lang> on its own. A language it does not
- *                 ship needs a file authored and uploaded first, and whoever
- *                 can do that can add three lines to a theme. A field whose
- *                 prerequisite is harder than the field.
+ *   data-labels   Not a field -- but no longer unset either. A CDN copy of the
+ *                 client follows the page's <html lang> on its own; the copy this
+ *                 plugin serves cannot, so the plugin sets data-labels itself, to
+ *                 the French set it ships, on a French site in local mode (see
+ *                 annotepage_client_settings()). A language it does not ship needs
+ *                 a file authored and uploaded first, and whoever can do that can
+ *                 add three lines to a theme -- so there is still no field for it.
  *
  *   data-environment
  *                 The tempting one, because WordPress has
@@ -1277,6 +1353,11 @@ function annotepage_save() {
 	if ( annotepage_is_audience( $audience ) ) {
 		$new['audience'] = $audience;
 	}
+
+	/* local unless it is exactly 'cdn'. Saved whatever else the form got wrong:
+	   it points at a file, it holds no credential, and the safe answer is local. */
+	$source        = isset( $_POST['ap_source'] ) ? sanitize_text_field( wp_unslash( $_POST['ap_source'] ) ) : '';
+	$new['source'] = ( 'cdn' === $source ) ? 'cdn' : 'local';
 
 	/* Against the roles this site actually has, not against a list written
 	   here: a role added by another plugin is a real role, and a role removed
@@ -1446,7 +1527,7 @@ function annotepage_render() {
 
 		<p>
 			<strong><?php echo esc_html( annotepage_state_line( $s ) ); ?></strong>
-			<?php esc_html_e( 'This screen writes one script tag at the foot of the page. It installs nothing else: the tool itself is served from a CDN and updates on its own.', 'annotepage' ); ?>
+			<?php esc_html_e( 'This screen writes one script tag at the foot of the page. It installs nothing else.', 'annotepage' ); ?>
 		</p>
 
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ap-form">
@@ -1546,7 +1627,7 @@ function annotepage_render() {
 							<?php
 							printf(
 								/* translators: %s is the file name api.php, inside a code element. */
-								esc_html__( 'The address of %s &mdash; the shared relay, filled in at activation, or your own install. The client is served from a CDN and cannot guess it.', 'annotepage' ),
+								esc_html__( 'The address of %s &mdash; the shared relay, filled in at activation, or your own install. The client cannot guess it.', 'annotepage' ),
 								'<code>api.php</code>'
 							);
 							?>
@@ -1711,6 +1792,33 @@ function annotepage_render() {
 						<p class="description">
 							<?php esc_html_e( 'What goes in the page when the key does not. It is derived from the key, so pasting a key above fills it in &mdash; and pasting an id here alone points this site at a project whose key its reviewers already hold.', 'annotepage' ); ?>
 						</p>
+					</td>
+				</tr>
+			</table>
+
+			<h2><?php esc_html_e( 'Loading the tool', 'annotepage' ); ?></h2>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Served from', 'annotepage' ); ?></th>
+					<td>
+						<fieldset>
+							<label style="display:block;margin-bottom:8px;">
+								<input type="radio" name="ap_source" value="local"
+									<?php checked( 'local', $s['source'] ); ?>>
+								<strong><?php esc_html_e( 'This site.', 'annotepage' ); ?></strong>
+								<span class="description" style="display:block;margin-left:24px;">
+									<?php esc_html_e( 'WordPress serves the tool from this plugin. Nothing is fetched from anywhere else.', 'annotepage' ); ?>
+								</span>
+							</label>
+							<label style="display:block;">
+								<input type="radio" name="ap_source" value="cdn"
+									<?php checked( 'cdn', $s['source'] ); ?>>
+								<strong><?php esc_html_e( 'jsDelivr, a public CDN.', 'annotepage' ); ?></strong>
+								<span class="description" style="display:block;margin-left:24px;">
+									<?php esc_html_e( 'Browsers fetch the tool from jsDelivr, so it stays current with the latest version 2 without this plugin being updated. jsDelivr receives those requests, as any CDN does.', 'annotepage' ); ?>
+								</span>
+							</label>
+						</fieldset>
 					</td>
 				</tr>
 			</table>

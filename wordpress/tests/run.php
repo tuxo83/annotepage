@@ -333,6 +333,9 @@ function home_url( $path = '' ) {
 function plugins_url( $file, $plugin = '' ) {
 	return 'https://example.com/wp-content/plugins/annotepage/' . $file;
 }
+function get_locale() {
+	return $GLOBALS['ap_locale'];
+}
 function plugin_basename( $file ) {
 	return 'annotepage/' . basename( $file );
 }
@@ -584,6 +587,10 @@ ap_check( 'the tag is a module or not deferred, either of which leaves '
 	. 'document.currentScript empty and the tool silent',
 	false !== strpos( ap_footer(), 'defer></script>' )
 	&& false === strpos( ap_footer(), 'type="module"' ) );
+ap_check( 'a fresh install serves the client from a CDN rather than from the site',
+	'local' === $after['source'], $after['source'] );
+ap_check( 'the tag does not point at the copy served from this plugin',
+	false !== strpos( ap_footer(), 'wp-content/plugins/annotepage/dist/annotepage.js' ), ap_footer() );
 
 /* Two credentials in one tag are refused whole by the client, and it does not
    pick a winner. */
@@ -608,10 +615,9 @@ $page = ap_footer();
 
 ap_check( 'the client is not enqueued at all, so the queue never sees it',
 	isset( $GLOBALS['ap_queue']['annotepage'] ), implode( ',', array_keys( $GLOBALS['ap_queue'] ) ) );
-ap_check( 'the enqueue names a version, so WordPress appends ?ver= to a CDN '
-	. 'address -- where a query string is a different file to every cache '
-	. 'between this site and the reader, for a range the CDN already re-resolves',
-	null === $GLOBALS['ap_queue']['annotepage']['ver'],
+ap_check( 'the local copy is enqueued with no version, so a cache keeps an old '
+	. 'build after a release ships a new client -- the one case a ?ver= is for',
+	ANNOTEPAGE_CLIENT_VERSION === $GLOBALS['ap_queue']['annotepage']['ver'],
 	var_export( $GLOBALS['ap_queue']['annotepage']['ver'], true ) );
 ap_check( 'the client is enqueued in the head rather than the foot of the page',
 	true === $GLOBALS['ap_queue']['annotepage']['args'] );
@@ -626,12 +632,36 @@ ap_check( 'the page carries no window.annotepageConfig, so a copy of the client 
 	. 'without raising anything',
 	is_array( ap_object( $page ) ), $page );
 ap_check( 'the declaration comes after the file that reads it, which is too late',
-	strpos( $page, 'annotepageConfig' ) < strpos( $page, 'cdn.jsdelivr.net' ), $page );
+	strpos( $page, 'annotepageConfig' ) < strpos( $page, 'dist/annotepage.js' ), $page );
 ap_check( 'the object and the tag do not declare exactly the same settings. The '
 	. 'client refuses the pair outright and names the setting, so this is the '
 	. 'whole site losing the tool at once',
 	ap_object( $page ) === ap_dataset( $page ),
 	json_encode( ap_object( $page ) ) . "\n      vs " . json_encode( ap_dataset( $page ) ) );
+
+/* -- The source setting: local by default, the CDN on request -----------
+ *
+ * Local ships the client from the plugin and, on a French site, declares the
+ * French labels shipped beside it. The CDN restores the earlier behaviour: the
+ * floating range, no ?ver=, and no labels -- a CDN copy loads its own, and
+ * declaring them would force one language and defeat that. This harness runs
+ * with the locale set to fr_FR, so the local tag is the French case. */
+
+update_option( ANNOTEPAGE_OPTION, array_merge( $after, array( 'source' => 'cdn' ) ), true );
+ap_check( 'choosing the CDN did not change the tag to the CDN address',
+	false !== strpos( ap_footer(), 'cdn.jsdelivr.net/npm/annotepage-client@2' ), ap_footer() );
+ap_check( 'the CDN address was enqueued with a ?ver=, forking it for every cache',
+	null === $GLOBALS['ap_queue']['annotepage']['ver'],
+	var_export( $GLOBALS['ap_queue']['annotepage']['ver'], true ) );
+ap_check( 'the CDN tag declares labels, which a CDN copy loads on its own -- '
+	. 'declaring them would force one language',
+	false === strpos( ap_footer(), 'data-labels' ), ap_footer() );
+
+update_option( ANNOTEPAGE_OPTION, array_merge( $after, array( 'source' => 'local' ) ), true );
+ap_check( 'the client served locally on a French site declares no labels, so the '
+	. 'panel is English for every visitor',
+	false !== strpos( ap_footer(), 'data-labels="https://example.com/wp-content/plugins/annotepage/dist/fr.js"' ),
+	ap_footer() );
 
 $drawn = $after['key'];
 
@@ -836,6 +866,17 @@ $notice = ap_notice_of( ap_post( array(
 ap_check( 'secure mode for everyone was warned about as if the key were exposed',
 	'saved' === $notice, $notice );
 
+/* The source is saved like any other field, and an unknown value lands on
+   local -- the answer that asks nothing of anybody's browser. */
+ap_post( array_merge( $form, array( 'ap_source' => 'cdn' ) ) );
+ap_check( 'the CDN choice was not saved', 'cdn' === annotepage_settings()['source'],
+	annotepage_settings()['source'] );
+ap_post( array_merge( $form, array( 'ap_source' => 'local' ) ) );
+ap_check( 'the local choice was not saved', 'local' === annotepage_settings()['source'] );
+ap_post( array_merge( $form, array( 'ap_source' => 'nonsense' ) ) );
+ap_check( 'an unknown source was not forced back to local',
+	'local' === annotepage_settings()['source'], annotepage_settings()['source'] );
+
 /* Nobody without the capability writes what the whole site serves. */
 ap_as( 3 );
 $denied = false;
@@ -909,7 +950,7 @@ ap_check( 'the settings screen lists no roles', false !== strpos( $screen, 'name
 ap_check( 'a stored value is printed into the page unescaped, which is a script '
 	. 'this site runs in its own admin', false === strpos( $screen, '<script>alert(1)</script>' ) );
 ap_check( 'the screen does not show the tag it writes',
-	false !== strpos( $screen, 'cdn.jsdelivr.net/npm/annotepage-client@2' ) );
+	false !== strpos( $screen, 'wp-content/plugins/annotepage/dist/annotepage.js' ), $screen );
 
 /* THE VERSION IS SOMEBODY'S TEXT AND IT NOW GOES INSIDE A <' . 'script> BLOCK.
    A value carrying </script> would close that block where it stands and turn a

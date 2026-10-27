@@ -11,10 +11,10 @@
  * So the two files are read as one here.
  *
  * The rest is the claims the plugin makes about itself, checked rather than
- * asserted: that it talks to nothing, that it ships no copy of the client, that
- * the key it derives is the key every other component derives -- and that the
- * whole thing actually RUNS, which is what wordpress/tests/run.php does against
- * a stubbed WordPress.
+ * asserted: that it talks to nothing, that it ships the client and serves it
+ * from the site by default (the CDN being an opt-in), that the key it derives is
+ * the key every other component derives -- and that the whole thing actually
+ * RUNS, which is what wordpress/tests/run.php does against a stubbed WordPress.
  */
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
@@ -102,17 +102,58 @@ check('admin.js transmits something. The key is drawn there precisely because '
     + 'nothing in that file reaches the network',
     !NETWORK_JS.test(adminCode), (adminCode.match(NETWORK_JS) || [])[0]);
 
-/* -- 3. It ships no copy of the client ----------------------------------- */
+/* -- 3. It ships the client, served from the site by default -------------
+ *
+ * The plugin directory does not allow a plugin to load its scripts from a remote
+ * CDN by default, so the client is shipped here and served from the plugin's own
+ * folder. A shipped copy is a thing that goes stale in silence, so it is compared
+ * against the client this repository builds -- byte for byte, the same guard
+ * docs/annotepage-client-<version>.js has for its own copy. The CDN address stays
+ * in the file because the "load from the CDN" setting points at it, and it stays a
+ * floating range so that option keeps the client current. */
 
+const CLIENTJS = 'client/dist/annotepage.js';
+const CLIENTFR = 'client/labels/fr.js';
+const SHIPJS = 'wordpress/dist/annotepage.js';
+const SHIPFR = 'wordpress/dist/fr.js';
+
+check('the plugin ships no copy of the client, so by default it would have to '
+    + 'load one from a remote CDN -- which the plugin directory does not allow',
+    existsSync(SHIPJS));
+check(`${SHIPJS} differs from ${CLIENTJS} -- the plugin would serve a client that `
+    + 'is not the one this repository builds. Copy it across again.',
+    existsSync(SHIPJS) && existsSync(CLIENTJS)
+    && Buffer.compare(readFileSync(SHIPJS), readFileSync(CLIENTJS)) === 0);
+check(`${SHIPFR} differs from ${CLIENTFR} -- a French site would get labels that `
+    + 'are not the ones the client ships',
+    existsSync(SHIPFR) && existsSync(CLIENTFR)
+    && Buffer.compare(readFileSync(SHIPFR), readFileSync(CLIENTFR)) === 0);
+
+/* The version the plugin enqueues for the local copy must be the version of the
+   copy it actually ships, or the cache-buster names a client the folder has not
+   got. */
+const clientVersion = JSON.parse(read('client/package.json')).version;
+const declaredClient = (plugin.match(/ANNOTEPAGE_CLIENT_VERSION',\s*'([^']+)'/) || [])[1] || '';
+check(`the plugin enqueues client version "${declaredClient}" where the copy it `
+    + `ships is ${clientVersion} (client/package.json) -- the local cache-buster `
+    + 'would name a version the plugin does not carry',
+    declaredClient === clientVersion, declaredClient);
+
+/* Nothing loose at the top of the plugin but admin.js; the client and its labels
+   are under dist/, and dist/ holds those two and nothing else. */
 const shipped = readdirSync('wordpress').filter((f) => !f.startsWith('.'));
-check('the plugin directory carries a JavaScript file other than admin.js -- a '
-    + 'copy of the client here is a release of this plugin every time the client '
-    + 'moves, forever', shipped.filter((f) => f.endsWith('.js')).join(',') === 'admin.js',
+check('the plugin directory carries a JavaScript file other than admin.js at its '
+    + 'top level', shipped.filter((f) => f.endsWith('.js')).join(',') === 'admin.js',
     shipped.join(', '));
+check('wordpress/dist holds something other than the client and its French labels',
+    existsSync('wordpress/dist')
+    && readdirSync('wordpress/dist').filter((f) => !f.startsWith('.')).sort().join(',')
+       === 'annotepage.js,fr.js',
+    existsSync('wordpress/dist') ? readdirSync('wordpress/dist').join(', ') : '(no dist)');
 
 const src = (plugin.match(/ANNOTEPAGE_CLIENT_SRC',\s*'([^']+)'/) || [])[1] || '';
-check('the client address is not a floating major range on the CDN, so a fix '
-    + 'would reach these sites only when this plugin is released again',
+check('the CDN option\'s address is not a floating major range on the CDN, so '
+    + 'turning it on would pin the client where the point of it is to stay current',
     /^https:\/\/cdn\.jsdelivr\.net\/npm\/annotepage-client@2\//.test(src), src);
 
 /* THE DEFAULT SERVER IS THE ONE THE SITE DOCUMENTS. The plugin fills it in at
@@ -450,13 +491,17 @@ if (derived) {
 
         const entries = (listed.stdout || '').split('\n')
             .filter((n) => n && !n.endsWith('/'));
-        /* languages/ SHIPS, AND THAT IS THE WHOLE POINT OF IT. The .mo is read
-           from inside the plugin -- see the plugin header -- so a zip without it
-           is an English plugin however complete the French is in this
-           repository. The .pot and the JSON beside it are what another language
-           is made from, and the template is where wordpress.org expects it. */
+        /* dist/ SHIPS THE CLIENT, which is the whole point of the local default:
+           a zip without it is a plugin that serves nothing until somebody turns
+           on the CDN. languages/ SHIPS TOO -- the .mo is read from inside the
+           plugin (see the plugin header), so a zip without it is an English
+           plugin however complete the French is here; the .pot and the JSON
+           beside it are what another language is made from, and the template is
+           where wordpress.org expects it. */
         const wanted = ['annotepage/annotepage.php', 'annotepage/admin.js',
                         'annotepage/readme.txt',
+                        'annotepage/dist/annotepage.js',
+                        'annotepage/dist/fr.js',
                         'annotepage/languages/annotepage.pot',
                         'annotepage/languages/annotepage-fr_FR.mo',
                         'annotepage/languages/fr_FR.json'];
@@ -505,7 +550,19 @@ if (derived) {
 
     check('the client is never handed to wp_enqueue_script(), so nothing puts it '
         + 'in the queue at all',
-        /wp_enqueue_script\(\s*'annotepage',\s*ANNOTEPAGE_CLIENT_SRC/.test(code));
+        /wp_enqueue_script\(\s*'annotepage',\s*\$src/.test(code));
+
+    check('the enqueued src does not come from annotepage_client_src(), the one '
+        + 'place that decides between the local copy and the CDN',
+        /\$src\s*=\s*annotepage_client_src\(/.test(code));
+
+    check('annotepage_client_src() does not default to the copy served from the '
+        + 'plugin, so a fresh install would reach out to a CDN on its own',
+        /return plugins_url\(\s*'dist\/annotepage\.js'/.test(code));
+
+    check('the stored source does not default to local, so an option row without '
+        + 'it would serve from the CDN unasked',
+        /'source'\s*=>\s*'local'/.test(code) && /'cdn' !== \$out\['source'\]/.test(code));
 
     check('the data- attributes are not put back on script_loader_tag, so the tag '
         + 'would reach the page carrying nothing the client can read',
@@ -532,7 +589,8 @@ if (failures.length) {
 }
 console.log('wordpress: header and readme.txt agree on version, PHP and WordPress; '
     + 'every announced screenshot exists; the plugin and its admin script reach no '
-    + 'network; no client code ships with it and the CDN range still floats; the '
+    + 'network; the client ships with it and matches the build, served locally by '
+    + 'default with the CDN range still floating for the opt-in; the '
     + 'default relay is the documented one; every string the screen shows passes '
     + "through a translation call in this plugin's own domain and the French set "
     + 'covers all of them, in a .pot and a .mo that are what their sources make; the '

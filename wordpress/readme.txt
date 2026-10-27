@@ -4,7 +4,7 @@ Tags: annotation, feedback, review, staging, encryption
 Requires at least: 5.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -30,8 +30,9 @@ points at the shared relay &mdash; or at
 shows the tool to administrators and nobody else. Open any page of your site:
 the button is at the bottom right.
 
-The tool itself is served from a CDN on a floating version, so it updates on its
-own and this plugin never has to be released for it.
+The tool itself ships with this plugin and is served from your own site, so a
+fresh install reaches no third-party service. If you would rather it updated on
+its own, one setting loads it from a public CDN (jsDelivr) instead.
 
 There is no dashboard of notes here, no new user role, no widget, no shortcode,
 no block. The notes live in the annotation panel on the site itself, where the
@@ -60,23 +61,11 @@ mode, losing it loses the notes: there is
 
 == External services ==
 
-This plugin relies on two external services, and its own PHP contacts neither
-of them: there is no HTTP call anywhere in it. Both are reached by the reader's
-browser, and only because of the one script tag this plugin writes at the foot
-of a page.
-
-**cdn.jsdelivr.net**, operated by jsDelivr, serves the annotation tool itself.
-The tag loads
-`https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js`, so on
-every page load that carries the tag, the browser sends jsDelivr what any
-request for a file carries: the reader's IP address, their user agent, the
-address of the file asked for, and &mdash; as for any cross-origin script
-&mdash; your site in the `Referer` header, which current browsers reduce to the
-scheme and host and not the page path. Nothing else goes there: no note, no
-page path and no key, and the request is the same one every visitor to every
-site using that file makes.
-Terms of use: https://www.jsdelivr.com/terms
-Privacy policy: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
+This plugin's own PHP contacts no external service: there is no HTTP call
+anywhere in it. By default it serves the annotation tool from your own site
+&mdash; the copy shipped inside the plugin &mdash; so a standard install reaches
+only the notes server below, and only the reader's browser reaches it, because
+of the one script tag this plugin writes at the foot of a page.
 
 **The notes server**, `https://api.annotepage.com/api.php` by default &mdash;
 the shared relay filled in at activation, or whichever address you set on the
@@ -88,12 +77,28 @@ the text of a note &mdash; it cannot read one. Setting the address to a copy of
 `api.php` you host yourself replaces this service with your own server.
 What the shared relay sees: https://annotepage.com/questions.html#data
 
+**cdn.jsdelivr.net &mdash; optional, off by default.** The settings screen can
+load the tool from jsDelivr instead of from your site, so that it stays current
+without this plugin being updated. Only when you choose that does the reader's
+browser fetch
+`https://cdn.jsdelivr.net/npm/annotepage-client@2/dist/annotepage.js`, sending
+jsDelivr what any request for a file carries: the reader's IP address, their
+user agent, the address of the file asked for, and &mdash; as for any
+cross-origin script &mdash; your site in the `Referer` header, which current
+browsers reduce to the scheme and host and not the page path. No note, no page
+path and no key ever goes there, and the request is the same one every visitor
+to every site using that file makes. Left on the default &mdash; served from
+your own site &mdash; the browser contacts jsDelivr not at all.
+Terms of use: https://www.jsdelivr.com/terms
+Privacy policy: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
+
 **When nothing is sent at all.** A fresh install writes the tag for
 administrators only, so until you widen the audience on the settings screen, no
 visitor to your site contacts either service: a page that carries no tag makes
-no request to jsDelivr and none to the notes server. A consent manager or a
-developer can also withdraw the tag for a single request through the
-`annotepage_should_print` filter, without deactivating the plugin.
+no request to the notes server, and none to jsDelivr even with the CDN option
+on. A consent manager or a developer can also withdraw the tag for a single
+request through the `annotepage_should_print` filter, without deactivating the
+plugin.
 
 == Installation ==
 
@@ -158,6 +163,12 @@ nothing to set. Notes themselves can be written in any language.
 2. The plugins screen straight after activation: it drew a key, pointed at the shared relay, and says so.
 
 == Changelog ==
+
+= 1.0.2 =
+* The annotation tool now ships with the plugin and is served from your own
+  site by default, so activating it contacts no third-party CDN. A setting still
+  loads it from jsDelivr for whoever would rather it updated on its own. On a
+  French site the matching labels are served locally too.
 
 = 1.0.1 =
 * The settings screen's live messages -- under the key field, and the
